@@ -51,9 +51,11 @@ inline int ApplyMainWindowStrings(
     literals.push_back(Text(localization::Literal(key, language)));
   gallery.set_texts(std::make_shared<slint::VectorModel<slint::SharedString>>(literals));
   std::vector<slint::SharedString> languages;
-  for (const auto& option : localization::GetSupportedLanguages())
+  for (const auto& option : localization::GetSupportedLanguages()) {
+    if (option.code == "vi")
+      languages.push_back(Text(localization::Literal("跟随系统", language)));
     languages.push_back(Text(option.display_name));
-  languages.push_back(Text(localization::Literal("跟随系统", language)));
+  }
   window->set_language_options(std::make_shared<slint::VectorModel<slint::SharedString>>(languages));
   auto& trust = window->global<ui::TrustStrings>();
   trust.set_title(Text(localization::Literal("可信设备", language)));
