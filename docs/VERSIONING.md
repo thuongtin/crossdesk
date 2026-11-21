@@ -99,4 +99,4 @@ Phiên bản ứng dụng đồng thời điều khiển mặc định Xmake c�
 
 Sau sửa và kiểm tra, rà soát, commit và push nguồn rồi tạo tag tương ứng phiên bản thực: CLI dùng `cli-v<phiên-bản>`, MCP dùng `mcp-v<phiên-bản>`. Di động tiếp tục dùng `android-v<phiên-bản>-YYYYMMDD`, `ios-v<phiên-bản>-YYYYMMDD`. Không ghi đè bản đã phát hành bằng nội dung khác; script sửa phiên bản không xác định hộ bạn phiên bản đã được dùng trên registry hay chưa.
 
-Tài liệu liên quan: [biên dịch máy tính](BUILD.md) · [phát hành CLI](../apps/cli/docs/npm-distribution.md#ci-与发布) · [phát hành MCP](../apps/mcp/DEVELOPMENT.md#github-actions-发布到-npm).
+Tài liệu liên quan: [biên dịch máy tính](BUILD.md) · [phát hành CLI](../apps/cli/docs/npm-distribution.md#ci-và-phát-hành) · [phát hành MCP](../apps/mcp/DEVELOPMENT.md#phát-hành-lên-npm-qua-github-actions).

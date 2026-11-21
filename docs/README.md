@@ -36,12 +36,12 @@
 | Phân lớp GUI, trạng thái và phân công mã nguồn | [Kiến trúc GUI](gui-architecture.md) |
 | Định địa chỉ ID / IP, xác thực và vòng đời phiên | [Kiến trúc kết nối](connection-architecture.md) |
 | Giao diện đăng ký và băng thông Bức tường màn hình (DeskHub) | [Giao thức xem trước và truyền tải](deskhub.md#triển-khai-truyền-tải-và-giao-diện) |
-| Kết xuất CLI, nhập liệu và hỗ trợ terminal | [Ứng dụng terminal](../apps/cli/docs/terminal-client.md) · [Biên bản kiểm chứng](../apps/cli/docs/validation.md#验证记录) |
+| Kết xuất CLI, nhập liệu và hỗ trợ terminal | [Ứng dụng terminal](../apps/cli/docs/terminal-client.md) · [Biên bản kiểm chứng](../apps/cli/docs/validation.md#biên-bản-kiểm-chứng) |
 | Tích hợp terminal và tự động hóa | [Bridge](../apps/cli/docs/bridge-protocol.md) · [Giao diện tự động hóa gốc](../apps/cli/docs/automation-protocol.md) |
 | Công cụ MCP và tích hợp ứng dụng chủ | [Biên dịch và tích hợp](../apps/mcp/DEVELOPMENT.md) |
-| Biên dịch ứng dụng di động và hành vi nền tảng | [Android](../apps/android/README.md#构建) · [iOS](../apps/ios/README.md#build) · [HarmonyOS](../apps/harmony/README.md#构建) |
+| Biên dịch ứng dụng di động và hành vi nền tảng | [Android](../apps/android/README.md#biên-dịch) · [iOS](../apps/ios/README.md#build) · [HarmonyOS](../apps/harmony/README.md#biên-dịch) |
 | Hỗ trợ máy tính HarmonyOS và quyền | [Tài liệu nền tảng PC](../apps/harmony/desktop-port/README.md) |
-| Phiên bản thành phần và phát hành npm | [Quản lý phiên bản](VERSIONING.md) · [Phân phối CLI](../apps/cli/docs/npm-distribution.md#生成包) · [Phát hành MCP](../apps/mcp/DEVELOPMENT.md#github-actions-发布到-npm) |
+| Phiên bản thành phần và phát hành npm | [Quản lý phiên bản](VERSIONING.md) · [Phân phối CLI](../apps/cli/docs/npm-distribution.md#tạo-gói) · [Phát hành MCP](../apps/mcp/DEVELOPMENT.md#phát-hành-lên-npm-qua-github-actions) |
 | Chữ ký cập nhật, bản kê và quy trình nâng cấp | [Biên dịch và phát hành trình nâng cấp](UPDATER.md#biên-dịch-và-phát-hành-trình-nâng-cấp) |
 | Tài nguyên dịch và ảnh chụp màn hình | [Bảo trì bản địa hóa](../localization/README.md#bảo-trì-tài-nguyên) · [Tạo ảnh chụp màn hình](images/REGENERATE.md) |
 

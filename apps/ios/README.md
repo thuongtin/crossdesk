@@ -262,8 +262,8 @@ the available space. Settings and reading pages are limited to 720 points.
 Resizing preserves the connection fields and active session. iPhone retains its
 portrait home screen and two-column recent-connection grid.
 
-On iPhone, Settings → Screen orientation (屏幕方向) → Lock landscape after connecting
-(连接建立后锁定横屏) is disabled by default and saved locally. When enabled, the session
+On iPhone, Settings → Screen orientation (Hướng màn hình) → Lock landscape after connecting
+(Khóa hướng ngang sau khi kết nối) is disabled by default and saved locally. When enabled, the session
 enters and stays in landscape; when disabled, it follows the device orientation.
 Leaving the session restores portrait, and returning to a background session keeps
 that session's orientation setting. The physical-device monitoring that released
@@ -286,7 +286,7 @@ the insertion point, and Return starts a new context. Text edited directly on
 the host is not mirrored back; automatic corrections assume the remote caret
 still follows the text entered from the phone.
 
-The 44-point native input row contains the **电脑键盘** switch, a horizontally
+The 44-point native input row contains the **Bàn phím máy tính** switch, a horizontally
 scrollable favorites bar (Escape, Tab, Copy and Paste by default), More and Hide.
 It is anchored to `UIKeyboardLayoutGuide`. Its background continues
 behind the system keyboard; no input accessory slot is reserved. The IME's
@@ -299,8 +299,8 @@ Switching between the system and computer keyboards replaces the panel in place
 in both directions. Opening the system keyboard after it has been hidden keeps
 the normal iOS presentation animation.
 
-The computer keyboard has two pages: **字母数字** for letters and numbers,
-and **符号功能** for punctuation, F1–F12 and navigation. Keys fill each row
+The computer keyboard has two pages: **Chữ cái và chữ số** for letters and numbers,
+and **Ký hiệu và phím chức năng** for punctuation, F1–F12 and navigation. Keys fill each row
 with consistent 5-point horizontal and 6-point vertical gaps; there are no
 fixed keycap size limits or extra spacing around individual rows. The second
 page uses two function-key rows in portrait and one in landscape.
@@ -336,7 +336,7 @@ sent; text is limited to 16 KiB and deletions to 16,384 characters per update.
 Hosts without this capability retain ASCII key input. Unsupported input is
 rejected with an explanation and is not queued for later replay. For hosts
 without text input support on an ordinary desktop, send text with
-**剪贴板** in the remote session menu, then use the computer keyboard's paste
+**Bảng nhớ tạm** in the remote session menu, then use the computer keyboard's paste
 shortcut.
 
 This development build forwards complete UTF-8 commits through the Windows
@@ -353,7 +353,7 @@ After network consent, the app queries Apple's public Lookup API on launch,
 on return from the background, and after a remote connection ends while active.
 Successful results are reused in memory for six hours; failed checks defer the
 next automatic attempt for 15 minutes. There is no timer or automatic retry.
-**检查更新** bypasses this cooldown. Concurrent triggers share the pending
+**Kiểm tra cập nhật** bypasses this cooldown. Concurrent triggers share the pending
 request. Backgrounding or withdrawing consent cancels requests and ignores
 stale replies; failures retain an already discovered update.
 
@@ -372,14 +372,14 @@ up-to-date message. A newer release requiring a newer iOS version shows that
 requirement without an installable-update badge.
 
 Installable new releases show the existing red badge on the home Settings
-button and “新版本” with a red dot in Settings → About. About shows the version
-and **前往 App Store 更新**, linking directly to the application's App Store
+button and “Phiên bản mới” with a red dot in Settings → About. About shows the version
+and **Cập nhật trong App Store**, linking directly to the application's App Store
 page. The remote desktop's separate upgrade check still uses the CrossDesk
 version manifest.
 
 ## Announcements
 
-The home toolbar's bell opens **通知公告** and shows the unread count (capped
+The home toolbar's bell opens **Thông báo chung** and shows the unread count (capped
 at `99+` on the badge). The persistent identity peer fetches announcements after
 signaling connects, so a remote desktop session is not required. Opening the
 inbox, returning to the foreground, reconnecting, and `announcements_changed`
@@ -414,7 +414,7 @@ and rejects a build if they are present, including in cached archives.
 
 ## Third-party licenses
 
-**设置 → 关于** shows the app version and links to the application's
+**Cài đặt → Giới thiệu** shows the app version and links to the application's
 license, open-source components, and source/build information. `crossdesk_wire`
 is part of CrossDesk's own source and is covered by its application license,
 not a separate third-party entry. OpenFEC is acknowledged at the top of the
@@ -506,9 +506,9 @@ withdraw consent to stop both the persistent identity peer and remote session. C
 again before reconnecting; foregrounding or relaunching does not grant it.
 
 The notice opens as a native large sheet with a scrolling document above a fixed
-consent area. The agreement checkbox starts unchecked; **同意并继续** stays
+consent area. The agreement checkbox starts unchecked; **Đồng ý và tiếp tục** stays
 disabled until it is selected and the bundled policy is available.
-**暂不同意** dismisses the sheet for this visit. Swipe-to-dismiss is disabled
+**Chưa đồng ý** dismisses the sheet for this visit. Swipe-to-dismiss is disabled
 so either action is explicit.
 
 Remote desktop previews default to off, including on upgrade. Enabling and
@@ -538,9 +538,9 @@ instead of recentering it. Switching displays restores the centered view.
 
 ## Touch controls and device validation
 
-The floating control menu includes **虚拟鼠标** (virtual mouse), a 140 × 48 pt
+The floating control menu includes **Chuột ảo** (virtual mouse), a 140 × 48 pt
 horizontal left-button / wheel / right-button bar attached to the status orb.
-Drag the orb to reposition it, or use **收起鼠标** to hide it. The bar overlays
+Drag the orb to reposition it, or use **Ẩn chuột** to hide it. The bar overlays
 the video without resizing it and avoids the computer keyboard. Hold either mouse
 button and drag the same finger, including beyond the key bounds, to drag at the
 remote cursor; lifting the finger releases that button. Moving another finger on
@@ -562,7 +562,7 @@ build. Test the features in this order so a media problem is not confused with
 a data-channel problem:
 
 1. **Video:** after the session connects, the waiting panel should be replaced
-   by the remote desktop. Tap the floating icon, then **网络状态** (Network
+   by the remote desktop. Tap the floating icon, then **Trạng thái mạng** (Network
    status), to see video/audio/data/total receive and send bitrates, receive
    loss rates, submitted FPS, decoded resolution, video delay, connection RTT,
    P2P/TURN mode, and the actual SRTP encryption state. Scroll the panel in
@@ -572,12 +572,12 @@ a data-channel problem:
    16-bit PCM through `AVAudioEngine`.
 3. **Clipboard:** copy a short text value on the remote desktop, then paste it
    into a text field on the phone to verify reception. Text is limited to
-   128 KiB. Tap **剪贴板** in the floating menu to send local clipboard text,
+   128 KiB. Tap **Bảng nhớ tạm** in the floating menu to send local clipboard text,
    then paste it on the remote desktop. Empty or oversized text displays a hint.
 4. **Displays:** open the display menu, switch every listed monitor, and check
    that the selected monitor appears and the displayed resolution updates
    after a new key frame.
-5. **Files:** choose **发送文件** (Send file) from the floating menu to pick a
+5. **Files:** choose **Gửi tệp** (Send file) from the floating menu to pick a
    small file, then send a file back
    from the desktop. Progress is ACK-driven. Received files are stored in the
    app's `Documents/Received` directory and can be exported with the share
@@ -603,13 +603,13 @@ overall loss rate.
 The reliable control channel's `host_info` also advertises `platform` as
 `windows`, `linux`, `macos`, `ios`, or `unknown`. Desktop and iOS controllers
 retain the received platform for the current session. Missing, malformed, or
-unrecognized values from older or other peers map to unknown (`未知` on iOS),
+unrecognized values from older or other peers map to unknown (`Không rõ` on iOS),
 without rejecting the remaining host information. Reconnecting clears the
 previous peer's platform; iOS sends `ios` in its own host information.
 On iOS, the received platform is also saved with each recent connection.
 When preview saving is off or no preview is available, the thumbnail placeholder
 shows the platform name. Existing history without platform metadata shows
-`未知` until host information is received from a subsequent connection.
+`Không rõ` until host information is received from a subsequent connection.
 
 For black-screen diagnosis, keep Xcode's debug console open and look for
 `CrossDesk` and `VideoToolbox` messages. With VideoToolbox H.264 decoding selected, look for

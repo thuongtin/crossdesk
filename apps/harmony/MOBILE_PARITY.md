@@ -1,84 +1,84 @@
-# 鸿蒙移动控制端与 Android 功能对照
+# Đối chiếu tính năng ứng dụng điều khiển di động HarmonyOS và Android
 
-[鸿蒙构建与安装](README.md) · [移动端操作](../../docs/USER_GUIDE.md#harmonyos)
+[Biên dịch và cài HarmonyOS](README.md) · [Thao tác di động](../../docs/USER_GUIDE.md#harmonyos)
 
-手机、平板使用 `pages/Mobile`，角色固定为控制端。对照基线为本仓库 `apps/android`，不包含 PC 被控能力。移动专用 HAP 只声明 `INTERNET` 和 `KEEP_BACKGROUND_RUNNING`；不申请录屏、输入注入、相机、麦克风或整个文件库权限。
+Điện thoại, máy tính bảng dùng `pages/Mobile`, vai trò cố định điều khiển. Chuẩn đối chiếu là `apps/android` trong kho này, không gồm khả năng PC được điều khiển. HAP riêng di động chỉ khai báo `INTERNET`, `KEEP_BACKGROUND_RUNNING`; không xin quyền ghi màn hình, chèn nhập, camera, micro hay toàn bộ thư viện tệp.
 
-## 构建与安装
+## Biên dịch và cài đặt
 
 ```bash
 python3 apps/harmony/scripts/build.py --mobile
 python3 apps/harmony/tests/run.py --mobile
 ```
 
-需要 Python 3.10+、Xmake 3.1.1+、DevEco SDK。兼容 API 20、目标 API 26、ARM64。产物：
+Cần Python 3.10+, Xmake 3.1.1+, DevEco SDK. Tương thích API 20, đích API 26, ARM64. Sản phẩm:
 
 ```
 apps/harmony/.native/mobile-project/entry/build/default/outputs/default/entry-default-unsigned.hap
 ```
 
-手机真机调试时，在 DevEco 打开生成的 `.native/mobile-project` 并配置本机签名，再安装。不要把签名材料提交到仓库。重新执行构建脚本会重新生成隔离工程，移除签名配置。PC 的 ACL 和签名配置不用于移动包。
+Gỡ lỗi điện thoại thật: mở `.native/mobile-project` đã sinh trong DevEco, cấu hình chữ ký máy này rồi cài. Không commit tài liệu ký vào kho. Chạy lại script sẽ tạo lại dự án cách ly, bỏ cấu hình ký. ACL/chữ ký PC không dùng cho gói di động.
 
-移动构建只复制 `ets/mobile/`、`pages/Mobile.ets`、N-API 桥接和实际使用的资源，只有 `pages/Mobile` 一个页面入口。`crossdesk_harmony_mobile` 将控制会话与共享音视频播放编译为独立原生库，输出到 `.native/mobile-libs/arm64-v8a/`；不编译 PC 会话、屏幕采集或输入注入，也不导出 PC 桥接 API。只重编原生库时使用 `build.py --mobile --native-only`，随后可使用 `--mobile --hap-only` 打包。PC 直接链接 MiniRTC 与平台服务，不再生成旧 ArkUI PC 核心；两端产物不会互相覆盖。
+Biên dịch di động chỉ sao chép `ets/mobile/`, `pages/Mobile.ets`, cầu nối N-API và tài nguyên dùng thực; chỉ một trang vào `pages/Mobile`. `crossdesk_harmony_mobile` biên dịch phiên điều khiển và phát âm thanh/video chung thành thư viện gốc riêng, xuất `.native/mobile-libs/arm64-v8a/`; không biên dịch phiên PC, ghi màn hình, chèn nhập, không xuất API cầu nối PC. Chỉ biên dịch lại thư viện dùng `build.py --mobile --native-only`, sau đó đóng gói `--mobile --hap-only`. PC liên kết trực tiếp MiniRTC/dịch vụ nền tảng, không sinh lõi ArkUI PC cũ nữa; hai bên không ghi đè sản phẩm nhau.
 
-生成工程每次重建源码与库目录，以移除旧版本残留；请修改 `entry/src/main/` 下的源码，再运行构建脚本。桌面字体不进入移动包，开源许可证只保留界面可逐项阅读并校验 SHA-256 的完整文档，移除了重复汇总副本。
+Dự án sinh dựng lại thư mục nguồn/thư viện mỗi lần để bỏ sót bản cũ; hãy sửa nguồn dưới `entry/src/main/` rồi chạy script. Font máy tính không vào gói di động; giấy phép nguồn mở chỉ giữ tài liệu đầy đủ có thể đọc từng mục và kiểm SHA-256 trong UI, bỏ bản tổng hợp trùng.
 
-## 功能对照
+## Đối chiếu tính năng
 
-| Android 功能 | 鸿蒙实现 |
+| Tính năng Android | Triển khai HarmonyOS |
 | --- | --- |
-| 前台自动登录、空闲后台停止、服务器隔离 | 独立 identity peer；只有主动远控才创建 controller peer；拒绝任何入站被控连接 |
-| 电脑隐私屏 | 悬浮菜单直接开关，无详情页；按钮按电脑确认的状态显示“隐私屏已开启”或“隐私屏已关闭”，开启与关闭使用相同配色，正常切换不显示额外文字，仅在异常时显示提示；开启时与桌面端一致屏蔽电脑本地键鼠；5 秒状态失效、15 秒指令超时与跨会话隔离 |
-| 首次隐私确认、撤回与离线阅读 | 同意前不发起身份、公告、在线状态或版本网络请求；撤回结束会话并清除预览 |
-| 加密身份、可选记住访问密码 | 系统 Asset Store，设备首次解锁后可读，禁止跨设备同步；普通 Preferences 不存密码 |
-| 最近连接、删除、在线状态 | 最近 20 台、在线优先、真实信令订阅、30 秒刷新和 60 秒过期；删除同步清理密码与预览 |
-| H.264 / AV1 | 系统硬件解码；无能力、配置/运行失败时保持协商格式回退 OpenH264 / dav1d；NV12 GLES 显示 |
-| 远端音频与静音 | 48 kHz 单声道 OHAudio，控制菜单与画中画静音同步 |
-| 相对/绝对鼠标、触控 | 单击、绝对拖动、长按右键、1–10 倍焦点缩放、放大后双指平移、1 倍时双指滚轮 |
-| 外接键鼠 | 实体按键映射、鼠标移动/按键/滚轮；失焦、后台、断开及切屏释放输入 |
-| 悬浮控制 | 可拖动品牌悬浮球、三列菜单（低高度横屏四列）、可拖动 ASCII/电脑键盘、完整快捷键组合、140×48 虚拟鼠标 |
-| 视频设置 | 低/中/高、30/60 fps、帧率/画质/平衡；能力协商、请求序号、旧 ACK 丢弃、拒绝回滚、5 秒超时 |
-| 网络诊断 | 视频/音频/数据/总流量、双向速率、丢包率、实际提交帧率/尺寸、画面延迟、平滑 RTT、P2P/TURN、SRTP；3 秒失效 |
-| 多显示器、Ctrl+Alt+Del | 按远端显示器列表切换；SAS 仅在远端 Windows 服务报告可用时发送 |
-| 剪贴板 | 主动发送（128 KB 上限）、远端粘贴、手动复制收到的文本；退出清空内存文本 |
-| 文件双向传输 | 系统文件选择/导出、进度、可靠分块/ACK、乱序覆盖、失败/超时清理；直接共用 Android 文件引擎 |
-| 系统画中画与后台保活 | VIDEO_LIVE PiP 与静音控制，后台数据传输任务及系统通知兜底；选择器期间抑制 PiP，系统拒绝后台时结束会话 |
-| 公告 | 摘要每页 200、正文每页 20、已读/删除与修订、分页、刷新、12 秒超时、身份及服务器隔离、迟到应答过滤 |
-| 版本提示 | 每会话检查远端版本；本机更新使用 `harmony-arm64`，无该发布项时明确显示无鸿蒙版本信息 |
-| 远程预览 | 默认关闭、单独确认、下一次连接起每会话一张 640×360、私有缓存、不上传；关闭/撤回清除，异步任务不能恢复已撤回内容 |
-| 关于和开源合规 | 实际包版本、离线许可证和组件清单、SHA-256 文档校验、源码版本与构建说明 |
-| 手机/平板布局 | 900 vp 双栏断点、最近连接 1–4 列、主体最大 1200/720 vp、手机首页竖屏、会话/平板自动旋转、200 ms 页面/选项过渡 |
+| Tự đăng nhập tiền cảnh, dừng nền khi rảnh, cách ly máy chủ | identity peer riêng; chỉ tạo controller peer khi chủ động điều khiển; từ chối mọi kết nối được điều khiển đến |
+| Màn hình riêng tư máy tính | Bật/tắt trực tiếp menu nổi, không trang chi tiết; nút theo trạng thái máy tính xác nhận hiện “Đã bật màn hình riêng tư” hoặc “Đã tắt màn hình riêng tư”, cùng màu khi bật/tắt, đổi thường không thêm chữ, chỉ gợi ý khi lỗi; bật thì chặn bàn phím/chuột cục bộ như máy tính; trạng thái hết hạn 5 giây, lệnh quá hạn 15 giây, cách ly phiên |
+| Xác nhận quyền riêng tư lần đầu, rút lại, đọc ngoại tuyến | Trước đồng ý không yêu cầu mạng danh tính/thông báo/trực tuyến/phiên bản; rút lại kết thúc phiên và xóa xem trước |
+| Danh tính mã hóa, tùy chọn nhớ mật khẩu truy cập | Asset Store hệ thống, đọc sau mở khóa thiết bị đầu tiên, cấm đồng bộ thiết bị; Preferences thường không lưu mật khẩu |
+| Kết nối gần đây, xóa, trực tuyến | 20 máy gần nhất, ưu tiên trực tuyến, đăng ký tín hiệu thật, làm mới 30 giây/hết hạn 60 giây; xóa đồng thời mật khẩu/xem trước |
+| H.264 / AV1 | Giải mã phần cứng hệ thống; thiếu khả năng, lỗi cấu hình/chạy thì giữ định dạng thương lượng và về OpenH264 / dav1d; hiển thị NV12 GLES |
+| Âm thanh từ xa, tắt tiếng | OHAudio đơn kênh 48 kHz, tắt tiếng đồng bộ menu/PiP |
+| Chuột tương đối/tuyệt đối, chạm | Nhấn, kéo tuyệt đối, giữ nhấn phải, thu phóng tiêu điểm 1–10 lần, hai ngón di chuyển khi phóng, lăn hai ngón khi 1 lần |
+| Bàn phím/chuột ngoài | Ánh xạ phím vật lý, chuột di chuyển/nút/lăn; mất tiêu điểm, nền, ngắt, chuyển màn hình nhả nhập |
+| Điều khiển nổi | Bóng thương hiệu kéo được, menu ba cột (bốn khi ngang thấp), bàn phím ASCII/máy tính kéo được, tổ hợp phím đầy đủ, chuột ảo 140×48 |
+| Thiết lập video | Thấp/trung bình/cao, 30/60 fps, FPS/chất lượng/cân bằng; thương lượng khả năng, số yêu cầu, bỏ ACK cũ, từ chối quay lại, quá hạn 5 giây |
+| Chẩn đoán mạng | Lưu lượng video/âm thanh/dữ liệu/tổng, tốc độ hai chiều, mất gói, FPS/kích thước gửi thực, trễ hình, RTT mượt, P2P/TURN, SRTP; hết hạn 3 giây |
+| Nhiều màn hình, Ctrl+Alt+Del | Chuyển theo danh sách từ xa; chỉ gửi SAS khi dịch vụ Windows từ xa báo khả dụng |
+| Bảng nhớ tạm | Chủ động gửi (tối đa 128 KB), dán từ xa, sao chép thủ công văn bản nhận; thoát xóa văn bản bộ nhớ |
+| Truyền tệp hai chiều | Chọn/xuất tệp hệ thống, tiến độ, chia khối/ACK đáng tin, phủ thứ tự đảo, dọn lỗi/quá hạn; dùng thẳng engine tệp Android chung |
+| PiP hệ thống, duy trì nền | VIDEO_LIVE PiP với tắt tiếng, tác vụ truyền dữ liệu nền/thông báo dự phòng; chặn PiP trong chọn tệp, hệ thống từ chối nền thì kết thúc phiên |
+| Thông báo | Tóm tắt 200/trang, nội dung 20/trang, đã đọc/xóa/sửa, phân trang, làm mới, quá hạn 12 giây, cách ly danh tính/máy chủ, lọc trả lời trễ |
+| Gợi ý phiên bản | Mỗi phiên kiểm phiên bản từ xa; cập nhật máy này dùng `harmony-arm64`, thiếu mục phát hành thì báo rõ không có thông tin bản HarmonyOS |
+| Xem trước từ xa | Mặc định tắt, xác nhận riêng, từ kết nối sau mỗi phiên một ảnh 640×360, đệm riêng, không tải lên; tắt/rút lại xóa, tác vụ bất đồng bộ không khôi phục nội dung đã rút |
+| Giới thiệu và tuân thủ nguồn mở | Phiên bản gói thực, giấy phép/danh sách thành phần ngoại tuyến, xác minh SHA-256 tài liệu, phiên bản nguồn/hướng dẫn biên dịch |
+| Bố trí điện thoại/máy tính bảng | Ngưỡng hai cột 900 vp, gần đây 1–4 cột, thân tối đa 1200/720 vp, trang chủ điện thoại dọc, phiên/máy tính bảng tự xoay, chuyển trang/tùy chọn 200 ms |
 
-平台 API 有差异：鸿蒙使用 Asset Store、OHAudio、ArkUI PiP 和后台任务，Android 使用 Keystore、AAudio、Android PiP 和前台服务。系统保留快捷键、后台策略、硬件解码能力受具体设备约束。
+API khác nhau: HarmonyOS dùng Asset Store, OHAudio, ArkUI PiP và tác vụ nền, Android dùng Keystore, AAudio, Android PiP và dịch vụ tiền cảnh. Phím hệ thống dành riêng, chính sách nền, khả năng giải mã phần cứng tùy thiết bị.
 
-## 移动界面
+## Giao diện di động
 
-移动端滚动容器显式隐藏叠加式滚动条，包括首页内外层、设置与公告、长文档、弹窗、远控菜单、虚拟键盘及剪贴板文本框；保留原有触摸和滚轮滚动，避免滑块覆盖文字、按钮或按键。新增滚动区域应沿用这一设置。
+Vùng cuộn di động tường minh ẩn thanh cuộn phủ, gồm lớp trong/ngoài trang chủ, thiết lập/thông báo, tài liệu dài, hộp thoại, menu điều khiển, bàn phím ảo, ô bảng nhớ tạm; giữ chạm/lăn cũ, tránh thanh trượt che chữ/nút/phím. Vùng cuộn mới nên theo thiết lập này.
 
-首页、设置、弹窗和远控菜单以 Android `MobileUi` 为视觉基准：统一灰白底色、蓝色主操作、文字层级、线条图标、圆角与阴影。首页提供连接卡片、最近设备卡片及居中空态，宽屏采用固定宽度连接栏与自适应设备列表；设置使用分组卡片、分段选择器和内联服务器配置，隐私、关于、公告及许可页面沿用相同导航与列表样式。
+Trang chủ, thiết lập, hộp thoại, menu điều khiển lấy Android `MobileUi` làm chuẩn: nền xám trắng, hành động chính xanh, phân cấp chữ, biểu tượng nét, bo góc/bóng thống nhất. Trang chủ có thẻ kết nối, thiết bị gần đây, rỗng căn giữa; rộng dùng cột kết nối rộng cố định/danh sách thích ứng; thiết lập dùng thẻ nhóm, chọn phân đoạn, máy chủ nội tuyến; quyền riêng tư, giới thiệu, thông báo, giấy phép cùng điều hướng/danh sách.
 
-访问密码在手机上以底部面板显示，在平板上居中显示；输入法弹出时缩小可用区域，保留密码、保存开关和连接按钮，较小窗口可滚动。隐私政策面板保持标题与授权操作可见，正文独立滚动。删除、撤回、清除和断开操作使用统一确认框。远控菜单提供图标网格、画面设置、对齐的网络统计、品牌悬浮球以及可拖动键盘和鼠标；菜单和键盘按可用窗口尺寸限制位置。
+Mật khẩu truy cập hiện bảng dưới ở điện thoại, giữa ở máy tính bảng; bàn phím nhập bật thì thu vùng dùng, giữ mật khẩu/công tắc lưu/nút kết nối, cửa sổ nhỏ cuộn được. Bảng chính sách giữ tiêu đề/hành động cấp quyền thấy, nội dung cuộn riêng. Xóa, rút lại, dọn, ngắt dùng hộp xác nhận thống nhất. Menu điều khiển có lưới biểu tượng, thiết lập hình, thống kê mạng căn chỉnh, bóng thương hiệu, bàn phím/chuột kéo; giới hạn vị trí menu/bàn phím theo cửa sổ.
 
-此次 UI 检查在 API 26 手机和平板模拟器中使用独立包名、无联网权限的离线状态预览，检查了首页、设置、确认取消、密码显隐与输入法避让、弹窗及远控面板。预览中的设备、传输状态和屏幕尺寸为测试数据，不作为网络互通验收依据。图标与鼠标指针按显示密度绘制，避免 SVG 路径的像素坐标在高密度屏幕上缩小。
+Kiểm tra UI đợt này dùng bản xem trước trạng thái ngoại tuyến tên gói riêng, không quyền mạng trên giả lập điện thoại/máy tính bảng API 26: trang chủ, thiết lập, xác nhận/hủy, hiện/ẩn mật khẩu/tránh bàn phím nhập, hộp thoại, bảng điều khiển. Thiết bị/truyền tải/kích thước trong xem trước là dữ liệu thử, không cơ sở nghiệm thu mạng. Biểu tượng/con trỏ vẽ theo mật độ, tránh tọa độ pixel SVG thu nhỏ trên màn hình mật độ cao.
 
-## 自动化验证
+## Kiểm chứng tự động
 
-`tests/run.py --mobile` 运行生产 ArkTS 模型、控制器和平台生命周期代码的测试，包含隐私前置、身份/密码调用、重复/跨会话回调、重连后台任务串行化、PiP 去重及静音、文件选择器保护、双指/虚拟鼠标独立按键、画质应答乱序与序号回绕、统计失效、在线状态与公告完整分页。
+`tests/run.py --mobile` chạy kiểm thử mô hình ArkTS, bộ điều khiển, vòng đời nền tảng sản xuất: quyền riêng tư trước, gọi danh tính/mật khẩu, callback lặp/xuyên phiên, tuần tự tác vụ nền kết nối lại, PiP loại trùng/tắt tiếng, bảo vệ chọn tệp, nút độc lập hai ngón/chuột ảo, trả lời chất lượng đảo/số vòng lại, thống kê hết hạn, trực tuyến/thông báo phân trang đầy đủ.
 
-同时运行 Android 原生协议及视频管线回归测试、共享文件传输测试、鸿蒙输入/采集适配与公共 wire 测试。共享代码位于 `libs/controller/include`；Android 旧头文件保留兼容导出，避免两平台协议漂移。
+Cũng chạy hồi quy giao thức gốc/ống video Android, truyền tệp chung, đầu vào/ghi màn hình HarmonyOS và wire chung. Mã chung tại `libs/controller/include`; header Android cũ giữ xuất tương thích để tránh lệch giao thức hai nền tảng.
 
-`tests/verify_hap.py --mobile <hap>` 校验 phone/tablet 设备类型、最小权限、后台模式、编译后的 ArkTS、ARM64 原生库依赖及许可证资料。构建脚本自动执行该检查。
+`tests/verify_hap.py --mobile <hap>` kiểm loại phone/tablet, quyền tối thiểu, chế độ nền, ArkTS biên dịch, phụ thuộc thư viện ARM64, tài liệu giấy phép. Script biên dịch tự chạy.
 
-## 设备验收
+## Nghiệm thu thiết bị
 
-### 确认实际解码器
+### Xác nhận bộ giải mã thực
 
-解码诊断通过 HiLog 标签 `CrossDeskDecoder` 输出，不受 MiniRTC 通用日志关闭的影响。在 DevEco 的 HiLog 中按此标签过滤，或运行 `hdc shell hilog -x -T CrossDeskDecoder`。`Decode request` 记录当前格式的硬解能力，`Decoder selected` 记录选中的实现和软解回退原因；应以 `First decoded frame` 的 `mode` 和 `name` 确认实际成功工作的解码器，而不能只看硬件加速配置或初始化结果。会话结束的 `Decode summary` 分别统计硬解和软解成功帧数，也能识别中途回退。日志仅记录格式、解码器、尺寸、错误阶段及帧数，不输出连接凭据或视频内容。
+Chẩn đoán giải mã xuất qua thẻ HiLog `CrossDeskDecoder`, không bị tắt nhật ký chung MiniRTC ảnh hưởng. Lọc thẻ trong HiLog DevEco hoặc chạy `hdc shell hilog -x -T CrossDeskDecoder`. `Decode request` ghi khả năng phần cứng định dạng hiện tại, `Decoder selected` ghi triển khai chọn/lý do về phần mềm; nên xác nhận bộ thực chạy thành công bằng `mode`, `name` của `First decoded frame`, không chỉ cấu hình tăng tốc/kết quả khởi tạo. `Decode summary` cuối phiên đếm riêng khung thành công phần cứng/phần mềm, nhận biết quay về giữa chừng. Chỉ ghi định dạng, bộ giải mã, kích thước, giai đoạn lỗi, số khung, không xác thực hay nội dung video.
 
-2026-10-15 在 API 26 ARM64 Mate 90 Pro 模拟器实测：H.264 3840×2160 远控会话使用 OpenH264，成功软解 2722 帧、硬解 0 帧；AV1 640×360 合成视频使用 Dav1dAv1，成功软解 1203 帧、硬解 0 帧。两者均为 `hardware_available=0`，回退原因 `no hardware capability`。这只证明当前模拟器的解码路径，不代表真机硬解能力。
+Đo giả lập Mate 90 Pro API 26 ARM64 ngày 2026-10-15: phiên H.264 3840×2160 dùng OpenH264, phần mềm 2722 khung thành công, phần cứng 0; AV1 tổng hợp 640×360 dùng Dav1dAv1, phần mềm 1203, phần cứng 0. Cả hai `hardware_available=0`, lý do `no hardware capability`. Chỉ chứng minh đường giải mã giả lập hiện tại, không khả năng phần cứng máy thật.
 
-### 已覆盖的功能
+### Tính năng đã bao phủ
 
-已在 API 26 ARM64 手机（Mate 90 Pro）和平板（MatePad Pro 13）模拟器安装运行，验证首次同意、登录、公告同步、设置及双栏布局。在手机上使用同版本 MiniRTC 合成发送端验证 H.264 / AV1 640×360 画面、48 kHz PCM 接收、鼠标与虚拟键盘回传、画质请求/应答、双屏切换、剪贴板、文件接收及系统导出/选择后反向发送的字节一致性、旋转和后台画中画恢复。发现并修复了公开 ID 覆盖完整登录凭据、连接成功回调前的主机信息丢失、返回前台后画中画遮挡文件选择器等问题，并补充回归测试。主机侧测试不能替代真机上的触摸、多指、外接键鼠、音频路由、硬件编解码性能以及长期后台/画中画测试；这些仍应在发布前用 API 20 与当前系统真机验收。
+Đã cài/chạy giả lập điện thoại (Mate 90 Pro), máy tính bảng (MatePad Pro 13) API 26 ARM64, kiểm chứng đồng ý lần đầu, đăng nhập, đồng bộ thông báo, thiết lập/hai cột. Trên điện thoại dùng bên gửi tổng hợp MiniRTC cùng phiên bản kiểm chứng hình H.264 / AV1 640×360, nhận PCM 48 kHz, trả chuột/bàn phím ảo, yêu cầu/trả chất lượng, chuyển hai màn hình, bảng nhớ tạm, nhận tệp và xuất/chọn hệ thống rồi gửi ngược khớp byte, xoay/khôi phục PiP nền. Đã phát hiện/sửa ID công khai ghi đè xác thực đăng nhập đủ, mất thông tin máy trước callback thành công, PiP che bộ chọn tệp sau về tiền cảnh; bổ sung hồi quy. Kiểm thử phía máy chủ không thay chạm/đa ngón, phím chuột ngoài, tuyến âm thanh, hiệu năng codec phần cứng, nền/PiP dài hạn trên máy thật; vẫn nên nghiệm thu máy thật API 20 và hệ thống hiện tại trước phát hành.
 
-可使用 `tests/mobile_synthetic_host.cpp` 作为互通测试发送端：它只生成测试色条、静音 PCM、虚拟显示器和小文件，不采集本机屏幕或输入。运行参数为 `<server> <port> [av1]`，测试身份写入工作目录 `fixture-login`，运行状态写入 `fixture-status`，15 分钟自动结束。使用独立私有测试目录，测试后删除身份、日志和接收文件。鸿蒙 fixture 可用 `tests/build_mobile_fixture.py` 编译；受限模拟器 shell 可能不能加载系统媒体库，可在开发机链接 MiniRTC 运行同一源文件。
+Có thể dùng `tests/mobile_synthetic_host.cpp` làm bên gửi thử tương tác: chỉ sinh sọc màu, PCM im lặng, màn hình ảo, tệp nhỏ, không ghi màn hình/nhập máy này. Tham số `<server> <port> [av1]`, danh tính ghi `fixture-login` trong thư mục làm việc, trạng thái ghi `fixture-status`, tự kết thúc sau 15 phút. Dùng thư mục thử riêng tư độc lập, xóa danh tính/nhật ký/tệp nhận sau thử. Fixture HarmonyOS biên dịch bằng `tests/build_mobile_fixture.py`; shell giả lập hạn chế có thể không tải được thư viện hệ thống, có thể liên kết MiniRTC trên máy phát triển chạy cùng nguồn.

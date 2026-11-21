@@ -1,150 +1,150 @@
 # CrossDesk Android
 
-[下载安装](../../README.md#android) · [使用指南](../../docs/USER_GUIDE.md#android) · [源码构建](#构建) · [签名与发布](#release-签名)
+[Tải và cài đặt](../../README.md#android) · [Hướng dẫn sử dụng](../../docs/USER_GUIDE.md#android) · [Biên dịch nguồn](#biên-dịch) · [Ký và phát hành](#ký-release)
 
-原生 Android 控制端，使用 Java 界面、JNI 和 MiniRTC，与桌面端使用相同的信令、ICE、SRTP 和输入协议。没有 WebView。支持 Android 8.0（API 26）及以上的 arm64 手机和平板。桌面、Android、iOS 和 HarmonyOS 共用客户端发布版本，各移动平台构建号独立；可在仓库根目录执行 `python3 scripts/version.py show client` 查看，使用 `set client <版本>` 同步修改，详见[组件版本管理](../../docs/VERSIONING.md)。
+Đây là ứng dụng điều khiển Android gốc, sử dụng giao diện Java, JNI và MiniRTC, cùng giao thức tín hiệu, ICE, SRTP và nhập liệu với bản máy tính; không sử dụng WebView. Ứng dụng hỗ trợ điện thoại và máy tính bảng arm64 chạy Android 8.0 (API 26) trở lên. Máy tính, Android, iOS và HarmonyOS dùng chung phiên bản phát hành ứng dụng, nhưng số bản dựng di động độc lập theo từng nền tảng. Chạy `python3 scripts/version.py show client` tại gốc kho để xem hoặc `set client <phiên-bản>` để sửa đồng bộ; xem [quản lý phiên bản thành phần](../../docs/VERSIONING.md).
 
-## 安装与连接
+## Cài đặt và kết nối
 
-从 [官网](https://www.crossdesk.cn/) 或 [GitHub Releases](https://github.com/kunkundi/crossdesk/releases) 下载已签名 APK。打开应用并完成联网授权后，输入电脑端的 9 位 ID 和密码。构建自己的安装包时，按下方的工具链、构建和签名步骤操作。
+Bạn có thể tải APK đã ký từ [trang chủ](https://www.crossdesk.cn/) hoặc [GitHub Releases](https://github.com/kunkundi/crossdesk/releases). Sau khi mở ứng dụng và cấp quyền truy cập mạng, nhập ID 9 chữ số và mật khẩu của máy tính. Nếu tự tạo gói cài đặt, hãy làm theo các bước chuẩn bị bộ công cụ, biên dịch và ký bên dưới.
 
-## 可信设备鉴权
+## Xác thực thiết bị đáng tin cậy
 
-“设置 → 本机配对信息 → 查看指纹”可查看本机指纹并复制配对信息。将信息粘贴到被控电脑的“管理可信设备 → 添加可信设备”，核对指纹后添加，即可连接开启“仅允许可信设备控制”的电脑；连接密码仍需验证。
+“Cài đặt → Thông tin ghép đôi máy này → Xem dấu vân tay” cho phép xem dấu vân tay của máy này và sao chép thông tin ghép đôi. Dán thông tin đó vào “Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy” trên máy được điều khiển, đối chiếu dấu vân tay rồi thêm thiết bị. Sau đó bạn có thể kết nối máy đã bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”; mật khẩu kết nối vẫn cần được xác minh.
 
-移动端使用共享 Ed25519 挑战响应协议。私钥通过 Android Keystore / AES-GCM 加密后保存在应用私有持久存储，不写入缓存、日志或配对信息。重启、清理缓存、更换服务器和本机登录 ID 不改变公钥；已有密钥损坏、无法读取或丢失时停止初始化并提示错误，不自动换钥。清除应用数据或卸载后重新安装，需要重新配对。
+Ứng dụng di động dùng giao thức thách thức–đáp ứng Ed25519 chung. Khóa riêng được mã hóa bằng Android Keystore / AES-GCM và lưu bền vững trong vùng riêng của ứng dụng, không ghi vào bộ nhớ đệm, nhật ký hay thông tin ghép đôi. Khởi động lại, xóa bộ nhớ đệm hoặc đổi máy chủ/ID đăng nhập không làm đổi khóa công khai. Nếu khóa hiện có bị hỏng, không đọc được hoặc bị mất, quá trình khởi tạo sẽ dừng và báo lỗi, không tự thay khóa. Xóa dữ liệu hoặc gỡ rồi cài lại ứng dụng thì cần ghép đôi lại.
 
-## 当前功能
+## Tính năng hiện tại
 
-- 官方或自托管 WSS 信令服务器；授权后进入前台即自动注册或登录本机身份，首页实时显示连接、重连及失败状态。发起桌面连接时复用该身份；切换服务器会重新登录，撤回授权会关闭连接。已有远程会话优先通过系统画中画保持连接，画中画不可用时由带连接通知的前台服务兜底；首页空闲信令在后台关闭。
-- 优先使用 MediaCodec 硬件解码 H.264 / AV1，硬件缓冲区直接提交 Surface；设备无对应硬件、分辨率超限或运行失败时，按原编码格式回退到 OpenH264 / dav1d。软件输出由独立显示线程将 NV12 转 RGBA；只保留最新待显示帧。MiniRTC 原有的通用压缩帧解码队列保持不变。
-- 48 kHz 单声道 PCM 播放，支持静音，音频队列有容量限制。
-- 相对鼠标（触控板）和绝对位置模式；单指点击、绝对模式按住拖动、长按右键，以及外接键盘、鼠标。画面手势与 iOS 一致：双指可在整个触控区域（包括画面外黑边）捏合，以触点为中心缩放（1–10 倍），放大后双指拖动画面，原始比例下双指上下滑动控制滚轮。相对鼠标移到可见画面的上、下边缘后继续向外移动，会反向上下平移画面，不触发左右平移；未放大时和按住虚拟鼠标键拖动时同样生效，停止移动即停止平移，抬手保留位置。移动到极限时，画面可见部分至少占当前显示区域高度的 20%，与缩放倍数无关；整幅画面高度不足该比例时完整保留，范围计入上下黑边；缩放结束及缩回 1 倍时保留平移位置，仅在超过可见边界时限制位置；切换显示器恢复居中。
-- 横竖屏等比例显示、远端多显示器切换。与 iOS 一致的画面质量（低/中/高）、采集帧率（30/60 fps）、画面偏好；支持能力检测、电脑端确认、失败/5 秒超时回退及连续操作的应答排序。
-- “设置 → 屏幕方向 → 连接建立后锁定横屏”默认关闭并保存在本机。开启后，手机连接时进入并保持横屏；关闭时跟随设备方向。平板和多窗口不受此选项影响。退出会话恢复首页方向，返回后台会话沿用该会话的方向设置。已移除检测手机姿态后解除初始横屏的逻辑。
-- 根据常见移动设备解码能力和屏幕尺寸设置起始参数：显示长边不超过 1280 像素时默认低画质（最高 720p）/30 fps，其余默认中画质（最高 1080p）/30 fps。用户保存的画面偏好不变，仍可手动选择高画质或 60 fps。
-- 网络状态按视频、音频、数据、合计展示收发速率和丢包率，并显示实际提交帧率、分辨率、画面延时、平滑 RTT、P2P/TURN 和实际 SRTP 状态。每秒刷新，过期或无效测量显示“—”。
-- 可拖动的悬浮控制球、三列控制菜单；默认使用系统输入法，保留候选词、纠错和听写，确认文字后直接输入远端。电脑键盘固定底部，分“字母数字 / 符号功能”两页，共用末两行布局，按系统键盘高度适配横竖屏；统一切换、收起按钮和 Android 键盘触感反馈。
-- 悬浮菜单中的“虚拟鼠标”展开 140 × 48 dp 横向左键／滚轮／右键条，跟随悬浮球移动，可随时收起，不压缩远程画面。按住左键或右键后，同一根手指拖动即可拖拽，滑出按键范围仍继续，松开结束；也支持另一指在画面上移动光标。采用无文字的扁平分体按键，中间滚轮外观为 18 × 30 dp，三键均保留 44 × 44 dp 触控范围，通过留白分隔。无阴影、凹凸或按压位移，按压仅变色。等色横条随手指上下循环移动，松手停止；上下滑动可超出按键范围，在画面放大后仍控制远端滚动。切换模式、显示器、进入后台或取消触摸会释放按键。状态菜单按内容高度完整展开，只有安全区域空间不足时才滚动。
-- 悬浮菜单提供“隐私屏”直接开关，无需进入详情页；按钮按电脑确认的状态显示“隐私屏已开启”或“隐私屏已关闭”，开启与关闭使用相同配色，正常切换不显示额外文字，仅在异常时显示提示。开启时与桌面端一致屏蔽电脑本地键鼠；声明控制能力后可使用电脑的连接时自动开启设置。状态超过 5 秒未更新时停止显示成功，指令 15 秒未确认时提示超时；后台保活与画中画恢复沿用同一会话状态。
-- 悬浮控制栏支持选择并发送文件、接收电脑端文件、查看确认进度及保存收到的文件；Ctrl+Alt+Del 使用远端 Windows 系统服务，未启用服务时显示提示。
-- 设备身份与选择保存的连接密码使用 Android Keystore / AES-GCM 加密；首次联网需同意。远程会话在切换应用时自动使用系统画中画，不可用时自动使用通知保活。
-- 与 iOS 一致的首页卡片、顶部状态/公告/设置入口、密码弹层及分组设置页；最近连接按服务器隔离，长按可删除记录及密码。
-- 平板首页支持横竖屏和分屏，按当前可用宽度自动适配：900 dp 起连接与最近连接并排，较窄窗口纵向排列；最近连接随宽度显示 1–4 列，手机常规宽度仍为两列。首页最大宽度为 1200 dp，设置、公告及阅读页最大宽度为 720 dp，宽窗口中的密码和隐私弹窗居中限宽。旋转或调整分屏直接重排现有页面，保留输入、设置编辑和当前会话；手机全屏首页保持竖屏。
-- 页面转场沿用 iOS 的交互方式：设置、隐私、关于及公告页面进入时从右滑入，返回时反向滑出，背景页面轻微跟随；进入和退出远程会话使用 0.2 秒淡入淡出。遵循 Android 系统动画开关及速度设置。
-- 设置页的鼠标控制、画面偏好，以及悬浮控制栏的画质、帧率和画面偏好使用 0.2 秒的选中底块滑动动画；连续点击从当前位置转向，电脑端拒绝或超时后平滑回退，系统关闭动画时直接切换。
-- 通知公告与 iOS 共用信令协议，支持未读角标、分页、下拉刷新、更新推送、详情和网页链接；已读及删除状态按服务器、本机身份和公告版本保存在本机。
-- 连接建立并收到对端信息后，按 iOS 相同的版本号及补丁规则检查桌面端版本；旧版本弹出“升级提示”，点击“知道了”继续控制。每次连接最多检查、提醒一次；缺失或无效版本按旧版提醒，检查失败不打断连接。仅获取公共 HTTPS 版本元数据，不上传对端身份或版本；未授权不请求，断开及进入后台取消检查并忽略过期回复。
-- 可选保存远程画面预览：默认关闭，经确认开启后，从下一次连接起保存一张 640×360 预览，用于最近连接卡片。支持清除预览，关闭选项或撤回授权会清除已有图片。
-- “关于 CrossDesk”对齐 iOS 的版本、软件许可、开源组件及源码与构建说明页面，包含 OpenFEC 告知、组件详情和可离线选择复制的完整许可；版本号读取当前 APK，构建时记录应用与 MiniRTC 的基础版本。
+- Hỗ trợ máy chủ tín hiệu WSS chính thức hoặc tự triển khai. Sau khi được cấp quyền, ứng dụng tự đăng ký/đăng nhập danh tính máy này khi vào tiền cảnh; trang chủ hiển thị trực tiếp trạng thái kết nối, kết nối lại hoặc lỗi. Khi kết nối máy tính, ứng dụng dùng lại danh tính đó; đổi máy chủ sẽ đăng nhập lại, rút quyền sẽ đóng kết nối. Phiên từ xa đã có ưu tiên duy trì qua PiP hệ thống; khi không có PiP, dịch vụ tiền cảnh kèm thông báo kết nối được dùng làm dự phòng. Kết nối tín hiệu rảnh của trang chủ sẽ đóng khi vào nền.
+- Ưu tiên giải mã H.264 / AV1 bằng phần cứng MediaCodec và gửi đệm phần cứng thẳng tới Surface. Nếu thiết bị thiếu khả năng phần cứng, vượt độ phân giải hoặc gặp lỗi khi chạy, ứng dụng chuyển về OpenH264 / dav1d với cùng định dạng mã hóa. Luồng hiển thị riêng chuyển đầu ra NV12 phần mềm sang RGBA và chỉ giữ khung chờ mới nhất. Hàng đợi giải mã khung nén chung trước đây của MiniRTC không thay đổi.
+- Phát PCM đơn kênh 48 kHz, hỗ trợ tắt tiếng và giới hạn dung lượng hàng đợi âm thanh.
+- Hỗ trợ chuột tương đối (bàn di chuột), định vị tuyệt đối, nhấn một ngón, nhấn giữ để kéo ở chế độ tuyệt đối, nhấn giữ để nhấp phải và bàn phím/chuột ngoài. Cử chỉ giống iOS: chụm hai ngón trên toàn vùng chạm, kể cả viền đen ngoài ảnh, để thu phóng quanh điểm chạm (1–10 lần); sau khi phóng, kéo hai ngón để di chuyển ảnh; ở tỷ lệ gốc, vuốt dọc hai ngón điều khiển con lăn. Khi chuột tương đối chạm mép trên/dưới của phần ảnh đang thấy rồi tiếp tục di ra ngoài, ảnh di chuyển dọc theo hướng ngược lại, không di ngang. Cơ chế này cũng hoạt động khi chưa phóng và khi giữ nút chuột ảo để kéo; ngừng di ngón tay thì ảnh dừng, nhấc tay giữ nguyên vị trí. Ở giới hạn, phần ảnh còn thấy chiếm ít nhất 20% chiều cao vùng hiển thị hiện tại, độc lập với tỷ lệ phóng; nếu ảnh thấp hơn mức đó thì giữ toàn bộ ảnh. Phạm vi tính cả viền đen trên/dưới. Khi kết thúc phóng hoặc về 1 lần, vị trí được giữ nguyên, chỉ giới hạn nếu vượt biên hiển thị; chuyển màn hình sẽ căn giữa lại.
+- Hiển thị giữ đúng tỷ lệ ngang/dọc và hỗ trợ chuyển giữa nhiều màn hình từ xa. Chất lượng (thấp/trung bình/cao), tốc độ ghi hình (30/60 fps) và tùy chọn hình ảnh giống iOS: có dò khả năng, xác nhận từ máy tính, quay lại khi lỗi hoặc quá hạn 5 giây và xử lý thứ tự phản hồi khi thao tác liên tiếp.
+- “Cài đặt → Hướng màn hình → Khóa hướng ngang sau khi kết nối” mặc định tắt và được lưu trên máy. Khi bật, điện thoại chuyển sang và giữ hướng ngang sau khi kết nối; khi tắt, ứng dụng theo hướng thiết bị. Máy tính bảng và chế độ đa cửa sổ không chịu ảnh hưởng. Thoát phiên sẽ khôi phục hướng trang chủ; quay lại phiên nền sẽ dùng hướng của phiên đó. Logic phát hiện tư thế điện thoại rồi bỏ khóa ngang ban đầu đã được loại bỏ.
+- Tham số ban đầu dựa trên khả năng giải mã và kích thước màn hình thường gặp của thiết bị di động: cạnh dài màn hình không quá 1280 pixel mặc định dùng chất lượng thấp (tối đa 720p)/30 fps; các trường hợp khác dùng chất lượng trung bình (tối đa 1080p)/30 fps. Tùy chọn hình ảnh người dùng đã lưu không thay đổi; bạn vẫn có thể chọn thủ công chất lượng cao/60 fps.
+- Trạng thái mạng hiển thị tốc độ gửi/nhận và tỷ lệ mất gói riêng cho video, âm thanh, dữ liệu và tổng, cùng tốc độ khung hình thực được gửi để hiển thị, độ phân giải, độ trễ hình ảnh, RTT đã làm mượt, P2P/TURN và trạng thái SRTP thực tế. Dữ liệu làm mới mỗi giây; phép đo hết hạn hoặc không hợp lệ hiển thị “—”.
+- Bóng điều khiển nổi có thể kéo được và menu điều khiển có ba cột. Mặc định ứng dụng dùng bộ gõ hệ thống, giữ gợi ý từ, tự sửa và đọc chính tả; văn bản đã xác nhận được nhập trực tiếp vào máy từ xa. Bàn phím máy tính cố định ở dưới, gồm hai trang “Chữ cái và chữ số / Ký hiệu và phím chức năng”, dùng chung bố cục hai dòng cuối và thích ứng ngang/dọc theo chiều cao bàn phím hệ thống. Nút chuyển, thu gọn và phản hồi xúc giác bàn phím Android được thống nhất.
+- “Chuột ảo” trong menu nổi mở thanh ngang nút trái／con lăn／nút phải 140 × 48 dp. Thanh đi theo bóng điều khiển, có thể thu bất cứ lúc nào và không ép nhỏ ảnh từ xa. Giữ nút trái hoặc phải rồi kéo cùng ngón tay để kéo thả; ra ngoài phạm vi nút vẫn tiếp tục, nhả tay thì kết thúc. Bạn cũng có thể dùng ngón khác di chuyển con trỏ trên ảnh. Các nút tách rời, phẳng và không chữ; con lăn giữa có hình thức 18 × 30 dp, cả ba nút vẫn giữ vùng chạm 44 × 44 dp và được ngăn bằng khoảng trống. Không có bóng, hiệu ứng nổi/lõm hoặc dịch chuyển khi nhấn; chỉ màu sắc thay đổi. Vạch ngang đồng màu chuyển động lặp theo ngón tay lên/xuống và dừng khi nhả. Bạn có thể vuốt dọc vượt phạm vi nút và vẫn điều khiển cuộn từ xa sau khi phóng ảnh. Đổi chế độ, đổi màn hình, vào nền hoặc hủy chạm đều nhả nút. Menu trạng thái bung đủ chiều cao nội dung, chỉ cuộn khi vùng an toàn không đủ chỗ.
+- Menu nổi có công tắc “Màn hình riêng tư” trực tiếp, không cần mở trang chi tiết. Nút hiển thị “Đã bật màn hình riêng tư” hoặc “Đã tắt màn hình riêng tư” theo trạng thái máy tính xác nhận, dùng cùng màu cho bật và tắt. Chuyển đổi bình thường không thêm thông báo chữ, chỉ báo khi có bất thường. Khi bật, chuột/phím cục bộ trên máy tính bị chặn như ở bản máy tính. Sau khi khai báo khả năng điều khiển, ứng dụng có thể dùng thiết lập tự bật khi kết nối của máy tính. Quá 5 giây không cập nhật thì không còn hiển thị thành công; lệnh chưa được xác nhận sau 15 giây sẽ báo quá hạn. Duy trì nền và phục hồi PiP dùng cùng trạng thái phiên.
+- Thanh điều khiển nổi hỗ trợ chọn/gửi tệp, nhận tệp từ máy tính, xem tiến độ đã xác nhận và lưu tệp nhận được. Ctrl+Alt+Del dùng dịch vụ hệ thống Windows từ xa; nếu dịch vụ chưa bật, ứng dụng sẽ hiển thị gợi ý.
+- Danh tính thiết bị và mật khẩu kết nối được chọn lưu đều mã hóa bằng Android Keystore / AES-GCM; lần đầu truy cập mạng cần có sự đồng ý. Khi đổi ứng dụng trong phiên từ xa, ứng dụng tự dùng PiP hệ thống; nếu không khả dụng thì tự duy trì kết nối bằng thông báo.
+- Thẻ trang chủ, các mục trạng thái/thông báo/cài đặt ở trên, bảng mật khẩu và trang cài đặt theo nhóm giống iOS. Kết nối gần đây được tách theo máy chủ; nhấn giữ để xóa bản ghi và mật khẩu.
+- Trang chủ máy tính bảng hỗ trợ ngang/dọc và chia màn hình, tự thích ứng chiều rộng khả dụng: từ 900 dp, phần kết nối và gần đây nằm cạnh nhau; cửa sổ hẹp hơn thì xếp dọc. Danh sách gần đây có 1–4 cột theo chiều rộng, còn điện thoại ở chiều rộng thông thường vẫn hai cột. Trang chủ rộng tối đa 1200 dp; cài đặt, thông báo và trang đọc tối đa 720 dp. Trong cửa sổ rộng, hộp mật khẩu và quyền riêng tư được căn giữa, giới hạn chiều rộng. Xoay hoặc chỉnh chia màn hình chỉ bố trí lại trang hiện có, giữ nội dung nhập, phần cài đặt đang sửa và phiên hiện tại; trang chủ điện thoại toàn màn hình vẫn giữ hướng dọc.
+- Chuyển trang theo cách tương tác của iOS: cài đặt, quyền riêng tư, giới thiệu và thông báo trượt vào từ phải, quay lại trượt ngược và trang nền đi theo nhẹ. Vào/thoát phiên từ xa dùng hiệu ứng mờ dần 0.2 giây, tuân theo công tắc và tốc độ hoạt ảnh của Android.
+- Điều khiển chuột và tùy chọn hình ảnh trong cài đặt, cùng chất lượng, tốc độ khung hình và tùy chọn hình ảnh trên thanh nổi, dùng nền lựa chọn trượt trong 0.2 giây. Nhấn liên tiếp sẽ đổi hướng từ vị trí hiện tại; máy tính từ chối hoặc quá hạn thì trượt về mượt mà; hệ thống tắt hoạt ảnh thì chuyển ngay.
+- Thông báo dùng chung giao thức tín hiệu với iOS, hỗ trợ huy hiệu chưa đọc, phân trang, kéo làm mới, cập nhật đẩy, chi tiết và liên kết web. Trạng thái đã đọc/xóa lưu trên máy theo máy chủ, danh tính máy này và phiên bản thông báo.
+- Sau khi kết nối và nhận thông tin đối tác, ứng dụng kiểm phiên bản máy tính theo cùng quy tắc phiên bản/bản vá của iOS. Bản cũ hiện “Khuyến nghị cập nhật”; nhấn “Đã hiểu” để tiếp tục điều khiển. Mỗi kết nối chỉ kiểm/nhắc tối đa một lần; phiên bản thiếu hoặc không hợp lệ được nhắc như bản cũ, lỗi kiểm tra không làm gián đoạn kết nối. Chỉ lấy siêu dữ liệu phiên bản HTTPS công khai, không tải lên danh tính hay phiên bản đối tác. Chưa cấp quyền thì không yêu cầu; ngắt hoặc vào nền thì hủy kiểm tra và bỏ phản hồi hết hạn.
+- Có tùy chọn lưu ảnh xem trước từ xa, mặc định tắt. Sau khi xác nhận bật, từ kết nối tiếp theo ứng dụng lưu một ảnh 640×360 cho thẻ kết nối gần đây. Bạn có thể xóa ảnh xem trước; tắt tùy chọn hoặc rút quyền sẽ xóa ảnh đã có.
+- “Giới thiệu CrossDesk” đồng nhất với iOS về trang phiên bản, giấy phép phần mềm, thành phần nguồn mở và nguồn/hướng dẫn biên dịch, gồm thông báo OpenFEC, chi tiết thành phần và toàn văn giấy phép có thể chọn/sao chép ngoại tuyến. Số phiên bản đọc từ APK hiện tại; quá trình biên dịch ghi phiên bản nền của ứng dụng và MiniRTC.
 
-当前不包含安卓被控端或 iOS 全部附加功能。硬件能力取决于设备和编码格式，软件回退时高分辨率或高帧率可能增加功耗；可通过悬浮菜单的画面设置降低画质或采集帧率。暂只构建 `arm64-v8a`，不支持 x86 模拟器或 32 位设备。
+Hiện chưa có chức năng Android được điều khiển hoặc toàn bộ tính năng bổ sung của iOS. Khả năng phần cứng tùy thiết bị và định dạng mã hóa; khi chuyển về phần mềm, độ phân giải hoặc tốc độ khung hình cao có thể tăng điện năng. Bạn có thể giảm chất lượng hoặc tốc độ ghi hình trong menu nổi. Hiện chỉ biên dịch `arm64-v8a`, không hỗ trợ giả lập x86 hoặc thiết bị 32 bit.
 
-## 本机更新提示
+## Gợi ý cập nhật máy này
 
-完成联网授权后，每次启动或从后台返回时检查一次公共版本文件，前台远程连接结束后再检查一次；同时触发时复用正在进行的请求。不进行周期性检查或自动重试，失败时保留已发现的新版本提示，等待下一次触发或手动检查；进入后台或撤回授权时取消请求并忽略过期回复。
+Sau khi được cấp quyền mạng, ứng dụng kiểm tệp phiên bản công khai một lần mỗi khi khởi động hoặc từ nền về, và kiểm lại sau khi kết thúc kết nối từ xa ở tiền cảnh. Các lần kích hoạt đồng thời dùng chung yêu cầu đang chạy. Không kiểm định kỳ hoặc tự thử lại; khi lỗi, ứng dụng giữ thông báo bản mới đã phát hiện và chờ lần kích hoạt sau hoặc kiểm thủ công. Vào nền hoặc rút quyền sẽ hủy yêu cầu và bỏ phản hồi hết hạn.
 
-本机只读取 `downloads.android-arm64`，复用 PC 端的版本号及补丁比较规则；仅构建日期变化不提示升级，平台版本字段缺失按检查失败处理。发现新版本后，首页设置按钮右上角显示红底白色感叹号角标，大小和位置与通知角标一致，设置页“关于”显示“新版本”文字和红点；“关于”展示新版本号、官网更新入口，并提供“检查更新”。该功能独立于被控电脑的版本升级提示。
+Máy này chỉ đọc `downloads.android-arm64`, dùng lại quy tắc so sánh phiên bản/bản vá của PC. Chỉ đổi ngày biên dịch thì không nhắc nâng cấp; thiếu trường phiên bản nền tảng được coi là kiểm tra thất bại. Khi có bản mới, góc trên phải nút cài đặt ở trang chủ hiện huy hiệu chấm than trắng trên nền đỏ, cùng cỡ và vị trí với huy hiệu thông báo. “Giới thiệu” trong cài đặt hiện “Phiên bản mới” và chấm đỏ; trang “Giới thiệu” hiển thị số mới, liên kết cập nhật trên trang chủ và “Kiểm tra cập nhật”. Chức năng này độc lập với lời nhắc nâng cấp máy tính được điều khiển.
 
-## 构建
+## Biên dịch
 
-在 macOS 或 Linux 安装：
+Cài trên macOS hoặc Linux:
 
-- JDK 17 或更新版本（可使用 Android Studio 自带 JBR）。
-- Android SDK Platform 36、Build Tools 36.0.0、NDK `28.2.13676358`。
-- Xmake **3.1.1 或更新版本**、Python 3.9+、Git、CMake 和主机编译工具。
-- Python 的 setuptools、wheel，用于构建依赖的宿主工具。
+- JDK 17 trở lên (có thể dùng JBR kèm Android Studio).
+- Android SDK Platform 36, Build Tools 36.0.0, NDK `28.2.13676358`.
+- Xmake **3.1.1 trở lên**, Python 3.9+, Git, CMake và công cụ biên dịch máy chủ.
+- setuptools, wheel Python để biên dịch công cụ máy chủ của phụ thuộc.
 
-先在仓库根目录初始化子模块：
+Khởi tạo submodule tại gốc kho trước:
 
 ```sh
 git submodule update --init --recursive
 ```
 
-macOS 命令行示例：
+Ví dụ dòng lệnh macOS:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-# 使用 PATH 中的 Xmake（最低 3.1.1），或通过 XMAKE_BIN 指定其他可执行文件。
+# Dùng Xmake trong PATH (tối thiểu 3.1.1), hoặc chỉ định tệp khác qua XMAKE_BIN.
 cd apps/android
 ./gradlew :app:assembleDebug
 ```
 
-也可用 Android Studio 打开 `apps/android`。在 SDK Manager 安装上述版本；SDK 位置可由 IDE 写入被忽略的 `local.properties`。Xmake 不在 IDE 的 PATH 中时，启动 IDE 前设置 `XMAKE_BIN`。
+Bạn cũng có thể mở `apps/android` bằng Android Studio và cài các phiên bản trên trong SDK Manager. IDE có thể ghi vị trí SDK vào `local.properties` đã bỏ qua. Nếu Xmake không nằm trong PATH của IDE, hãy đặt `XMAKE_BIN` trước khi mở IDE.
 
-输出为 `app/build/outputs/apk/debug/app-debug.apk`，已由本机 Android 调试密钥签名：
+Đầu ra `app/build/outputs/apk/debug/app-debug.apk`, đã ký bằng khóa debug Android máy này:
 
 ```sh
 "$ANDROID_HOME/platform-tools/adb" install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Release 构建使用 `./gradlew :app:assembleRelease`，默认输出未签名 APK；发行前需配置自己的签名。Debug APK 也使用优化后的 Release 原生库，以保证软件解码性能。
+Bản Release dùng `./gradlew :app:assembleRelease`, mặc định xuất APK chưa ký; bạn cần cấu hình chữ ký riêng trước khi phát hành. Debug APK cũng dùng thư viện gốc Release đã tối ưu để bảo đảm hiệu năng giải mã phần mềm.
 
-首次构建会下载并从源码编译依赖，耗时取决于网络。后续编译复用缓存。Android 直接编译 `deps/submodules/minirtc` 中的源码；构建产物和依赖缓存位于 `.native/`，Xmake 工程配置位于 `native/.xmake/`，与桌面和 iOS 分开保存：
+Lần biên dịch đầu sẽ tải và biên dịch phụ thuộc từ nguồn, thời gian tùy mạng; các lần sau dùng lại bộ nhớ đệm. Android biên dịch trực tiếp nguồn trong `deps/submodules/minirtc`. Sản phẩm và đệm phụ thuộc ở `.native/`, cấu hình dự án Xmake ở `native/.xmake/`, lưu riêng với máy tính và iOS:
 
-- Gradle 9.9.0、AGP 9.1.0、NDK r28c 固定在工程中。
-- Xmake 依赖仓库沿用 PC 端策略：使用默认仓库或调用环境指定的仓库，不固定或校验仓库提交。Android 编译产物和安装包缓存仍独立保存。
-- `scripts/build_native.py` 调用独立的 `native/xmake.lua`，直接包含 MiniRTC 子模块的构建定义。构建过程不复制 MiniRTC 源码，也不应用补丁。
-- MiniRTC 源码内的 Android 分支启用 OpenH264、SVT-AV1 和 dav1d 软件编解码及依赖配方，兼容 OpenFEC 的 Android 头文件，并关闭 UPnP。SVT-AV1 使用内置 ARM CPU 能力检测；当前应用作为控制端只接收视频，库同时提供 AV1 编码能力。TLS 校验位于 MiniRTC 内部。STUN、TURN UDP/TCP 与直接连接仍由 MiniRTC 提供。
-- MiniRTC 的 `thirdparty/openssl/xmake.lua` 统一维护 iOS 和 Android 配方；Android 显式使用 NDK 的归档索引工具，避免 macOS `ranlib` 损坏 ELF 静态库。
-- SVT-AV1 编码及 dav1d 解码已在 Android 15 arm64 / 16 KB 模拟器上完成验证，覆盖软件编码、请求硬件加速时的软件回退、码率更新、强制关键帧及 320×192 → 256×144 → 320×192 分辨率切换；两组测试各成功编码并解码 24 帧。这是编解码正确性验证，不代表真机实时编码性能。
-- 依赖静态链接到 `libcrossdesk_android.so`，保留 16 KB ELF / APK 对齐。
+- Gradle 9.9.0, AGP 9.1.0, NDK r28c cố định trong dự án.
+- Kho phụ thuộc Xmake theo chính sách PC: dùng kho mặc định hoặc kho do môi trường gọi chỉ định, không cố định hay kiểm commit kho. Sản phẩm Android và đệm gói cài đặt vẫn lưu riêng.
+- `scripts/build_native.py` gọi `native/xmake.lua` độc lập, trực tiếp đưa vào định nghĩa biên dịch của submodule MiniRTC. Quá trình biên dịch không sao chép nguồn MiniRTC hay áp bản vá.
+- Nhánh Android trong nguồn MiniRTC bật codec phần mềm OpenH264, SVT-AV1, dav1d và các công thức phụ thuộc, tương thích header Android của OpenFEC và tắt UPnP. SVT-AV1 dùng khả năng dò ARM CPU tích hợp. Ứng dụng hiện là bên điều khiển chỉ nhận video, nhưng thư viện đồng thời cung cấp mã hóa AV1. Xác minh TLS nằm trong MiniRTC; STUN, TURN UDP/TCP và kết nối trực tiếp vẫn do MiniRTC cung cấp.
+- `thirdparty/openssl/xmake.lua` của MiniRTC quản lý chung công thức iOS và Android. Android dùng tường minh công cụ lập chỉ mục archive của NDK, tránh `ranlib` macOS làm hỏng thư viện tĩnh ELF.
+- Mã hóa SVT-AV1 và giải mã dav1d đã được kiểm chứng trên giả lập Android 15 arm64 / 16 KB, gồm mã hóa phần mềm, quay về phần mềm khi yêu cầu tăng tốc phần cứng, cập nhật bitrate, ép khung khóa và chuyển độ phân giải 320×192 → 256×144 → 320×192. Mỗi nhóm trong hai nhóm thử đều mã hóa/giải mã thành công 24 khung. Đây là kiểm chứng tính đúng đắn của codec, không đại diện hiệu năng mã hóa thời gian thực trên máy thật.
+- Phụ thuộc liên kết tĩnh vào `libcrossdesk_android.so`, giữ căn chỉnh ELF / APK 16 KB.
 
-修改原生代码后重新运行 Gradle 即可；修改依赖版本或配方时同步检查许可证内容，必要时移除 `.native/packages` 重新构建。MiniRTC 的源码和依赖配方变更直接保存在子模块中；提交时先提交 MiniRTC，再更新主仓库的子模块引用。
+Sau khi sửa mã gốc, chỉ cần chạy lại Gradle. Khi đổi phiên bản hoặc công thức phụ thuộc, hãy kiểm đồng bộ nội dung giấy phép; nếu cần, xóa `.native/packages` rồi biên dịch lại. Thay đổi nguồn và công thức MiniRTC được lưu trực tiếp trong submodule; hãy commit MiniRTC trước rồi cập nhật tham chiếu submodule trong kho chính.
 
 ## GitHub Actions
 
-[`Build Android`](../../.github/workflows/build-android.yml) 可在 Actions 页面单独手动运行；修改 Android、MiniRTC、共享协议或许可证资料的 Pull Request 也会触发。仓库原有的 [`Build and Release`](../../.github/workflows/build.yml) 在分支推送、标签推送及手动运行时调用同一工作流，`v` 标签发布会等待安卓构建及签名成功，并将已签名 Release APK 加入 GitHub Release 和现有下载服务器的产物集合。推送主仓库前，先确保它引用的 MiniRTC 提交已推送到子模块远程仓库，否则 CI 无法完成检出。
+Bạn có thể chạy riêng [`Build Android`](../../.github/workflows/build-android.yml) thủ công trên trang Actions. PR sửa Android, MiniRTC, giao thức chung hoặc tài liệu giấy phép cũng kích hoạt quy trình. [`Build and Release`](../../.github/workflows/build.yml) hiện có gọi cùng quy trình khi đẩy nhánh, đẩy nhãn hoặc chạy thủ công. Phát hành nhãn `v` chờ Android biên dịch và ký thành công, rồi thêm Release APK đã ký vào GitHub Release và tập sản phẩm trên máy chủ tải hiện có. Trước khi đẩy kho chính, hãy bảo đảm commit MiniRTC được tham chiếu đã được đẩy tới remote submodule; nếu không, CI không thể checkout xong.
 
-单独发布使用 [`Release Mobile`](../../.github/workflows/release-mobile.yml)。先在仓库根目录运行 `python3 scripts/version.py set client <版本>` 同步全部客户端版本及各移动端构建号，检查并提交改动，再为该提交创建 `android-v<versionName>-YYYYMMDD` 标签，例如：
+Phát hành riêng dùng [`Release Mobile`](../../.github/workflows/release-mobile.yml). Trước hết chạy `python3 scripts/version.py set client <phiên-bản>` tại gốc kho để đồng bộ phiên bản mọi ứng dụng và số bản dựng di động; kiểm và commit thay đổi rồi tạo nhãn `android-v<versionName>-YYYYMMDD` cho commit đó, ví dụ:
 
 ```sh
 git tag android-v1.7.6-20261112
 git push origin android-v1.7.6-20261112
 ```
 
-该标签只触发安卓构建，使用固定发布密钥签名并验证 Release APK 后，再发布到独立的 GitHub Release 和现有下载服务器。签名失败或缺少签名 Secrets 时停止发布，不回退到未签名 APK。标签版本必须与应用版本一致，日期必须有效。重试发布时，在 Actions 页面手动运行 `Release Mobile`，将已有标签填入 `source_tag`；即使从其他分支触发，也会检出该标签的源码。APK 的源码资料记录安卓标签及准确的应用、MiniRTC 提交。
+Nhãn này chỉ kích hoạt biên dịch Android. Quy trình ký bằng khóa phát hành cố định, xác minh Release APK rồi phát hành lên GitHub Release riêng và máy chủ tải hiện có. Nếu ký thất bại hoặc thiếu Secrets ký, quy trình dừng, không chuyển sang APK chưa ký. Phiên bản nhãn bắt buộc khớp ứng dụng và ngày phải hợp lệ. Để thử lại, chạy `Release Mobile` thủ công ở Actions và điền nhãn đã có vào `source_tag`; dù kích hoạt từ nhánh khác, quy trình vẫn checkout nguồn của nhãn đó. Tài liệu nguồn APK ghi nhãn Android cùng commit chính xác của ứng dụng và MiniRTC.
 
-移动端独立发布保留桌面 `latest` 标签和 GitHub 的最新 Release 选择。APK 上传完成后，将服务器下载地址合并到共享 `https://version.crossdesk.cn/version.json` 的 `downloads.android-arm64`，并在该下载项中记录安卓版本和发布日期；保留顶层桌面版本信息和其他平台的下载项。下载服务器上传保留其他平台文件，复用仓库已有的 `SERVER_HOST`、`SERVER_USER`、`SERVER_KEY` Secrets。普通桌面版本标签仍通过 `Build and Release` 发布全部平台并更新各平台下载项；所有发布任务更新版本文件时使用同一队列。单独运行 `Build Android` 仍只上传 Actions 构建产物。
+Phát hành di động riêng giữ nguyên nhãn `latest` máy tính và lựa chọn Release mới nhất trên GitHub. Khi tải APK lên xong, địa chỉ máy chủ được hợp vào `downloads.android-arm64` của `https://version.crossdesk.cn/version.json` chung, cùng phiên bản và ngày phát hành Android trong mục đó; thông tin phiên bản máy tính cấp cao nhất và mục tải nền tảng khác được giữ nguyên. Tải lên máy chủ giữ tệp nền tảng khác và dùng lại Secrets `SERVER_HOST`, `SERVER_USER`, `SERVER_KEY` hiện có. Nhãn phiên bản máy tính thông thường vẫn phát hành mọi nền tảng qua `Build and Release` và cập nhật từng mục tải; mọi tác vụ cập nhật tệp phiên bản dùng chung một hàng đợi. Chạy riêng `Build Android` vẫn chỉ tải lên sản phẩm biên dịch Actions.
 
-已有 Release 需要补传服务器或刷新下载信息时，可手动运行 `Update version.json from Release` 并填写已有 `source_tag`，无需重新构建。
+Nếu Release đã có cần tải bổ sung lên máy chủ hoặc làm mới thông tin tải, bạn có thể chạy `Update version.json from Release` thủ công và điền `source_tag` đã có, không cần biên dịch lại.
 
-工作流使用 Ubuntu 24.04、JDK 17、Python 3.13、SDK 36、Build Tools 36.0.0、NDK r28c，并使用最低支持的 Xmake 3.1.1 验证构建；本地允许使用更新的 Xmake。Gradle 使用工程内的 Wrapper，原生构建器沿用 PC 端的 Xmake 仓库选择方式。SDK/NDK 使用独立目录缓存，按宿主系统、架构和工具链版本区分；命中缓存时跳过 SDK 安装，未命中时在安装完成后立即保存，即使后续 APK 构建失败，下次也可复用。Xmake 可执行环境和 pip 下载也有各自的缓存；Ubuntu 系统工具只安装缺失项。
+Quy trình dùng Ubuntu 24.04, JDK 17, Python 3.13, SDK 36, Build Tools 36.0.0, NDK r28c và kiểm biên dịch bằng Xmake tối thiểu 3.1.1; cục bộ cho phép Xmake mới hơn. Gradle dùng Wrapper trong dự án; trình biên dịch gốc chọn kho Xmake như PC. SDK/NDK dùng đệm riêng theo hệ thống máy chủ, kiến trúc và phiên bản bộ công cụ. Trúng đệm thì bỏ cài SDK; không trúng thì lưu đệm ngay sau khi cài, để lần sau dùng lại dù bước biên dịch APK sau đó thất bại. Môi trường thực thi Xmake và tải pip cũng có đệm riêng; công cụ hệ thống Ubuntu chỉ cài những mục còn thiếu.
 
-Gradle 缓存与 Android 原生依赖缓存分别管理；原生缓存按宿主架构、构建脚本及 MiniRTC 配方区分，不复用桌面或 iOS 的配置和目标文件。GitHub 托管 runner 每次启动仍是新环境；第一次运行或缓存失效时需要安装。不同分支和标签可读取默认分支的缓存，因此建议先在默认分支运行一次 `Build Android` 预热，再创建发布标签。
+Đệm Gradle và đệm phụ thuộc gốc Android được quản lý riêng. Đệm gốc tách theo kiến trúc máy chủ, script biên dịch và công thức MiniRTC, không dùng lại cấu hình hay object của máy tính/iOS. Runner GitHub vẫn là môi trường mới mỗi lần khởi chạy, nên lần đầu hoặc khi đệm mất hiệu lực vẫn cần cài đặt. Nhánh và nhãn khác có thể đọc đệm nhánh mặc định; vì vậy nên chạy `Build Android` một lần trên nhánh mặc định để làm nóng đệm trước khi tạo nhãn phát hành.
 
-CI 仅构建和打包 Debug、Release APK，并校验 APK 的包名、`versionName` / `versionCode`、arm64 ABI、16 KB ELF / ZIP 对齐、完整许可证及 Debug 签名。单元测试、本机 C++ 协议与画面队列测试、Lint 和设备测试改为按需在本地执行；设备测试使用下面的设备验证流程在 arm64 手机或模拟器上执行。
+CI chỉ biên dịch/đóng gói Debug và Release APK, kiểm tên gói, `versionName` / `versionCode`, arm64 ABI, căn chỉnh ELF / ZIP 16 KB, giấy phép đầy đủ và chữ ký Debug. Unit test, kiểm giao thức C++/hàng đợi khung cục bộ, Lint và kiểm thử thiết bị chuyển sang chạy cục bộ theo nhu cầu. Kiểm thử thiết bị chạy trên điện thoại hoặc giả lập arm64 theo quy trình bên dưới.
 
-统一 `v*` 发布从标签提取数字版本，通过 Gradle 属性写入 APK 的 `versionName`；App 内版本展示读取同一包信息。产物版本、日期及可选热修复编号与桌面端保持一致，例如 `v1.6.1-20261010` 或 `v1.6.1-2-20261010`。分支构建和独立 `android-v*` 发布使用 `gradle.properties` 中的版本，独立发布会检查标签与配置一致。构建日期采用上海时区；带日期的版本标签沿用标签中的日期，与 iOS 一致。Actions 提供：
+Phát hành chung `v*` trích phiên bản số từ nhãn và ghi vào `versionName` APK qua thuộc tính Gradle; phiên bản trong ứng dụng đọc cùng thông tin gói. Phiên bản sản phẩm, ngày và số hotfix tùy chọn khớp bản máy tính, ví dụ `v1.6.1-20261010` hoặc `v1.6.1-2-20261010`. Biên dịch nhánh và phát hành riêng `android-v*` dùng phiên bản trong `gradle.properties`; phát hành riêng kiểm nhãn khớp cấu hình. Ngày biên dịch theo múi giờ Thượng Hải; nhãn có ngày giữ ngày trên nhãn như iOS. Actions cung cấp:
 
-- `crossdesk-android-arm64-<版本>.apk`：已签名 Release APK，独立安卓发布和全平台标签发布收集此 APK，可直接安装。
-- `crossdesk-android-arm64-unsigned-<版本>.apk`：构建工作流的中间产物，也可用于自行签名和验证修改后的构建。
-- `crossdesk-android-arm64-debug-<版本>.apk`：可安装的调试应用，保留 14 天。
+- `crossdesk-android-arm64-<phiên-bản>.apk`: Release APK đã ký, phát hành Android riêng/nhãn toàn nền tảng lấy APK này, cài thẳng được.
+- `crossdesk-android-arm64-unsigned-<phiên-bản>.apk`: sản phẩm trung gian quy trình, dùng tự ký/kiểm bản sửa được.
+- `crossdesk-android-arm64-debug-<phiên-bản>.apk`: ứng dụng debug cài được, giữ 14 ngày.
 
-Debug APK 使用每次运行的临时调试证书，可能无法覆盖手机上已有的其他签名版本；卸载原应用会清除本机连接记录和密码。需要持续覆盖升级时，应使用同一私钥签名 Release APK，并在每次发布新版本（含统一发布及热修复）时递增 `gradle.properties` 中的 `crossdeskVersionCode`。该安装升级序号独立于显示版本，不从日期或 CI 运行编号推算。未签名 APK 已完成对齐，可通过 SDK 的 `apksigner sign --ks <自己的密钥库> --out <已签名.apk> <未签名.apk>` 签名，再用 `apksigner verify` 检查。
+Debug APK dùng chứng chỉ debug tạm cho mỗi lần chạy, nên có thể không ghi đè được bản đã ký khác trên điện thoại. Gỡ ứng dụng cũ sẽ xóa kết nối và mật khẩu cục bộ. Để nâng cấp ghi đè liên tục, bạn nên ký Release APK bằng cùng khóa riêng và tăng `crossdeskVersionCode` trong `gradle.properties` mỗi lần phát hành mới, kể cả phát hành chung và hotfix. Số thứ tự nâng cấp cài đặt này độc lập với phiên bản hiển thị, không suy từ ngày hay số lần chạy CI. APK chưa ký đã được căn chỉnh; bạn có thể ký bằng SDK `apksigner sign --ks <kho-khoa-cua-ban> --out <da-ky.apk> <chua-ky.apk>`, rồi kiểm bằng `apksigner verify`.
 
-### Release 签名
+### Ký Release
 
-[`Sign Android Release`](../../.github/workflows/sign-android.yml) 在独立 job 中签名，不检出或执行应用源码。构建 job 和 Pull Request 构建不接收发布密钥。签名 job 使用 Build Tools 36.0.0，先执行 `zipalign -P 16`，再通过环境变量向 `apksigner` 提供密码，验证签名和 16 KB 对齐后上传已签名 APK。临时密钥库在步骤结束时清理，产物中不包含密钥或密码。
+[`Sign Android Release`](../../.github/workflows/sign-android.yml) ký trong job riêng, không checkout hay thực thi nguồn ứng dụng. Job biên dịch và biên dịch PR không nhận khóa phát hành. Job ký dùng Build Tools 36.0.0, chạy `zipalign -P 16` trước, rồi truyền mật khẩu cho `apksigner` qua biến môi trường. Sau khi xác minh chữ ký và căn chỉnh 16 KB, job tải lên APK đã ký. Kho khóa tạm được dọn cuối bước; sản phẩm không chứa khóa hay mật khẩu.
 
-首次发布前，在仓库 Settings → Secrets and variables → Actions 配置：
+Trước phát hành đầu, cấu hình trong Settings → Secrets and variables → Actions của kho:
 
-| Secret | 内容 |
+| Secret | Nội dung |
 | --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | 发布密钥库文件的 Base64 内容 |
-| `ANDROID_KEYSTORE_PASSWORD` | 密钥库密码 |
-| `ANDROID_KEY_ALIAS` | 发布私钥的 alias |
-| `ANDROID_KEY_PASSWORD` | 发布私钥密码 |
+| `ANDROID_KEYSTORE_BASE64` | Nội dung Base64 tệp kho khóa phát hành |
+| `ANDROID_KEYSTORE_PASSWORD` | Mật khẩu kho khóa |
+| `ANDROID_KEY_ALIAS` | alias khóa riêng phát hành |
+| `ANDROID_KEY_PASSWORD` | Mật khẩu khóa riêng phát hành |
 
-APK 签名不需要 Google Play 开发者账号。若没有已有发布密钥，可使用 JDK 的 `keytool` 创建一次，密钥库保存在工程之外，并备份密钥和密码：
+Ký APK không cần tài khoản nhà phát triển Google Play. Nếu chưa có khóa phát hành, bạn có thể tạo một lần bằng `keytool` của JDK, lưu kho khóa ngoài dự án và sao lưu khóa cùng mật khẩu:
 
 ```sh
 keytool -genkeypair -storetype PKCS12 -keystore /path/outside/repo/crossdesk-release.p12 \
   -alias crossdesk-release -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-PKCS12 使用同一个密钥库和私钥密码，将它配置到两个密码 Secrets。可用 `gh secret set` 从标准输入写入 Secrets，避免把密码放进命令行参数。macOS 上传密钥库示例：
+PKCS12 dùng cùng mật khẩu cho kho khóa và khóa riêng; hãy cấu hình nó vào cả hai Secrets mật khẩu. Bạn có thể dùng `gh secret set` ghi Secrets từ stdin để tránh đặt mật khẩu trong tham số dòng lệnh. Ví dụ tải kho khóa trên macOS:
 
 ```sh
 base64 -i /path/outside/repo/crossdesk-release.p12 | gh secret set ANDROID_KEYSTORE_BASE64 --repo kunkundi/crossdesk
@@ -153,65 +153,65 @@ gh secret set ANDROID_KEY_ALIAS --repo kunkundi/crossdesk
 gh secret set ANDROID_KEY_PASSWORD --repo kunkundi/crossdesk
 ```
 
-后续版本沿用这些 Secrets，不能在每次构建时生成新密钥，也不能将密钥或密码提交到 Git。已有未签名安卓 Release 可单独运行 `Sign Android Release` 并填写其 `source_tag`，无需重新构建；该手动任务只上传已签名 Actions 产物，不修改已发布 Release。普通发布流程会自动签名、上传下载服务器，并将 `downloads.android-arm64` 指向已签名 APK。旧 Release 同时保留已签名和未签名 APK 时，版本文件优先选择相同版本的已签名文件。
+Các phiên bản sau tiếp tục dùng Secrets này; không được tạo khóa mới mỗi lần biên dịch hay commit khóa/mật khẩu vào Git. Với Android Release chưa ký đã có, bạn có thể chạy riêng `Sign Android Release` và điền `source_tag`, không cần biên dịch lại. Tác vụ thủ công này chỉ tải lên sản phẩm Actions đã ký, không sửa Release đã phát hành. Quy trình phát hành thông thường tự ký, tải lên máy chủ và trỏ `downloads.android-arm64` tới APK đã ký. Khi Release cũ giữ cả APK đã ký và chưa ký, tệp phiên bản ưu tiên tệp đã ký cùng phiên bản.
 
-## 使用与连接安全
+## Sử dụng và an toàn kết nối
 
-授权后首页会自动连接服务器，绿色“已连接服务器”表示信令登录完成；失败时可点击状态重试。设置页显示本机 ID。电脑端保持在线，在 Android 首页填写 9 位设备 ID，首次点击“连接”后在底部弹层输入密码，可选择加密保存密码。成功保存后，点击最近连接或再次输入相同 ID 会直接使用该服务器下保存的密码，重启应用后仍然有效；密码无法读取或被远端拒绝时会重新显示输入弹层，新密码仅在连接成功后替换，取消或连接失败不会覆盖原密码。自托管服务器从“设置 → 服务器”展开修改主机名与端口，不能填写 `https://`、路径或完整 URL。默认是 `api.crossdesk.cn:9099`。
+Sau khi được cấp quyền, trang chủ tự kết nối máy chủ. “Đã kết nối máy chủ” màu xanh nghĩa là đăng nhập tín hiệu hoàn tất; nếu lỗi, bạn có thể nhấn trạng thái để thử lại. Trang cài đặt hiển thị ID máy này. Giữ máy tính trực tuyến, nhập ID thiết bị 9 chữ số trên trang chủ Android rồi nhấn “Kết nối”; lần đầu, nhập mật khẩu trong bảng bật lên ở dưới và có thể chọn lưu mã hóa. Sau khi lưu thành công, nhấn kết nối gần đây hoặc nhập lại cùng ID sẽ dùng trực tiếp mật khẩu đã lưu theo máy chủ, kể cả sau khi khởi động lại ứng dụng. Nếu không đọc được mật khẩu hoặc máy từ xa từ chối, bảng nhập sẽ hiện lại. Chỉ thay mật khẩu mới sau khi kết nối thành công; hủy hoặc kết nối lỗi không ghi đè mật khẩu cũ. Với máy chủ tự triển khai, mở “Cài đặt → Máy chủ” để sửa tên máy chủ và cổng, không nhập `https://`, đường dẫn hoặc URL đầy đủ. Mặc định là `api.crossdesk.cn:9099`.
 
-最近连接卡片与 iOS 一样，在设备 ID 旁显示已保存密码的钥匙图标和在线／离线状态，在线设备优先，同一状态内保留原来的最近连接顺序。授权并登录服务器后，通过身份信令订阅 `recent_connections_presence`，接收完整快照与 `presence_update`；每 30 秒刷新，状态超过 60 秒未更新则显示离线。断线、切换服务器或进入后台会清除在线状态，重连后等待新的快照。自托管服务需要支持相同的设备在线状态协议。
+Như iOS, thẻ kết nối gần đây hiển thị biểu tượng khóa cho mật khẩu đã lưu và trạng thái trực tuyến／ngoại tuyến cạnh ID. Thiết bị trực tuyến được ưu tiên, cùng trạng thái thì giữ thứ tự kết nối gần đây trước đó. Sau khi cấp quyền và đăng nhập máy chủ, ứng dụng đăng ký `recent_connections_presence` qua tín hiệu danh tính, nhận snapshot đầy đủ và `presence_update`. Dữ liệu làm mới mỗi 30 giây; quá 60 giây không cập nhật thì hiển thị ngoại tuyến. Mất kết nối, đổi máy chủ hoặc vào nền sẽ xóa trạng thái trực tuyến; kết nối lại sẽ đợi snapshot mới. Dịch vụ tự triển khai cần hỗ trợ cùng giao thức trạng thái trực tuyến thiết bị.
 
-证书信任来自 Android 默认 TrustManager 导出的根证书，应用的 Network Security Configuration 显式信任系统 CA 和用户安装的 CA。JNI 设置证书文件路径后，MiniRTC 的 Android 分支通过 `SSL_CTX_load_verify_locations` 显式加载，并校验证书链及 DNS / IP 主机名；不会跳过 TLS 验证。Android 应用进程带有 `AT_SECURE` 标记，不能依赖 OpenSSL 的默认路径加载器读取 `SSL_CERT_FILE`，否则会出现所有服务器均无法建立信任链的问题。自托管服务器可使用受系统信任的证书，或通过 Android 系统设置安装签发服务器证书的 CA。安装或移除 CA 后，重启 CrossDesk 再连接；服务器证书须在有效期内，且包含与连接地址匹配的域名或 IP。
+Tin cậy chứng chỉ lấy từ các chứng chỉ gốc do TrustManager mặc định Android xuất ra; Network Security Configuration của ứng dụng tin tường minh CA hệ thống và CA do người dùng cài. Sau khi JNI đặt đường dẫn tệp chứng chỉ, nhánh Android MiniRTC tải tường minh bằng `SSL_CTX_load_verify_locations`, xác minh chuỗi chứng chỉ và tên máy DNS / IP, không bỏ qua TLS. Tiến trình ứng dụng Android mang cờ `AT_SECURE`, nên không thể dựa vào trình tải đường dẫn mặc định OpenSSL để đọc `SSL_CERT_FILE`; nếu làm vậy, mọi máy chủ đều không dựng được chuỗi tin cậy. Máy chủ tự triển khai có thể dùng chứng chỉ được hệ thống tin hoặc cài CA ký chứng chỉ máy chủ qua cài đặt Android. Sau khi cài/gỡ CA, hãy khởi động lại CrossDesk rồi kết nối; chứng chỉ máy chủ cần còn hạn và chứa tên miền hoặc IP khớp địa chỉ kết nối.
 
-身份按主机名和端口分开保存，备份与设备迁移不包含应用数据。密码不写入连接记录，仅在明确开启“保存密码”后写入独立加密存储；未开启时仅用于当前会话。连接成功通知只处理一次，重复的传输就绪回调不会再次保存密码或重建会话页面；密码存储拒绝空值覆盖。旧版本已被空值覆盖的密码无法恢复，遇到此记录时会提示重新输入一次，并保留“保存密码”开启状态。由于 MiniRTC 的诊断日志包含登录身份，Android 桥接层关闭其会话日志。身份存储损坏会显示错误，不会静默重新注册。
+Danh tính lưu riêng theo tên máy chủ và cổng; sao lưu và chuyển thiết bị không chứa dữ liệu ứng dụng. Mật khẩu không ghi vào bản ghi kết nối, chỉ ghi vào kho mã hóa riêng khi bật rõ “Lưu mật khẩu”; nếu không bật thì chỉ dùng cho phiên hiện tại. Thông báo kết nối thành công chỉ xử lý một lần, callback truyền tải sẵn sàng lặp không lưu lại mật khẩu hay dựng lại trang phiên; kho mật khẩu từ chối giá trị rỗng ghi đè. Mật khẩu bản cũ đã bị giá trị rỗng ghi đè không thể khôi phục. Gặp bản ghi đó, ứng dụng nhắc nhập lại một lần và giữ “Lưu mật khẩu” bật. Vì nhật ký chẩn đoán MiniRTC chứa danh tính đăng nhập, lớp cầu nối Android tắt nhật ký phiên của nó. Kho danh tính hỏng sẽ báo lỗi, không âm thầm đăng ký lại.
 
-会话中的“剪贴板”发送用户输入的文本；收到的远端文本先留在会话内，点击“复制远端文本”才写入手机剪贴板。退出会话后清除会话内容。每次发送最多 128 KB。电脑键盘的修饰键在本地选中，仅应用于下一个按键，发送后自动复位；名称根据远端显示为 Win / Super / Cmd 和 Alt / Option。系统键盘通过 `supports_text_input` 检测远端能力，支持 UTF-8 的 Windows 和 macOS 被控端可直接输入中文、表情和听写文本；其他端或旧版使用 ASCII 按键回退，不支持的文本会提示使用剪贴板，不会先删除远端内容。输入法尚未确认的组字不会发送，自动纠错仅替换已发送文本的变化后缀；点击远端、收起、切换键盘或进入后台会清除本地输入上下文。
+“Bảng nhớ tạm” trong phiên gửi văn bản người dùng nhập. Văn bản từ xa nhận được trước hết giữ trong phiên; chỉ khi nhấn “Sao chép văn bản từ xa” mới ghi vào bảng nhớ tạm điện thoại. Thoát phiên sẽ xóa nội dung phiên; mỗi lần gửi tối đa 128 KB. Phím bổ trợ của bàn phím máy tính được chọn cục bộ, chỉ áp dụng cho phím tiếp theo và tự đặt lại sau khi gửi; tên hiển thị theo máy từ xa là Win / Super / Cmd và Alt / Option. Bàn phím hệ thống dò khả năng qua `supports_text_input`; máy Windows/macOS hỗ trợ UTF-8 có thể nhận trực tiếp tiếng Trung, emoji và văn bản đọc chính tả. Máy khác hoặc bản cũ chuyển về phím ASCII; văn bản không hỗ trợ sẽ gợi dùng bảng nhớ tạm, không xóa nội dung từ xa trước. Chữ đang ghép chưa xác nhận không được gửi; tự sửa chỉ thay hậu tố đã thay đổi của văn bản đã gửi. Nhấn vào máy từ xa, thu gọn, đổi bàn phím hoặc vào nền đều xóa ngữ cảnh nhập cục bộ.
 
-Windows 文本输入使用 Unicode 键盘事件，无需切换电脑输入法或覆盖剪贴板。支持文本转发的 Windows 版本将完整 UTF-8 文本通过 Windows 服务转发到锁屏、登录与 UAC 安全桌面，保留数字、大小写字母、符号、空格及中文等字符，不将密码转换成数字或 ASCII 按键。该通道需要同时更新 Windows 客户端、CrossDesk Service 和会话辅助程序；仅更新 Android，或仅确认旧服务正在运行，均不会启用修复。旧版可能已声明 `supports_text_input`，但只支持普通桌面文本输入，因此“电脑键盘可输入、搜狗等系统输入法不可输入”仍可能出现。锁屏实际输入效果需在更新后的 Windows 环境验证。
+Nhập văn bản Windows dùng sự kiện bàn phím Unicode, không cần đổi bộ gõ trên máy tính hay ghi đè bảng nhớ tạm. Bản Windows hỗ trợ chuyển tiếp văn bản sẽ gửi đầy đủ UTF-8 qua dịch vụ Windows tới màn hình khóa, đăng nhập và desktop an toàn UAC, giữ nguyên số, chữ hoa/thường, ký hiệu, dấu cách và chữ Trung, không đổi mật khẩu thành phím số hoặc ASCII. Kênh này cần cập nhật đồng thời ứng dụng Windows, CrossDesk Service và chương trình trợ giúp phiên. Chỉ cập nhật Android hoặc chỉ xác nhận dịch vụ cũ đang chạy đều không bật bản sửa. Bản cũ có thể đã khai `supports_text_input` nhưng chỉ hỗ trợ nhập ở desktop thông thường, nên vẫn có thể gặp “bàn phím máy tính nhập được, bộ gõ hệ thống như Sogou không nhập được”. Hiệu quả nhập trên màn hình khóa cần kiểm chứng trong môi trường Windows đã cập nhật.
 
-“发送文件”调用系统文件选择器，后台读取所选文件后使用桌面端相同的 `file` / `file_feedback` 协议传输，支持空文件和中文文件名。每次发送一个文件，以 64 KiB 分块、最多 1 MiB 未确认数据限制发送队列；进度来自接收端确认，30 秒没有有效进展则报告失败。接收时校验大小并追踪完整字节范围，允许跨线程回调乱序，未完成的文件不会提供保存入口。同名文件分开存储，不覆盖已有文件；可通过“保存收到的文件”导出最近收到的文件，连续接收多个文件时应逐个保存。
+“Gửi tệp” gọi bộ chọn tệp hệ thống, đọc tệp đã chọn ở nền rồi truyền bằng cùng giao thức `file` / `file_feedback` của máy tính, hỗ trợ tệp rỗng và tên tiếng Trung. Mỗi lần gửi một tệp, chia khối 64 KiB và giới hạn tối đa 1 MiB dữ liệu chưa xác nhận để khống chế hàng đợi gửi. Tiến độ theo xác nhận của bên nhận; 30 giây không có tiến triển hợp lệ sẽ báo thất bại. Khi nhận, ứng dụng kiểm kích thước và theo dõi phạm vi byte đầy đủ, cho phép callback khác luồng đến đảo thứ tự; tệp chưa xong không có mục lưu. Tệp trùng tên lưu riêng, không ghi đè tệp có sẵn. “Lưu tệp đã nhận” xuất tệp nhận gần nhất; nếu nhận liên tiếp nhiều tệp, nên lưu từng tệp.
 
-选取或保存文件期间保留会话并暂时禁用自动画中画，取消选择不会断开；停留超过 5 分钟且应用仍不在前台时结束会话。发送副本和收到的文件暂存于应用私有缓存，结束会话后清除，需要保留的接收文件应在断开前导出；不申请全盘存储权限。
+Trong khi chọn hoặc lưu tệp, phiên được giữ và PiP tự động tạm tắt; hủy chọn không ngắt kết nối. Nếu ở đó quá 5 phút mà ứng dụng vẫn không ở tiền cảnh, phiên sẽ kết thúc. Bản sao gửi và tệp nhận tạm lưu trong đệm riêng của ứng dụng, xóa khi kết thúc phiên. Bạn nên xuất tệp nhận cần giữ trước khi ngắt; ứng dụng không xin quyền truy cập toàn bộ bộ nhớ lưu trữ.
 
-## 后台连接与画中画
+## Kết nối nền và hình trong hình
 
-与 iOS 一样，通过系统画中画显示真实远程视频并维持会话。连接成功且已显示远程画面后，Android 12 及以上启用系统自动画中画；Android 8–11 在离开应用时尝试进入。设备需支持画中画，系统需允许 CrossDesk 使用该功能。未连接、尚无画面或正在打开系统文件选择器时不自动进入。
+Như iOS, ứng dụng dùng PiP hệ thống để hiển thị video từ xa thực và duy trì phiên. Sau khi kết nối thành công và đã có hình từ xa, Android 12 trở lên bật PiP tự động hệ thống; Android 8–11 thử vào PiP khi rời ứng dụng. Thiết bị cần hỗ trợ và hệ thống cần cho CrossDesk dùng tính năng này. Chưa kết nối, chưa có hình hoặc đang mở bộ chọn tệp thì không tự vào.
 
-Android 版本满足要求不代表固件提供画中画，部分低内存模式设备会禁用该功能。以系统的 `FEATURE_PICTURE_IN_PICTURE` 检测为准，单独允许画中画权限不能补齐系统能力。无系统画中画或权限被禁止时，连接建立后自动启动前台服务兜底；画中画进入失败也尝试使用该兜底。控制菜单不提供“画中画”或“后台保活”按钮，两者均在切换应用时自动处理。
+Đủ phiên bản Android không có nghĩa firmware cung cấp PiP; một số thiết bị ở chế độ ít bộ nhớ sẽ tắt tính năng. Kết quả dò `FEATURE_PICTURE_IN_PICTURE` của hệ thống là căn cứ; chỉ cấp quyền PiP không bổ sung được khả năng còn thiếu. Nếu không có PiP hệ thống hoặc bị cấm quyền, ứng dụng tự khởi động dịch vụ tiền cảnh dự phòng sau khi kết nối; vào PiP thất bại cũng thử dùng dự phòng này. Menu điều khiển không có nút “Hình trong hình” hay “Duy trì nền”, cả hai tự xử lý khi đổi ứng dụng.
 
-画中画仅显示完整远程画面，隐藏本地光标、悬浮球、鼠标条和键盘，并释放远程按键。使用原有视频 Surface 和 RTC 连接，进入小窗时不会关闭音视频；通过系统小窗返回全屏继续操作。画面比例根据远端尺寸更新，超宽或超长画面在系统允许的比例范围内完整显示并留黑边。
+PiP chỉ hiển thị toàn bộ ảnh từ xa, ẩn con trỏ cục bộ, bóng nổi, thanh chuột và bàn phím, đồng thời nhả phím từ xa. Ứng dụng dùng Surface video và kết nối RTC cũ, không đóng âm thanh/video khi vào cửa sổ nhỏ. Bạn có thể quay lại toàn màn hình từ cửa sổ hệ thống để tiếp tục thao tác. Tỷ lệ ảnh cập nhật theo kích thước từ xa; ảnh quá rộng hoặc dài hiển thị đầy đủ kèm viền đen trong phạm vi tỷ lệ hệ thống cho phép.
 
-正常画中画不启动兜底服务，可见的小窗使 Activity 保持在 started 状态，进入时仅暂停交互。关闭小窗会结束会话，不自动转为隐藏的后台连接。
+PiP bình thường không khởi động dịch vụ dự phòng. Cửa sổ nhỏ đang hiển thị giữ Activity ở trạng thái started; vào PiP chỉ tạm dừng tương tác. Đóng cửa sổ nhỏ sẽ kết thúc phiên, không tự chuyển thành kết nối nền ẩn.
 
-兜底模式通过前台服务保留原 RTC/信令连接，并显示带“返回”和“断开”操作的常驻通知。后台停止本地画面渲染及音频播放，不创建悬浮窗；视频传输和解码不做协议层暂停。返回应用后重新绑定 Surface 并请求关键帧，恢复原静音状态、显示器和画面设置，不重新登录或连接远端。会话状态独立于 Activity，页面被系统回收后可恢复，整个进程被系统终止则不能恢复原连接。
+Chế độ dự phòng giữ kết nối RTC/tín hiệu gốc qua dịch vụ tiền cảnh và hiển thị thông báo thường trực với “Quay lại”/“Ngắt kết nối”. Ở nền, ứng dụng dừng kết xuất cục bộ và phát âm thanh, không tạo cửa sổ nổi; truyền tải và giải mã video không tạm dừng ở lớp giao thức. Quay lại ứng dụng sẽ gắn Surface lại, yêu cầu khung khóa và phục hồi trạng thái tắt tiếng, màn hình, cài đặt hình ảnh cũ, không đăng nhập hay kết nối từ xa lại. Trạng thái phiên độc lập với Activity, nên trang bị hệ thống thu hồi vẫn khôi phục được; nếu cả tiến trình bị chấm dứt thì không khôi phục kết nối cũ.
 
-服务仅用于用户主动建立且已成功连接的远程会话，不用于首页待机。Android 14 及以上使用 `specialUse` 前台服务类型并声明远程控制连接用途；Android 13 及以上在兜底首次启用时请求通知权限，拒绝后系统仅在活动应用管理中显示服务。CPU 部分唤醒锁仅在兜底会话后台期间持有，返回前台、断开、移除任务或服务销毁时释放。通知断开、远端断开、移除任务、撤回授权和强制停止均结束会话及服务，不自动重连。系统文件选择器仍有上述五分钟限制；系统强杀或网络中断仍可能结束连接。
+Dịch vụ chỉ dùng cho phiên từ xa do người dùng chủ động tạo và đã kết nối thành công, không dùng để chờ ở trang chủ. Android 14 trở lên dùng loại dịch vụ tiền cảnh `specialUse` và khai mục đích kết nối điều khiển từ xa. Android 13 trở lên xin quyền thông báo khi lần đầu bật dự phòng; nếu từ chối, hệ thống chỉ hiển thị dịch vụ trong trình quản lý ứng dụng đang hoạt động. Khóa đánh thức CPU một phần chỉ giữ khi phiên dự phòng ở nền, nhả khi về tiền cảnh, ngắt, xóa tác vụ hoặc hủy dịch vụ. Ngắt từ thông báo, ngắt từ xa, xóa tác vụ, rút quyền và buộc dừng đều kết thúc phiên/dịch vụ, không tự kết nối lại. Bộ chọn tệp vẫn có giới hạn năm phút nói trên; hệ thống buộc kết thúc hoặc mất mạng vẫn có thể làm hết kết nối.
 
-首页设置里的“画面偏好”保存在本机，作为下一次连接的默认偏好；会话内画面设置与 iOS 一样只影响当前连接。初始质量按屏幕长边选择低（不超过 1280 像素）或中，采集帧率为 30 fps，电脑端报告支持后自动下发；旧版电脑未报告支持时禁用控件。网络页的 FPS 统计实际提交给 Android Surface 的帧，画面延时使用 MiniRTC 校准后的采集时间至提交时刻的估计值，未完成校准时显示“—”；RTT 使用 0.25 权重平滑，3 秒未更新的数据会过期。切换屏幕清除旧画面的帧率、分辨率和画面延时，保留网络统计。
+“Tùy chọn hình ảnh” trong cài đặt trang chủ lưu cục bộ làm mặc định cho kết nối sau; thiết lập trong phiên chỉ ảnh hưởng kết nối hiện tại như iOS. Chất lượng ban đầu là thấp nếu cạnh dài không quá 1280 pixel, hoặc trung bình nếu lớn hơn, với tốc độ ghi 30 fps. Máy tính báo hỗ trợ rồi ứng dụng tự gửi thiết lập; bản cũ chưa báo thì các điều khiển bị vô hiệu. FPS trên trang mạng đếm khung thực gửi tới Android Surface; độ trễ hình ảnh ước từ thời điểm ghi đã hiệu chỉnh của MiniRTC tới lúc gửi hiển thị, chưa hiệu chỉnh thì hiện “—”. RTT làm mượt với trọng số 0.25; dữ liệu 3 giây không cập nhật sẽ hết hạn. Chuyển màn hình xóa FPS, độ phân giải và trễ hình cũ, giữ thống kê mạng.
 
-采集时间的有效性在接收时检查，本机解码和显示等待计入画面延时；真实延时超过 5 秒也会继续显示，不会当成无效时间戳过滤。显示线程复用解码器的 CPU NV12 缓冲区，只保留一帧待显示画面，切换显示器或 Surface 时清除旧帧，会话结束时先停止显示线程再销毁原生连接。
+Tính hợp lệ của thời điểm ghi được kiểm lúc nhận; thời gian giải mã và chờ hiển thị cục bộ được tính vào trễ hình ảnh. Trễ thực quá 5 giây vẫn tiếp tục hiển thị, không bị lọc như timestamp không hợp lệ. Luồng hiển thị tái dùng đệm CPU NV12 của bộ giải mã, chỉ giữ một khung chờ; đổi màn hình hoặc Surface sẽ xóa khung cũ. Khi kết thúc phiên, luồng hiển thị dừng trước khi hủy kết nối gốc.
 
-## 隐私授权
+## Cấp quyền riêng tư
 
-未完成隐私授权时，首次打开或从后台返回应用会自动显示离线隐私政策；需要主动勾选阅读并同意后才能联网，与 iOS 一致。暂不同意后，本次停留不会反复弹窗，仍可浏览设置和本地连接记录。设置 → 隐私 → 隐私与授权可离线查看政策或撤回授权；撤回后下次进入应用会再次提示。
+Nếu chưa cấp quyền riêng tư, ứng dụng tự mở chính sách ngoại tuyến khi khởi động lần đầu hoặc trở về từ nền. Bạn cần chủ động chọn đã đọc và đồng ý mới truy cập mạng, giống iOS. Chọn chưa đồng ý sẽ không lặp hộp trong lần ở lại này, nhưng vẫn xem được cài đặt và bản ghi kết nối cục bộ. Cài đặt → Quyền riêng tư → Quyền riêng tư và cấp quyền cho phép đọc ngoại tuyến hoặc rút quyền; sau khi rút, lần vào tiếp theo sẽ hỏi lại.
 
-## 远程画面预览
+## Xem trước màn hình từ xa
 
-设置 → 隐私中的“保存远程画面预览”默认关闭，完成联网授权后可开启。与 iOS 一致，开启前说明预览可能包含个人或工作信息；每次连接只在实际显示画面后保存一张预览，居中裁剪为 640×360、JPEG 质量 78。截图来自远程视频的 Surface，不包含悬浮菜单、键盘、本地光标或画面外的黑边；压缩、读写和解码在串行后台线程执行，不复制完整 4K 位图，也不连续截图。
+“Lưu ảnh xem trước màn hình từ xa” trong Cài đặt → Quyền riêng tư mặc định tắt, chỉ có thể bật sau khi cấp quyền mạng. Như iOS, trước khi bật ứng dụng giải thích ảnh có thể chứa thông tin cá nhân/công việc. Mỗi kết nối chỉ lưu một ảnh sau khi hình thực được hiển thị, cắt giữa thành 640×360 và dùng JPEG chất lượng 78. Ảnh lấy từ Surface video từ xa, không có menu nổi, bàn phím, con trỏ cục bộ hay viền đen ngoài ảnh. Nén, đọc/ghi và giải mã chạy tuần tự ở luồng nền, không sao chép bitmap 4K đầy đủ hoặc chụp liên tục.
 
-图片保存在应用私有、不参与备份的 `RecentConnectionThumbnails` 目录，不上传、不写入系统相册。文件按服务器与远端 ID 隔离，最近连接卡片异步加载；未开启、没有预览或图片损坏时继续显示平台封面。删除或淘汰连接记录会删除对应预览。
+Ảnh ở thư mục riêng `RecentConnectionThumbnails`, không được sao lưu, tải lên hoặc ghi vào album hệ thống. Tệp tách theo máy chủ và ID từ xa; thẻ gần đây tải bất đồng bộ. Khi chưa bật, không có ảnh hoặc ảnh hỏng, thẻ vẫn dùng bìa nền tảng. Xóa hoặc loại bản ghi kết nối sẽ xóa ảnh tương ứng.
 
-“清除预览图”保留连接记录、密码和开关状态，下一次连接仍可保存新的预览。关闭保存选项或撤回联网授权会关闭保存并清除全部预览。清除时立即使未完成的截图和读取请求失效，删除与保存共用串行队列，防止已清除的图片被旧截图重新写回；清除失败会显示提示，可再次重试。
+“Xóa ảnh xem trước” giữ bản ghi kết nối, mật khẩu và công tắc, nên kết nối sau vẫn lưu ảnh mới. Tắt lưu hoặc rút quyền mạng sẽ tắt chức năng lưu và xóa toàn bộ ảnh. Thao tác xóa vô hiệu ngay yêu cầu chụp/đọc chưa xong; xóa và lưu dùng cùng hàng đợi tuần tự để tác vụ chụp cũ không ghi ảnh trở lại. Lỗi xóa có thông báo và có thể thử lại.
 
-## 通知公告
+## Thông báo chung
 
-首页铃铛展示全部未读公告的数量（超过 99 条显示 99+）。授权并连接服务器后，通过已有身份信令请求 `announcements_list`，摘要每页 200 条、正文每页 20 条；不依赖远程桌面连接。列表支持刷新、滚动加载更多、长按或左滑删除，删除前需确认，且仅隐藏本机的当前版本。打开详情即标记已读；服务器更新公告版本后会重新显示并计为未读。详情正文保留纯文本和换行，支持 HTTP(S) 地址及 `[文字](https://...)` 链接，不执行 HTML 或其他协议。
+Chuông trang chủ đếm mọi thông báo chưa đọc, trên 99 hiển thị 99+. Sau khi cấp quyền và kết nối máy chủ, ứng dụng yêu cầu `announcements_list` qua kết nối tín hiệu danh tính có sẵn: tóm tắt 200/trang, nội dung 20/trang, không phụ thuộc phiên với máy tính từ xa. Danh sách hỗ trợ làm mới, cuộn tải thêm, nhấn giữ hoặc vuốt trái để xóa; xóa cần xác nhận và chỉ ẩn phiên bản hiện tại trên máy này. Mở chi tiết đánh dấu đã đọc; máy chủ sửa phiên bản thì thông báo hiện lại và tính chưa đọc. Nội dung giữ văn bản thuần/xuống dòng, hỗ trợ HTTP(S) và liên kết `[văn bản](https://...)`, không thực thi HTML hay giao thức khác.
 
-阅读和删除标记以原子文件保存在不参与备份的 `AnnouncementReads` 目录，按主机名、端口和本机设备 ID 隔离；写入失败会提示并保留原状态。内容只缓存于内存。收到 `announcements_changed` 时刷新，分页期间目录版本改变时重新获取；过期请求、断线前的回复不会覆盖新状态。请求失败或 12 秒超时可重试；未授权不联网，进入后台停止请求。自托管服务需要支持与桌面及 iOS 相同的公告协议。
+Dấu đã đọc/xóa lưu nguyên tử trong tệp ở `AnnouncementReads`, không sao lưu, tách theo tên máy chủ, cổng và ID máy này. Ghi thất bại sẽ báo lỗi và giữ trạng thái cũ; nội dung thông báo chỉ đệm trong RAM. Nhận `announcements_changed` sẽ làm mới; phiên bản danh mục đổi trong lúc phân trang thì lấy lại. Yêu cầu quá hạn hoặc phản hồi từ trước khi mất kết nối không ghi đè trạng thái mới. Lỗi yêu cầu hoặc quá hạn 12 giây có thể thử lại. Chưa cấp quyền thì không truy cập mạng, vào nền thì dừng yêu cầu. Dịch vụ tự triển khai cần hỗ trợ cùng giao thức thông báo của máy tính/iOS.
 
-## 验证
+## Kiểm chứng
 
-连接 arm64 设备或启动 arm64 模拟器后，在 `apps/android` 执行：
+Kết nối thiết bị arm64 hoặc mở giả lập arm64, chạy tại `apps/android`:
 
 ```sh
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
@@ -223,48 +223,48 @@ python3 test/verify_apk.py app/build/outputs/apk/debug/app-debug.apk
 python3 test/run_native.py
 ```
 
-以上流程覆盖安装应用并只卸载测试包，保留已有应用数据；多台设备同时连接时，在每个 `adb` 命令中加上 `-s <设备序列号>`。`connectedDebugAndroidTest` 可能卸载被测应用及其数据，不用于已有连接记录或密码的设备。
+Quy trình trên cài ứng dụng và chỉ gỡ gói kiểm thử, giữ dữ liệu ứng dụng hiện có. Nếu có nhiều thiết bị, thêm `-s <so-se-ri-thiet-bi>` vào mỗi lệnh `adb`. `connectedDebugAndroidTest` có thể gỡ ứng dụng được kiểm thử và dữ liệu của nó; không dùng trên thiết bị có kết nối hoặc mật khẩu đã lưu.
 
-测试源码、资源和检查入口统一位于 `test/`：
+Nguồn, tài nguyên, điểm kiểm thử tập trung `test/`:
 
-- `test/native/`：本机 C++ 协议、帧队列与画面延时回归，由 `test/run_native.py` 编译运行。
-- `test/android/java/`：非 UI 的 Android 功能回归，覆盖需要 Android API 或 JNI 的逻辑，包括设备在线状态刷新、过期与信令重连。Gradle 的 `androidTest` 源集显式引用此目录。
-- `test/android/assets/tls/`：本机环回 TLS 测试证书，仅进入测试 APK。
-- `test/verify_apk.py`：发布 APK 的 arm64 ABI、16 KB ELF / ZIP 对齐、许可证完整性和源码资料检查。
+- `test/native/`: hồi quy giao thức C++, hàng khung/trễ hình cục bộ, `test/run_native.py` biên dịch/chạy.
+- `test/android/java/`: hồi quy chức năng Android không UI, logic cần Android API/JNI, gồm làm mới/hết hạn trực tuyến, kết nối lại tín hiệu. Source set `androidTest` Gradle trỏ tường minh vào đây.
+- `test/android/assets/tls/`: chứng chỉ TLS loopback cục bộ, chỉ vào APK kiểm thử.
+- `test/verify_apk.py`: kiểm APK phát hành arm64 ABI, căn ELF / ZIP 16 KB, giấy phép đầy đủ, tài liệu nguồn.
 
-设备回归仅保留 TLS 证书校验、凭据加密及服务器隔离、原生连接生命周期、键盘映射、画面设置状态、缩放及输入坐标计算、网络采样、公告与预览数据持久化、版本兼容判断。预览存储测试使用生成的纯色位图，不采集屏幕或视频画面。
+Hồi quy thiết bị chỉ giữ các kiểm tra chứng chỉ TLS, mã hóa xác thực/cách ly máy chủ, vòng đời kết nối gốc, ánh xạ phím, trạng thái hình ảnh, hình học thu phóng/tọa độ, mẫu thống kê mạng, lưu thông báo/xem trước và tương thích phiên bản. Kiểm kho ảnh dùng bitmap màu thuần được sinh ra, không ghi màn hình hay video.
 
-画面手势需在远程会话中人工验证：两种鼠标模式均检查捏合放大至 10 倍、缩回 1 倍、放大后的双指平移和边界限制；原始比例下双指滑动仍控制滚轮，捏合及平移不应产生远端点击或拖动。放大后检查点击与光标位置一致、横竖屏切换后位置正确，切换显示器或重新连接恢复 1 倍。自动化回归只验证几何计算，不注入 UI 手势。
+Cử chỉ cần kiểm thủ công trong phiên từ xa: ở cả hai chế độ chuột, kiểm chụm phóng tới 10 lần, thu về 1 lần, di hai ngón sau khi phóng và giới hạn biên. Ở tỷ lệ gốc, vuốt hai ngón vẫn điều khiển con lăn; chụm và di ảnh không nên tạo nhấp hoặc kéo từ xa. Sau khi phóng, kiểm vị trí nhấp khớp con trỏ, tọa độ đúng sau khi đổi ngang/dọc và chuyển màn hình/kết nối lại đặt về 1 lần. Hồi quy tự động chỉ bao phủ hình học, không chèn cử chỉ UI.
 
-UI 验证统一由人工完成，不维护页面导航、布局、动画、悬浮窗和截图采集的自动化用例。许可证和构建资料的完整性由 `test/verify_apk.py` 检查。
+Kiểm chứng UI đều thực hiện thủ công, không duy trì ca tự động cho điều hướng trang, bố trí, hoạt ảnh, cửa sổ nổi hay chụp ảnh màn hình. `test/verify_apk.py` kiểm tính đầy đủ của giấy phép và tài liệu biên dịch.
 
-控制栏联调需在真实远程会话中验证文件选择及取消、收发文件内容一致性、接收后导出、传输中断线；Windows 远端分别检查系统服务开启与关闭时的 Ctrl+Alt+Del 行为。
+Tích hợp thanh điều khiển cần kiểm trong phiên thật: chọn/hủy chọn tệp, nội dung tệp gửi/nhận khớp, xuất sau khi nhận và mất kết nối giữa lúc truyền. Với Windows từ xa, kiểm riêng Ctrl+Alt+Del khi dịch vụ hệ thống bật và tắt.
 
-画中画需在真实会话中检查切换应用自动进入、其他应用前台时画面持续更新、返回全屏、关闭小窗、静音、超宽及竖屏画面、文件选择器取消、系统禁用画中画和锁屏。
+PiP cần kiểm trong phiên thật: tự vào khi đổi ứng dụng, hình tiếp tục cập nhật khi ứng dụng khác ở tiền cảnh, trở lại toàn màn hình, đóng cửa sổ nhỏ, tắt tiếng, ảnh quá rộng hoặc dọc, hủy bộ chọn tệp, hệ thống tắt PiP và khóa màn hình.
 
-前台服务兜底需在无原生画中画的实机上验证后台往返、Activity 重建时复用会话、通知断开、旧通知隔离、远端断开时释放唤醒锁，以及实际网络和画面恢复。设备测试前后应备份、核对并恢复服务器等应用设置，避免中断的测试留下本地测试地址。
+Dịch vụ tiền cảnh dự phòng cần kiểm trên máy thật không có PiP gốc: vào/ra nền, tái dùng phiên sau khi dựng lại Activity, ngắt từ thông báo, cách ly thông báo cũ, nhả khóa đánh thức khi từ xa ngắt và phục hồi mạng/hình ảnh thực tế. Trước và sau kiểm thử thiết bị, nên sao lưu, đối chiếu và khôi phục cài đặt máy chủ cùng các thiết lập ứng dụng, tránh để lại địa chỉ thử cục bộ khi kiểm thử bị ngắt.
 
-## MediaCodec 编解码
+## Mã hóa và giải mã MediaCodec
 
-实现参照 MiniRTC 的 NVCodec 分层：`src/media/mediacodec/` 负责硬件后端、能力查询和 JNI/Surface 资源；`src/media/video/encode/mediacodec/` 与 `src/media/video/decode/mediacodec/` 分别接入编码器、解码器接口，并负责同编码格式的软件回退。Android 工程直接编译这些源码。通用 API 仅需启用 `hardware_acceleration` 和 `native_video_output`。JavaVM 由 Android JNI 适配层在 `JNI_OnLoad` 中设置到后端私有实现；该桥接不安装为 SDK 头文件，也不导出为动态库符号。当前能力查询和 SurfaceTexture 创建依赖 JNI，缺少 JavaVM 时仍可使用软件编解码。独立输出线程在画面停止更新后仍会取出最后一帧，空闲时休眠。
+Triển khai theo phân lớp NVCodec của MiniRTC: `src/media/mediacodec/` phụ trách backend phần cứng, hỏi khả năng và tài nguyên JNI/Surface; `src/media/video/encode/mediacodec/` và `src/media/video/decode/mediacodec/` lần lượt nối giao diện mã hóa/giải mã, đồng thời xử lý quay về phần mềm với cùng định dạng. Dự án Android biên dịch trực tiếp các nguồn này. API chung chỉ cần bật `hardware_acceleration` và `native_video_output`. Lớp thích ứng JNI Android đặt JavaVM vào triển khai riêng của backend trong `JNI_OnLoad`; cầu nối không được cài làm header SDK hay xuất symbol thư viện động. Hiện hỏi khả năng và tạo SurfaceTexture phụ thuộc JNI; thiếu JavaVM vẫn dùng codec phần mềm được. Luồng xuất riêng vẫn lấy khung cuối sau khi hình ngừng cập nhật và ngủ khi rảnh.
 
-- H.264 / AV1 由系统能力查询选择硬件组件，支持编码码率调整、请求关键帧和分辨率变化。编码输入为 8 位 NV12，硬件需支持 NV12 / I420 ByteBuffer 输入；不满足时回退 OpenH264 / SVT-AV1。当前应用仍是控制端，库的编码能力不代表已实现安卓被控端。
-- 解码原生输出为可保留/释放的 MediaCodec 缓冲区，显示线程直接提交 Surface。切换显示器、销毁 Surface 和切回软件输出时解除旧 Surface 绑定。缓冲区在解码器重建或销毁后不可再次显示；未显示的缓冲区自动归还。
-- 关闭原生输出时，支持将硬件 NV12 / I420 输出按行距、填充高度和裁剪范围转换为紧凑 NV12；未知布局回退软件。
-- Retroid Pocket 2S 的 `OMX.sprd.av1.decoder` 实际加载软件 dav1d，虽被系统标成硬件组件，仍明确排除；AV1 使用软件回退。H.264 可使用 `OMX.sprd.h264.encoder` / `OMX.sprd.h264.decoder`。
+- H.264 / AV1 chọn thành phần phần cứng qua truy vấn khả năng hệ thống, hỗ trợ chỉnh bitrate mã hóa, yêu cầu khung khóa và đổi độ phân giải. Đầu vào mã hóa là NV12 8 bit; phần cứng cần nhận NV12 / I420 ByteBuffer, không đáp ứng thì quay về OpenH264 / SVT-AV1. Ứng dụng hiện vẫn là bên điều khiển; khả năng mã hóa của thư viện không có nghĩa đã triển khai Android được điều khiển.
+- Đầu ra giải mã gốc là đệm MediaCodec có thể giữ/nhả, được luồng hiển thị gửi trực tiếp tới Surface. Đổi màn hình, hủy Surface hoặc quay về đầu ra phần mềm đều bỏ gắn Surface cũ. Đệm không được hiển thị lại sau khi dựng lại hoặc hủy bộ giải mã; đệm chưa hiển thị tự được trả về.
+- Khi tắt đầu ra gốc, ứng dụng hỗ trợ chuyển đầu ra NV12 / I420 phần cứng thành NV12 gọn theo stride, chiều cao đệm và vùng cắt; bố trí không rõ sẽ quay về phần mềm.
+- `OMX.sprd.av1.decoder` trên Retroid Pocket 2S thực tế tải dav1d phần mềm. Dù hệ thống đánh dấu là thành phần phần cứng, nó vẫn bị loại tường minh và AV1 quay về phần mềm. H.264 có thể dùng `OMX.sprd.h264.encoder` / `OMX.sprd.h264.decoder`.
 
-AV1 硬件路径尚无对应实机验证；Retroid 上使用 dav1d 软件解码。
+Đường AV1 phần cứng chưa được kiểm chứng trên máy thật tương ứng; Retroid dùng dav1d phần mềm.
 
-## 开源资料
+## Tài liệu nguồn mở
 
-应用为 GPL-3.0-only，MiniRTC 为 LGPL-3.0-only，其余组件保留各自许可证。`scripts/generate_notices.py` 复用仓库已有的依赖通知，选取 Android 实际使用的组件；`licenses/additional-notices.json` 补充 OpenH264、GNU libiconv 和 NDK / LLVM 运行时通知。APK 的开源信息页提供完整内容。可以修改库源码、重新链接，并使用自己的 Android 密钥签名安装。
+Ứng dụng dùng GPL-3.0-only, MiniRTC dùng LGPL-3.0-only, thành phần khác giữ giấy phép riêng. `scripts/generate_notices.py` tái dùng thông báo phụ thuộc hiện có của kho, chọn các thành phần Android thực dùng; `licenses/additional-notices.json` bổ sung OpenH264, GNU libiconv và runtime NDK / LLVM. Trang thông tin nguồn mở trong APK cung cấp toàn văn. Bạn có thể sửa nguồn thư viện, liên kết lại rồi ký/cài bằng khóa Android riêng.
 
-设置 → 关于使用与 iOS 相同的分组及入口：版本、软件许可、开源组件、源码与构建说明。软件许可中可分别阅读 GNU GPL 第 3 版及开源软件权利说明；开源组件页单独展示 OpenFEC 告知，其余组件列出名称和许可证，详情包含版本、源码、适用的构建配方和每一份许可文档。内容按 Android 构建生成，不显示未使用的 iOS 依赖，Android 签名说明替换 Apple 签名说明。
+Cài đặt → Giới thiệu có cùng nhóm và mục với iOS: phiên bản, giấy phép phần mềm, thành phần nguồn mở, nguồn/hướng dẫn biên dịch. Trang giấy phép phần mềm cho đọc riêng GNU GPL phiên bản 3 và thông báo quyền phần mềm nguồn mở. Trang thành phần trình bày riêng thông báo OpenFEC, còn lại liệt kê tên và giấy phép; chi tiết có phiên bản, nguồn, công thức biên dịch áp dụng và từng tài liệu giấy phép. Nội dung được sinh theo bản biên dịch Android, không hiển thị phụ thuộc iOS không dùng, và hướng dẫn ký Android thay hướng dẫn Apple.
 
-APK 保留完整 `THIRD_PARTY_NOTICES.txt`，并生成轻量的 `ThirdPartyLicenses.json` 索引、72 份独立许可文档及 `SourceMetadata.json`。打开文档时才读取正文，长文按有限长度分块显示，支持文本选择、复制与网页链接。构建继续生成并打包许可资料，CI 和 APK 验证不再检查许可证内容、哈希或组件清单。源码页面显示标签或提交版本及未发布修改提示，源码链接指向基础提交。当前 Android 构建说明、构建脚本、MiniRTC、OpenSSL 及 SVT-AV1 配方随 APK 离线提供，避免开发版链接指向基础提交中尚不存在的 Android 文件。
+APK giữ đầy đủ `THIRD_PARTY_NOTICES.txt`, đồng thời sinh chỉ mục nhẹ `ThirdPartyLicenses.json`, 72 tài liệu giấy phép riêng và `SourceMetadata.json`. Chỉ đọc thân tài liệu khi mở; văn bản dài chia thành đoạn có giới hạn, hỗ trợ chọn, sao chép và liên kết web. Quá trình biên dịch vẫn sinh/đóng gói tài liệu giấy phép, nhưng CI và kiểm APK không còn kiểm nội dung, hash hay danh sách thành phần. Trang nguồn hiển thị nhãn/commit và gợi ý thay đổi chưa phát hành; liên kết nguồn trỏ về commit nền. Hướng dẫn biên dịch Android, script và công thức MiniRTC, OpenSSL, SVT-AV1 hiện tại kèm APK ngoại tuyến, tránh liên kết bản phát triển trỏ về tệp Android chưa có trong commit nền.
 
-## 快捷键与自定义
+## Phím tắt và tùy chỉnh
 
-系统键盘上方的 44 dp 工具栏提供常用快捷键横向滚动栏（默认 Esc、Tab、复制、粘贴）和“更多”入口。更多面板按“常用 / 按键 / 系统 / 我的”分组，替换原键盘区域并沿用输入法高度。预设根据 Windows、macOS、Linux 远端适配；Linux 系统预设需手动选择 GNOME 或 KDE Plasma，未知平台只提供通用按键。Windows 安全选项沿用 Ctrl+Alt+Del 服务通道。
+Thanh công cụ 44 dp trên bàn phím hệ thống có dải phím tắt thường dùng cuộn ngang, mặc định Esc, Tab, sao chép, dán, cùng mục “Thêm”. Bảng Thêm chia nhóm “Thường dùng / Phím / Hệ thống / Của tôi”, thay vùng bàn phím và giữ chiều cao bộ gõ. Preset thích ứng Windows, macOS và Linux từ xa; preset Linux cần chọn GNOME hoặc KDE Plasma thủ công, nền tảng không rõ chỉ có phím chung. Tùy chọn bảo mật Windows tiếp tục dùng kênh dịch vụ Ctrl+Alt+Del.
 
-“管理与自定义”使用独立本地窗口，编辑内容不发送远端。最多保存 16 个自定义组合，每个远端平台最多固定 8 个，支持排序、取消固定、编辑与删除。自定义组合保留用户选择的实际修饰键。组合键整体排队，按反序释放修饰键；快捷键执行前先发送已确认的文本并重置纠错上下文，尚在组词时提示先选词或取消。
+“Quản lý và tùy chỉnh” dùng cửa sổ cục bộ riêng, nội dung sửa không gửi từ xa. Có thể lưu tối đa 16 tổ hợp tùy chỉnh, ghim tối đa 8 cho mỗi nền tảng từ xa, hỗ trợ sắp xếp, bỏ ghim, sửa và xóa. Tổ hợp tùy chỉnh giữ phím bổ trợ thực người dùng đã chọn. Toàn bộ tổ hợp được xếp hàng, các phím bổ trợ nhả theo thứ tự ngược. Trước khi thực thi phím tắt, ứng dụng gửi văn bản đã xác nhận và đặt lại ngữ cảnh tự sửa; nếu còn ghép từ thì nhắc chọn từ hoặc hủy trước.
