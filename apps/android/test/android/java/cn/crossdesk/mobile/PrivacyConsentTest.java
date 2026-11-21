@@ -52,7 +52,7 @@ public class PrivacyConsentTest {
         return null;
     }
     private static TextView action(Dialog dialog,String text){
-        TextView view=findText(dialog.getWindow().getDecorView(),text);assertNotNull(text,view);return view;
+        TextView view=findText(dialog.getWindow().getDecorView(),L10n.tr(text));assertNotNull(text,view);return view;
     }
     private static void decline(MainActivity activity){action(notice(activity),"暂不同意").performClick();}
     private static void agree(MainActivity activity){
@@ -69,7 +69,7 @@ public class PrivacyConsentTest {
                 assertTrue(dialog.isShowing());assertFalse(preferences.getBoolean("networkConsent",false));
                 assertNull(field(activity,"signaling"));
                 decline(activity);assertFalse(dialog.isShowing());assertNull(field(activity,"signaling"));
-                assertNotNull(findText(activity.getWindow().getDecorView(),"等待隐私授权"));
+                assertNotNull(findText(activity.getWindow().getDecorView(),L10n.tr("等待隐私授权")));
             });
             scenario.onActivity(activity->assertNull(field(activity,"privacyDialog")));
         }

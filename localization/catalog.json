@@ -13675,6 +13675,71 @@
       "es": "Local → Remote",
       "pt-BR": "Local → Remote",
       "vi": "Máy này → Máy từ xa"
+    },
+    "远程会话信令连接失败": {
+      "zh-Hans": "远程会话信令连接失败",
+      "en": "Remote session signaling connection failed",
+      "ru": "Не удалось установить сигнальное соединение удалённого сеанса",
+      "zh-Hant": "遠端工作階段信令連線失敗",
+      "ja": "リモートセッションのシグナリング接続に失敗しました",
+      "ko": "원격 세션 시그널링 연결에 실패했습니다",
+      "de": "Signalisierungsverbindung der Remotesitzung fehlgeschlagen",
+      "fr": "Échec de la connexion de signalisation de la session distante",
+      "es": "Error de conexión de señalización de la sesión remota",
+      "pt-BR": "Falha na conexão de sinalização da sessão remota",
+      "vi": "Kết nối báo hiệu phiên từ xa thất bại"
+    },
+    "无法发起连接": {
+      "zh-Hans": "无法发起连接",
+      "en": "Unable to initiate connection",
+      "ru": "Не удалось начать подключение",
+      "zh-Hant": "無法發起連線",
+      "ja": "接続を開始できません",
+      "ko": "연결을 시작할 수 없습니다",
+      "de": "Verbindung kann nicht gestartet werden",
+      "fr": "Impossible de lancer la connexion",
+      "es": "No se puede iniciar la conexión",
+      "pt-BR": "Não foi possível iniciar a conexão",
+      "vi": "Không thể bắt đầu kết nối"
+    },
+    "服务器连接超时，请检查地址和网络": {
+      "zh-Hans": "服务器连接超时，请检查地址和网络",
+      "en": "Server connection timed out. Check the address and network.",
+      "ru": "Истекло время ожидания подключения к серверу. Проверьте адрес и сеть.",
+      "zh-Hant": "伺服器連線逾時，請檢查位址和網路",
+      "ja": "サーバー接続がタイムアウトしました。アドレスとネットワークを確認してください",
+      "ko": "서버 연결 시간이 초과되었습니다. 주소와 네트워크를 확인하세요",
+      "de": "Zeitüberschreitung bei der Serververbindung. Adresse und Netzwerk prüfen.",
+      "fr": "Délai de connexion au serveur dépassé. Vérifiez l’adresse et le réseau.",
+      "es": "Se agotó el tiempo de conexión al servidor. Comprueba la dirección y la red.",
+      "pt-BR": "Tempo de conexão com o servidor esgotado. Verifique o endereço e a rede.",
+      "vi": "Kết nối máy chủ hết thời gian chờ, hãy kiểm tra địa chỉ và mạng"
+    },
+    "连接超时，请确认设备在线": {
+      "zh-Hans": "连接超时，请确认设备在线",
+      "en": "Connection timed out. Make sure the device is online.",
+      "ru": "Истекло время ожидания подключения. Убедитесь, что устройство в сети.",
+      "zh-Hant": "連線逾時，請確認裝置在線上",
+      "ja": "接続がタイムアウトしました。デバイスがオンラインであることを確認してください",
+      "ko": "연결 시간이 초과되었습니다. 장치가 온라인인지 확인하세요",
+      "de": "Zeitüberschreitung bei der Verbindung. Prüfen, ob das Gerät online ist.",
+      "fr": "Délai de connexion dépassé. Vérifiez que l’appareil est en ligne.",
+      "es": "Se agotó el tiempo de conexión. Comprueba que el dispositivo esté en línea.",
+      "pt-BR": "Tempo de conexão esgotado. Verifique se o dispositivo está online.",
+      "vi": "Kết nối hết thời gian chờ, hãy xác nhận thiết bị đang trực tuyến"
+    },
+    "操作失败，请检查连接参数或重新连接": {
+      "zh-Hans": "操作失败，请检查连接参数或重新连接",
+      "en": "Operation failed. Check the connection parameters or reconnect.",
+      "ru": "Операция не выполнена. Проверьте параметры подключения или подключитесь заново.",
+      "zh-Hant": "操作失敗，請檢查連線參數或重新連線",
+      "ja": "操作に失敗しました。接続パラメーターを確認するか、再接続してください",
+      "ko": "작업에 실패했습니다. 연결 매개변수를 확인하거나 다시 연결하세요",
+      "de": "Vorgang fehlgeschlagen. Verbindungsparameter prüfen oder erneut verbinden.",
+      "fr": "Échec de l’opération. Vérifiez les paramètres de connexion ou reconnectez-vous.",
+      "es": "La operación falló. Comprueba los parámetros de conexión o vuelve a conectarte.",
+      "pt-BR": "Falha na operação. Verifique os parâmetros de conexão ou reconecte-se.",
+      "vi": "Thao tác thất bại, hãy kiểm tra tham số kết nối hoặc kết nối lại"
     }
   },
   "desktop": {
@@ -15920,7 +15985,14 @@
       "适用远端",
       "选择桌面方案",
       "选择桌面方案以加载系统预设",
-      "键盘上方常用栏"
+      "键盘上方常用栏",
+      "远程会话信令连接失败",
+      "无法发起连接",
+      "服务器连接超时，请检查地址和网络",
+      "连接超时，请确认设备在线",
+      "操作失败，请检查连接参数或重新连接",
+      "已发送 Ctrl+Alt+Del",
+      "已完成"
     ]
   }
 }

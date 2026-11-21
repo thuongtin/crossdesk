@@ -27,7 +27,7 @@
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>CrossDesk 需要访问本地网络，以连接同一局域网内的电脑，进行远程控制和文件传输。</string>
+	<string>CrossDesk sử dụng mạng cục bộ để phát hiện và thiết lập kết nối điều khiển từ xa P2P gốc.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

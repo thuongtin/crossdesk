@@ -585,7 +585,7 @@ struct Mobile {
           Button({ type: ButtonType.Normal }) {
             Row({ space: 12 }) {
               MobileIcon({ name: 'display', iconExtent: 22, color: index === this.state.selectedDisplay ? MobileTheme.blue : MobileTheme.secondary })
-              Text(`${index + 1} · ${screen.name || '显示器'}`).fontSize(16).fontColor(MobileTheme.ink).layoutWeight(1).textAlign(TextAlign.Start)
+              Text(`${index + 1} · ${screen.name || tr('显示器')}`).fontSize(16).fontColor(MobileTheme.ink).layoutWeight(1).textAlign(TextAlign.Start)
               if (index === this.state.selectedDisplay) { MobileIcon({ name: 'check', iconExtent: 20, color: MobileTheme.blue }) }
             }.padding(14).width('100%')
           }.width('100%').padding(0).backgroundColor(index === this.state.selectedDisplay ? '#EDF4FC' : MobileTheme.background).borderRadius(12)

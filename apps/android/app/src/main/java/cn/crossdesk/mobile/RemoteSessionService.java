@@ -49,7 +49,7 @@ public final class RemoteSessionService extends Service {
     }
     @Override public IBinder onBind(Intent intent) { return null; }
     @Override public void onCreate() {
-        super.onCreate(); running = this;
+        super.onCreate(); L10n.initialize(this); running = this;
         getSystemService(NotificationManager.class).createNotificationChannel(
                 new NotificationChannel(CHANNEL, L10n.tr("远程连接"), NotificationManager.IMPORTANCE_LOW));
         wakeLock = getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "CrossDesk:RemoteSession");
