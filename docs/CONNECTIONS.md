@@ -1,101 +1,101 @@
-# 连接方式、可信设备与身份迁移
+# Phương thức kết nối, thiết bị đáng tin cậy và di chuyển danh tính
 
-[返回首页](../README.md) · [使用指南](USER_GUIDE.md) · [连接故障排查](FAQ.md) · [连接架构与协议](connection-architecture.md)
+[Về trang chủ](../README.md) · [Hướng dẫn sử dụng](USER_GUIDE.md) · [Khắc phục sự cố kết nối](FAQ.md) · [Kiến trúc và giao thức kết nối](connection-architecture.md)
 
-本文帮助你选择连接方式、管理允许访问的设备，以及在重装或迁移前保留连接身份。
+Tài liệu này giúp bạn chọn phương thức kết nối, quản lý thiết bị được phép truy cập và giữ danh tính kết nối trước khi cài đặt lại hoặc di chuyển.
 
-## 选择连接方式
+## Chọn phương thức kết nối
 
-| 方式 | 适合什么情况 | 连接前需要准备 |
+| Phương thức | Tình huống phù hợp | Cần chuẩn bị trước kết nối |
 | --- | --- | --- |
-| 设备 ID | 跨网络访问，或从浏览器、手机、终端连接 | 被控电脑在线，两端接入同一服务器，准备 9 位 ID 和密码 |
-| IP 直连 | 两台桌面电脑在局域网或 VPN 内可互相访问 | 两端开启 IP 直连，准备被控电脑的 IP、端口和该模式的密码 |
+| ID thiết bị | Truy cập qua các mạng khác nhau, hoặc kết nối từ trình duyệt, điện thoại, terminal | Máy tính được điều khiển trực tuyến, hai bên kết nối cùng máy chủ, chuẩn bị ID gồm 9 chữ số và mật khẩu |
+| IP trực tiếp | Hai máy tính truy cập được nhau trong mạng LAN hoặc VPN | Hai bên bật IP trực tiếp, chuẩn bị IP, cổng và mật khẩu của chế độ này trên máy tính được điều khiển |
 
-ID 连接会自动尝试设备之间直接传输；无法直连时可以使用中继。IP 直连不依赖信令服务器，也不自动穿透公网路由器。IP 直连目前用于 Windows、macOS、Linux 普通桌面客户端；移动端、Web 和终端 CLI 使用 ID 连接。
+Kết nối ID tự thử truyền trực tiếp giữa các thiết bị; nếu không thể kết nối trực tiếp thì có thể dùng chuyển tiếp. IP trực tiếp không phụ thuộc máy chủ báo hiệu, cũng không tự xuyên qua bộ định tuyến Internet. IP trực tiếp hiện dành cho ứng dụng máy tính thông thường Windows, macOS, Linux; thiết bị di động, Web và CLI terminal dùng kết nối ID.
 
 <a id="41-id-模式"></a>
 
-## 通过设备 ID 连接
+## Kết nối bằng ID thiết bị
 
-1. 在被控电脑运行 CrossDesk，等待显示“已连接服务器”。
-2. 在控制端输入被控电脑的 9 位 ID，点击“连接”。
-3. 输入被控电脑当前的连接密码。需要下次直接连接时勾选“记住密码”。
+1. Chạy CrossDesk trên máy tính được điều khiển, chờ hiển thị “Đã kết nối máy chủ”.
+2. Nhập ID gồm 9 chữ số của máy tính được điều khiển trên máy điều khiển, nhấn “Kết nối”.
+3. Nhập mật khẩu kết nối hiện tại của máy tính được điều khiển. Nếu cần kết nối trực tiếp lần sau, chọn “Nhớ mật khẩu”.
 
-修改或刷新 ID 模式密码时，被控端需连接服务器。等修改成功、客户端重新连接后再使用新密码。密码是 6 位数字或英文字母，区分大小写。
+Khi đổi hoặc làm mới mật khẩu chế độ ID, máy được điều khiển cần kết nối máy chủ. Chờ đổi thành công và ứng dụng kết nối lại rồi mới dùng mật khẩu mới. Mật khẩu gồm 6 chữ số hoặc chữ cái tiếng Anh, phân biệt hoa thường.
 
-**自托管升级：** 新版桌面客户端需要支持设备身份认证的服务端，请先升级服务器，再升级客户端。首次升级旧身份时需要原有密码；完成升级后，设备还依赖本机保存的身份密钥登录。连接密码仍用于授权远程访问，不能单独用来恢复丢失的设备身份。
+**Nâng cấp tự lưu trữ (self-host):** Ứng dụng máy tính mới cần máy chủ hỗ trợ xác thực danh tính thiết bị; hãy nâng cấp máy chủ trước rồi nâng cấp ứng dụng. Lần đầu nâng cấp danh tính cũ cần mật khẩu hiện có; sau khi nâng cấp, thiết bị còn dựa vào khóa danh tính lưu trên máy này để đăng nhập. Mật khẩu kết nối vẫn dùng để cho phép truy cập từ xa, không thể dùng riêng để khôi phục danh tính thiết bị đã mất.
 
-详见 [自托管配置](SELF_HOSTING.md) 和 [身份备份](#backup)。
+Xem [cấu hình tự lưu trữ (self-host)](SELF_HOSTING.md) và [sao lưu danh tính](#backup).
 
 <a id="42-ip-模式"></a>
 
-## 通过 IP 直连
+## Kết nối IP trực tiếp
 
-1. 两端在 **设置 → 常规 → 网络连接** 开启 **IP 直连** 并保存。
-2. 切换到主窗口的 IP 直连模式，复制被控端显示的 `IP:端口`。
-3. 在控制端粘贴地址并连接，输入被控端 IP 模式下的六位密码。
+1. Trên cả hai bên, bật **IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
+2. Chuyển sang chế độ IP trực tiếp ở cửa sổ chính, sao chép `IP:cổng` hiển thị trên máy được điều khiển.
+3. Dán địa chỉ trên máy điều khiển và kết nối, nhập mật khẩu sáu ký tự của máy được điều khiển ở chế độ IP.
 
-默认端口为 `52888`，实际请以被控端显示为准。支持 IPv4 和 IPv6，不支持主机名；IPv6 指定端口时使用方括号，例如 `[2001:db8::20]:52888`。ID 密码和 IP 密码相互独立。
+Cổng mặc định là `52888`; thực tế hãy căn cứ hiển thị trên máy được điều khiển. Hỗ trợ IPv4 và IPv6, không hỗ trợ tên máy; khi chỉ định cổng IPv6 dùng dấu ngoặc vuông, ví dụ `[2001:db8::20]:52888`. Mật khẩu ID và IP độc lập với nhau.
 
-默认监听所有网络接口，可通过有线、Wi-Fi 或 VPN 地址访问。防火墙需要允许 TCP 和 UDP 通信。仅切回 ID 模式不会停止 IP 监听；要停止，请在设置中关闭 IP 直连并保存，这也会断开现有 IP 会话。完整地址、端口和 IPv6 用法见 [IP 直连指南](USER_GUIDE.md#lan-direct)。
+Mặc định lắng nghe mọi giao diện mạng, có thể truy cập qua địa chỉ mạng dây, Wi-Fi hoặc VPN. Tường lửa cần cho phép TCP và UDP liên lạc. Chỉ chuyển lại chế độ ID không dừng lắng nghe IP; để dừng, tắt IP trực tiếp trong cài đặt rồi lưu, việc này cũng ngắt các phiên IP hiện có. Xem đầy đủ cách dùng địa chỉ, cổng và IPv6 trong [hướng dẫn IP trực tiếp](USER_GUIDE.md#lan-direct).
 
-## 查看连接与加密状态
+## Xem trạng thái kết nối và mã hóa
 
-连接后打开会话工具栏的 **网络状态**，查看直连 / 中继和加密状态。桌面墙底部也有对应入口。
+Sau khi kết nối, mở **Trạng thái mạng** trên thanh công cụ phiên để xem trực tiếp / chuyển tiếp và trạng thái mã hóa. Phía dưới Bức tường màn hình cũng có lối vào tương ứng.
 
-IP 直连要求加密传输。原生 ID 连接为兼容旧客户端，可能使用未加密或仅部分加密的传输；不要仅凭“已连接服务器”判断远控会话的加密状态。建议两端使用兼容的近期版本，状态未确认时先检查版本和网络信息。
+IP trực tiếp yêu cầu truyền mã hóa. Để tương thích ứng dụng cũ, kết nối ID gốc có thể dùng truyền không mã hóa hoặc chỉ mã hóa một phần; không chỉ dựa vào “Đã kết nối máy chủ” để xác định trạng thái mã hóa phiên điều khiển từ xa. Nên dùng các phiên bản gần đây tương thích trên cả hai bên; nếu chưa xác nhận trạng thái, kiểm tra phiên bản và thông tin mạng trước.
 
-IP 直连不会根据以往连接记录验证被控电脑的证书身份。保存的名称、地址或密码不能证明连接的是原来那台电脑；请使用可信网络并核对对方地址。下面的可信设备限制用于被控端核验控制端，不替代对被控电脑身份的确认。
+IP trực tiếp không xác minh danh tính chứng chỉ của máy tính được điều khiển dựa trên lịch sử kết nối trước đây. Tên, địa chỉ hoặc mật khẩu đã lưu không chứng minh đang kết nối đúng máy tính cũ; hãy dùng mạng đáng tin cậy và đối chiếu địa chỉ bên kia. Giới hạn thiết bị đáng tin cậy dưới đây dùng để máy được điều khiển xác minh máy điều khiển, không thay thế xác nhận danh tính máy tính được điều khiển.
 
 <a id="43-可选可信设备认证"></a>
 <a id="trusted-devices"></a>
 
-## 仅允许可信设备控制
+## Chỉ cho phép thiết bị đáng tin cậy điều khiển
 
-此选项默认关闭。开启后，控制端必须在本机可信名单中，且仍需输入正确的连接密码。
+Tùy chọn này mặc định tắt. Sau khi bật, máy điều khiển bắt buộc nằm trong danh sách tin cậy của máy này và vẫn cần nhập đúng mật khẩu kết nối.
 
-1. **在控制端复制配对信息。** 桌面端打开 **设置 → 常规 → 隐私保护 → 管理可信设备**；手机和平板打开 **设置 → 本机配对信息**。
-2. **在被控端添加。** 在 **管理可信设备 → 添加可信设备** 粘贴配对信息并添加，通过可信渠道与控制端核对指纹。
-3. **开启限制。** 被控端勾选 **仅允许可信设备控制** 并保存，再按正常流程连接。
+1. **Sao chép thông tin ghép đôi trên máy điều khiển.** Trên máy tính, mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Quản lý thiết bị đáng tin cậy**; trên điện thoại và máy tính bảng, mở **Cài đặt → Thông tin ghép đôi máy này**.
+2. **Thêm trên máy được điều khiển.** Dán thông tin ghép đôi và thêm tại **Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy**, đối chiếu dấu vân tay với máy điều khiển qua kênh đáng tin cậy.
+3. **Bật giới hạn.** Máy được điều khiển chọn **Chỉ cho phép thiết bị đáng tin cậy điều khiển** rồi lưu, sau đó kết nối theo quy trình bình thường.
 
-配对信息不含连接密码或私钥。信任是单向的，若要互相控制，需要双方分别添加对方。添加和移除立即保存；开启限制时移除某台设备会断开其连接，名单为空时会拒绝所有控制端。
+Thông tin ghép đôi không chứa mật khẩu kết nối hay khóa riêng. Tin cậy là một chiều; nếu muốn điều khiển lẫn nhau, cần thêm bên kia trên cả hai máy. Thêm và xóa được lưu ngay; khi bật giới hạn, xóa một thiết bị sẽ ngắt kết nối của nó; danh sách rỗng sẽ từ chối tất cả máy điều khiển.
 
-新版桌面端、iOS、Android 和鸿蒙移动端提供配对入口。旧客户端和当前终端 CLI 不支持此认证，无法连接开启限制的被控电脑。使用已发布安装包时，请确认其设置中已有配对入口。
+Ứng dụng máy tính mới, iOS, Android và HarmonyOS di động cung cấp mục ghép đôi. Ứng dụng cũ và CLI terminal hiện tại không hỗ trợ xác thực này, không thể kết nối đến máy tính được điều khiển đang bật giới hạn. Khi dùng gói đã phát hành, hãy xác nhận cài đặt đã có mục ghép đôi.
 
 <a id="backup"></a>
 
-## 重装、清除数据与迁移
+## Cài đặt lại, xóa dữ liệu và di chuyển
 
-### 桌面端
+### Máy tính
 
-普通桌面模式下，迁移原身份需要一起保留 **ID / 密码缓存与 `identity.json`**。还要保留允许控制本机的名单时，同时备份配置目录中的 `trusted-devices/devices.json`。
+Trong chế độ máy tính thông thường, để di chuyển danh tính gốc cần giữ cùng nhau **bộ nhớ đệm ID / mật khẩu và `identity.json`**. Nếu còn muốn giữ danh sách được phép điều khiển máy này, đồng thời sao lưu `trusted-devices/devices.json` trong thư mục cấu hình.
 
-默认资料位置如下。迁移时保留缓存和配置两个目录，可以避免遗漏身份、名单和设置。
+Vị trí dữ liệu mặc định như sau. Khi di chuyển, giữ cả thư mục bộ nhớ đệm và cấu hình để tránh bỏ sót danh tính, danh sách và cài đặt.
 
-| 环境 | 缓存目录 | 配置目录 |
+| Môi trường | Thư mục bộ nhớ đệm | Thư mục cấu hình |
 | --- | --- | --- |
 | macOS / Linux | `~/.cache/CrossDesk/` | `~/.config/CrossDesk/` |
-| Windows 安装版 | `%LOCALAPPDATA%\CrossDesk\cache\` | `%APPDATA%\CrossDesk\` |
-| Windows 便携版 | 可执行文件旁的 `data/` | 同一 `data/` 目录 |
+| Bản cài đặt Windows | `%LOCALAPPDATA%\CrossDesk\cache\` | `%APPDATA%\CrossDesk\` |
+| Bản Windows di động không cần cài đặt | `data/` bên cạnh tệp thực thi | Cùng thư mục `data/` đó |
 
-macOS / Linux 设置了 `XDG_CACHE_HOME` 或 `XDG_CONFIG_HOME` 时，分别使用对应目录下的 `CrossDesk/`。Windows Debug 构建使用工作目录下的 `cache/` 缓存。
+Khi macOS / Linux đặt `XDG_CACHE_HOME` hoặc `XDG_CONFIG_HOME`, lần lượt dùng `CrossDesk/` trong thư mục tương ứng. Bản Windows Debug dùng bộ nhớ đệm `cache/` trong thư mục làm việc.
 
-备份或恢复前先退出 CrossDesk，并保留原目录结构和访问权限。身份备份包含可用于登录的密钥，应妥善保管，不要作为诊断附件发送，也不要让两台电脑同时使用复制的身份。
+Trước khi sao lưu hoặc khôi phục, thoát CrossDesk và giữ cấu trúc thư mục cùng quyền truy cập gốc. Bản sao lưu danh tính chứa khóa có thể dùng đăng nhập, nên bảo quản cẩn thận, không gửi làm tệp chẩn đoán đính kèm, cũng không để hai máy tính cùng dùng danh tính sao chép.
 
-Windows 无人值守模式使用 `%ProgramData%\CrossDeskUnattended` 中的受保护共享资料；需由管理员停止客户端和服务后备份，不能仅复制普通用户缓存。服务管理见 [Windows 无人值守](USER_GUIDE.md#windows-service)。
+Chế độ không giám sát Windows dùng dữ liệu chia sẻ được bảo vệ trong `%ProgramData%\CrossDeskUnattended`; cần quản trị viên dừng ứng dụng và dịch vụ rồi mới sao lưu, không thể chỉ sao chép bộ nhớ đệm người dùng thông thường. Xem quản lý dịch vụ trong [Windows không giám sát](USER_GUIDE.md#windows-service).
 
-只保留密码无法恢复已绑定的 ID；只保留密钥也不能找回已分配的 ID。丢失后应恢复完整备份，或重新登记身份，再让其他设备重新配对。身份文件损坏时不要直接覆盖仍可恢复的备份。
+Chỉ giữ mật khẩu không khôi phục được ID đã liên kết; chỉ giữ khóa cũng không tìm lại được ID đã cấp. Sau khi mất, nên khôi phục bản sao lưu đầy đủ hoặc đăng ký lại danh tính rồi để các thiết bị khác ghép đôi lại. Nếu tệp danh tính hỏng, không ghi đè trực tiếp bản sao lưu vẫn có thể khôi phục.
 
-### 手机和平板
+### Điện thoại và máy tính bảng
 
-重启应用、清理缓存或更换服务器不会改变配对身份。换手机需要重新配对；Android、鸿蒙清除应用数据或重装后也需要重新配对。配对信息中的公钥不是可恢复私钥的备份。
+Khởi động lại ứng dụng, dọn bộ nhớ đệm hoặc đổi máy chủ không thay đổi danh tính ghép đôi. Đổi điện thoại cần ghép đôi lại; Android, HarmonyOS cũng cần ghép đôi lại sau khi xóa dữ liệu ứng dụng hoặc cài đặt lại. Khóa công khai trong thông tin ghép đôi không phải bản sao lưu có thể khôi phục khóa riêng.
 
-## 连接失败时先检查什么
+## Cần kiểm tra gì trước khi kết nối thất bại
 
-- **设备离线：** 确认被控端运行、未休眠，两端服务器一致。
-- **密码错误：** 核对当前模式的密码，重新输入而不是继续使用旧的保存密码。
-- **可信设备验证失败：** 重新核对指纹及名单，确认客户端支持配对。
-- **尝试过于频繁：** 停止重复尝试，按提示等待后使用正确密码。IP 直连触发限制后的冷却时间为 15 分钟。
-- **能连服务器但连不上电脑：** ID 模式可尝试强制中继；IP 模式检查地址、实际端口和两端防火墙。
+- **Thiết bị ngoại tuyến:** Xác nhận máy được điều khiển đang chạy, không ngủ, hai bên dùng cùng máy chủ.
+- **Sai mật khẩu:** Đối chiếu mật khẩu của chế độ hiện tại, nhập lại thay vì tiếp tục dùng mật khẩu cũ đã lưu.
+- **Xác minh thiết bị đáng tin cậy thất bại:** Đối chiếu lại dấu vân tay và danh sách, xác nhận ứng dụng hỗ trợ ghép đôi.
+- **Thử quá thường xuyên:** Dừng thử liên tục, chờ theo thông báo rồi dùng mật khẩu đúng. Thời gian chờ sau khi IP trực tiếp kích hoạt giới hạn là 15 phút.
+- **Kết nối được máy chủ nhưng không kết nối được máy tính:** Chế độ ID có thể thử buộc chuyển tiếp; chế độ IP kiểm tra địa chỉ, cổng thực tế và tường lửa hai bên.
 
-更多排查见 [常见问题](FAQ.md)。
+Xem thêm cách khắc phục trong [câu hỏi thường gặp](FAQ.md).

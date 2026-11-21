@@ -62,7 +62,7 @@ xmake r crossdesk
 
 Developer ID 安装包通过 `preinstall` 检查覆盖前的旧应用。检测到未签名或 ad-hoc 的 CrossDesk 时，原子保存迁移标记到目标卷的 `/Library/Application Support/CrossDesk/permission-migration.json`。安装完成后退出旧版并启动新版，正式签名的新版会在后台按当前用户分别迁移辅助功能与录屏授权。迁移标记支持离线卷安装和稍后登录的其他用户。
 
-每项权限的处理进度保存在当前用户的 `~/Library/Application Support/CrossDesk/PermissionMigration/progress.json`。已处理或已有效授权的项目会跳过，失败或中断的项目可在“设置 → 系统权限”中点击“重试权限迁移”。迁移处理中及失败时均可选择“稍后”，受影响的被控功能在获得授权后启用。安装器记录迁移状态失败时会写入安装日志并继续安装。已完成安装后遗留的异常授权、更换证书签名身份等情况，参照 [macOS 权限排查](FAQ.md#macos-有连接但黑屏或无法操作键鼠)。
+每项权限的处理进度保存在当前用户的 `~/Library/Application Support/CrossDesk/PermissionMigration/progress.json`。已处理或已有效授权的项目会跳过，失败或中断的项目可在“设置 → 系统权限”中点击“重试权限迁移”。迁移处理中及失败时均可选择“稍后”，受影响的被控功能在获得授权后启用。安装器记录迁移状态失败时会写入安装日志并继续安装。已完成安装后遗留的异常授权、更换证书签名身份等情况，参照 [macOS 权限排查](FAQ.md#macos-đã-kết-nối-nhưng-màn-hình-đen-hoặc-không-thao-tác-được-bàn-phím-và-chuột)。
 
 ### Developer ID 签名与公证
 

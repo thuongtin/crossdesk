@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="docs/images/crossdesk-banner.svg" width="420" alt="CrossDesk 标志：图标在左，双色文字在右" />
-  <p>轻量、跨平台的远程桌面，支持电脑、浏览器、移动端和终端连接，用桌面墙集中查看与操控多台设备。</p>
-  <p><a href="https://www.crossdesk.cn/">官方网站</a> · <a href="https://github.com/kunkundi/crossdesk/releases">下载客户端</a> · <a href="#build">构建指南</a> · <a href="https://web.crossdesk.cn/">打开 Web 客户端</a> · <a href="README_EN.md">English</a></p>
+  <img src="docs/images/crossdesk-banner.svg" width="420" alt="Logo CrossDesk: biểu tượng bên trái, chữ hai màu bên phải" />
+  <p>Máy tính từ xa nhẹ, đa nền tảng, hỗ trợ kết nối từ máy tính, trình duyệt, thiết bị di động và terminal; xem và điều khiển tập trung nhiều thiết bị bằng Bức tường màn hình (DeskHub).</p>
+  <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a></p>
 </div>
 
 <div align="center">
@@ -16,187 +16,187 @@
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/kunkundi/crossdesk?style=flat&label=stars)](https://github.com/kunkundi/crossdesk/stargazers)
 
-[![爱发电](https://img.shields.io/badge/%E7%88%B1%E5%8F%91%E7%94%B5-946CE6?logo=afdian&logoColor=white)](https://afdian.com/a/kunkundi)
+[![Afdian](https://img.shields.io/badge/%E7%88%B1%E5%8F%91%E7%94%B5-946CE6?logo=afdian&logoColor=white)](https://afdian.com/a/kunkundi)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-FF6433?logo=kofi&logoColor=white)](https://ko-fi.com/kunkundi)
 [![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-C93C45?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/kunkundi)
 
 </div>
 
-CrossDesk 让你从电脑、浏览器、手机或终端（桌面 CLI）连接远端电脑，也能通过桌面墙（DeskHub）集中查看与操控多台设备。项目基于 [MiniRTC](https://github.com/kunkundi/minirtc)，支持自托管。
+CrossDesk cho phép bạn kết nối đến máy tính từ xa từ máy tính, trình duyệt, điện thoại hoặc terminal (CLI máy tính), đồng thời xem và điều khiển tập trung nhiều thiết bị qua Bức tường màn hình (DeskHub). Dự án dựa trên [MiniRTC](https://github.com/kunkundi/minirtc), hỗ trợ tự lưu trữ (self-host).
 
-[主要功能](#features) · [下载与平台支持](#download) · [构建指南](#build) · [快速连接](#quick-start) · [终端 CLI](#cli) · [Agent / MCP](#mcp) · [IP 直连](#lan-direct) · [可信设备](#trusted-devices) · [界面预览](#preview) · [使用指南](docs/USER_GUIDE.md) · [文档导航](docs/README.md) · [自托管](#self-hosting) · [文档与反馈](#development) · [赞助](#sponsor)
+[Tính năng chính](#features) · [Tải xuống và nền tảng hỗ trợ](#download) · [Hướng dẫn biên dịch](#build) · [Kết nối nhanh](#quick-start) · [CLI terminal](#cli) · [Agent / MCP](#mcp) · [Kết nối IP trực tiếp](#lan-direct) · [Thiết bị đáng tin cậy](#trusted-devices) · [Xem trước giao diện](#preview) · [Hướng dẫn sử dụng](docs/USER_GUIDE.md) · [Danh mục tài liệu](docs/README.md) · [Tự lưu trữ (self-host)](#self-hosting) · [Tài liệu và phản hồi](#development) · [Tài trợ](#sponsor)
 
 <a id="features"></a>
 
-## 主要功能
+## Tính năng chính
 
-- **跨平台远控：** Windows、macOS、Linux 桌面互控，浏览器及原生 iOS / Android 客户端访问电脑；鸿蒙 PC 与移动端处于开发阶段。
-- **局域网 IP 直连：** 桌面客户端通过 IP、端口和六位密码连接，无需云端信令服务；支持独立端口、记住密码及按模式显示近期设备。
-- **终端主控：** 在终端中通过设备 ID 观看和操控远程桌面，支持 ANSI / Kitty / Sixel 画面、局部缩放与平移、持续本地命令模式及 Pi 扩展，可单独构建。
-- **桌面墙：** 多设备实时预览、分组、放大操控、群控和批量文件分发。
-- **画面与声音：** H.264 / AV1、硬件编解码、远端音频，会话内调整画质、帧率和远端显示器分辨率；记住已确认的分辨率选择，最后一个控制端断开后恢复原显示模式。可用能力随平台与设备而异。
-- **日常协作：** 多显示器切换、键鼠与组合键、文本剪贴板；双栏文件浏览支持目录导航、文件与文件夹双向传输、拖放和任务管理。
-- **Agent / MCP：** 通过本机 MCP 服务授权 Agent 观察和操作远端电脑，提供实时监看、人工接管、多会话、剪贴板和文件工具；可安装对应平台的 MCP 包。
-- **可信设备：** 桌面端可选开启可信设备限制，在连接密码之外校验设备身份；支持复制、粘贴配对信息，提前添加允许访问本机的设备。
-- **部署与运维：** P2P 直连、TURN 中继、SRTP 媒体加密、自托管，以及 Windows 登录前远控和 Linux 无头运行。
+- **Điều khiển từ xa đa nền tảng:** Máy tính Windows, macOS, Linux điều khiển lẫn nhau; truy cập máy tính từ trình duyệt và ứng dụng iOS / Android gốc; bản HarmonyOS cho PC và thiết bị di động đang trong giai đoạn phát triển.
+- **Kết nối IP trực tiếp trong mạng LAN:** Ứng dụng máy tính kết nối bằng IP, cổng và mật khẩu sáu ký tự, không cần dịch vụ báo hiệu đám mây; hỗ trợ cổng riêng, nhớ mật khẩu và hiển thị thiết bị gần đây theo chế độ.
+- **Điều khiển từ terminal:** Xem và điều khiển máy tính từ xa bằng ID thiết bị trong terminal, hỗ trợ hình ảnh ANSI / Kitty / Sixel, thu phóng và di chuyển từng vùng, chế độ lệnh cục bộ liên tục và phần mở rộng Pi; có thể biên dịch riêng.
+- **Bức tường màn hình (DeskHub):** Xem trước nhiều thiết bị theo thời gian thực, phân nhóm, phóng to để điều khiển, điều khiển nhóm và phân phối tệp hàng loạt.
+- **Hình ảnh và âm thanh:** H.264 / AV1, mã hóa và giải mã phần cứng, âm thanh từ xa; điều chỉnh chất lượng hình ảnh, tốc độ khung hình và độ phân giải màn hình từ xa ngay trong phiên; ghi nhớ lựa chọn độ phân giải đã được xác nhận, khôi phục chế độ hiển thị ban đầu khi máy điều khiển cuối cùng ngắt kết nối. Khả năng sử dụng tùy thuộc nền tảng và thiết bị.
+- **Cộng tác hằng ngày:** Chuyển nhiều màn hình, bàn phím, chuột và tổ hợp phím, bảng nhớ tạm văn bản; trình duyệt tệp hai khung hỗ trợ duyệt thư mục, truyền tệp và thư mục hai chiều, kéo thả và quản lý tác vụ.
+- **Agent / MCP:** Cấp quyền cho Agent quan sát và thao tác máy tính từ xa qua dịch vụ MCP trên máy này, cung cấp giám sát thời gian thực, tiếp quản thủ công, nhiều phiên, công cụ bảng nhớ tạm và tệp; có thể cài gói MCP tương ứng với nền tảng.
+- **Thiết bị đáng tin cậy:** Ứng dụng máy tính có thể bật giới hạn thiết bị đáng tin cậy để xác minh danh tính thiết bị ngoài mật khẩu kết nối; hỗ trợ sao chép và dán thông tin ghép đôi, thêm trước các thiết bị được phép truy cập máy này.
+- **Triển khai và vận hành:** Kết nối trực tiếp P2P, chuyển tiếp TURN, mã hóa nội dung đa phương tiện SRTP, tự lưu trữ (self-host), điều khiển Windows từ xa trước khi đăng nhập và chạy Linux không màn hình.
 
 <a id="download"></a>
 
-## 下载与平台支持
+## Tải xuống và nền tảng hỗ trợ
 
-从 [官方网站](https://www.crossdesk.cn/) 或 [GitHub Releases](https://github.com/kunkundi/crossdesk/releases) 下载与你的系统和 CPU 架构匹配的安装包；也可直接打开 [Web 客户端](https://web.crossdesk.cn/)。
+Tải gói cài đặt phù hợp với hệ điều hành và kiến trúc CPU của bạn từ [trang web chính thức](https://www.crossdesk.cn/) hoặc [GitHub Releases](https://github.com/kunkundi/crossdesk/releases); bạn cũng có thể mở trực tiếp [ứng dụng Web](https://web.crossdesk.cn/).
 
-| 平台 | 支持范围与安装要求 |
+| Nền tảng | Phạm vi hỗ trợ và yêu cầu cài đặt |
 | --- | --- |
-| Windows | **控制 / 被控**；Windows 10+，x64；`.exe` 安装包，也支持便携构建 |
-| macOS | **控制 / 被控**；macOS 14.0+；按 Intel / Apple Silicon 选择 x64 / arm64 `.pkg` |
-| Linux | **控制 / 被控**；Ubuntu 20.04+、glibc 2.31 基线；amd64 / arm64 `.deb` |
-| iOS / iPadOS | **仅控制**；从 [App Store](https://apps.apple.com/app/id6828859211) 安装，商店版系统要求以页面为准；当前源码目标为 iOS 16.0+，也可自行构建签名 |
-| Android | **仅控制**；Android 8.0+，arm64；下载已签名 APK 安装，或自行构建 |
-| 鸿蒙 PC（开发版） | **控制 / 被控**；API 26，arm64；使用 DevEco 构建并签名 HAP，仍在进行真机验收 |
-| 鸿蒙手机 / 平板（开发版） | **仅控制**；API 20+，arm64；使用 DevEco 构建并签名 HAP，仍在进行真机验收 |
-| Web | **仅控制**；支持 WebRTC 的浏览器；无需在控制端安装客户端 |
-| 终端 CLI（开发版） | **仅控制**；分发目标为 macOS / Linux（x64、arm64）和 Windows（x64）；通过 [npm 安装](#cli-npm) 或从源码构建，使用要求见 [CLI 说明](apps/cli/README.md) |
-| MCP（开发版） | **仅控制**；在 Codex 或 DSH 中操作远端并监看画面；DSH 安装一个插件包，Codex 需 Node.js 22+，见 [安装与使用](apps/mcp/README.md) |
+| Windows | **Điều khiển / được điều khiển**; Windows 10+, x64; gói cài đặt `.exe`, cũng hỗ trợ bản di động không cần cài đặt |
+| macOS | **Điều khiển / được điều khiển**; macOS 14.0+; chọn `.pkg` x64 / arm64 theo Intel / Apple Silicon |
+| Linux | **Điều khiển / được điều khiển**; Ubuntu 20.04+, mức cơ sở glibc 2.31; `.deb` amd64 / arm64 |
+| iOS / iPadOS | **Chỉ điều khiển**; cài từ [App Store](https://apps.apple.com/app/id6828859211), xem yêu cầu hệ thống của bản trên cửa hàng tại trang ứng dụng; mã nguồn hiện nhắm tới iOS 16.0+, bạn cũng có thể tự biên dịch và ký |
+| Android | **Chỉ điều khiển**; Android 8.0+, arm64; tải APK đã ký để cài đặt hoặc tự biên dịch |
+| HarmonyOS PC (bản phát triển) | **Điều khiển / được điều khiển**; API 26, arm64; dùng DevEco để biên dịch và ký HAP, vẫn đang kiểm thử nghiệm thu trên thiết bị thật |
+| Điện thoại / máy tính bảng HarmonyOS (bản phát triển) | **Chỉ điều khiển**; API 20+, arm64; dùng DevEco để biên dịch và ký HAP, vẫn đang kiểm thử nghiệm thu trên thiết bị thật |
+| Web | **Chỉ điều khiển**; trình duyệt hỗ trợ WebRTC; không cần cài ứng dụng trên máy điều khiển |
+| CLI terminal (bản phát triển) | **Chỉ điều khiển**; nhắm tới phân phối cho macOS / Linux (x64, arm64) và Windows (x64); [cài qua npm](#cli-npm) hoặc biên dịch từ mã nguồn, xem yêu cầu sử dụng trong [tài liệu CLI](apps/cli/README.md) |
+| MCP (bản phát triển) | **Chỉ điều khiển**; thao tác máy từ xa và giám sát hình ảnh trong Codex hoặc DSH; DSH cài một gói plugin, Codex cần Node.js 22+, xem [cài đặt và sử dụng](apps/mcp/README.md) |
 
-请按下载页面选择与你的系统和芯片匹配的安装包。开发版功能可能尚未包含在已发布安装包中，具体以对应 Release 说明为准。
+Bạn hãy chọn gói cài đặt khớp hệ điều hành và chip của mình theo trang tải xuống. Các tính năng bản phát triển có thể chưa nằm trong gói đã phát hành; xem ghi chú của Release tương ứng để biết chi tiết.
 
-- **Linux：** 已有桌面选普通版 `crossdesk-linux-…deb`；需要独立 Xfce 桌面的服务器选 `crossdesk-virtual-desktop-xfce-…deb`。两者选择其一，安装与启动方法见 [使用指南](docs/USER_GUIDE.md#installation) 和 [无头运行](docs/HEADLESS.md)。
-- **macOS：** 首次运行时按提示授予屏幕录制及辅助功能权限；前者用于桌面采集，后者用于远程键鼠输入。[权限说明](docs/USER_GUIDE.md#installation)
-- **iOS：** 优先从 [App Store](https://apps.apple.com/app/id6828859211) 安装；GitHub 的未签名产物仍需自行签名，步骤见 [iOS 构建说明](apps/ios/README.md)。鸿蒙需使用 DevEco 构建并签名，见 [鸿蒙说明](apps/harmony/README.md)。
+- **Linux:** Máy đã có môi trường màn hình chọn bản thường `crossdesk-linux-…deb`; máy chủ cần màn hình Xfce độc lập chọn `crossdesk-virtual-desktop-xfce-…deb`. Chọn một trong hai; xem cách cài đặt và khởi động trong [hướng dẫn sử dụng](docs/USER_GUIDE.md#installation) và [chạy không màn hình](docs/HEADLESS.md).
+- **macOS:** Lần chạy đầu, cấp quyền ghi màn hình và trợ năng theo lời nhắc; quyền thứ nhất dùng để ghi hình màn hình, quyền thứ hai dùng cho nhập liệu bàn phím và chuột từ xa. [Giải thích về quyền](docs/USER_GUIDE.md#installation)
+- **iOS:** Ưu tiên cài từ [App Store](https://apps.apple.com/app/id6828859211); sản phẩm biên dịch chưa ký trên GitHub vẫn cần bạn tự ký, xem các bước trong [hướng dẫn biên dịch iOS](apps/ios/README.md). HarmonyOS cần biên dịch và ký bằng DevEco, xem [tài liệu HarmonyOS](apps/harmony/README.md).
 
 <a id="build"></a>
 
-## 构建指南
+## Hướng dẫn biên dịch
 
-桌面客户端使用 Xmake 构建。准备 Git、Xmake 3.1.1 或更新版本，并按对应平台安装编译工具链与依赖，然后获取源码及子模块：
+Ứng dụng máy tính sử dụng Xmake để biên dịch. Chuẩn bị Git, Xmake 3.1.1 hoặc mới hơn, cài chuỗi công cụ biên dịch và các phụ thuộc cho nền tảng tương ứng, sau đó lấy mã nguồn và các submodule:
 
 ```bash
 git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
 cd crossdesk
 ```
 
-- **桌面客户端：** 按 [Windows](docs/BUILD.md#windows)、[macOS](docs/BUILD.md#macos) 或 [Linux](docs/BUILD.md#linux) 的步骤配置、编译和运行；打包、签名与 CI 配置见 [完整构建指南](docs/BUILD.md)。
-- **移动端与鸿蒙：** [iOS / iPadOS](apps/ios/README.md)、[Android](apps/android/README.md)、[鸿蒙手机 / 平板](apps/harmony/README.md)、[鸿蒙 PC](apps/harmony/desktop-port/README.md)。
-- **终端与集成：** [CLI 构建与运行](apps/cli/README.md)、[MCP 构建与集成](apps/mcp/DEVELOPMENT.md)。
+- **Ứng dụng máy tính:** Làm theo các bước cho [Windows](docs/BUILD.md#windows), [macOS](docs/BUILD.md#macos) hoặc [Linux](docs/BUILD.md#linux) để cấu hình, biên dịch và chạy; xem đóng gói, ký và cấu hình CI trong [hướng dẫn biên dịch đầy đủ](docs/BUILD.md).
+- **Thiết bị di động và HarmonyOS:** [iOS / iPadOS](apps/ios/README.md), [Android](apps/android/README.md), [điện thoại / máy tính bảng HarmonyOS](apps/harmony/README.md), [HarmonyOS PC](apps/harmony/desktop-port/README.md).
+- **Terminal và tích hợp:** [Biên dịch và chạy CLI](apps/cli/README.md), [biên dịch và tích hợp MCP](apps/mcp/DEVELOPMENT.md).
 
 <a id="quick-start"></a>
 
-## 快速连接
+## Kết nối nhanh
 
-### 通过设备 ID 连接
+### Kết nối bằng ID thiết bị
 
-1. **准备被控电脑。** 安装并运行 CrossDesk，切换至 ID 连接模式，等待显示“已连接服务器”，查看“本桌面”中的本机 ID 和密码。
-2. **发起连接。** 在另一台电脑的 CrossDesk 中输入被控电脑的 9 位 ID，点击“连接”；也可使用原生移动端或 [Web 客户端](https://web.crossdesk.cn/)。
-3. **验证密码。** 输入被控电脑当前的连接密码，等待远程画面出现。桌面端可勾选“记住密码”，后续从“近期连接”重连。
+1. **Chuẩn bị máy tính được điều khiển.** Cài đặt và chạy CrossDesk, chuyển sang chế độ kết nối ID, chờ hiển thị “Đã kết nối máy chủ”, xem ID máy này và mật khẩu trong “Màn hình máy này”.
+2. **Bắt đầu kết nối.** Nhập ID gồm 9 chữ số của máy được điều khiển trong CrossDesk trên máy tính khác, nhấn “Kết nối”; bạn cũng có thể dùng ứng dụng di động gốc hoặc [ứng dụng Web](https://web.crossdesk.cn/).
+3. **Xác minh mật khẩu.** Nhập mật khẩu kết nối hiện tại của máy được điều khiển, chờ hình ảnh từ xa xuất hiện. Trên máy tính, bạn có thể chọn “Nhớ mật khẩu”, sau đó kết nối lại từ “Kết nối gần đây”.
 
-使用自建服务器时，两端需要接入同一服务；升级客户端前请先更新服务端。更多连接和密码操作见 [使用指南](docs/USER_GUIDE.md#quick-start)，连接失败、黑屏或无法操作键鼠时见 [常见问题](docs/FAQ.md)。
+Khi dùng máy chủ tự triển khai, hai bên cần kết nối cùng dịch vụ; hãy cập nhật máy chủ trước khi nâng cấp ứng dụng. Xem thêm thao tác kết nối và mật khẩu trong [hướng dẫn sử dụng](docs/USER_GUIDE.md#quick-start); khi kết nối thất bại, màn hình đen hoặc không thao tác được bàn phím và chuột, xem [câu hỏi thường gặp](docs/FAQ.md).
 
 <a id="lan-direct"></a>
 
-### 通过局域网 IP 直连
+### Kết nối IP trực tiếp qua mạng LAN
 
-1. **切换模式。** 两台电脑均运行支持 IP 直连的桌面客户端，点击左上角模式按钮切换到 **IP 直连模式**。若按钮未显示，在 **设置 → 常规 → 网络连接** 中勾选 **启用 IP 直连** 并保存。
-2. **填写地址。** 在控制端输入被控电脑显示的 `IP:端口`，例如 `192.168.1.20:52888` 或 `[2001:db8::20]:52888`，点击“连接”。只输入 IP 时使用默认端口 **52888**；请以对方界面显示的实际端口为准。
-3. **输入密码。** 输入被控电脑在 IP 直连模式下显示的 **6 位英文字母或数字密码**，可勾选“记住密码”。切换模式时，“近期连接”同步切换为对应模式的设备记录。
+1. **Chuyển chế độ.** Cả hai máy tính đều chạy ứng dụng máy tính có hỗ trợ kết nối IP trực tiếp; nhấn nút chế độ ở góc trên bên trái để chuyển sang **Chế độ kết nối IP**. Nếu không thấy nút, chọn **Bật kết nối IP** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
+2. **Nhập địa chỉ.** Trên máy điều khiển, nhập `IP:cổng` hiển thị trên máy được điều khiển, ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888`, rồi nhấn “Kết nối”. Khi chỉ nhập IP, cổng mặc định là **52888**; hãy căn cứ vào cổng thực tế hiển thị trên giao diện bên kia.
+3. **Nhập mật khẩu.** Nhập **mật khẩu gồm 6 chữ cái tiếng Anh hoặc chữ số** hiển thị trên máy được điều khiển ở chế độ kết nối IP trực tiếp; bạn có thể chọn “Nhớ mật khẩu”. Khi chuyển chế độ, “Kết nối gần đây” cũng chuyển sang lịch sử thiết bị của chế độ tương ứng.
 
-两台电脑需要在局域网内可互相访问；网络可以有外网，也可以没有外网，直连会话不依赖云端信令服务。主窗口可直接切换本机 IP、修改端口和密码，默认开启所有 IP 接口监听，支持 IPv4 和 IPv6，支持通过 VPN 等接口连接，可在设置的“网络连接”中调整；关闭设置中的“启用 IP 直连”会停止监听、断开 IP 直连会话并隐藏模式按钮。详见 [IP 直连使用指南](docs/USER_GUIDE.md#lan-direct)。
+Hai máy tính cần truy cập được nhau trong mạng LAN; mạng có thể có hoặc không có Internet, phiên kết nối trực tiếp không phụ thuộc dịch vụ báo hiệu đám mây. Trong cửa sổ chính, bạn có thể trực tiếp đổi IP máy này, cổng và mật khẩu. Mặc định bật lắng nghe trên tất cả giao diện IP, hỗ trợ IPv4 và IPv6, cho phép kết nối qua giao diện như VPN; có thể điều chỉnh trong “Kết nối mạng” của cài đặt. Tắt “Bật kết nối IP” trong cài đặt sẽ dừng lắng nghe, ngắt các phiên IP trực tiếp và ẩn nút chế độ. Xem [hướng dẫn kết nối IP trực tiếp](docs/USER_GUIDE.md#lan-direct).
 
 <a id="trusted-devices"></a>
 
-### 仅允许可信设备连接（可选）
+### Chỉ cho phép thiết bị đáng tin cậy kết nối (tùy chọn)
 
-桌面端的可信设备限制**默认关闭**，适用于 ID 连接和 IP 直连。开启后，控制端仍需通过原有密码验证，并持有可信名单中设备的配对私钥；仅知道 ID 和密码不能通过这项限制。
+Giới hạn thiết bị đáng tin cậy trên ứng dụng máy tính **mặc định tắt**, áp dụng cho cả kết nối ID và IP trực tiếp. Khi bật, máy điều khiển vẫn cần vượt qua xác minh mật khẩu hiện có và giữ khóa riêng ghép đôi của thiết bị trong danh sách tin cậy; chỉ biết ID và mật khẩu không thể vượt qua giới hạn này.
 
-1. **在控制端复制配对信息。** 打开 **设置 → 常规 → 隐私保护 → 管理可信设备**，在 **本机配对信息** 中点击 **复制配对信息**。
-2. **在被控端添加控制端。** 打开同一管理界面，将收到的信息粘贴到 **添加可信设备** 输入框，点击 **添加** 即可加入，无需再次确认，也无需先建立远程连接。
-3. **在被控端开启限制。** 返回设置，勾选 **仅允许可信设备控制** 并保存。之后照常通过 ID 或 IP 发起连接、验证密码。
+1. **Sao chép thông tin ghép đôi trên máy điều khiển.** Mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Quản lý thiết bị đáng tin cậy**, nhấn **Sao chép thông tin ghép đôi** trong **Thông tin ghép đôi máy này**.
+2. **Thêm máy điều khiển trên máy được điều khiển.** Mở cùng giao diện quản lý, dán thông tin nhận được vào ô **Thêm thiết bị đáng tin cậy**, nhấn **Thêm** để thêm vào danh sách; không cần xác nhận lại hay thiết lập kết nối từ xa trước.
+3. **Bật giới hạn trên máy được điều khiển.** Quay lại cài đặt, chọn **Chỉ cho phép thiết bị đáng tin cậy điều khiển** rồi lưu. Sau đó bắt đầu kết nối bằng ID hoặc IP và xác minh mật khẩu như bình thường.
 
-配对信息只包含公钥、设备名称和 ID，不含私钥或密码，应通过可信渠道传递。添加后可点击 **查看指纹** 与控制端核对；也允许添加本机，同一公钥不会重复加入。信任是单向的，如需互相控制，应在双方分别添加对方。
+Thông tin ghép đôi chỉ gồm khóa công khai, tên thiết bị và ID, không có khóa riêng hay mật khẩu; nên truyền qua kênh đáng tin cậy. Sau khi thêm, bạn có thể nhấn **Xem dấu vân tay** để đối chiếu với máy điều khiển; cũng có thể thêm chính máy này, cùng một khóa công khai sẽ không được thêm trùng. Tin cậy là một chiều; nếu cần điều khiển lẫn nhau, bạn nên thêm bên kia trên cả hai máy.
 
-添加和移除会立即保存；开启限制时，**移除信任** 会断开对应设备的会话，名单为空则拒绝所有控制端。也可以从管理界面的已连接设备中添加完成身份验证的控制端。
+Việc thêm và xóa được lưu ngay; khi giới hạn đang bật, **Xóa tin cậy** sẽ ngắt phiên của thiết bị tương ứng, danh sách rỗng sẽ từ chối tất cả máy điều khiển. Bạn cũng có thể thêm máy điều khiển đã hoàn tất xác minh danh tính từ các thiết bị đã kết nối trong giao diện quản lý.
 
-**兼容范围：** 使用支持配对的新版桌面端、iOS、Android 或鸿蒙移动端。手机和平板从“设置 → 本机配对信息”复制配对信息，再添加到被控电脑。旧客户端和当前终端 CLI 无法连接开启此限制的被控端。
+**Phạm vi tương thích:** Dùng phiên bản mới có hỗ trợ ghép đôi của ứng dụng máy tính, iOS, Android hoặc HarmonyOS di động. Trên điện thoại và máy tính bảng, sao chép thông tin ghép đôi từ “Cài đặt → Thông tin ghép đôi máy này”, rồi thêm vào máy tính được điều khiển. Ứng dụng cũ và CLI terminal hiện tại không thể kết nối đến máy được điều khiển đang bật giới hạn này.
 
-重装、清除应用数据或迁移电脑前，请先查看 [身份备份与迁移](docs/CONNECTIONS.md#backup)。仅保存 ID 和密码不足以恢复已绑定的桌面身份；更换设备身份后需要重新配对。
+Trước khi cài đặt lại, xóa dữ liệu ứng dụng hoặc chuyển máy tính, hãy xem [sao lưu và di chuyển danh tính](docs/CONNECTIONS.md#backup). Chỉ lưu ID và mật khẩu không đủ để khôi phục danh tính máy tính đã liên kết; sau khi thay đổi danh tính thiết bị cần ghép đôi lại.
 
 <a id="preview"></a>
 
-## 界面预览
+## Xem trước giao diện
 
-### 桌面客户端
+### Ứng dụng máy tính
 
-本机凭据、远程连接和近期设备集中在主窗口，左上角提供连接模式切换和桌面墙入口。
+Thông tin xác thực máy này, kết nối từ xa và thiết bị gần đây tập trung trong cửa sổ chính; góc trên bên trái có nút chuyển chế độ kết nối và lối vào Bức tường màn hình (DeskHub).
 
 <p align="center">
-  <img src="docs/images/desktop-main-zh.png" width="800" alt="CrossDesk ID 连接模式：模式切换、本机 ID、远程连接入口和近期设备" />
+  <img src="docs/images/desktop-main-zh.png" width="800" alt="Chế độ kết nối ID của CrossDesk: chuyển chế độ, ID máy này, lối vào kết nối từ xa và thiết bị gần đây" />
 </p>
 
-### IP 直连模式
+### Chế độ kết nối IP trực tiếp
 
-切换本机 IP、修改端口与密码，通过对方地址连接；下方展示独立的局域网近期设备。
+Đổi IP máy này, cổng và mật khẩu, kết nối bằng địa chỉ bên kia; bên dưới hiển thị riêng các thiết bị LAN gần đây.
 
 <p align="center">
-  <img src="docs/images/desktop-lan-zh.png" width="800" alt="CrossDesk IP 直连模式：本机 IP 和端口编辑入口、六位密码、远端地址输入和局域网近期设备" />
+  <img src="docs/images/desktop-lan-zh.png" width="800" alt="Chế độ kết nối IP trực tiếp của CrossDesk: lối vào sửa IP và cổng máy này, mật khẩu sáu ký tự, ô địa chỉ từ xa và thiết bị LAN gần đây" />
 </p>
 
 <a id="deskhub"></a>
 
-### 桌面墙（DeskHub）
+### Bức tường màn hình (DeskHub)
 
-按分组查看多台设备，点击画面放大，再选择接管操控；支持批量连接、静音与文件分发。
+Xem nhiều thiết bị theo nhóm, nhấn hình ảnh để phóng to rồi chọn tiếp quản điều khiển; hỗ trợ kết nối hàng loạt, tắt tiếng và phân phối tệp.
 
 <p align="center">
-  <img src="docs/images/desktop-deskhub-zh.png" width="960" alt="DeskHub 桌面墙：六台设备的远程画面与管理工具栏" />
+  <img src="docs/images/desktop-deskhub-zh.png" width="960" alt="Bức tường màn hình DeskHub: hình ảnh từ xa của sáu thiết bị và thanh công cụ quản lý" />
 </p>
 
-群控会向所有已连接设备发送输入；关闭桌面墙会断开全部远程连接。操作范围与详细用法见 [桌面墙使用指南](docs/USER_GUIDE.md#deskhub)。
+Điều khiển nhóm gửi thao tác nhập đến tất cả thiết bị đã kết nối; đóng Bức tường màn hình (DeskHub) sẽ ngắt toàn bộ kết nối từ xa. Xem phạm vi thao tác và cách dùng chi tiết trong [hướng dẫn Bức tường màn hình (DeskHub)](docs/USER_GUIDE.md#deskhub).
 
-### 双栏文件传输
+### Truyền tệp hai khung
 
-在会话工具栏打开文件传输，同时浏览本机与远端目录，选择文件或文件夹后发送，也可在两栏之间拖放；任务列表显示进度并支持取消未完成任务。远端目录浏览需要兼容的被控端。
+Mở truyền tệp trên thanh công cụ phiên để duyệt đồng thời thư mục máy này và máy từ xa, chọn tệp hoặc thư mục rồi gửi, hoặc kéo thả giữa hai khung; danh sách tác vụ hiển thị tiến độ và cho phép hủy tác vụ chưa hoàn tất. Duyệt thư mục từ xa cần máy được điều khiển tương thích.
 
 <p align="center">
-  <img src="docs/images/desktop-files-zh.png" width="960" alt="双栏文件传输：本机与远端路径、文件列表、发送按钮和任务列表" />
+  <img src="docs/images/desktop-files-zh.png" width="960" alt="Truyền tệp hai khung: đường dẫn máy này và máy từ xa, danh sách tệp, nút gửi và danh sách tác vụ" />
 </p>
 
 <a id="session"></a>
 <a id="settings"></a>
 
-## 会话操作与设置
+## Thao tác phiên và cài đặt
 
-远程会话支持显示器切换、画质与帧率调整、声音、文本剪贴板同步和双向文件传输。工具栏还可查看网络状态、控制隐私屏；桌面设置中可配置 IP 直连开关、可信设备限制、编码、中继、自托管、最小化时暂停视频及桌面墙画面预算。
+Phiên từ xa hỗ trợ chuyển màn hình, điều chỉnh chất lượng hình ảnh và tốc độ khung hình, âm thanh, đồng bộ bảng nhớ tạm văn bản và truyền tệp hai chiều. Thanh công cụ cũng cho phép xem trạng thái mạng và điều khiển màn hình riêng tư; trong cài đặt máy tính có thể cấu hình bật/tắt IP trực tiếp, giới hạn thiết bị đáng tin cậy, mã hóa, chuyển tiếp, tự lưu trữ (self-host), tạm dừng video khi thu nhỏ và ngân sách hình ảnh của Bức tường màn hình (DeskHub).
 
-被控端为 Windows、macOS 或 Linux X11 时，可在 **画面设置 → 分辨率** 中选择当前显示器支持的模式，无需重连。桌面和原生移动端会记住远端确认成功的选择，重连时在仍受支持的情况下重新应用；最后一个控制端断开后，被控端恢复本轮连接首次调整前的显示模式。Linux 需要 X11 采集和 RandR，Wayland / XWayland 暂不支持此项调整。
+Khi máy được điều khiển dùng Windows, macOS hoặc Linux X11, bạn có thể chọn chế độ mà màn hình hiện tại hỗ trợ trong **Cài đặt hình ảnh → Độ phân giải**, không cần kết nối lại. Ứng dụng máy tính và di động gốc ghi nhớ lựa chọn đã được máy từ xa xác nhận thành công, rồi áp dụng lại khi kết nối lại nếu vẫn được hỗ trợ; khi máy điều khiển cuối cùng ngắt kết nối, máy được điều khiển khôi phục chế độ hiển thị trước lần điều chỉnh đầu tiên của đợt kết nối này. Linux cần ghi hình X11 và RandR; Wayland / XWayland hiện chưa hỗ trợ điều chỉnh này.
 
 <p align="center">
-  <img src="docs/images/desktop-stream-video-settings-zh.png" width="960" alt="会话画面设置：质量、帧率、远端显示器分辨率和画面偏好" />
+  <img src="docs/images/desktop-stream-video-settings-zh.png" width="960" alt="Cài đặt hình ảnh trong phiên: chất lượng, tốc độ khung hình, độ phân giải màn hình từ xa và tùy chọn hình ảnh" />
 </p>
 
-- [会话操作](docs/USER_GUIDE.md#session)：工具栏、文本剪贴板、文件保存和隐私屏。
-- [客户端设置与更新](docs/USER_GUIDE.md#settings)：常规设置、桌面墙传输及版本检查。
-- [桌面墙使用说明](docs/deskhub.md)：整理设备、群控、批量传文件及降低带宽占用。
+- [Thao tác phiên](docs/USER_GUIDE.md#session): thanh công cụ, bảng nhớ tạm văn bản, lưu tệp và màn hình riêng tư.
+- [Cài đặt và cập nhật ứng dụng](docs/USER_GUIDE.md#settings): cài đặt chung, truyền hình ảnh Bức tường màn hình (DeskHub) và kiểm tra phiên bản.
+- [Hướng dẫn Bức tường màn hình (DeskHub)](docs/deskhub.md): sắp xếp thiết bị, điều khiển nhóm, truyền tệp hàng loạt và giảm băng thông sử dụng.
 
 <a id="cli"></a>
 
-## 终端客户端 CLI
+## Ứng dụng CLI terminal
 
-`crossdesk-cli` 在终端中通过 9 位设备 ID 连接被控电脑，默认只读、静音。普通终端使用 ANSI 字符画面，支持 Kitty 或 Sixel 图形协议的终端可显示像素画面；可切换显示器、调整画质、放大细节和平移，也可明确开启键鼠控制。CLI 可以独立于桌面 GUI 构建，被控电脑仍需运行 CrossDesk 并提供可捕获的图形会话，信令服务需支持 `cli` 临时身份注册。
+`crossdesk-cli` kết nối đến máy tính được điều khiển bằng ID thiết bị gồm 9 chữ số trong terminal; mặc định chỉ xem và tắt tiếng. Terminal thông thường dùng hình ảnh ký tự ANSI; terminal hỗ trợ giao thức đồ họa Kitty hoặc Sixel có thể hiển thị hình ảnh điểm ảnh. Bạn có thể chuyển màn hình, điều chỉnh chất lượng hình ảnh, phóng to chi tiết và di chuyển khung nhìn, hoặc chủ động bật điều khiển bàn phím và chuột. CLI có thể biên dịch độc lập với GUI máy tính; máy tính được điều khiển vẫn cần chạy CrossDesk và cung cấp phiên đồ họa có thể ghi hình, dịch vụ báo hiệu cần hỗ trợ đăng ký danh tính tạm thời `cli`.
 
-### 画面预览
+### Xem trước hình ảnh
 
-| ANSI 字符画面 | Kitty 协议像素画面 |
+| Hình ảnh ký tự ANSI | Hình ảnh điểm ảnh qua giao thức Kitty |
 | --- | --- |
-| <img src="docs/images/cli-ansi-overview.png" width="480" alt="CrossDesk CLI 的 ANSI 四象限全景：顶部显示只读模式和连接状态，底部显示操作快捷键" /> | <img src="docs/images/cli-kitty-overview.png" width="480" alt="CrossDesk CLI 的 Kitty 协议全景：同一远程桌面以像素画面显示，保留状态栏和操作快捷键" /> |
-| 用彩色字符显示桌面轮廓，适合普通终端；查看局部可用 `+/-` 或滚轮以鼠标位置缩放。 | 直接显示像素画面，适合支持 Kitty 图形协议的终端，如 Ghostty。 |
+| <img src="docs/images/cli-ansi-overview.png" width="480" alt="Toàn cảnh ANSI bốn góc phần tư của CrossDesk CLI: phía trên hiển thị chế độ chỉ xem và trạng thái kết nối, phía dưới hiển thị phím tắt thao tác" /> | <img src="docs/images/cli-kitty-overview.png" width="480" alt="Toàn cảnh qua giao thức Kitty của CrossDesk CLI: cùng màn hình từ xa hiển thị bằng điểm ảnh, giữ thanh trạng thái và phím tắt thao tác" /> |
+| Hiển thị đường nét màn hình bằng ký tự màu, phù hợp với terminal thông thường; dùng `+/-` hoặc con lăn để thu phóng tại vị trí chuột khi xem từng vùng. | Hiển thị trực tiếp hình ảnh điểm ảnh, phù hợp với terminal hỗ trợ giao thức đồ họa Kitty như Ghostty. |
 
-ANSI 用字符显示画面，Kitty 可显示像素画面；实际效果取决于终端支持、字体和窗口大小。
+ANSI hiển thị hình ảnh bằng ký tự, Kitty có thể hiển thị hình ảnh điểm ảnh; kết quả thực tế phụ thuộc vào khả năng hỗ trợ của terminal, phông chữ và kích thước cửa sổ.
 
 <a id="cli-npm"></a>
 
-### 通过 npm 安装并连接
+### Cài đặt qua npm và kết nối
 
-准备 **Node.js 22 或以上**及 npm，从 [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli) 安装。npm 会按操作系统与 CPU 架构选择原生程序，无需安装 Xmake 或 C++ 编译工具链。
+Chuẩn bị **Node.js 22 trở lên** và npm, cài từ [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli). npm tự chọn chương trình gốc theo hệ điều hành và kiến trúc CPU, không cần cài Xmake hay chuỗi công cụ biên dịch C++.
 
 ```sh
 npm install -g @chunkdash/crossdesk-cli@latest
@@ -204,128 +204,128 @@ crossdesk-cli doctor --json
 crossdesk-cli 123456789
 ```
 
-将 `123456789` 换成被控电脑的 9 位设备 ID，连接时按提示隐藏输入密码。默认只读、静音；`doctor` 仅检查本机环境，不发起连接。更新到最新版时，重新执行上面的 `npm install -g @chunkdash/crossdesk-cli@latest`。
+Thay `123456789` bằng ID thiết bị gồm 9 chữ số của máy được điều khiển; khi kết nối, nhập mật khẩu ẩn theo lời nhắc. Mặc định chỉ xem và tắt tiếng; `doctor` chỉ kiểm tra môi trường máy này, không bắt đầu kết nối. Để cập nhật lên bản mới nhất, chạy lại `npm install -g @chunkdash/crossdesk-cli@latest` ở trên.
 
-无需全局安装时，也可使用 `npx`，首次运行会下载对应平台包：
+Nếu không cần cài toàn cục, bạn cũng có thể dùng `npx`; lần chạy đầu sẽ tải gói của nền tảng tương ứng:
 
 ```sh
 npx @chunkdash/crossdesk-cli@latest doctor --json
 npx @chunkdash/crossdesk-cli@latest 123456789
 ```
 
-请安装统一入口 `@chunkdash/crossdesk-cli`，并保留 npm 的可选依赖，不要添加 `--omit=optional`；仅安装平台包不会注册 `crossdesk-cli` 命令。平台运行要求、旧包迁移及故障排查见 [npm 分发说明](apps/cli/docs/npm-distribution.md)。
+Hãy cài gói đầu vào thống nhất `@chunkdash/crossdesk-cli` và giữ các phụ thuộc tùy chọn của npm, không thêm `--omit=optional`; chỉ cài gói nền tảng sẽ không đăng ký lệnh `crossdesk-cli`. Xem yêu cầu chạy trên từng nền tảng, di chuyển từ gói cũ và khắc phục sự cố trong [tài liệu phân phối npm](apps/cli/docs/npm-distribution.md).
 
-### 常用操作
+### Thao tác thường dùng
 
-默认只读、静音。只读模式下按 `c` 开启键鼠控制，按 `+/-` 或滚轮缩放，按 `f` 回到全景。**控制模式下退出时，先按 `Ctrl+]`，再按 `q`**，否则普通按键会发给远端电脑。
+Mặc định chỉ xem và tắt tiếng. Ở chế độ chỉ xem, nhấn `c` để bật điều khiển bàn phím và chuột, nhấn `+/-` hoặc dùng con lăn để thu phóng, nhấn `f` để trở về toàn cảnh. **Để thoát ở chế độ điều khiển, nhấn `Ctrl+]` trước, rồi nhấn `q`**; nếu không, phím thông thường sẽ được gửi đến máy tính từ xa.
 
 ```sh
-# 普通终端，用字符显示画面
+# Terminal thông thường, hiển thị hình ảnh bằng ký tự
 crossdesk-cli 123456789 --renderer ansi
 
-# 支持 Kitty 图形协议的终端，用像素显示画面
+# Terminal hỗ trợ giao thức đồ họa Kitty, hiển thị hình ảnh bằng điểm ảnh
 crossdesk-cli 123456789 --renderer kitty
 ```
 
-CLI 通过设备 ID 连接，暂不提供 IP 直连、音频播放、文件传输或剪贴板同步，也不支持连接开启可信设备限制的电脑。被控电脑需要运行 CrossDesk 并有可用的桌面。自托管用户需要使用支持 CLI 连接的服务端。
+CLI kết nối bằng ID thiết bị, hiện chưa cung cấp kết nối IP trực tiếp, phát âm thanh, truyền tệp hay đồng bộ bảng nhớ tạm; cũng không hỗ trợ kết nối đến máy tính đang bật giới hạn thiết bị đáng tin cậy. Máy tính được điều khiển cần chạy CrossDesk và có màn hình nền khả dụng. Người dùng tự lưu trữ (self-host) cần dùng máy chủ hỗ trợ kết nối CLI.
 
-[完整 CLI 指南](apps/cli/README.md) · [参数、Pi 扩展与自行构建](apps/cli/docs/terminal-client.md) · [安装故障排查](apps/cli/docs/npm-distribution.md)
+[Hướng dẫn CLI đầy đủ](apps/cli/README.md) · [Tham số, phần mở rộng Pi và tự biên dịch](apps/cli/docs/terminal-client.md) · [Khắc phục sự cố cài đặt](apps/cli/docs/npm-distribution.md)
 
 <a id="mcp"></a>
 
-## Agent 与 MCP
+## Agent và MCP
 
-[CrossDesk MCP](apps/mcp/README.md) 让你在 Codex 或 DeepSeek Harness 对话中安排远程任务，并在右侧查看远端画面。远端电脑运行 CrossDesk；本机按下表安装后，在面板中选择设备并授权。
+[CrossDesk MCP](apps/mcp/README.md) cho phép bạn giao tác vụ từ xa trong cuộc trò chuyện Codex hoặc DeepSeek Harness và xem hình ảnh từ xa ở bên phải. Máy tính từ xa chạy CrossDesk; sau khi cài đặt trên máy này theo bảng dưới, chọn thiết bị và cấp quyền trong bảng điều khiển.
 
-| 使用环境 | 安装与配置 | 远端画面 |
+| Môi trường sử dụng | Cài đặt và cấu hình | Hình ảnh từ xa |
 | --- | --- | --- |
-| Codex 桌面版 | [Codex 安装指南](apps/mcp/README.md#install-codex)：注册 MCP，无需额外插件 | Agent 打开右侧内置浏览器 |
-| DeepSeek Harness 桌面版（DSH） | [DSH 安装指南](apps/mcp/README.md#install-dsh)：只安装一个对应平台的 MCP 插件包，自动注册服务 | 插件自动打开当前对话侧栏 |
+| Codex bản máy tính | [Hướng dẫn cài Codex](apps/mcp/README.md#install-codex): đăng ký MCP, không cần plugin bổ sung | Agent mở trình duyệt tích hợp bên phải |
+| DeepSeek Harness bản máy tính (DSH) | [Hướng dẫn cài DSH](apps/mcp/README.md#install-dsh): chỉ cài một gói plugin MCP tương ứng với nền tảng, tự động đăng ký dịch vụ | Plugin tự mở thanh bên của cuộc trò chuyện hiện tại |
 
-1. [下载与你的本机对应的平台安装包](apps/mcp/README.md#install-package)，再按上表完成安装。
-2. 让 Agent 打开 CrossDesk，在监看面板选择设备、输入连接密码，并选择仅查看或允许控制。密码在本地面板中输入；保存密码与允许以后自动连接分别设置。
-3. Agent 通过截图、键鼠和结构化桌面工具执行任务；用户可实时监看、暂停 Agent、人工接管或断开连接。
+1. [Tải gói cài đặt cho nền tảng máy này](apps/mcp/README.md#install-package), rồi hoàn tất cài đặt theo bảng trên.
+2. Yêu cầu Agent mở CrossDesk, chọn thiết bị trong bảng giám sát, nhập mật khẩu kết nối và chọn chỉ xem hoặc cho phép điều khiển. Mật khẩu được nhập trong bảng điều khiển cục bộ; việc lưu mật khẩu và cho phép tự động kết nối sau này được thiết lập riêng.
+3. Agent thực hiện tác vụ qua ảnh chụp màn hình, bàn phím, chuột và các công cụ màn hình có cấu trúc; người dùng có thể giám sát theo thời gian thực, tạm dừng Agent, tiếp quản thủ công hoặc ngắt kết nối.
 
-支持最多 8 个并行设备会话、多屏观察、远端文本剪贴板、文件浏览与传输、声音、系统锁屏及本地输入密码的解锁流程。窗口与可访问性操作受远端平台和系统权限限制，部分工具需要新版被控端。浏览器、终端和 MCP Apps 的面板能力因宿主而异；配置及兼容范围见 [MCP 文档](apps/mcp/README.md)。
+Hỗ trợ tối đa 8 phiên thiết bị song song, quan sát nhiều màn hình, bảng nhớ tạm văn bản từ xa, duyệt và truyền tệp, âm thanh, khóa màn hình hệ thống và quy trình mở khóa bằng mật khẩu nhập tại máy này. Thao tác cửa sổ và trợ năng chịu giới hạn của nền tảng từ xa và quyền hệ thống; một số công cụ cần phiên bản máy được điều khiển mới. Khả năng bảng điều khiển trên trình duyệt, terminal và MCP Apps tùy thuộc ứng dụng chủ; xem cấu hình và phạm vi tương thích trong [tài liệu MCP](apps/mcp/README.md).
 
 <a id="mobile"></a>
 
-## 移动端与鸿蒙
+## Thiết bị di động và HarmonyOS
 
 <a id="ios"></a>
 
 ### iOS / iPadOS
 
-可从 [App Store](https://apps.apple.com/app/id6828859211) 安装原生控制端，支持触控与虚拟鼠标、多显示器、远端音频、文件收发和文本剪贴板。悬浮菜单的“剪贴板”按钮可主动发送本机文本，单次上限为 128 KiB；画面设置可调整受支持的远端显示器分辨率，并记住已确认的选择。iPhone / iPad 当前不能作为被控桌面，应用内更新检查指向 App Store。
+Bạn có thể cài ứng dụng điều khiển gốc từ [App Store](https://apps.apple.com/app/id6828859211), hỗ trợ cảm ứng và chuột ảo, nhiều màn hình, âm thanh từ xa, gửi nhận tệp và bảng nhớ tạm văn bản. Nút “Bảng nhớ tạm” trong menu nổi cho phép chủ động gửi văn bản máy này, giới hạn mỗi lần là 128 KiB; cài đặt hình ảnh cho phép điều chỉnh độ phân giải màn hình từ xa được hỗ trợ và ghi nhớ lựa chọn đã xác nhận. iPhone / iPad hiện không thể làm máy tính được điều khiển; kiểm tra cập nhật trong ứng dụng dẫn đến App Store.
 
-[使用说明](docs/USER_GUIDE.md#ios) · [构建与签名](apps/ios/README.md)
+[Hướng dẫn sử dụng](docs/USER_GUIDE.md#ios) · [Biên dịch và ký](apps/ios/README.md)
 
 <a id="android"></a>
 
 ### Android
 
-原生控制端支持触控与外接键鼠、多屏切换、文件收发、文本剪贴板和画面设置。切换应用时优先通过画中画保持会话；不支持画中画时尝试通过后台通知保留连接。悬浮菜单可开关电脑的隐私屏。Android 手机和平板当前不能作为被控端。
+Ứng dụng điều khiển gốc hỗ trợ cảm ứng và bàn phím, chuột ngoài, chuyển nhiều màn hình, gửi nhận tệp, bảng nhớ tạm văn bản và cài đặt hình ảnh. Khi chuyển ứng dụng, ưu tiên duy trì phiên bằng hình trong hình; nếu không hỗ trợ hình trong hình, thử giữ kết nối bằng thông báo nền. Menu nổi cho phép bật/tắt màn hình riêng tư của máy tính. Điện thoại và máy tính bảng Android hiện không thể làm máy được điều khiển.
 
-[使用说明](docs/USER_GUIDE.md#android) · [源码构建](apps/android/README.md)
+[Hướng dẫn sử dụng](docs/USER_GUIDE.md#android) · [Biên dịch từ mã nguồn](apps/android/README.md)
 
 <a id="harmonyos"></a>
 
-### 鸿蒙 HarmonyOS（开发版）
+### HarmonyOS (bản phát triển)
 
-PC 端可控制和被控制，复用桌面界面与桌面墙；手机和平板使用原生 ArkUI 控制端，支持触控、外接键鼠、多屏、文本剪贴板和文件收发。PC 录屏与输入控制需要系统授权，真机和长期会话验收仍在进行。
+Bản PC có thể điều khiển và được điều khiển, tái sử dụng giao diện máy tính và Bức tường màn hình (DeskHub); điện thoại và máy tính bảng dùng ứng dụng điều khiển ArkUI gốc, hỗ trợ cảm ứng, bàn phím và chuột ngoài, nhiều màn hình, bảng nhớ tạm văn bản và gửi nhận tệp. Ghi màn hình và điều khiển nhập liệu trên PC cần quyền hệ thống; việc nghiệm thu trên thiết bị thật và phiên dài hạn vẫn đang tiến hành.
 
-[使用与限制](docs/USER_GUIDE.md#harmonyos) · [构建与签名](apps/harmony/README.md) · [PC 说明](apps/harmony/desktop-port/README.md) · [移动端功能](apps/harmony/MOBILE_PARITY.md)
+[Sử dụng và giới hạn](docs/USER_GUIDE.md#harmonyos) · [Biên dịch và ký](apps/harmony/README.md) · [Tài liệu PC](apps/harmony/desktop-port/README.md) · [Tính năng di động](apps/harmony/MOBILE_PARITY.md)
 
 <a id="windows-service"></a>
 
-## 无人值守与无头运行
+## Truy cập không giám sát và chạy không màn hình
 
-- **Windows：** CrossDesk Service 支持锁屏、登录和安全桌面控制。安装版 Release 开启“开机自启”后，登录前后使用同一本机 ID 和密码；用户登录后界面自动打开，已有远控连接继续保留。便携版和 Debug 不提供此开关。无显示器时会尝试准备虚拟显示器，并优先恢复已记录的显示分辨率。功能限制及启停命令见 [Windows 无人值守指南](docs/USER_GUIDE.md#windows-service)。
-- **Linux：** 可复用现有桌面，也可创建独立 Xvfb / Xfce 会话，操作方法见 [Linux 无头运行](docs/HEADLESS.md)。
+- **Windows:** CrossDesk Service hỗ trợ điều khiển màn hình khóa, đăng nhập và màn hình bảo mật. Sau khi bật “Tự khởi động cùng hệ thống” trong bản Release đã cài đặt, máy dùng cùng ID và mật khẩu trước và sau đăng nhập; giao diện tự mở sau khi người dùng đăng nhập, các kết nối từ xa hiện có vẫn được giữ. Bản di động không cần cài đặt và Debug không cung cấp công tắc này. Khi không có màn hình, ứng dụng sẽ thử chuẩn bị màn hình ảo và ưu tiên khôi phục độ phân giải đã ghi nhận. Xem giới hạn tính năng và lệnh bật/tắt trong [hướng dẫn Windows không giám sát](docs/USER_GUIDE.md#windows-service).
+- **Linux:** Bạn có thể tái sử dụng màn hình hiện có hoặc tạo phiên Xvfb / Xfce độc lập; xem cách thực hiện trong [chạy Linux không màn hình](docs/HEADLESS.md).
 
 <a id="self-hosting"></a>
 
-## 自托管
+## Tự lưu trữ (self-host)
 
-可自行部署信令与 TURN 中继服务，并在客户端“设置 → 常规 → 自托管配置”中启用。控制端与被控端需要接入同一服务。
+Bạn có thể tự triển khai dịch vụ báo hiệu và chuyển tiếp TURN, rồi bật trong “Cài đặt → Chung → Cấu hình máy chủ tự lưu trữ (self-host)” của ứng dụng. Máy điều khiển và máy được điều khiển cần kết nối cùng dịch vụ.
 
-[部署指南](docs/SELF_HOSTING.md) · [客户端配置](docs/USER_GUIDE.md#self-hosting) · [服务端源码](https://github.com/kunkundi/crossdesk-server) · [Web 客户端部署](https://github.com/kunkundi/crossdesk-web-client)
+[Hướng dẫn triển khai](docs/SELF_HOSTING.md) · [Cấu hình ứng dụng](docs/USER_GUIDE.md#self-hosting) · [Mã nguồn máy chủ](https://github.com/kunkundi/crossdesk-server) · [Triển khai ứng dụng Web](https://github.com/kunkundi/crossdesk-web-client)
 
 <a id="development"></a>
 
-## 文档与反馈
+## Tài liệu và phản hồi
 
-- [使用指南](docs/USER_GUIDE.md)：安装、连接、会话操作、设置和无人值守。
-- [常见问题](docs/FAQ.md)：连接失败、黑屏、系统权限及文件位置。
-- [连接与可信设备](docs/CONNECTIONS.md)：选择连接方式、配对及迁移身份。
-- [更新客户端](docs/UPDATER.md)：检查更新、安装与失败后的处理。
-- [源码构建](docs/BUILD.md)：依赖、编译、打包和签名。
-- [架构与集成](docs/README.md#构建与集成)：GUI 和连接架构、CLI / MCP 接口、各平台适配。
-- [版本与发布](docs/VERSIONING.md)：组件版本同步、发布编号及更新清单。
+- [Hướng dẫn sử dụng](docs/USER_GUIDE.md): cài đặt, kết nối, thao tác phiên, cài đặt tùy chọn và truy cập không giám sát.
+- [Câu hỏi thường gặp](docs/FAQ.md): kết nối thất bại, màn hình đen, quyền hệ thống và vị trí tệp.
+- [Kết nối và thiết bị đáng tin cậy](docs/CONNECTIONS.md): chọn phương thức kết nối, ghép đôi và di chuyển danh tính.
+- [Cập nhật ứng dụng](docs/UPDATER.md): kiểm tra cập nhật, cài đặt và xử lý khi thất bại.
+- [Biên dịch từ mã nguồn](docs/BUILD.md): phụ thuộc, biên dịch, đóng gói và ký.
+- [Kiến trúc và tích hợp](docs/README.md#biên-dịch-và-tích-hợp): kiến trúc GUI và kết nối, giao diện CLI / MCP, hỗ trợ từng nền tảng.
+- [Phiên bản và phát hành](docs/VERSIONING.md): đồng bộ phiên bản thành phần, số bản phát hành và bản kê cập nhật.
 
-遇到问题时，可在桌面端主菜单打开 **反馈与建议**，导出诊断日志，并 [提交问题](https://github.com/kunkundi/crossdesk/issues)。请附上两端系统、客户端版本、连接方式、报错及复现步骤；分享前检查日志和截图中的私人信息。详见 [反馈与诊断日志](docs/USER_GUIDE.md#feedback)。
+Khi gặp sự cố, bạn có thể mở **Phản hồi và góp ý** trong menu chính của ứng dụng máy tính, xuất nhật ký chẩn đoán rồi [báo cáo sự cố](https://github.com/kunkundi/crossdesk/issues). Hãy đính kèm hệ điều hành hai bên, phiên bản ứng dụng, phương thức kết nối, thông báo lỗi và các bước tái hiện; kiểm tra thông tin riêng tư trong nhật ký và ảnh chụp trước khi chia sẻ. Xem [phản hồi và nhật ký chẩn đoán](docs/USER_GUIDE.md#feedback).
 
 <a id="sponsor"></a>
 
-## 支持 CrossDesk
+## Hỗ trợ CrossDesk
 
-如果 CrossDesk 对你有帮助，欢迎通过以下平台赞助，支持项目的持续开发、跨平台测试与日常维护。感谢你的支持！
+Nếu CrossDesk hữu ích với bạn, hãy cân nhắc tài trợ qua các nền tảng sau để hỗ trợ phát triển, kiểm thử đa nền tảng và bảo trì dự án. Cảm ơn sự ủng hộ của bạn!
 
-[爱发电](https://afdian.com/a/kunkundi) · [Ko-fi](https://ko-fi.com/kunkundi) · [GitHub Sponsors](https://github.com/sponsors/kunkundi)
+[Afdian](https://afdian.com/a/kunkundi) · [Ko-fi](https://ko-fi.com/kunkundi) · [GitHub Sponsors](https://github.com/sponsors/kunkundi)
 
-## 致谢与许可
+## Lời cảm ơn và giấy phép
 
-感谢 [HelloGitHub](https://hellogithub.com/)、[阮一峰的科技爱好者周刊](https://github.com/ruanyf/weekly) 与 [LinuxDo](https://linux.do) 社区的推荐、交流与支持。
+Cảm ơn [HelloGitHub](https://hellogithub.com/), [Bản tin người yêu công nghệ của Ruan Yifeng](https://github.com/ruanyf/weekly) và cộng đồng [LinuxDo](https://linux.do) đã giới thiệu, trao đổi và hỗ trợ.
 
 Copyright (c) 2026 JUNKUN DI.
 
-CrossDesk 使用 [GPL-3.0-only](LICENSE) 许可。隐私说明见 [隐私政策](PRIVACY.md#中文)。
+CrossDesk sử dụng giấy phép [GPL-3.0-only](LICENSE). Xem thông tin quyền riêng tư trong [Chính sách quyền riêng tư](PRIVACY.md#中文).
 
-### Code signing policy
+### Chính sách ký mã
 
-CrossDesk 使用 SignPath.io 为本仓库构建的官方 Windows 发布包提供代码签名。
+CrossDesk sử dụng SignPath.io để ký mã cho các gói phát hành Windows chính thức được biên dịch từ kho mã này.
 
-**Free code signing provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).**
+**Ký mã miễn phí do [SignPath.io](https://signpath.io/) cung cấp, chứng chỉ do [SignPath Foundation](https://signpath.org/) cấp.**
 
-- **Committers and reviewers（代码提交与审核）：** [kunkundi](https://github.com/kunkundi)
-- **Approvers（签名审批）：** [kunkundi](https://github.com/kunkundi)
+- **Người đóng góp mã và người duyệt mã:** [kunkundi](https://github.com/kunkundi)
+- **Người phê duyệt chữ ký:** [kunkundi](https://github.com/kunkundi)

@@ -301,7 +301,7 @@ Host your own signaling and TURN services, then enable them under **Settings →
 - [Connections and trusted devices](docs/CONNECTIONS.md) (Chinese): connection modes, pairing, and identity migration.
 - [Client updates](docs/UPDATER.md) (Chinese): check, install, and recover from update failures.
 - [Build from source](docs/BUILD_EN.md): dependencies, compilation, packaging, and signing.
-- [Architecture and integration](docs/README.md#构建与集成) (Chinese): GUI and connection architecture, CLI / MCP interfaces, and platform support.
+- [Architecture and integration](docs/README.md#biên-dịch-và-tích-hợp) (Chinese): GUI and connection architecture, CLI / MCP interfaces, and platform support.
 - [Versions and releases](docs/VERSIONING.md) (Chinese): component version synchronization, release numbering, and update manifests.
 
 Open **Feedback & suggestions** from the desktop main menu to export diagnostic logs and [report an issue](https://github.com/kunkundi/crossdesk/issues). Include both operating systems, client versions, connection mode, error message, and reproduction steps. Review logs and screenshots for private information before sharing. See [feedback and diagnostic logs](docs/USER_GUIDE_EN.md#feedback).
