@@ -1,60 +1,60 @@
-# GUI 目录结构与职责说明
+# Cấu trúc thư mục và phân chia trách nhiệm GUI
 
-本文说明 `apps/desktop/src/gui` 的目录结构、核心类型、依赖方向和代码归属。界面操作见 [桌面使用指南](USER_GUIDE.md)，连接协议见 [连接架构](connection-architecture.md)。
+Tài liệu này giải thích cấu trúc thư mục, kiểu cốt lõi, hướng phụ thuộc và nơi đặt mã trong `apps/desktop/src/gui`. Xem thao tác giao diện ở [hướng dẫn sử dụng máy tính](USER_GUIDE.md), giao thức kết nối ở [kiến trúc kết nối](connection-architecture.md).
 
-ID 连接与 IP 直连的网络拓扑、认证和传输流程见 [连接模式架构](connection-architecture.md)。
+Xem tô-pô mạng, xác thực và quy trình truyền tải của kết nối ID và IP trực tiếp trong [kiến trúc chế độ kết nối](connection-architecture.md).
 
-## 目录结构
+## Cấu trúc thư mục
 
 ```text
 apps/desktop/src/gui/
-├── render.h                         # 对外稳定入口 Render
-├── render.cpp                       # 创建 GuiApplication 并转发 Run
-├── application/                     # Slint 应用外壳
-│   ├── gui_application.h            # GuiApplication 声明
-│   ├── gui_application.cpp          # 初始化、UI 回调、状态同步和清理
-│   ├── application_state.h          # 窗口、交互和 UI 状态
-│   ├── server_window_state.h        # 被控端窗口的控制端选择逻辑
-│   └── window_geometry.h           # 窗口定位计算
-├── rendering/                       # Slint 与原生视频渲染器的衔接
-│   └── slint_video_presenter.h/.cpp # 视频纹理呈现与渲染通知
-├── runtime/                         # 非界面的 GUI 运行时
-│   ├── gui_runtime.h/.cpp           # 运行时协调接口与公共实现
-│   ├── connection_runtime.cpp       # 连接、在线探测、超时及会话清理
-│   ├── gui_state.h                  # ApplicationState 与 RuntimeState 组合点
-│   ├── runtime_state.h              # 配置、连接、平台和通信状态
-│   ├── remote_session.h             # 单个远端会话 RemoteSession
-│   ├── device_presence_cache.h      # 设备在线状态缓存
-│   ├── peer_event_handler.h/.cpp    # 信令和连接状态回调
-│   ├── peer_media_callbacks.cpp     # 视频和音频回调
-│   └── peer_data_callbacks.cpp      # 控制、剪贴板和文件数据回调
-├── features/                        # 可独立演进的功能模块
-│   ├── clipboard/                   # 本地与远端剪贴板同步
-│   ├── devices/                     # 媒体及输入设备生命周期
-│   ├── file_transfer/               # 文件队列、发送、确认和进度
-│   ├── input/                       # 键盘状态、命令和超时处理
-│   └── settings/                    # 配置缓存和最近连接别名
-├── ui/                              # Slint 声明式界面
-│   ├── crossdesk_ui.slint           # 界面组件导出入口
-│   ├── common.slint                 # 共享控件、字体尺寸、颜色和图标字形
-│   ├── main_window.slint            # 主窗口、面板、设置及对话框
-│   ├── stream_window.slint          # 串流窗口、标签页和控制栏
-│   ├── server_window.slint          # 被控端窗口
-│   ├── ui_localization.h           # 本地化数据到 Slint 属性的映射
-│   └── icons/                      # SVG 图标资源
-└── assets/                          # 嵌入字体和本地化数据
+├── render.h                         # Điểm vào ổn định công khai Render
+├── render.cpp                       # Tạo GuiApplication và chuyển tiếp Run
+├── application/                     # Lớp vỏ ứng dụng Slint
+│   ├── gui_application.h            # Khai báo GuiApplication
+│   ├── gui_application.cpp          # Khởi tạo, callback UI, đồng bộ trạng thái và dọn dẹp
+│   ├── application_state.h          # Trạng thái cửa sổ, tương tác và UI
+│   ├── server_window_state.h        # Logic chọn máy điều khiển của cửa sổ máy được điều khiển
+│   └── window_geometry.h           # Tính vị trí cửa sổ
+├── rendering/                       # Kết nối Slint với trình kết xuất video gốc
+│   └── slint_video_presenter.h/.cpp # Trình bày kết cấu video và thông báo kết xuất
+├── runtime/                         # Runtime GUI không có giao diện
+│   ├── gui_runtime.h/.cpp           # Giao diện phối hợp runtime và triển khai chung
+│   ├── connection_runtime.cpp       # Kết nối, dò trực tuyến, hết thời gian và dọn phiên
+│   ├── gui_state.h                  # Điểm kết hợp ApplicationState và RuntimeState
+│   ├── runtime_state.h              # Trạng thái cấu hình, kết nối, nền tảng và liên lạc
+│   ├── remote_session.h             # Một phiên từ xa RemoteSession
+│   ├── device_presence_cache.h      # Bộ nhớ đệm trạng thái thiết bị trực tuyến
+│   ├── peer_event_handler.h/.cpp    # Callback báo hiệu và trạng thái kết nối
+│   ├── peer_media_callbacks.cpp     # Callback video và âm thanh
+│   └── peer_data_callbacks.cpp      # Callback dữ liệu điều khiển, bảng nhớ tạm và tệp
+├── features/                        # Mô-đun tính năng có thể phát triển độc lập
+│   ├── clipboard/                   # Đồng bộ bảng nhớ tạm cục bộ và từ xa
+│   ├── devices/                     # Vòng đời thiết bị đa phương tiện và đầu vào
+│   ├── file_transfer/               # Hàng đợi tệp, gửi, xác nhận và tiến độ
+│   ├── input/                       # Trạng thái bàn phím, lệnh và xử lý hết thời gian
+│   └── settings/                    # Bộ nhớ đệm cấu hình và bí danh kết nối gần đây
+├── ui/                              # Giao diện khai báo Slint
+│   ├── crossdesk_ui.slint           # Điểm xuất thành phần giao diện
+│   ├── common.slint                 # Điều khiển chung, cỡ chữ, màu và hình dạng biểu tượng
+│   ├── main_window.slint            # Cửa sổ chính, bảng, cài đặt và hộp thoại
+│   ├── stream_window.slint          # Cửa sổ luồng, thẻ và thanh điều khiển
+│   ├── server_window.slint          # Cửa sổ máy được điều khiển
+│   ├── ui_localization.h           # Ánh xạ dữ liệu bản địa hóa sang thuộc tính Slint
+│   └── icons/                      # Tài nguyên biểu tượng SVG
+└── assets/                          # Phông nhúng và dữ liệu bản địa hóa
 ```
 
-平台私有 GUI 实现统一位于 `apps/desktop/src/platform/<os>/gui/`，包括托盘、macOS Metal 渲染与权限、Windows 服务运行时等；Windows 与 Linux 共用的 OpenGL 渲染器位于 `apps/desktop/src/platform/common/gui/`。
+Triển khai GUI riêng nền tảng tập trung tại `apps/desktop/src/platform/<os>/gui/`, gồm khay hệ thống, kết xuất Metal và quyền macOS, runtime dịch vụ Windows; trình kết xuất OpenGL dùng chung Windows và Linux ở `apps/desktop/src/platform/common/gui/`.
 
-## 分层关系
+## Quan hệ phân lớp
 
 ```text
 Render
   └── GuiApplication
-        ├── Slint 窗口、事件循环和定时器
-        ├── ui/ 声明式组件与回调
-        ├── SlintVideoPresenter → 平台 VideoRenderer
+        ├── Cửa sổ Slint, vòng lặp sự kiện và bộ định thời
+        ├── Thành phần khai báo và callback ui/
+        ├── SlintVideoPresenter → VideoRenderer nền tảng
         └── GuiRuntime
               ├── SessionDeviceManager
               ├── KeyboardController
@@ -64,174 +64,174 @@ Render
               └── PeerEventHandler
 ```
 
-依赖方向应保持从上向下：
+Hướng phụ thuộc nên giữ từ trên xuống:
 
 ```text
-公开入口 → 应用层 → 运行时协调层 → 功能模块 → 底层库
-                 ↘ 视图层
+Điểm vào công khai → Lớp ứng dụng → Lớp phối hợp runtime → Mô-đun tính năng → Thư viện tầng dưới
+                               ↘ Lớp hiển thị
 ```
 
-底层功能模块不应反向依赖具体面板、工具栏或窗口。
+Mô-đun tính năng tầng dưới không nên phụ thuộc ngược bảng, thanh công cụ hay cửa sổ cụ thể.
 
-桌面端与 iOS Bridge 统一依赖静态库 `crossdesk_wire`。线上契约头位于 `libs/wire/include/`，包含控制消息、鼠标指针类型、显示流 ID、数据流名称和文件传输线格式。操作系统输入注入、剪贴板、文件读写以及界面状态仍由各自应用实现，`libs/wire/` 不得依赖桌面端或操作系统专用头文件。
+Máy tính và iOS Bridge cùng phụ thuộc thư viện tĩnh `crossdesk_wire`. Header hợp đồng truyền trên mạng ở `libs/wire/include/`, gồm thông điệp điều khiển, kiểu con trỏ chuột, ID luồng hiển thị, tên luồng dữ liệu và định dạng truyền tệp trên mạng. Chèn đầu vào hệ điều hành, bảng nhớ tạm, đọc ghi tệp và trạng thái giao diện vẫn do từng ứng dụng triển khai; `libs/wire/` không được phụ thuộc header riêng máy tính hay hệ điều hành.
 
-## 核心类型
+## Kiểu cốt lõi
 
 ### Render
 
-`Render` 是应用其他部分可见的稳定入口，只负责：
+`Render` là điểm vào ổn định mà phần khác của ứng dụng thấy được, chỉ chịu trách nhiệm:
 
-- 管理 `GuiApplication` 生命周期；
-- 将 `Run()` 转发给 `GuiApplication`；
-- 隔离 GUI 内部类型，避免实现细节扩散到其他模块。
+- Quản lý vòng đời `GuiApplication`;
+- Chuyển tiếp `Run()` cho `GuiApplication`;
+- Cách ly kiểu nội bộ GUI, tránh chi tiết triển khai lan sang mô-đun khác.
 
-不要向 `Render` 添加窗口状态、连接状态或业务方法。
+Không thêm trạng thái cửa sổ, kết nối hoặc phương thức nghiệp vụ vào `Render`.
 
 ### GuiApplication
 
-`GuiApplication` 是 Slint 应用外壳，负责：
+`GuiApplication` là lớp vỏ ứng dụng Slint, chịu trách nhiệm:
 
-- 初始化日志、配置、SDL 和功能模块；
-- 创建、销毁 Slint 主窗口、串流窗口和被控端窗口；
-- 运行 Slint 事件循环，通过定时器执行 `Tick()` 和视频帧调度；
-- 将 Slint 回调转换为连接、键盘和鼠标操作，并处理 SDL 退出及剪贴板事件；
-- 将运行时状态同步到 Slint 属性和模型，并管理原生视频呈现；
-- 在程序退出时按顺序清理资源。
+- Khởi tạo nhật ký, cấu hình, SDL và mô-đun tính năng;
+- Tạo, hủy cửa sổ chính, cửa sổ luồng và cửa sổ máy được điều khiển Slint;
+- Chạy vòng lặp sự kiện Slint, thực hiện `Tick()` và điều phối khung hình video qua bộ định thời;
+- Chuyển callback Slint thành thao tác kết nối, bàn phím và chuột, xử lý thoát SDL và sự kiện bảng nhớ tạm;
+- Đồng bộ trạng thái runtime sang thuộc tính và mô hình Slint, quản lý trình bày video gốc;
+- Dọn tài nguyên theo thứ tự khi chương trình thoát.
 
-它不应实现连接协议、文件传输、剪贴板或设备控制细节。
+Lớp này không nên triển khai chi tiết giao thức kết nối, truyền tệp, bảng nhớ tạm hoặc điều khiển thiết bị.
 
-SDL 仍用于音频、显示器信息、剪贴板等平台能力。旧 ImGui 视图、窗口事件处理和专用资源已移除；`ui/common.slint` 中的 `ImGuiLineStyle`、`ImGuiFontStyle` 和 `ImGuiCheckBox` 是当前界面使用的 Slint 组件，名称表示沿用的视觉风格，不依赖 ImGui 库。`assets/fonts/fa_solid_900.h` 仍为 Slint 窗口提供 Font Awesome 图标字体。
+SDL vẫn dùng cho khả năng nền tảng như âm thanh, thông tin màn hình, bảng nhớ tạm. Lớp hiển thị ImGui cũ, xử lý sự kiện cửa sổ và tài nguyên riêng đã bỏ; `ImGuiLineStyle`, `ImGuiFontStyle` và `ImGuiCheckBox` trong `ui/common.slint` là thành phần Slint mà giao diện hiện dùng, tên chỉ phong cách thị giác kế thừa, không phụ thuộc thư viện ImGui. `assets/fonts/fa_solid_900.h` vẫn cung cấp phông biểu tượng Font Awesome cho cửa sổ Slint.
 
 ### GuiRuntime
 
-`GuiRuntime` 是 GUI 进程的非界面协调层，负责：
+`GuiRuntime` là lớp phối hợp không giao diện của tiến trình GUI, chịu trách nhiệm:
 
-- 初始化 MiniRTC Peer 及回调参数；
-- 协调连接、远端会话和在线状态；
-- 持有各功能 Manager/Controller；
-- 处理跨功能模块的调用顺序；
-- 提供平台集成功能所需的运行时上下文。
+- Khởi tạo MiniRTC Peer và tham số callback;
+- Phối hợp kết nối, phiên từ xa và trạng thái trực tuyến;
+- Giữ Manager/Controller của từng tính năng;
+- Xử lý thứ tự gọi xuyên mô-đun tính năng;
+- Cung cấp ngữ cảnh runtime cho tích hợp nền tảng.
 
-`GuiRuntime` 应保持为协调器。新的独立功能应优先创建 Manager 或 Controller，不应直接继续堆积到 `GuiRuntime`。
+`GuiRuntime` nên giữ vai trò điều phối. Tính năng độc lập mới nên tạo Manager hoặc Controller trước, không nên tiếp tục dồn trực tiếp vào `GuiRuntime`.
 
 ### RemoteSession
 
-`RemoteSession` 表示一个连接中或已连接的远端端点，其生命周期覆盖：
+`RemoteSession` biểu diễn một đầu cuối từ xa đang kết nối hoặc đã kết nối, vòng đời bao gồm:
 
-- MiniRTC Peer 和连接状态；
-- 视频帧、纹理和渲染区域；
-- 远端显示器和控制栏状态；
-- 音频、鼠标和键盘控制状态；
-- 文件传输状态；
-- Windows 服务及安全桌面状态。
+- MiniRTC Peer và trạng thái kết nối;
+- Khung hình video, kết cấu và vùng kết xuất;
+- Trạng thái màn hình từ xa và thanh điều khiển;
+- Trạng thái điều khiển âm thanh, chuột và bàn phím;
+- Trạng thái truyền tệp;
+- Trạng thái dịch vụ Windows và màn hình bảo mật.
 
-`remote_sessions_` 是按远端 ID 索引的会话表。会话查找、连接和清理统一由运行时处理。
+`remote_sessions_` là bảng phiên theo chỉ mục ID từ xa. Runtime thống nhất xử lý tìm kiếm, kết nối và dọn phiên.
 
-## 状态划分
+## Phân chia trạng thái
 
-状态定义按生命周期和使用范围划分：
+Định nghĩa trạng thái chia theo vòng đời và phạm vi sử dụng:
 
-| 文件 | 状态范围 |
+| Tệp | Phạm vi trạng thái |
 | --- | --- |
-| `application/application_state.h` | 应用退出、交互、更新、窗口生命周期请求和共享 UI 状态 |
-| `GuiApplication::SlintUi` | Slint 窗口句柄、定时器、视频呈现器、托盘和界面同步缓存 |
-| `runtime/runtime_state.h` | 配置、Peer、连接表、在线探测和平台集成状态 |
-| `runtime/remote_session.h` | 单个远端会话独占的连接、媒体、控制和文件状态 |
-| `runtime/gui_state.h` | 仅组合 `ApplicationState` 与 `RuntimeState` |
+| `application/application_state.h` | Thoát ứng dụng, tương tác, cập nhật, yêu cầu vòng đời cửa sổ và trạng thái UI chung |
+| `GuiApplication::SlintUi` | Handle cửa sổ Slint, bộ định thời, bộ trình bày video, khay hệ thống và bộ nhớ đệm đồng bộ giao diện |
+| `runtime/runtime_state.h` | Trạng thái cấu hình, Peer, bảng kết nối, dò trực tuyến và tích hợp nền tảng |
+| `runtime/remote_session.h` | Trạng thái kết nối, đa phương tiện, điều khiển và tệp riêng của một phiên từ xa |
+| `runtime/gui_state.h` | Chỉ kết hợp `ApplicationState` và `RuntimeState` |
 
-添加状态前应先判断其生命周期：
+Trước khi thêm trạng thái, nên xác định vòng đời:
 
-- 只属于某个远端连接：放入 `RemoteSession`；
-- 只属于窗口或 UI：放入 `ApplicationState` 对应子状态；
-- 属于整个 GUI 运行期：放入 `RuntimeState` 对应子状态；
-- 只属于某个功能模块：优先作为 Manager/Controller 的私有成员。
+- Chỉ thuộc một kết nối từ xa: đặt vào `RemoteSession`;
+- Chỉ thuộc cửa sổ hoặc UI: đặt vào trạng thái con tương ứng của `ApplicationState`;
+- Thuộc toàn bộ thời gian chạy GUI: đặt vào trạng thái con tương ứng của `RuntimeState`;
+- Chỉ thuộc một mô-đun tính năng: ưu tiên làm thành viên riêng của Manager/Controller.
 
-## 主要运行流程
+## Quy trình chạy chính
 
-### 启动
+### Khởi động
 
 ```text
 Render::Run
   → GuiApplication::Run
-  → 初始化路径、日志和配置
-  → 初始化 SDL 和功能模块
+  → Khởi tạo đường dẫn, nhật ký và cấu hình
+  → Khởi tạo SDL và mô-đun tính năng
   → GuiRuntime::CreateConnectionPeer
-  → GuiApplication::InitializeUi 创建主窗口并绑定回调
-  → 启动 Tick 定时器和视频帧调度
+  → GuiApplication::InitializeUi tạo cửa sổ chính và gắn callback
+  → Khởi động bộ định thời Tick và điều phối khung hình video
   → slint::run_event_loop
-       → Tick 协调连接、处理后台事件并同步窗口状态
+       → Tick phối hợp kết nối, xử lý sự kiện nền và đồng bộ trạng thái cửa sổ
 ```
 
-### 建立 ID 远端连接
+### Thiết lập kết nối từ xa qua ID
 
 ```text
 MainWindow::connect_requested
   → GuiApplication::ConnectFromUi
   → GuiRuntime::ConnectTo
-  → 在线状态探测
-  → 创建或复用 RemoteSession
+  → Dò trạng thái trực tuyến
+  → Tạo hoặc tái sử dụng RemoteSession
   → MiniRtcJoinConnection
-  → PeerEventHandler 接收连接状态
-  → SyncStreamWindow 创建串流窗口并开始呈现视频
+  → PeerEventHandler nhận trạng thái kết nối
+  → SyncStreamWindow tạo cửa sổ luồng và bắt đầu trình bày video
 ```
 
-### 建立 IP 直连
+### Thiết lập kết nối IP trực tiếp
 
 ```text
-MainWindow 地址校验与密码弹窗
+Xác minh địa chỉ MainWindow và hộp thoại mật khẩu
   → GuiRuntime::ConnectLan
   → lan::SessionManager::Connect
-  → WSS 连接被控端 IP:端口，由被控端验证密码
+  → WSS kết nối IP:cổng máy được điều khiển, máy đó xác minh mật khẩu
   → MiniRTC InitDirectPeer / StartDirectSession
-  → WSS 交换 SDP 与候选，HostOnly ICE 建立 UDP 通道
-  → DTLS/SRTP 就绪，SessionManager 标记授权
-  → PeerEventHandler 与原有串流窗口、输入、文件及剪贴板处理
+  → WSS trao đổi SDP và ứng viên, HostOnly ICE thiết lập kênh UDP
+  → DTLS/SRTP sẵn sàng, SessionManager đánh dấu đã cấp quyền
+  → PeerEventHandler và xử lý cửa sổ luồng, đầu vào, tệp và bảng nhớ tạm hiện có
 ```
 
-LAN 初始化和生命周期集中在 `runtime/lan_runtime.cpp`，监听、密码及协商协议位于 `src/network/lan`。主窗口模式切换与 IP 功能启停独立；后者负责停止监听并排空 LAN 会话。
+Khởi tạo và vòng đời LAN tập trung trong `runtime/lan_runtime.cpp`, lắng nghe, mật khẩu và giao thức thương lượng ở `src/network/lan`. Chuyển chế độ cửa sổ chính độc lập với bật/tắt tính năng IP; thao tác sau chịu trách nhiệm ngừng lắng nghe và rút hết phiên LAN.
 
-### 接收远端数据
+### Nhận dữ liệu từ xa
 
 ```text
 MiniRTC callback
   → PeerEventHandler
-  ├── peer_media_callbacks：视频、音频
-  ├── peer_data_callbacks：控制、文件、剪贴板
-  └── peer_event_handler：信令、连接状态、网络统计
-       → 对应 Manager/Controller
-       → 更新 RemoteSession 或运行时状态
+  ├── peer_media_callbacks: video, âm thanh
+  ├── peer_data_callbacks: điều khiển, tệp, bảng nhớ tạm
+  └── peer_event_handler: báo hiệu, trạng thái kết nối, thống kê mạng
+       → Manager/Controller tương ứng
+       → Cập nhật RemoteSession hoặc trạng thái runtime
 ```
 
-### 退出和清理
+### Thoát và dọn dẹp
 
 ```text
 Slint quit / SDL quit / tray exit
   → GuiApplication::Cleanup
-  → 停止设备及后台任务
-  → CloseAllRemoteSessions 并等待会话清理
-  → 分离视频呈现器并释放 Slint 窗口和托盘
+  → Dừng thiết bị và tác vụ nền
+  → CloseAllRemoteSessions và chờ dọn phiên
+  → Tách bộ trình bày video và giải phóng cửa sổ Slint, khay hệ thống
   → SDL_Quit
 ```
 
-## 新代码归属规则
+## Quy tắc nơi đặt mã mới
 
-新增代码时按以下规则选择目录：
+Khi thêm mã, chọn thư mục theo các quy tắc sau:
 
-| 功能 | 目录 |
+| Tính năng | Thư mục |
 | --- | --- |
-| Slint/SDL 初始化、UI 回调、状态同步和窗口生命周期 | `application/` |
-| Slint 与原生视频渲染器的衔接 | `rendering/` |
-| 连接、会话、Peer 回调和平台运行时 | `runtime/` |
-| 视频、音频、鼠标、键盘设备生命周期 | `features/devices/` |
-| 键盘状态与桌面输入处理 | `features/input/` |
-| 线上控制消息和线格式 | `libs/wire/` |
-| 剪贴板同步 | `features/clipboard/` |
-| 文件传输 | `features/file_transfer/` |
-| 配置持久化 | `features/settings/` |
-| 主窗口内嵌区域、设置和对话框 | `ui/main_window.slint` |
-| 串流标签页、控制栏和统计面板 | `ui/stream_window.slint` |
-| 被控端窗口 | `ui/server_window.slint` |
-| 共享控件、字体尺寸、颜色和图标字形 | `ui/common.slint` |
-| 系统托盘 | `apps/desktop/src/platform/<os>/gui/tray/` |
-| 嵌入字体和本地化数据 | `assets/` |
-| SVG 图标资源 | `ui/icons/` |
+| Khởi tạo Slint/SDL, callback UI, đồng bộ trạng thái và vòng đời cửa sổ | `application/` |
+| Kết nối Slint với trình kết xuất video gốc | `rendering/` |
+| Kết nối, phiên, callback Peer và runtime nền tảng | `runtime/` |
+| Vòng đời thiết bị video, âm thanh, chuột, bàn phím | `features/devices/` |
+| Trạng thái bàn phím và xử lý đầu vào máy tính | `features/input/` |
+| Thông điệp điều khiển trên mạng và định dạng truyền | `libs/wire/` |
+| Đồng bộ bảng nhớ tạm | `features/clipboard/` |
+| Truyền tệp | `features/file_transfer/` |
+| Lưu bền cấu hình | `features/settings/` |
+| Vùng nhúng cửa sổ chính, cài đặt và hộp thoại | `ui/main_window.slint` |
+| Thẻ luồng, thanh điều khiển và bảng thống kê | `ui/stream_window.slint` |
+| Cửa sổ máy được điều khiển | `ui/server_window.slint` |
+| Điều khiển chung, cỡ chữ, màu và hình dạng biểu tượng | `ui/common.slint` |
+| Khay hệ thống | `apps/desktop/src/platform/<os>/gui/tray/` |
+| Phông nhúng và dữ liệu bản địa hóa | `assets/` |
+| Tài nguyên biểu tượng SVG | `ui/icons/` |

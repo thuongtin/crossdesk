@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="CrossDesk logo with the icon on the left and a two-tone wordmark on the right" />
   <p>A lightweight, cross-platform remote desktop for computers, browsers, mobile devices, and terminals, with DeskHub for viewing and controlling multiple desktops.</p>
-  <p><a href="https://www.crossdesk.cn/">Website</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Download</a> · <a href="#build">Build guide</a> · <a href="https://web.crossdesk.cn/">Open Web Client</a> · <a href="README.md">中文</a></p>
+  <p><a href="https://www.crossdesk.cn/">Website</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Download</a> · <a href="#build">Build guide</a> · <a href="https://web.crossdesk.cn/">Open Web Client</a> · <a href="README.md">Tiếng Việt</a></p>
 </div>
 
 <div align="center">
@@ -118,7 +118,7 @@ Adding or removing a device takes effect immediately. With the restriction enabl
 
 **Compatibility:** Use a recent desktop, iOS, Android, or HarmonyOS mobile client with pairing support. On a phone or tablet, copy the pairing information under **Settings → This device’s pairing info** and add it on the host computer. Older clients and the current terminal CLI cannot connect to a host with this restriction enabled.
 
-Before reinstalling, clearing application data, or moving to another computer, see [identity backup and migration](docs/CONNECTIONS.md#backup) (Chinese). An ID and password alone cannot restore a bound desktop identity; a changed identity must be paired again.
+Before reinstalling, clearing application data, or moving to another computer, see [identity backup and migration](docs/CONNECTIONS.md#backup) (Vietnamese). An ID and password alone cannot restore a bound desktop identity; a changed identity must be paired again.
 
 <a id="preview"></a>
 
@@ -175,7 +175,7 @@ For Windows, macOS, and Linux X11 hosts, **Video settings → Resolution** selec
 
 - [Session controls](docs/USER_GUIDE_EN.md#session): toolbar, text clipboard, received files, and privacy screens.
 - [Client settings and updates](docs/USER_GUIDE_EN.md#settings): general options, DeskHub video settings, and version checks.
-- [DeskHub guide](docs/deskhub.md) (Chinese): organize devices, use group control, distribute files, and reduce bandwidth use.
+- [DeskHub guide](docs/deskhub.md) (Vietnamese): organize devices, use group control, distribute files, and reduce bandwidth use.
 
 <a id="cli"></a>
 
@@ -295,14 +295,14 @@ Host your own signaling and TURN services, then enable them under **Settings →
 
 ## Documentation and feedback
 
-- [Documentation index](docs/README.md) (Chinese): find help by task.
+- [Documentation index](docs/README.md) (Vietnamese): find help by task.
 - [User guide](docs/USER_GUIDE_EN.md): installation, connections, session controls, settings, and unattended access.
 - [FAQ](docs/FAQ.md#english): connection failures, blank video, permissions, and received files.
-- [Connections and trusted devices](docs/CONNECTIONS.md) (Chinese): connection modes, pairing, and identity migration.
-- [Client updates](docs/UPDATER.md) (Chinese): check, install, and recover from update failures.
+- [Connections and trusted devices](docs/CONNECTIONS.md) (Vietnamese): connection modes, pairing, and identity migration.
+- [Client updates](docs/UPDATER.md) (Vietnamese): check, install, and recover from update failures.
 - [Build from source](docs/BUILD_EN.md): dependencies, compilation, packaging, and signing.
-- [Architecture and integration](docs/README.md#构建与集成) (Chinese): GUI and connection architecture, CLI / MCP interfaces, and platform support.
-- [Versions and releases](docs/VERSIONING.md) (Chinese): component version synchronization, release numbering, and update manifests.
+- [Architecture and integration](docs/README.md#biên-dịch-và-tích-hợp) (Vietnamese): GUI and connection architecture, CLI / MCP interfaces, and platform support.
+- [Versions and releases](docs/VERSIONING.md) (Vietnamese): component version synchronization, release numbering, and update manifests.
 
 Open **Feedback & suggestions** from the desktop main menu to export diagnostic logs and [report an issue](https://github.com/kunkundi/crossdesk/issues). Include both operating systems, client versions, connection mode, error message, and reproduction steps. Review logs and screenshots for private information before sharing. See [feedback and diagnostic logs](docs/USER_GUIDE_EN.md#feedback).
 

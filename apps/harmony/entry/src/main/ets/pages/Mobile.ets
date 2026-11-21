@@ -1,4 +1,5 @@
-import { tr, currentLanguage } from '../mobile/Localization';
+import { tr } from '../mobile/Localization';
+import { selectPrivacyPolicy } from '../mobile/PrivacyPolicy';
 import { common } from '@kit.AbilityKit';
 import { MobileController, MobileState, RemoteDisplay } from '../mobile/MobileController';
 import { MobileRemoteView } from '../mobile/MobileRemoteView';
@@ -79,11 +80,7 @@ struct Mobile {
   private deviceId(value: string): string { return value.replace(/[^0-9]/g, '').substring(0, 9); }
   private formatId(value: string): string { return this.deviceId(value).replace(/(.{3})(?=.)/g, '$1 '); }
   private policyParagraphs(body: string): string[] {
-    const text = body.replace(/\r\n/g, '\n');
-    const start = text.indexOf('## 中文\n'), end = start < 0 ? -1 : text.indexOf('## English', start);
-    const chinese = currentLanguage() === 0 || currentLanguage() === 3;
-    const localized = chinese && start >= 0 && end > start ? text.substring(start + '## 中文\n'.length, end) :
-      !chinese && end >= 0 ? text.substring(end + '## English'.length) : text;
+    const localized = selectPrivacyPolicy(body);
     return localized.split(/\n\s*\n/).map((paragraph: string) => paragraph.trim()).filter((paragraph: string) => !!paragraph && paragraph !== '---');
   }
   private openAnnouncement(item: AnnouncementItem): void { this.controller?.inbox.markRead(item); this.state.announcement = item; this.navigate('announcement'); }
@@ -588,7 +585,7 @@ struct Mobile {
           Button({ type: ButtonType.Normal }) {
             Row({ space: 12 }) {
               MobileIcon({ name: 'display', iconExtent: 22, color: index === this.state.selectedDisplay ? MobileTheme.blue : MobileTheme.secondary })
-              Text(`${index + 1} · ${screen.name || '显示器'}`).fontSize(16).fontColor(MobileTheme.ink).layoutWeight(1).textAlign(TextAlign.Start)
+              Text(`${index + 1} · ${screen.name || tr('显示器')}`).fontSize(16).fontColor(MobileTheme.ink).layoutWeight(1).textAlign(TextAlign.Start)
               if (index === this.state.selectedDisplay) { MobileIcon({ name: 'check', iconExtent: 20, color: MobileTheme.blue }) }
             }.padding(14).width('100%')
           }.width('100%').padding(0).backgroundColor(index === this.state.selectedDisplay ? '#EDF4FC' : MobileTheme.background).borderRadius(12)

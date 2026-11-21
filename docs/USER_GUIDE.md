@@ -1,207 +1,207 @@
-# CrossDesk 使用指南
+# Hướng dẫn sử dụng CrossDesk
 
-[返回项目首页](../README.md) · [English](USER_GUIDE_EN.md)
+[Về trang chủ dự án](../README.md) · [English](USER_GUIDE_EN.md)
 
-首次使用请先查看 [下载与安装](../README.md#download)。本文按安装、连接和日常操作介绍客户端；部分新功能可能尚未包含在已发布安装包中，请同时查看对应版本说明。
+Lần đầu sử dụng, hãy xem [tải xuống và cài đặt](../README.md#download) trước. Tài liệu này giới thiệu ứng dụng theo trình tự cài đặt, kết nối và thao tác hằng ngày; một số tính năng mới có thể chưa nằm trong gói đã phát hành, hãy xem thêm ghi chú phiên bản tương ứng.
 
-[安装与权限](#installation) · [快速连接](#quick-start) · [IP 直连](#lan-direct) · [可信设备](#trusted-devices) · [桌面墙](#deskhub) · [会话操作](#session) · [设置与更新](#settings) · [iOS](#ios) · [Android](#android) · [鸿蒙](#harmonyos) · [Windows 无人值守](#windows-service) · [自托管](#self-hosting)
+[Cài đặt và quyền](#installation) · [Kết nối nhanh](#quick-start) · [Kết nối IP trực tiếp](#lan-direct) · [Thiết bị đáng tin cậy](#trusted-devices) · [Bức tường màn hình (DeskHub)](#deskhub) · [Thao tác phiên](#session) · [Cài đặt và cập nhật](#settings) · [iOS](#ios) · [Android](#android) · [HarmonyOS](#harmonyos) · [Windows không giám sát](#windows-service) · [Tự lưu trữ (self-host)](#self-hosting)
 
 <a id="installation"></a>
 
-## 安装补充与系统权限
+## Thông tin cài đặt bổ sung và quyền hệ thống
 
-Linux 每个架构提供两个可独立安装的包，**选择其中一个**：
+Linux cung cấp hai gói có thể cài độc lập cho mỗi kiến trúc; **chọn một trong hai**:
 
-| 安装包 | 适用场景 |
+| Gói cài đặt | Tình huống phù hợp |
 | --- | --- |
-| `crossdesk-linux-<arch>-<version>.deb`（推荐） | 已有桌面的电脑；不会额外安装 Xfce 或 Xvfb |
-| `crossdesk-virtual-desktop-xfce-linux-<arch>-<version>.deb` | 需要创建独立桌面的服务器；APT 会额外安装 **Xfce、Xvfb 和 D-Bus 会话工具** |
+| `crossdesk-linux-<arch>-<version>.deb` (khuyên dùng) | Máy tính đã có môi trường màn hình; không cài thêm Xfce hoặc Xvfb |
+| `crossdesk-virtual-desktop-xfce-linux-<arch>-<version>.deb` | Máy chủ cần tạo màn hình độc lập; APT cài thêm **Xfce, Xvfb và công cụ phiên D-Bus** |
 
-普通版安装示例（将文件名替换为实际下载名称，arm64 选择对应架构）：
+Ví dụ cài bản thường (thay tên tệp bằng tên thực tế đã tải, với arm64 chọn kiến trúc tương ứng):
 
 ```bash
 sudo apt install "./crossdesk-linux-amd64-<version>.deb"
 ```
 
-如需虚拟桌面版，改为安装：
+Nếu cần bản màn hình ảo, thay bằng cách cài:
 
 ```bash
 sudo apt install "./crossdesk-virtual-desktop-xfce-linux-amd64-<version>.deb"
 ```
 
-两个包包含相同的完整程序，互相替换并保留用户配置；普通版自行补齐依赖后也能创建虚拟桌面。安装虚拟桌面版不会自动启动会话或切换默认桌面，启动方法见 [Linux 无头运行](HEADLESS.md)。应用更新的下载按钮会选择已安装的包类型。已有版本升级后不会自动删除先前安装的 Xfce。
+Hai gói chứa cùng một chương trình đầy đủ, thay thế lẫn nhau và giữ cấu hình người dùng; bản thường cũng tạo được màn hình ảo sau khi bạn tự bổ sung phụ thuộc. Cài bản màn hình ảo không tự khởi động phiên hay đổi màn hình mặc định; xem cách khởi động trong [chạy Linux không màn hình](HEADLESS.md). Nút tải xuống khi cập nhật ứng dụng chọn đúng loại gói đã cài. Nâng cấp phiên bản hiện có không tự xóa Xfce đã cài trước đó.
 
-**macOS 首次运行：** 按应用提示，在“系统设置 → 隐私与安全性”中授予 CrossDesk **屏幕录制**（新系统可能显示为“屏幕与系统音频录制”）及 **辅助功能**权限，再按系统提示重新打开应用。前者用于捕获桌面，后者用于远程键鼠输入。
+**Lần chạy đầu trên macOS:** Theo lời nhắc của ứng dụng, cấp cho CrossDesk quyền **Ghi màn hình** (hệ thống mới có thể hiển thị là “Ghi màn hình và âm thanh hệ thống”) và **Trợ năng** trong “Cài đặt hệ thống → Quyền riêng tư & Bảo mật”, rồi mở lại ứng dụng theo lời nhắc hệ thống. Quyền thứ nhất dùng để ghi hình màn hình, quyền thứ hai dùng cho nhập liệu bàn phím và chuột từ xa.
 
 <a id="quick-start"></a>
 
-## 快速连接
+## Kết nối nhanh
 
-### 通过设备 ID 从另一台电脑连接
+### Kết nối từ máy tính khác bằng ID thiết bị
 
-1. **准备被控电脑。** 安装并运行 CrossDesk，切换至 ID 连接模式，等待底部显示“已连接服务器”。在左侧“本桌面”查看 **本机 ID** 和 **密码**，提供给控制端。
-2. **输入对端 ID。** 在控制端右侧“远程桌面 → 对端 ID”输入被控电脑的 **9 位 ID**，点击 **连接**。
-3. **完成密码验证。** 按弹窗输入被控电脑当前的连接密码，确认后等待远程画面出现。需要保存密码时勾选“记住密码”。
-4. **再次连接。** 成功连接过的设备会出现在“近期连接”中，可通过卡片重连。点击卡片右上角的“…”菜单可编辑别名、修改分组或删除记录，右下角按钮用于连接 / 断开；标题右侧可按分组筛选设备。
+1. **Chuẩn bị máy tính được điều khiển.** Cài đặt và chạy CrossDesk, chuyển sang chế độ kết nối ID, chờ phía dưới hiển thị “Đã kết nối máy chủ”. Xem **ID máy này** và **Mật khẩu** trong “Màn hình máy này” bên trái rồi cung cấp cho máy điều khiển.
+2. **Nhập ID máy từ xa.** Tại “Máy tính từ xa → ID máy từ xa” bên phải máy điều khiển, nhập **ID gồm 9 chữ số** của máy được điều khiển, nhấn **Kết nối**.
+3. **Hoàn tất xác minh mật khẩu.** Nhập mật khẩu kết nối hiện tại của máy được điều khiển theo hộp thoại, xác nhận rồi chờ hình ảnh từ xa xuất hiện. Khi cần lưu mật khẩu, chọn “Nhớ mật khẩu”.
+4. **Kết nối lại.** Thiết bị đã kết nối thành công xuất hiện trong “Kết nối gần đây”, bạn có thể kết nối lại qua thẻ. Nhấn menu “…” ở góc trên bên phải thẻ để sửa tên gợi nhớ, đổi nhóm hoặc xóa lịch sử; nút góc dưới bên phải dùng để kết nối / ngắt kết nối; bên phải tiêu đề có thể lọc thiết bị theo nhóm.
 
-本机密码旁的眼睛按钮用于显示 / 隐藏密码，刷新按钮用于生成新的随机密码，铅笔按钮用于手动修改。密码统一为 **6 位数字或英文字母**。修改或刷新时需保持连接服务器；等待修改成功、客户端重新连接后，再复制当前密码。已保存旧密码的控制端需重新输入。
+Nút mắt bên cạnh mật khẩu máy này dùng để hiện / ẩn mật khẩu, nút làm mới tạo mật khẩu ngẫu nhiên mới, nút bút chì cho phép đổi thủ công. Mật khẩu thống nhất là **6 chữ số hoặc chữ cái tiếng Anh**. Khi đổi hoặc làm mới, cần giữ kết nối máy chủ; chờ đổi thành công và ứng dụng kết nối lại rồi mới sao chép mật khẩu hiện tại. Máy điều khiển đã lưu mật khẩu cũ cần nhập lại.
 
 <a id="lan-direct"></a>
 
-### 通过局域网 IP 直连
+### Kết nối IP trực tiếp qua mạng LAN
 
-当前 IP 直连入口用于 Windows、macOS、Linux 的普通桌面客户端。两台电脑的 IPv4 或 IPv6 地址需要可互相访问；有无外网均可，不需要等待连接信令服务器。浏览器、移动端、Windows 登录前服务及 Linux 无头控制台目前继续使用设备 ID 连接流程。
+Lối vào IP trực tiếp hiện dành cho ứng dụng máy tính thông thường trên Windows, macOS, Linux. Địa chỉ IPv4 hoặc IPv6 của hai máy tính cần truy cập được nhau; có hay không có Internet đều được, không cần chờ kết nối máy chủ báo hiệu. Trình duyệt, thiết bị di động, dịch vụ Windows trước đăng nhập và bảng điều khiển Linux không màn hình hiện vẫn dùng quy trình kết nối bằng ID thiết bị.
 
-1. **启用并切换。** 两端在 **设置 → 常规 → 网络连接** 中启用 **IP 直连** 并保存（默认开启），再用主窗口左上角按钮切换到 **IP 直连模式**。
-2. **获取对方地址。** 被控端在“本机 IP / 端口”查看地址，复制按钮会复制完整的 `IP:端口`。有多个地址时，选择控制端能够访问的地址。
-3. **连接并验证。** 控制端在“远端 IP / 端口”输入例如 `192.168.1.20:52888` 或 `[2001:db8::20]:52888`，点击“连接”，再输入被控端此模式下的六位密码。省略端口时使用 **52888**；支持数字 IPv4 和 IPv6，不支持主机名。
-4. **保存与重连。** 密码弹窗可勾选“记住密码”。近期连接按 ID / IP 模式分别显示；不勾选也会保存设备记录，下次连接需重新输入密码。可从卡片重连、修改别名或删除记录。
+1. **Bật và chuyển chế độ.** Trên cả hai bên, bật **kết nối IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu (mặc định bật), sau đó dùng nút góc trên bên trái cửa sổ chính để chuyển sang **Chế độ kết nối IP**.
+2. **Lấy địa chỉ bên kia.** Máy được điều khiển xem địa chỉ trong “IP / cổng máy này”; nút sao chép sẽ sao chép đầy đủ `IP:cổng`. Khi có nhiều địa chỉ, chọn địa chỉ mà máy điều khiển truy cập được.
+3. **Kết nối và xác minh.** Máy điều khiển nhập ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888` trong “IP / cổng từ xa”, nhấn “Kết nối”, rồi nhập mật khẩu sáu ký tự của máy được điều khiển trong chế độ này. Nếu bỏ cổng, dùng **52888**; hỗ trợ địa chỉ số IPv4 và IPv6, không hỗ trợ tên máy.
+4. **Lưu và kết nối lại.** Bạn có thể chọn “Nhớ mật khẩu” trong hộp thoại mật khẩu. Kết nối gần đây hiển thị riêng theo chế độ ID / IP; không chọn vẫn lưu lịch sử thiết bị, nhưng lần sau cần nhập lại mật khẩu. Bạn có thể kết nối lại, sửa tên gợi nhớ hoặc xóa lịch sử từ thẻ.
 
 <p align="center">
-  <img src="images/desktop-lan-password-zh.png" width="720" alt="IP 直连密码弹窗与记住密码选项，背景为演示局域网设备" />
+  <img src="images/desktop-lan-password-zh.png" width="720" alt="Hộp thoại mật khẩu IP trực tiếp và tùy chọn nhớ mật khẩu, nền là thiết bị LAN minh họa" />
 </p>
 
-**地址和端口：** 点击“切换 IP”选择展示与分享的地址，点击“修改端口”编辑该 IP 的端口。默认所有接口共用一个端口；关闭“监听所有 IP 接口”后，程序同时监听可用物理网卡上的 IPv4 和 IPv6，每个 IP 单独保存端口。切换展示地址不会停用其他地址。首次为某个 IP 分配端口时优先使用 **52888**，被占用时自动分配并保存可用端口。已有配置的端口发生冲突时会提示，需手动修改。端口范围为 **1–65535**，修改失败会保留原设置；连接方需要使用界面显示的实际端口。局域网防火墙需允许 CrossDesk 的 TCP 协商连接和 UDP 远控流量。
+**Địa chỉ và cổng:** Nhấn “Đổi IP” để chọn địa chỉ hiển thị và chia sẻ, nhấn “Đổi cổng” để sửa cổng của IP đó. Mặc định mọi giao diện dùng chung một cổng; sau khi tắt “Lắng nghe trên tất cả giao diện IP”, chương trình đồng thời lắng nghe IPv4 và IPv6 trên các card mạng vật lý khả dụng, lưu cổng riêng cho từng IP. Đổi địa chỉ hiển thị không vô hiệu hóa địa chỉ khác. Khi cấp cổng lần đầu cho một IP, ưu tiên dùng **52888**; nếu đã bị chiếm, tự cấp và lưu cổng khả dụng. Nếu cổng đã cấu hình bị xung đột, chương trình thông báo và bạn cần đổi thủ công. Phạm vi cổng là **1–65535**; đổi thất bại giữ cài đặt cũ; bên kết nối cần dùng cổng thực tế hiển thị trên giao diện. Tường lửa LAN cần cho phép kết nối thương lượng TCP và lưu lượng điều khiển từ xa UDP của CrossDesk.
 
-**所有接口监听：** 默认开启，可通过有线、Wi-Fi、VPN 或虚拟网卡的地址访问，共用一个端口。修改任一地址的端口会同时修改共享端口；关闭该选项后恢复各物理网卡 IP 的独立端口。修改后需保存。请分享界面中的实际地址，不要输入 `0.0.0.0` 或 `::`。VPN 两端仍需允许 TCP 和 UDP 互通；不支持连接本机回环地址，也不自动穿透公网路由器。
+**Lắng nghe tất cả giao diện:** Mặc định bật, có thể truy cập qua địa chỉ mạng dây, Wi-Fi, VPN hoặc card mạng ảo, dùng chung một cổng. Đổi cổng của bất kỳ địa chỉ nào cũng đổi cổng dùng chung; tắt tùy chọn sẽ khôi phục cổng riêng cho IP từng card mạng vật lý. Sau khi thay đổi cần lưu. Hãy chia sẻ địa chỉ thực tế trong giao diện, không nhập `0.0.0.0` hay `::`. Hai đầu VPN vẫn cần cho phép TCP và UDP liên lạc; không hỗ trợ kết nối địa chỉ loopback của máy này và không tự xuyên qua bộ định tuyến Internet.
 
-**IPv6 地址：** 不带端口时可输入 `2001:db8::20`，指定端口用 `[2001:db8::20]:52888`。链路本地地址还需要控制端网卡的作用域，例如 `[fe80::1234%14]:52888` 或系统支持的 `%en0`。从被控端复制的作用域编号可能不同，连接时需换成控制端用于访问该网络的网卡编号或名称。
+**Địa chỉ IPv6:** Khi không kèm cổng, có thể nhập `2001:db8::20`; khi chỉ định cổng, dùng `[2001:db8::20]:52888`. Địa chỉ link-local còn cần phạm vi của card mạng máy điều khiển, ví dụ `[fe80::1234%14]:52888` hoặc `%en0` nếu hệ thống hỗ trợ. Chỉ số phạm vi sao chép từ máy được điều khiển có thể khác; khi kết nối cần thay bằng số hoặc tên card mạng mà máy điều khiển dùng để truy cập mạng đó.
 
-**密码：** IP 直连使用独立的 **6 位英文字母或数字密码，区分大小写**。没有设置时自动生成，眼睛、刷新和铅笔按钮分别用于显示 / 隐藏、随机生成和自定义；修改成功后即时生效，无需重启或连接服务器。已保存旧密码的控制端需要重新输入。
+**Mật khẩu:** IP trực tiếp dùng mật khẩu riêng gồm **6 chữ cái tiếng Anh hoặc chữ số, phân biệt hoa thường**. Nếu chưa đặt sẽ tự tạo; nút mắt, làm mới và bút chì lần lượt dùng để hiện / ẩn, tạo ngẫu nhiên và tùy chỉnh. Đổi thành công có hiệu lực ngay, không cần khởi động lại hay kết nối máy chủ. Máy điều khiển đã lưu mật khẩu cũ cần nhập lại.
 
-**模式和开关：** 模式切换会保存，下次启动沿用。切回 ID 模式仅切换连接入口和近期记录，IP 监听仍然运行。需要停止 IP 直连时，在设置中取消“启用 IP 直连”并保存：程序会断开现有 IP 直连会话、释放监听端口、回到 ID 模式并隐藏模式按钮；原有 ID 会话继续运行，IP 密码、端口及近期记录保留。重新启用后沿用这些设置。
+**Chế độ và công tắc:** Chuyển chế độ được lưu và dùng tiếp ở lần khởi động sau. Chuyển lại chế độ ID chỉ đổi lối vào kết nối và lịch sử gần đây; lắng nghe IP vẫn chạy. Khi cần dừng IP trực tiếp, bỏ chọn “Bật kết nối IP” trong cài đặt rồi lưu: chương trình ngắt các phiên IP trực tiếp hiện có, giải phóng cổng lắng nghe, về chế độ ID và ẩn nút chế độ; các phiên ID hiện có tiếp tục chạy, mật khẩu IP, cổng và lịch sử gần đây được giữ. Bật lại sẽ dùng tiếp các cài đặt này.
 
-### 从浏览器连接
+### Kết nối từ trình duyệt
 
-1. 保持被控电脑上的 CrossDesk 运行，并确认已连接服务器。
-2. 打开 [Web 客户端](https://web.crossdesk.cn/)，输入 **远程设备 ID** 和 **密码**，点击“连接”。
-3. 连接后使用页面提供的显示器、鼠标模式和键盘控件操作远端；手机和平板也可通过浏览器访问。
+1. Giữ CrossDesk chạy trên máy tính được điều khiển và xác nhận đã kết nối máy chủ.
+2. Mở [ứng dụng Web](https://web.crossdesk.cn/), nhập **ID thiết bị từ xa** và **Mật khẩu**, nhấn “Kết nối”.
+3. Sau khi kết nối, dùng các điều khiển màn hình, chế độ chuột và bàn phím trên trang để thao tác máy từ xa; điện thoại và máy tính bảng cũng có thể truy cập qua trình duyệt.
 
-如果使用自建服务器，需要让控制端与被控端接入同一服务；Web 部署配置见 [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)。
+Nếu dùng máy chủ tự triển khai, cần cho máy điều khiển và máy được điều khiển kết nối cùng dịch vụ; xem cấu hình triển khai Web trong [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client).
 
 <p align="center">
-  <img src="images/web-client.png" width="800" alt="Web 客户端连接首页" />
+  <img src="images/web-client.png" width="800" alt="Trang kết nối chính của ứng dụng Web" />
 </p>
 
 <a id="deskhub"></a>
 
-## 桌面墙：集中查看与操控多台设备
+## Bức tường màn hình (DeskHub): xem và điều khiển tập trung nhiều thiết bị
 
-点击主窗口左上角 **桌面墙**，打开独立窗口；连接窗口仍可用于普通远程连接和全局设置。桌面墙会保存设备成员、分组、排序与窗口布局，重启后需要手动连接设备。
+Nhấn **Bức tường màn hình (DeskHub)** ở góc trên bên trái cửa sổ chính để mở cửa sổ riêng; cửa sổ kết nối vẫn có thể dùng cho kết nối từ xa thông thường và cài đặt toàn cục. Bức tường màn hình lưu thành viên thiết bị, nhóm, thứ tự và bố cục cửa sổ; sau khi khởi động lại, cần kết nối thiết bị thủ công.
 
-1. **添加设备。** 点击 **添加 → 通过设备 ID 添加**，填写 ID、密码及可选分组，点击“添加并连接”；只有勾选“记住密码”才保存凭据。也可选择 **从近期连接添加**，多选已有记录并导入；导入后用“选择 → 连接”发起连接。
-2. **查看与整理。** 从“全部设备”切换到指定分组；拖动网格分隔线统一调整画面大小，拖动设备到另一台设备上交换位置。精简模式隐藏名称和管理工具栏，全屏用于扩大查看区域；翻页保留连接。
-3. **放大与操控。** 点击设备画面进入只读放大视图，上方缩略图可切换设备，拖动中间分隔条可调整上下区域。点击 **接管操控** 后才发送键鼠；点击“释放操控”或按 **Ctrl / ⌘ + Shift + Esc** 释放。切换设备或窗口失焦也会释放操控。
-4. **批量操作。** 点击 **选择**，勾选设备或“全选”，执行连接、断开，或从“更多”中静音 / 取消静音、分发文件。“全选”覆盖当前分组的全部分页；切换分组会清空选择。
+1. **Thêm thiết bị.** Nhấn **Thêm → Thêm bằng ID thiết bị**, nhập ID, mật khẩu và nhóm tùy chọn, nhấn “Thêm và kết nối”; chỉ lưu thông tin xác thực khi chọn “Nhớ mật khẩu”. Bạn cũng có thể chọn **Thêm từ kết nối gần đây**, chọn nhiều bản ghi hiện có rồi nhập vào; sau đó dùng “Chọn → Kết nối” để kết nối.
+2. **Xem và sắp xếp.** Chuyển từ “Tất cả thiết bị” sang nhóm chỉ định; kéo đường phân cách lưới để điều chỉnh đồng loạt kích thước hình ảnh, kéo thiết bị lên thiết bị khác để đổi vị trí. Chế độ thu gọn ẩn tên và thanh công cụ quản lý; toàn màn hình mở rộng vùng xem; lật trang vẫn giữ kết nối.
+3. **Phóng to và điều khiển.** Nhấn hình ảnh thiết bị để vào chế độ xem phóng to chỉ xem; hình thu nhỏ phía trên cho phép chuyển thiết bị, kéo thanh phân cách giữa để điều chỉnh vùng trên và dưới. Chỉ gửi bàn phím và chuột sau khi nhấn **Tiếp quản điều khiển**; nhấn “Nhả điều khiển” hoặc **Ctrl / ⌘ + Shift + Esc** để nhả. Chuyển thiết bị hoặc cửa sổ mất tiêu điểm cũng nhả điều khiển.
+4. **Thao tác hàng loạt.** Nhấn **Chọn**, chọn thiết bị hoặc “Chọn tất cả” để kết nối, ngắt kết nối, hoặc vào “Thêm” để tắt / bật tiếng, phân phối tệp. “Chọn tất cả” bao phủ mọi trang của nhóm hiện tại; đổi nhóm xóa lựa chọn.
 
 <p align="center">
-  <img src="images/desktop-deskhub-focus-zh.png" width="960" alt="桌面墙放大视图：上方设备缩略图、下方主画面，以及只读预览、开启群控和接管操控入口；画面为演示" />
+  <img src="images/desktop-deskhub-focus-zh.png" width="960" alt="Chế độ phóng to Bức tường màn hình: hình thu nhỏ thiết bị phía trên, hình ảnh chính phía dưới, lối vào chỉ xem, bật điều khiển nhóm và tiếp quản điều khiển; hình ảnh minh họa" />
 </p>
 
-**群控：** 在放大视图点击“开启群控”，将当前设备的键鼠操作同步到 **所有已连接设备**，包含其他分组、分页及未显示在墙内的连接；范围不受批量勾选限制。各设备接收相同坐标与按键，屏幕尺寸不同时不会另做比例适配。释放操控会同时结束群控。
+**Điều khiển nhóm:** Trong chế độ phóng to, nhấn “Bật điều khiển nhóm” để đồng bộ thao tác bàn phím và chuột của thiết bị hiện tại đến **tất cả thiết bị đã kết nối**, kể cả nhóm khác, trang khác và kết nối không hiển thị trong bức tường; phạm vi không bị giới hạn bởi lựa chọn hàng loạt. Các thiết bị nhận cùng tọa độ và phím; không điều chỉnh tỷ lệ riêng khi kích thước màn hình khác nhau. Nhả điều khiển đồng thời kết thúc điều khiển nhóm.
 
-桌面墙连接默认静音，需要声音时通过“选择 → 更多 → 取消静音”开启。底部 **网络状态** 可查看所有已连接设备的直连 / 中继、加密状态、收发速率、视频延时、丢包率、分辨率与帧率。需要显示器切换、隐私屏等完整单会话工具时，可在主窗口“近期连接”中点击已连接设备，打开独立会话窗口。
+Kết nối Bức tường màn hình mặc định tắt tiếng; khi cần âm thanh, bật qua “Chọn → Thêm → Bật tiếng”. **Trạng thái mạng** phía dưới cho phép xem kết nối trực tiếp / chuyển tiếp, trạng thái mã hóa, tốc độ truyền nhận, độ trễ video, tỷ lệ mất gói, độ phân giải và tốc độ khung hình của tất cả thiết bị đã kết nối. Khi cần bộ công cụ đầy đủ cho một phiên như chuyển màn hình, màn hình riêng tư, bạn có thể nhấn thiết bị đã kết nối trong “Kết nối gần đây” của cửa sổ chính để mở cửa sổ phiên riêng.
 
-**关闭桌面墙会断开全部远程设备连接，并关闭共用连接的独立会话窗口；最小化不会断开。** 分组、分页和选择范围不会限制关闭时的断开范围。更多操作、预览策略与版本兼容性见 [桌面墙说明](deskhub.md)。
+**Đóng Bức tường màn hình sẽ ngắt toàn bộ kết nối thiết bị từ xa và đóng các cửa sổ phiên riêng dùng chung kết nối; thu nhỏ không ngắt kết nối.** Nhóm, trang và phạm vi lựa chọn không giới hạn phạm vi ngắt khi đóng. Xem thêm thao tác, chiến lược xem trước và tương thích phiên bản trong [tài liệu Bức tường màn hình (DeskHub)](deskhub.md).
 
 <a id="session"></a>
 
-## 会话中的常用操作
+## Thao tác thường dùng trong phiên
 
-远程窗口通过会话标签切换设备，控制栏提供以下操作；控制栏收起时先点击展开按钮。将鼠标悬停在图标上可查看提示。
+Cửa sổ từ xa chuyển thiết bị qua thẻ phiên; thanh điều khiển cung cấp các thao tác sau; khi thanh đang thu gọn, nhấn nút mở rộng trước. Di chuột lên biểu tượng để xem gợi ý.
 
-| 入口 | 用途 |
+| Lối vào | Công dụng |
 | --- | --- |
-| 显示器 | 切换远端显示器 |
-| 键盘 | 发送组合键；Windows 的 `Ctrl+Alt+Del` 依赖远端服务 |
-| 鼠标 | 控制 / 释放远端鼠标 |
-| 扬声器 | 播放声音 / 静音 |
-| 文件夹 | 打开双栏文件浏览窗口，浏览本机和远端目录，双向传输文件与文件夹 |
-| 画面设置 | 在当前会话中调整画面质量、采集帧率、受支持的远端分辨率与画面偏好 |
-| 网络状态 | 查看流量、丢包率、帧率、分辨率、直连 / 中继、加密状态，以及被控端编码器和控制端解码器 |
-| 隐私屏 | 开启或关闭被控电脑的隐私屏；悬停查看当前状态与可用操作 |
-| 全屏 | 进入 / 退出全屏 |
-| 断开连接 | 结束当前远程会话 |
+| Màn hình | Chuyển màn hình từ xa |
+| Bàn phím | Gửi tổ hợp phím; `Ctrl+Alt+Del` của Windows phụ thuộc dịch vụ từ xa |
+| Chuột | Điều khiển / nhả chuột từ xa |
+| Loa | Phát âm thanh / tắt tiếng |
+| Thư mục | Mở cửa sổ duyệt tệp hai khung, duyệt thư mục máy này và máy từ xa, truyền tệp và thư mục hai chiều |
+| Cài đặt hình ảnh | Điều chỉnh chất lượng hình ảnh, tốc độ khung hình ghi hình, độ phân giải từ xa được hỗ trợ và tùy chọn hình ảnh trong phiên hiện tại |
+| Trạng thái mạng | Xem lưu lượng, tỷ lệ mất gói, tốc độ khung hình, độ phân giải, trực tiếp / chuyển tiếp, trạng thái mã hóa, bộ mã hóa máy được điều khiển và bộ giải mã máy điều khiển |
+| Màn hình riêng tư | Bật hoặc tắt màn hình riêng tư của máy tính được điều khiển; di chuột để xem trạng thái hiện tại và thao tác khả dụng |
+| Toàn màn hình | Vào / thoát toàn màn hình |
+| Ngắt kết nối | Kết thúc phiên từ xa hiện tại |
 
-桌面端可同步文本剪贴板。接收文件的位置可在“设置 → 常规 → 文件保存路径”调整。关闭主窗口会隐藏窗口并保持程序运行；需要完全退出时使用系统托盘或菜单栏中的退出入口。
+Ứng dụng máy tính có thể đồng bộ bảng nhớ tạm văn bản. Bạn có thể đổi nơi nhận tệp trong “Cài đặt → Chung → Đường dẫn lưu tệp”. Đóng cửa sổ chính sẽ ẩn cửa sổ và giữ chương trình chạy; để thoát hoàn toàn, dùng mục thoát trong khay hệ thống hoặc thanh menu.
 
-Windows、macOS 和 Linux 桌面端支持双向复制粘贴文件，两端均需使用支持按需粘贴的版本。在系统文件管理器中复制文件，切回当前远控窗口后，只同步文件清单；在另一端执行粘贴（右键菜单或快捷键：Windows/Linux 使用 `Ctrl+V`，macOS Finder 使用 `⌘V`）时才开始传输。接收端右下角显示本批文件的接收进度，完成后本次粘贴自动继续，无需再次粘贴。也可在远端复制文件后回到本机粘贴，无需打开文件传输窗口。
+Ứng dụng máy tính Windows, macOS và Linux hỗ trợ sao chép dán tệp hai chiều; cả hai bên đều cần phiên bản hỗ trợ dán theo yêu cầu. Sao chép tệp trong trình quản lý tệp hệ thống rồi chuyển về cửa sổ điều khiển từ xa hiện tại chỉ đồng bộ danh sách tệp; chỉ bắt đầu truyền khi dán ở đầu kia (menu chuột phải hoặc phím tắt: Windows/Linux dùng `Ctrl+V`, macOS Finder dùng `⌘V`). Góc dưới bên phải bên nhận hiển thị tiến độ nhận lô tệp này; khi hoàn tất, thao tác dán tự tiếp tục, không cần dán lại. Bạn cũng có thể sao chép tệp ở máy từ xa rồi về máy này để dán, không cần mở cửa sổ truyền tệp.
 
-每次最多复制 128 个普通文件；文件夹请使用双栏文件传输。剪贴板传输按复制处理，不删除源文件，接收端可取消整批传输。进度提示在完成或取消后自动收起；发送端不弹出文件发送进度框。粘贴完成前请保持连接及两端 CrossDesk 运行。下载缓存随剪贴板替换、断开连接或退出清理；同一批文件再次粘贴可使用缓存。重新复制文本或文件会使旧清单失效，旧批次不会覆盖新的剪贴板。后台会话和桌面墙预览不会接收本机复制的文件。
+Mỗi lần sao chép tối đa 128 tệp thông thường; với thư mục, hãy dùng truyền tệp hai khung. Truyền qua bảng nhớ tạm được xử lý như sao chép, không xóa tệp nguồn; bên nhận có thể hủy cả lô. Thông báo tiến độ tự thu gọn sau khi hoàn tất hoặc hủy; bên gửi không mở hộp tiến độ gửi tệp. Hãy giữ kết nối và CrossDesk trên cả hai bên chạy cho đến khi dán xong. Bộ nhớ đệm tải xuống được dọn khi thay bảng nhớ tạm, ngắt kết nối hoặc thoát; dán lại cùng lô tệp có thể dùng bộ nhớ đệm. Sao chép lại văn bản hoặc tệp làm danh sách cũ mất hiệu lực, lô cũ không ghi đè bảng nhớ tạm mới. Phiên nền và xem trước Bức tường màn hình không nhận các tệp được sao chép trên máy này.
 
-Linux 接收端兼容 FUSE 2 和 FUSE 3，使用系统已有的运行库和挂载工具提供按需读取的文件。运行时先尝试 FUSE 3（`libfuse3.so.3` 或 `libfuse3.so.4`），不可用时尝试 FUSE 2（`libfuse.so.2`）。当前用户仍需能够访问 `/dev/fuse` 并挂载 FUSE 文件系统。
+Bên nhận Linux tương thích FUSE 2 và FUSE 3, dùng thư viện thời gian chạy và công cụ gắn kết hiện có của hệ thống để cung cấp tệp đọc theo yêu cầu. Khi chạy, thử FUSE 3 trước (`libfuse3.so.3` hoặc `libfuse3.so.4`), nếu không khả dụng thì thử FUSE 2 (`libfuse.so.2`). Người dùng hiện tại vẫn cần truy cập được `/dev/fuse` và gắn kết hệ thống tệp FUSE.
 
-Debian 安装包声明 `fuse3 (>= 3.2) | fuse (>= 2.9)` 二选一依赖。通过 APT 安装或应用内升级时，已有任一版本即可满足依赖，不强制替换另一版本；两者都没有时，由包管理器安装 FUSE 3 及其运行库。应用内升级保留禁止自动移除软件包的保护。直接使用 `dpkg -i` 不会下载缺失依赖，应使用 `sudo apt install ./安装包.deb`。
+Gói Debian khai báo phụ thuộc chọn một trong hai: `fuse3 (>= 3.2) | fuse (>= 2.9)`. Khi cài qua APT hoặc nâng cấp trong ứng dụng, có sẵn bất kỳ phiên bản nào đều đáp ứng phụ thuộc, không bắt buộc thay bằng phiên bản kia; nếu chưa có cả hai, trình quản lý gói cài FUSE 3 và thư viện thời gian chạy của nó. Nâng cấp trong ứng dụng giữ biện pháp bảo vệ không cho tự xóa gói. Dùng trực tiếp `dpkg -i` không tải phụ thuộc còn thiếu; nên dùng `sudo apt install ./ten-goi-cai-dat.deb`.
 
-若手动部署的环境缺少 FUSE，或容器、系统权限阻止挂载，接收端会提示检查 FUSE 安装和挂载权限，并可继续使用文件传输窗口；远程控制、文本剪贴板和向其他设备复制文件不受此限制。
+Nếu môi trường triển khai thủ công thiếu FUSE, hoặc container hay quyền hệ thống ngăn gắn kết, bên nhận nhắc kiểm tra cài đặt FUSE và quyền gắn kết, bạn vẫn có thể dùng cửa sổ truyền tệp; điều khiển từ xa, bảng nhớ tạm văn bản và sao chép tệp đến thiết bị khác không chịu giới hạn này.
 
-macOS 使用 Finder 粘贴到本地目录，同名文件会保留并另存为带编号的文件名。
+Trên macOS, dùng Finder để dán vào thư mục cục bộ; tệp trùng tên được giữ lại và tệp mới được lưu bằng tên có số thứ tự.
 
-Windows 任务栏将主窗口与远程控制窗口显示为两个独立图标，可分别切换和最小化。关闭主窗口后，远程控制窗口及其连接继续保留；需要主窗口时从系统托盘重新打开。远程控制窗口的任务栏图标仅在会话窗口存在时显示，固定应用请使用主窗口的图标。
+Thanh tác vụ Windows hiển thị cửa sổ chính và cửa sổ điều khiển từ xa thành hai biểu tượng riêng, cho phép chuyển và thu nhỏ riêng. Sau khi đóng cửa sổ chính, cửa sổ điều khiển từ xa và kết nối vẫn được giữ; khi cần cửa sổ chính, mở lại từ khay hệ thống. Biểu tượng thanh tác vụ của cửa sổ điều khiển từ xa chỉ xuất hiện khi có cửa sổ phiên; để ghim ứng dụng, hãy dùng biểu tượng cửa sổ chính.
 
-Linux 的主窗口与远程控制窗口使用不同的应用分组标识，支持 X11、XWayland 和原生 Wayland；实际任务栏显示方式由桌面环境及分组设置决定。关闭主窗口不影响远控连接，可从系统托盘重新打开主窗口。固定应用请使用主窗口的启动器。
+Trên Linux, cửa sổ chính và cửa sổ điều khiển từ xa dùng mã nhóm ứng dụng khác nhau, hỗ trợ X11, XWayland và Wayland gốc; cách hiển thị thực tế trên thanh tác vụ do môi trường màn hình và cài đặt nhóm quyết định. Đóng cửa sổ chính không ảnh hưởng kết nối từ xa; bạn có thể mở lại từ khay hệ thống. Để ghim ứng dụng, hãy dùng trình khởi chạy cửa sổ chính.
 
-macOS 保留一个 CrossDesk Dock 应用图标，主窗口与远程控制窗口可独立切换和最小化，不会自动合并为系统窗口标签页。关闭主窗口后，只要还有可见或已最小化的窗口，Dock 图标就会保留，远控连接继续运行；所有窗口关闭后，应用保留在菜单栏中。可从菜单栏重新打开主窗口。
+macOS giữ một biểu tượng ứng dụng CrossDesk trên Dock; cửa sổ chính và cửa sổ điều khiển từ xa có thể chuyển và thu nhỏ độc lập, không tự gộp thành thẻ cửa sổ hệ thống. Sau khi đóng cửa sổ chính, miễn còn cửa sổ hiển thị hoặc đã thu nhỏ, biểu tượng Dock vẫn được giữ và kết nối từ xa tiếp tục chạy; khi mọi cửa sổ đóng, ứng dụng ở lại thanh menu. Bạn có thể mở lại cửa sổ chính từ thanh menu.
 
-网络状态中的“被控端编码器”和“控制端解码器”显示当前实际使用的视频处理方式，可用于判断是否使用硬件加速。旧版设备不支持或尚未收到数据时显示“—”。反馈画面卡顿时，可附上这些信息。
+“Bộ mã hóa máy được điều khiển” và “Bộ giải mã máy điều khiển” trong trạng thái mạng hiển thị cách xử lý video thực tế đang dùng, giúp xác định có dùng tăng tốc phần cứng hay không. Thiết bị cũ không hỗ trợ hoặc chưa nhận dữ liệu sẽ hiển thị “—”. Khi báo cáo hình ảnh giật, bạn có thể đính kèm thông tin này.
 
-### 浏览目录与传输文件
+### Duyệt thư mục và truyền tệp
 
-点击会话工具栏中的文件夹按钮，同时查看本机和远端文件列表。可输入路径、返回上级目录、按名称筛选、选择多个文件或文件夹，再点击 **发送到远端** / **发送到本机**，也可在两栏之间拖放。目标目录需已存在，同名文件按冲突命名规则另存；远端目录浏览需要兼容的被控端。
+Nhấn nút thư mục trên thanh công cụ phiên để xem đồng thời danh sách tệp máy này và máy từ xa. Bạn có thể nhập đường dẫn, về thư mục cha, lọc theo tên, chọn nhiều tệp hoặc thư mục rồi nhấn **Gửi đến máy từ xa** / **Gửi đến máy này**, hoặc kéo thả giữa hai khung. Thư mục đích cần tồn tại; tệp trùng tên được lưu riêng theo quy tắc đặt tên khi xung đột; duyệt thư mục từ xa cần máy được điều khiển tương thích.
 
-底部任务列表显示传输状态和进度，支持取消未完成任务与清除已完成记录。图中的路径、文件名和完成状态均为演示数据。
-
-<p align="center">
-  <img src="images/desktop-files-zh.png" width="960" alt="文件传输窗口：本机和远端文件列表、发送方向与任务状态；数据为演示" />
-</p>
-
-### 在会话中调整画面
-
-连接成功后，点击工具栏中的 **画面设置**（滑杆图标），直接选择低 / 中 / 高画质、**30 / 60 fps**，以及帧率优先 / 画质优先 / 平衡。选项会发送给当前被控端，无需断开重连；实际画面效果取决于网络、设备与编码器能力。旧版被控端不支持时，菜单会提示并禁用选项。
-
-被控端为 Windows、macOS 或 Linux X11 时，还可在 **画面设置 → 分辨率** 中选择当前显示器支持的桌面分辨率。调整无需重连，最后一个控制端断开后会恢复连接期间首次调整前的显示模式。Linux 需要使用 X11 采集及支持 RandR 的显示服务器；Wayland、XWayland 和使用自定义缩放或平移的显示配置暂不支持。可选分辨率由显示器或虚拟显示服务器提供，仅提供一个模式的虚拟屏不会额外生成模式。
+Danh sách tác vụ phía dưới hiển thị trạng thái và tiến độ truyền, hỗ trợ hủy tác vụ chưa hoàn tất và xóa lịch sử đã hoàn tất. Đường dẫn, tên tệp và trạng thái hoàn tất trong hình đều là dữ liệu minh họa.
 
 <p align="center">
-  <img src="images/desktop-stream-video-settings-zh.png" width="800" alt="当前远程会话的画面设置菜单：分辨率、画面质量、采集帧率与画面偏好；背景为公开页面演示图" />
+  <img src="images/desktop-files-zh.png" width="960" alt="Cửa sổ truyền tệp: danh sách tệp máy này và máy từ xa, hướng gửi và trạng thái tác vụ; dữ liệu minh họa" />
 </p>
 
-桌面和原生移动端会按远端设备及显示器记住已确认成功的分辨率。再次连接时，若该显示器仍支持保存的模式，会重新请求应用；被控端在最后一个控制端断开时恢复原显示模式的行为不变。
+### Điều chỉnh hình ảnh trong phiên
+
+Sau khi kết nối thành công, nhấn **Cài đặt hình ảnh** (biểu tượng thanh trượt) trên thanh công cụ để chọn trực tiếp chất lượng thấp / trung bình / cao, **30 / 60 fps**, cùng ưu tiên độ mượt / ưu tiên chất lượng / cân bằng. Tùy chọn được gửi đến máy được điều khiển hiện tại, không cần ngắt rồi kết nối lại; hình ảnh thực tế phụ thuộc mạng, thiết bị và khả năng bộ mã hóa. Nếu máy được điều khiển cũ không hỗ trợ, menu thông báo và vô hiệu hóa tùy chọn.
+
+Khi máy được điều khiển dùng Windows, macOS hoặc Linux X11, bạn còn có thể chọn độ phân giải màn hình nền được màn hình hiện tại hỗ trợ trong **Cài đặt hình ảnh → Độ phân giải**. Điều chỉnh không cần kết nối lại; khi máy điều khiển cuối cùng ngắt kết nối, chế độ hiển thị trước lần điều chỉnh đầu tiên trong thời gian kết nối được khôi phục. Linux cần ghi hình X11 và máy chủ hiển thị hỗ trợ RandR; Wayland, XWayland và cấu hình hiển thị dùng thu phóng hoặc di chuyển khung nhìn tùy chỉnh hiện chưa được hỗ trợ. Độ phân giải khả dụng do màn hình hoặc máy chủ hiển thị ảo cung cấp; màn hình ảo chỉ có một chế độ sẽ không được tạo thêm chế độ.
+
+<p align="center">
+  <img src="images/desktop-stream-video-settings-zh.png" width="800" alt="Menu cài đặt hình ảnh của phiên từ xa hiện tại: độ phân giải, chất lượng hình ảnh, tốc độ khung hình ghi hình và tùy chọn hình ảnh; nền là ảnh minh họa trang công khai" />
+</p>
+
+Ứng dụng máy tính và di động gốc ghi nhớ độ phân giải đã được xác nhận thành công theo thiết bị từ xa và màn hình. Khi kết nối lại, nếu màn hình đó vẫn hỗ trợ chế độ đã lưu, ứng dụng yêu cầu áp dụng lại; hành vi khôi phục chế độ hiển thị ban đầu của máy được điều khiển khi máy điều khiển cuối cùng ngắt kết nối không thay đổi.
 
 <a id="settings"></a>
 
-## 客户端设置与更新
+## Cài đặt và cập nhật ứng dụng
 
-点击主窗口右上角 **☰ → 设置**，顶部切换 **常规 / 桌面墙**，修改后点击 **保存**。切换选项卡会保留未保存的修改，点击“取消”放弃修改。“常规”按界面、视频、网络连接等类别组织选项，可向下滚动查看其余设置。编码与连接选项建议在建立连接前调整；会话进行中部分选项不可修改。普通会话的画质、帧率和画面偏好在远程会话工具栏中调整。
+Nhấn **☰ → Cài đặt** ở góc trên bên phải cửa sổ chính, chuyển **Chung / Bức tường màn hình (DeskHub)** ở phía trên, sau khi sửa nhấn **Lưu**. Chuyển thẻ vẫn giữ thay đổi chưa lưu; nhấn “Hủy” để bỏ thay đổi. “Chung” sắp xếp tùy chọn theo các mục giao diện, video, kết nối mạng; bạn có thể cuộn xuống để xem cài đặt còn lại. Nên điều chỉnh tùy chọn mã hóa và kết nối trước khi thiết lập kết nối; một số tùy chọn không thể sửa khi phiên đang chạy. Chất lượng hình ảnh, tốc độ khung hình và tùy chọn hình ảnh của phiên thông thường được điều chỉnh trên thanh công cụ phiên từ xa.
 
 <p align="center">
-  <img src="images/desktop-settings-zh.png" width="720" alt="新版常规设置：常规与桌面墙选项卡、语言、视频编码及网络连接设置" />
+  <img src="images/desktop-settings-zh.png" width="720" alt="Cài đặt chung mới: thẻ Chung và Bức tường màn hình, ngôn ngữ, mã hóa video và cài đặt kết nối mạng" />
 </p>
 
-| 设置 | 说明 |
+| Cài đặt | Giải thích |
 | --- | --- |
-| 语言 | 默认跟随系统，也可手动选择简体中文、繁体中文、英语、俄语、日语、韩语、德语、法语、西班牙语或巴西葡萄牙语，见 [本地化说明](../localization/README.md) |
-| 视频编码格式 | H.264 / AV1；H.264 自动优先使用硬件编解码，不可用或初始化失败时回退到软件；桌面端 AV1 使用软件编解码 |
-| 启用 IP 直连 | 默认开启；保存后即时启停 IP 直连。关闭会断开 IP 会话、停止监听并隐藏主窗口模式按钮，重启后保持 |
-| 强制中继连接 | 关闭时自动选择连接方式，允许 P2P 和 TURN 中继回退；开启时仅通过中继连接 |
-| 保存远程画面预览 | 默认开启，保存远程画面预览；关闭后缩略图区域显示被控端平台，并清除已有预览，保留连接记录和密码 |
-| 被连接时开启隐私屏 | 设置本机被远程连接时是否自动启用隐私屏；会话中可从控制端工具栏切换 |
-| 自托管配置 | 点击“编辑”填写服务器地址和信令服务端口，使用右侧开关启用 |
-| 开机自启 | Windows 安装版 Release：使用现有 ID、密码在登录前提供远控；用户登录后 GUI 自动启动并接入后台服务，恢复完整功能。Windows 便携版和 Debug 不支持此开关。其他桌面平台保存后设置登录桌面时自动启动 |
-| 启用守护进程 | Windows / macOS / Linux 桌面模式保存后立即启用或停用异常退出后的自动重启，无需重启程序；正常退出或注销不会重新拉起，无头控制台模式不启用内置守护 |
-| 文件保存路径 | 选择接收文件的目录 |
+| Ngôn ngữ | Bản cài đặt mới của phiên bản này mặc định chọn Tiếng Việt. Bạn có thể chọn thủ công một trong 11 ngôn ngữ: tiếng Trung giản thể, tiếng Anh, tiếng Nga, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Đức, tiếng Pháp, tiếng Tây Ban Nha, tiếng Bồ Đào Nha Brazil và Tiếng Việt, hoặc chọn “Theo hệ thống”. Nếu không có ngôn ngữ hệ thống phù hợp, ứng dụng dùng tiếng Việt; lựa chọn trong cấu hình hiện có được giữ nguyên. Xem [tài liệu bản địa hóa](../localization/README.md) |
+| Định dạng mã hóa video | H.264 / AV1; H.264 tự ưu tiên mã hóa và giải mã phần cứng, chuyển về phần mềm nếu không khả dụng hoặc khởi tạo thất bại; AV1 trên máy tính dùng mã hóa và giải mã phần mềm |
+| Bật kết nối IP | Mặc định bật; lưu sẽ bật/tắt IP trực tiếp ngay. Tắt sẽ ngắt phiên IP, dừng lắng nghe và ẩn nút chế độ cửa sổ chính, giữ trạng thái sau khi khởi động lại |
+| Buộc kết nối chuyển tiếp | Khi tắt, tự chọn phương thức kết nối, cho phép P2P và chuyển sang chuyển tiếp TURN khi cần; khi bật, chỉ kết nối qua chuyển tiếp |
+| Lưu ảnh xem trước màn hình từ xa | Mặc định bật, lưu ảnh xem trước màn hình từ xa; khi tắt, vùng hình thu nhỏ hiển thị nền tảng máy được điều khiển và xóa ảnh xem trước hiện có, giữ lịch sử kết nối và mật khẩu |
+| Bật màn hình riêng tư khi có kết nối đến | Thiết lập có tự bật màn hình riêng tư khi máy này được kết nối từ xa hay không; trong phiên có thể chuyển qua thanh công cụ máy điều khiển |
+| Cấu hình máy chủ tự lưu trữ (self-host) | Nhấn “Chỉnh sửa” để nhập địa chỉ máy chủ và cổng dịch vụ báo hiệu, bật bằng công tắc bên phải |
+| Tự khởi động cùng hệ thống | Bản Release đã cài đặt trên Windows: cung cấp điều khiển từ xa trước đăng nhập bằng ID, mật khẩu hiện có; sau khi người dùng đăng nhập, GUI tự khởi động và kết nối dịch vụ nền để khôi phục đầy đủ tính năng. Bản Windows di động không cần cài đặt và Debug không hỗ trợ công tắc này. Trên nền tảng máy tính khác, lưu sẽ thiết lập tự khởi động khi đăng nhập màn hình |
+| Bật tiến trình nền | Ở chế độ máy tính Windows / macOS / Linux, lưu sẽ bật hoặc tắt ngay tự khởi động lại sau khi thoát bất thường, không cần khởi động lại chương trình; thoát bình thường hoặc đăng xuất sẽ không khởi chạy lại, chế độ bảng điều khiển không màn hình không bật tiến trình giám sát tích hợp |
+| Đường dẫn lưu tệp | Chọn thư mục nhận tệp |
 
-网络连接分组中的 IP 直连开关独立于 ID 连接使用的中继设置：
+Công tắc IP trực tiếp trong nhóm kết nối mạng độc lập với cài đặt chuyển tiếp dùng cho kết nối ID:
 
 <p align="center">
-  <img src="images/desktop-settings-network-zh.png" width="720" alt="常规设置的网络连接分组：启用 IP 直连开关及关闭后的行为说明" />
+  <img src="images/desktop-settings-network-zh.png" width="720" alt="Nhóm kết nối mạng trong cài đặt chung: công tắc bật IP trực tiếp và giải thích hành vi sau khi tắt" />
 </p>
 
 <details>
-<summary>进阶：手动调整连接起始带宽</summary>
+<summary>Nâng cao: điều chỉnh thủ công băng thông khởi đầu kết nối</summary>
 
-通常无需修改这些值。画面卡顿时先尝试会话中的画质与帧率设置。
+Thông thường không cần sửa các giá trị này. Khi hình ảnh giật, hãy thử cài đặt chất lượng hình ảnh và tốc độ khung hình trong phiên trước.
 
-退出客户端后，编辑缓存目录中 `config.ini` 的 `[Settings]` 节，重启后生效：
+Sau khi thoát ứng dụng, sửa phần `[Settings]` của `config.ini` trong thư mục bộ nhớ đệm; có hiệu lực sau khi khởi động lại:
 
 ```ini
 [Settings]
@@ -210,122 +210,122 @@ relay_start_bitrate_bps = 1500000
 disable_receiver_padding_probing = true
 ```
 
-两个值的单位均为 bps，分别控制本机原生媒体发送端在 P2P / IP 直连和 TURN 中继路径上的拥塞控制起始估计。桌面端默认值为 2.5 Mbps 和 1.5 Mbps，允许范围为 300000–20000000；缺失或非法值使用对应默认值，启动时补写到配置文件。连接后仍按网络反馈动态调整，桌面墙带宽预算继续生效。观看远程画面时，应修改发送画面的被控端配置。浏览器连接使用独立的带宽控制，不受这两个选项影响。
+Cả hai giá trị đều có đơn vị bps, lần lượt điều khiển ước tính khởi đầu của cơ chế kiểm soát tắc nghẽn ở bên gửi nội dung đa phương tiện gốc trên máy này cho đường P2P / IP trực tiếp và chuyển tiếp TURN. Giá trị mặc định trên máy tính là 2.5 Mbps và 1.5 Mbps, phạm vi cho phép là 300000–20000000; giá trị thiếu hoặc không hợp lệ dùng mặc định tương ứng và được ghi bổ sung vào tệp cấu hình khi khởi động. Sau kết nối vẫn điều chỉnh động theo phản hồi mạng, ngân sách băng thông Bức tường màn hình tiếp tục có hiệu lực. Khi xem hình ảnh từ xa, nên sửa cấu hình máy được điều khiển đang gửi hình ảnh. Kết nối trình duyệt dùng cơ chế điều khiển băng thông riêng, không chịu ảnh hưởng của hai tùy chọn này.
 
-该文件在 macOS / Linux 上默认位于 `~/.cache/CrossDesk/`（设置 `XDG_CACHE_HOME` 时使用该目录下的 `CrossDesk/`）；Windows 安装版 Release 位于 `%LOCALAPPDATA%\CrossDesk\cache\`，Windows Debug 使用工作目录下的 `cache/`，便携版使用可执行文件旁的 `data/`。
+Trên macOS / Linux, tệp này mặc định ở `~/.cache/CrossDesk/` (khi đặt `XDG_CACHE_HOME`, dùng `CrossDesk/` trong thư mục đó); bản Release đã cài đặt trên Windows ở `%LOCALAPPDATA%\CrossDesk\cache\`, Windows Debug dùng `cache/` trong thư mục làm việc, bản di động không cần cài đặt dùng `data/` bên cạnh tệp thực thi.
 
-Windows 已配置后台主机时，以 `%ProgramData%\CrossDeskUnattended\shared-identity.json` 的 `host_config` 中保存的 INI 配置为准。管理员须在 GUI 与后台服务均停止时修改其中这些配置项，再重启服务和 GUI；单独修改用户缓存或 `host/config.ini` 会在启动时被共享配置覆盖。
+Khi Windows đã cấu hình máy chủ nền, cấu hình INI lưu trong `host_config` của `%ProgramData%\CrossDeskUnattended\shared-identity.json` được ưu tiên. Quản trị viên cần sửa các mục này khi cả GUI và dịch vụ nền đều dừng, rồi khởi động lại dịch vụ và GUI; chỉ sửa bộ nhớ đệm người dùng hoặc `host/config.ini` sẽ bị cấu hình dùng chung ghi đè khi khởi động.
 
-桌面端的 `disable_receiver_padding_probing` 默认为 `true`，禁止尚未发送过本地视频的连接发送填充探测包；设为 `false` 可恢复接收端填充探测。开始发送本地视频后仍保留正常探测和静态画面时的带宽恢复。缺失或非法值使用默认值，已有显式配置保持不变。该选项适用于原生直连和中继，配置位置及重启要求同上；Windows 后台主机共享配置也包含此项。
+`disable_receiver_padding_probing` trên máy tính mặc định là `true`, cấm kết nối chưa từng gửi video cục bộ gửi gói thăm dò đệm; đặt `false` có thể khôi phục thăm dò đệm phía nhận. Sau khi bắt đầu gửi video cục bộ, vẫn giữ thăm dò bình thường và khôi phục băng thông khi hình ảnh tĩnh. Giá trị thiếu hoặc không hợp lệ dùng mặc định; cấu hình tường minh hiện có giữ nguyên. Tùy chọn áp dụng cho kết nối trực tiếp và chuyển tiếp gốc, vị trí cấu hình và yêu cầu khởi động lại như trên; cấu hình dùng chung máy chủ nền Windows cũng gồm mục này.
 
 </details>
 
-### 桌面墙画面传输
+### Truyền hình ảnh Bức tường màn hình (DeskHub)
 
-在 **设置 → 桌面墙** 中统一配置墙内设备，保存后立即应用到当前桌面墙会话，并用于后续连接；普通连接不受影响。
+Cấu hình thống nhất thiết bị trong bức tường tại **Cài đặt → Bức tường màn hình (DeskHub)**; lưu sẽ áp dụng ngay cho phiên Bức tường màn hình hiện tại và dùng cho các kết nối sau; kết nối thông thường không bị ảnh hưởng.
 
-| 设置 | 说明 |
+| Cài đặt | Giải thích |
 | --- | --- |
-| 分辨率上限 | 自动、320 × 180、640 × 360、1280 × 720、1920 × 1080、2560 × 1440、3840 × 2160 或原始分辨率；自动模式按网格 / 放大视图调整，固定上限保持比例且不放大源画面 |
-| 帧率 | 跟随设备设置，或指定 15 / 30 / 60 FPS |
-| 视频总带宽 | 默认 20 Mbps，可选 2 / 5 / 10 / 20 / 50 / 100 Mbps；由支持该能力的桌面墙会话共享，放大画面优先分配，不包含音频、文件传输与普通连接，也不是瞬时流量的硬上限 |
+| Giới hạn độ phân giải | Tự động, 320 × 180, 640 × 360, 1280 × 720, 1920 × 1080, 2560 × 1440, 3840 × 2160 hoặc độ phân giải gốc; chế độ tự động điều chỉnh theo lưới / chế độ phóng to, giới hạn cố định giữ tỷ lệ và không phóng lớn hình ảnh nguồn |
+| Tốc độ khung hình | Theo cài đặt thiết bị, hoặc chỉ định 15 / 30 / 60 FPS |
+| Tổng băng thông video | Mặc định 20 Mbps, có thể chọn 2 / 5 / 10 / 20 / 50 / 100 Mbps; các phiên Bức tường màn hình hỗ trợ khả năng này dùng chung, ưu tiên cấp cho hình ảnh phóng to, không gồm âm thanh, truyền tệp và kết nối thông thường, cũng không phải giới hạn cứng của lưu lượng tức thời |
 
 <p align="center">
-  <img src="images/desktop-settings-deskhub-zh.png" width="720" alt="桌面墙传输设置：自动分辨率、跟随设备帧率和 20 Mbps 视频总带宽" />
+  <img src="images/desktop-settings-deskhub-zh.png" width="720" alt="Cài đặt truyền hình ảnh Bức tường màn hình: độ phân giải tự động, tốc độ khung hình theo thiết bị và tổng băng thông video 20 Mbps" />
 </p>
 
-支持预览订阅的设备在不可见时可暂停视频传输，重新可见时恢复；旧版被控端按其能力回退，不保证所有分辨率、帧率或带宽选项都生效。
+Thiết bị hỗ trợ đăng ký xem trước có thể tạm dừng truyền video khi không hiển thị, khôi phục khi hiển thị lại; máy được điều khiển cũ quay về cách xử lý theo khả năng, không bảo đảm mọi tùy chọn độ phân giải, tốc độ khung hình hay băng thông đều có hiệu lực.
 
-### 检查更新
+### Kiểm tra cập nhật
 
-客户端启动后会检查版本，有新版本时显示提示。也可打开 **☰ → 关于 → 检查更新** 手动检查，点击 **更新日志** 查看说明。按界面提示选择安装更新或下载；安装前保存工作并等待文件传输完成。具体步骤与失败处理见 [更新指南](UPDATER.md)。
+Ứng dụng kiểm tra phiên bản sau khi khởi động, hiển thị thông báo khi có phiên bản mới. Bạn cũng có thể mở **☰ → Giới thiệu → Kiểm tra cập nhật** để kiểm tra thủ công, nhấn **Nhật ký cập nhật** để xem ghi chú. Chọn cài bản cập nhật hoặc tải xuống theo hướng dẫn giao diện; lưu công việc và chờ truyền tệp hoàn tất trước khi cài. Xem các bước cụ thể và xử lý lỗi trong [hướng dẫn cập nhật](UPDATER.md).
 
 <p align="center">
-  <img src="images/desktop-about-zh.png" width="720" alt="关于窗口与检查更新按钮，development 为演示版本，未执行在线版本检查" />
+  <img src="images/desktop-about-zh.png" width="720" alt="Cửa sổ giới thiệu và nút kiểm tra cập nhật, development là phiên bản minh họa, chưa thực hiện kiểm tra phiên bản trực tuyến" />
 </p>
 
 <a id="feedback"></a>
 
-### 反馈与诊断日志
+### Phản hồi và nhật ký chẩn đoán
 
-打开主窗口 **☰ → 反馈与建议**，点击 **前往 GitHub 反馈** 提交问题或建议；点击 **导出诊断日志** 可将 CrossDesk、MiniRTC 日志及基本版本信息保存为 ZIP 文件。导出成功后界面显示保存位置，可在问题中附上日志包，并说明两端系统、版本、连接方式及复现步骤。
+Mở **☰ → Phản hồi và góp ý** trong cửa sổ chính, nhấn **Gửi phản hồi trên GitHub** để gửi sự cố hoặc góp ý; nhấn **Xuất nhật ký chẩn đoán** để lưu nhật ký CrossDesk, MiniRTC và thông tin phiên bản cơ bản thành tệp ZIP. Sau khi xuất thành công, giao diện hiển thị vị trí lưu; bạn có thể đính kèm gói nhật ký vào báo cáo, nêu hệ điều hành hai bên, phiên bản, phương thức kết nối và các bước tái hiện.
 
 <p align="center">
-  <img src="images/desktop-feedback-zh.png" width="720" alt="反馈与建议：GitHub 反馈入口和导出诊断日志按钮" />
+  <img src="images/desktop-feedback-zh.png" width="720" alt="Phản hồi và góp ý: lối vào phản hồi GitHub và nút xuất nhật ký chẩn đoán" />
 </p>
 
 <a id="trusted-devices"></a>
 
-## 可信设备与配对
+## Thiết bị đáng tin cậy và ghép đôi
 
-如果电脑开启了“仅允许可信设备控制”，先在控制端复制配对信息，再到电脑的可信名单中添加并核对指纹。桌面端入口是 **设置 → 常规 → 隐私保护 → 管理可信设备**；iOS、Android、鸿蒙移动端入口是 **设置 → 本机配对信息**。配对后仍需验证连接密码。
+Nếu máy tính bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”, hãy sao chép thông tin ghép đôi trên máy điều khiển trước, rồi thêm vào danh sách tin cậy của máy tính và đối chiếu dấu vân tay. Lối vào trên máy tính là **Cài đặt → Chung → Bảo vệ quyền riêng tư → Quản lý thiết bị đáng tin cậy**; trên iOS, Android, HarmonyOS di động là **Cài đặt → Thông tin ghép đôi máy này**. Sau khi ghép đôi vẫn cần xác minh mật khẩu kết nối.
 
-开启限制前确认要使用的控制端支持配对；当前终端 CLI 不支持。完整步骤和重装迁移说明见 [可信设备指南](CONNECTIONS.md#trusted-devices)。
+Trước khi bật giới hạn, xác nhận máy điều khiển định dùng hỗ trợ ghép đôi; CLI terminal hiện chưa hỗ trợ. Xem đầy đủ các bước và thông tin cài lại, di chuyển trong [hướng dẫn thiết bị đáng tin cậy](CONNECTIONS.md#trusted-devices).
 
 <a id="ios"></a>
 
-## 原生 iOS / iPadOS 客户端
+## Ứng dụng iOS / iPadOS gốc
 
-iPhone 和 iPad 客户端用于控制远程电脑，当前不能把手机或平板共享为被控桌面。
+Ứng dụng iPhone và iPad dùng để điều khiển máy tính từ xa, hiện không thể chia sẻ điện thoại hay máy tính bảng làm màn hình được điều khiển.
 
-1. 从 [App Store](https://apps.apple.com/app/id6828859211) 安装，具体系统要求以商店页面为准；也可按 [iOS 使用与构建说明](../apps/ios/README.md) 使用 Xcode 构建并签名，当前源码目标为 iOS 16+。
-2. 在首页输入对端 ID，点击连接并填写密码；成功连接后可从“最近连接”中重连。
-3. 在设置中选择鼠标模式：**相对位置**像触控板一样移动光标，**绝对位置**将触摸位置直接映射到远端画面。
-4. 点击悬浮图标展开菜单，可切换显示器、显示键盘、控制声音或发送文件。收到的文件位于应用的 `Documents/Received`，可通过传输状态旁的分享按钮导出。
+1. Cài từ [App Store](https://apps.apple.com/app/id6828859211), yêu cầu hệ thống cụ thể theo trang cửa hàng; bạn cũng có thể dùng Xcode biên dịch và ký theo [hướng dẫn sử dụng và biên dịch iOS](../apps/ios/README.md), mã nguồn hiện nhắm tới iOS 16+.
+2. Nhập ID máy từ xa ở trang chủ, nhấn kết nối và nhập mật khẩu; sau khi kết nối thành công có thể kết nối lại từ “Kết nối gần đây”.
+3. Chọn chế độ chuột trong cài đặt: **Vị trí tương đối** di chuyển con trỏ như bàn di chuột, **Vị trí tuyệt đối** ánh xạ vị trí chạm trực tiếp lên hình ảnh từ xa.
+4. Nhấn biểu tượng nổi để mở menu; có thể chuyển màn hình, hiện bàn phím, điều khiển âm thanh hoặc gửi tệp. Tệp nhận nằm trong `Documents/Received` của ứng dụng, có thể xuất bằng nút chia sẻ cạnh trạng thái truyền.
 
-支持接收远端文本到 iOS 剪贴板；点击悬浮菜单中的 **剪贴板** 可发送本机文本到远端。单次文本上限为 **128 KiB**；空文本或超出限制时会显示提示。
+Hỗ trợ nhận văn bản từ xa vào bảng nhớ tạm iOS; nhấn **Bảng nhớ tạm** trong menu nổi để gửi văn bản máy này đến máy từ xa. Giới hạn văn bản mỗi lần là **128 KiB**; khi văn bản rỗng hoặc quá giới hạn sẽ hiển thị thông báo.
 
-可捏合缩放画面，放大后双指平移视图。原生端与浏览器端的手势可能不同。应用跟随系统或单独设置的应用语言，支持范围见 [语言说明](../localization/README.md)。
+Bạn có thể chụm ngón tay để thu phóng hình ảnh, dùng hai ngón tay di chuyển khung nhìn sau khi phóng to. Cử chỉ của ứng dụng gốc và trình duyệt có thể khác nhau. Ứng dụng theo ngôn ngữ hệ thống hoặc ngôn ngữ ứng dụng đặt riêng; xem phạm vi hỗ trợ trong [tài liệu ngôn ngữ](../localization/README.md).
 
 <a id="android"></a>
 
-## 原生 Android 控制端
+## Ứng dụng điều khiển Android gốc
 
-Android 客户端支持 Android 8.0+ 的 arm64 手机和平板，可从 [官网](https://www.crossdesk.cn/) 或 [GitHub Releases](https://github.com/kunkundi/crossdesk/releases) 下载已签名 APK 安装。自行构建见 [Android 使用与构建说明](../apps/android/README.md)。
+Ứng dụng Android hỗ trợ điện thoại và máy tính bảng arm64 dùng Android 8.0+; có thể tải APK đã ký từ [trang web chính thức](https://www.crossdesk.cn/) hoặc [GitHub Releases](https://github.com/kunkundi/crossdesk/releases) để cài. Để tự biên dịch, xem [hướng dẫn sử dụng và biên dịch Android](../apps/android/README.md).
 
-1. 在电脑上运行 CrossDesk，在手机首页输入电脑端的设备 ID，连接后填写密码。
-2. 在设置中选择相对鼠标（触控板）或绝对位置模式。支持长按右键、双指滚动、捏合缩放，以及外接键盘和鼠标。
-3. 展开悬浮菜单，可切换显示器、调节画质与帧率、使用虚拟鼠标、收发文件、查看网络状态，以及发送剪贴板文本。接收的文件可通过保存入口导出。
-4. 切换应用时，已有会话优先通过系统画中画保持；画中画不可用时尝试使用带通知的前台服务。关闭画中画窗口或后台保活未能启动会结束会话。
+1. Chạy CrossDesk trên máy tính, nhập ID thiết bị của máy tính ở trang chủ điện thoại, nhập mật khẩu sau khi kết nối.
+2. Chọn chế độ chuột tương đối (bàn di chuột) hoặc vị trí tuyệt đối trong cài đặt. Hỗ trợ nhấn giữ để nhấp chuột phải, cuộn hai ngón tay, chụm để thu phóng, bàn phím và chuột ngoài.
+3. Mở menu nổi để chuyển màn hình, điều chỉnh chất lượng hình ảnh và tốc độ khung hình, dùng chuột ảo, gửi nhận tệp, xem trạng thái mạng và gửi văn bản bảng nhớ tạm. Tệp nhận có thể xuất qua mục lưu.
+4. Khi chuyển ứng dụng, phiên hiện có ưu tiên duy trì qua hình trong hình của hệ thống; nếu không khả dụng, thử dùng dịch vụ tiền cảnh có thông báo. Đóng cửa sổ hình trong hình hoặc không khởi động được cơ chế duy trì nền sẽ kết thúc phiên.
 
-Android 支持 H.264 / AV1，实际画质和流畅度取决于设备能力。手机当前不能作为被控端。可在悬浮菜单直接开关电脑的隐私屏，按钮显示电脑确认的状态；开启后会屏蔽电脑本地键鼠。
+Android hỗ trợ H.264 / AV1; chất lượng hình ảnh và độ mượt thực tế phụ thuộc khả năng thiết bị. Điện thoại hiện không thể làm máy được điều khiển. Bạn có thể bật/tắt màn hình riêng tư của máy tính ngay trong menu nổi; nút hiển thị trạng thái được máy tính xác nhận; khi bật sẽ chặn bàn phím và chuột cục bộ của máy tính.
 
 <a id="harmonyos"></a>
 
-## 鸿蒙（HarmonyOS）支持
+## Hỗ trợ HarmonyOS
 
-鸿蒙 PC、手机和平板均提供开发版，需要构建与签名后安装。PC 与移动端使用不同的安装包，请选择对应设备类型。
+HarmonyOS PC, điện thoại và máy tính bảng đều có bản phát triển, cần biên dịch và ký rồi mới cài. PC và thiết bị di động dùng gói khác nhau, hãy chọn đúng loại thiết bị.
 
-| 客户端 | 系统与架构 | 功能 |
+| Ứng dụng | Hệ thống và kiến trúc | Tính năng |
 | --- | --- | --- |
-| 鸿蒙 PC（`2in1`） | API 26，arm64 | 可作为控制端和被控端，提供桌面界面、会话管理、桌面墙与文件传输 |
-| 鸿蒙手机 / 平板 | API 20+，arm64 | 原生移动控制端，支持远端画面与声音、触控和外接键鼠、多屏切换、文本剪贴板及双向文件传输 |
+| HarmonyOS PC (`2in1`) | API 26, arm64 | Có thể làm máy điều khiển và máy được điều khiển, cung cấp giao diện máy tính, quản lý phiên, Bức tường màn hình (DeskHub) và truyền tệp |
+| Điện thoại / máy tính bảng HarmonyOS | API 20+, arm64 | Ứng dụng điều khiển di động gốc, hỗ trợ hình ảnh và âm thanh từ xa, cảm ứng và bàn phím, chuột ngoài, chuyển nhiều màn hình, bảng nhớ tạm văn bản và truyền tệp hai chiều |
 
-手机和平板通过系统文件选择器发送和导出文件；PC 可在设置中选择接收目录。
+Điện thoại và máy tính bảng dùng trình chọn tệp hệ thống để gửi và xuất tệp; PC có thể chọn thư mục nhận trong cài đặt.
 
-当前为开发版，需按 [鸿蒙构建说明](../apps/harmony/README.md) 使用 DevEco 构建并签名后安装。PC 录屏和输入控制需获得相应系统授权，真机与长期会话验收仍在进行；具体权限、平台差异及验证范围见 [PC 说明](../apps/harmony/desktop-port/README.md) 与 [移动端功能说明](../apps/harmony/MOBILE_PARITY.md)。
+Hiện là bản phát triển, cần dùng DevEco biên dịch và ký theo [hướng dẫn biên dịch HarmonyOS](../apps/harmony/README.md) rồi mới cài. Ghi màn hình và điều khiển nhập liệu PC cần quyền hệ thống tương ứng; việc nghiệm thu trên thiết bị thật và phiên dài hạn vẫn đang tiến hành; xem quyền cụ thể, khác biệt nền tảng và phạm vi kiểm chứng trong [tài liệu PC](../apps/harmony/desktop-port/README.md) và [tài liệu tính năng di động](../apps/harmony/MOBILE_PARITY.md).
 
 <a id="windows-service"></a>
 
-## Windows 锁屏与登录界面
+## Màn hình khóa và đăng nhập Windows
 
-Windows 会自动选择可用的屏幕采集方式，无需手动设置。无显示器时会尝试使用虚拟显示器；不可用时画面分辨率或帧率可能受限。
+Windows tự chọn cách ghi hình màn hình khả dụng, không cần đặt thủ công. Khi không có màn hình, ứng dụng thử dùng màn hình ảo; nếu không khả dụng, độ phân giải hoặc tốc độ khung hình có thể bị giới hạn.
 
-**CrossDesk Service**（服务名 `CrossDeskService`）提供锁屏、登录、凭据输入及安全桌面的状态上报、`Ctrl+Alt+Del` 发送和键鼠输入转发。
+**CrossDesk Service** (tên dịch vụ `CrossDeskService`) cung cấp báo cáo trạng thái màn hình khóa, đăng nhập, nhập thông tin xác thực và màn hình bảo mật, gửi `Ctrl+Alt+Del` và chuyển tiếp đầu vào bàn phím, chuột.
 
-安装版默认注册按需启动的服务，客户端启动时尝试启动它；未启用无人值守时，本机没有 CrossDesk 客户端进程后服务会自动退出。便携版可在提示窗口或“设置 → 锁屏控制服务”中安装服务，需要管理员权限。
+Bản cài đặt mặc định đăng ký dịch vụ khởi động theo yêu cầu; ứng dụng thử khởi động dịch vụ khi chạy; nếu chưa bật chế độ không giám sát, dịch vụ tự thoát khi máy này không còn tiến trình ứng dụng CrossDesk. Bản di động không cần cài đặt có thể cài dịch vụ trong hộp thoại nhắc hoặc “Cài đặt → Dịch vụ điều khiển khi khóa màn hình”, cần quyền quản trị viên.
 
-Windows 安装版开启 **开机自启** 后，可在登录前使用同一 ID 和密码连接；登录后界面自动打开，已有连接继续保留。关闭该开关会停用无人值守启动。**启用守护进程** 用于界面异常退出后的恢复，是另一个选项。便携版和 Debug 构建不提供无人值守自启开关。
+Sau khi bật **Tự khởi động cùng hệ thống** trong bản cài đặt Windows, bạn có thể kết nối trước đăng nhập bằng cùng ID và mật khẩu; sau đăng nhập giao diện tự mở, kết nối hiện có được giữ. Tắt công tắc này sẽ tắt khởi động không giám sát. **Bật tiến trình nền** dùng để khôi phục sau khi giao diện thoát bất thường, là một tùy chọn khác. Bản di động không cần cài đặt và bản Debug không cung cấp công tắc tự khởi động không giám sát.
 
-首次开启前，先运行客户端并联网取得本机 ID。启用会保留当前 ID、密码及配对记录；之后可用原有连接信息访问登录界面。
+Trước lần bật đầu tiên, chạy ứng dụng và kết nối mạng để lấy ID máy này. Bật sẽ giữ ID, mật khẩu và lịch sử ghép đôi hiện tại; sau đó có thể dùng thông tin kết nối cũ truy cập màn hình đăng nhập.
 
 <a id="windows-service-development-update"></a>
 
-### 自行部署时更新 Windows 服务
+### Cập nhật dịch vụ Windows khi tự triển khai
 
-直接运行新编译的客户端只会尝试启动已经注册的服务，不会修改服务的程序路径，也不会重启正在运行的旧服务。若电脑键盘可用，但系统输入法在记事本与锁屏中均不可用，且日志显示 `Secure desktop text injection failed: error=unknown_command`，请先更新服务程序及其注册路径。
+Chạy trực tiếp ứng dụng vừa biên dịch chỉ thử khởi động dịch vụ đã đăng ký, không sửa đường dẫn chương trình của dịch vụ và không khởi động lại dịch vụ cũ đang chạy. Nếu bàn phím máy tính dùng được nhưng bộ gõ hệ thống không dùng được cả trong Notepad và màn hình khóa, đồng thời nhật ký hiển thị `Secure desktop text injection failed: error=unknown_command`, hãy cập nhật chương trình dịch vụ và đường dẫn đăng ký trước.
 
-在包含新版 `CrossDesk.exe`、`crossdesk_service.exe` 和 `crossdesk_session_helper.exe` 的完整构建目录中打开**管理员 PowerShell**，执行：
+Mở **PowerShell với quyền quản trị viên** trong thư mục biên dịch đầy đủ chứa bản mới của `CrossDesk.exe`, `crossdesk_service.exe` và `crossdesk_session_helper.exe`, thực hiện:
 
 ```powershell
 $crossdeskExe = (Resolve-Path .\CrossDesk.exe).Path;
@@ -337,64 +337,64 @@ foreach ($serviceAction in '--service-stop', '--service-install', '--service-sta
 }
 ```
 
-服务重启期间远控可能短暂中断。完成后重新连接，分别测试普通桌面和锁屏输入。服务将使用该构建目录中的程序，请保留该目录；恢复使用安装版时，重新安装完整安装包以恢复对应的服务注册。
+Trong thời gian khởi động lại dịch vụ, điều khiển từ xa có thể gián đoạn ngắn. Sau khi xong, kết nối lại và kiểm tra riêng nhập liệu trên màn hình thông thường và màn hình khóa. Dịch vụ sẽ dùng chương trình trong thư mục biên dịch này, hãy giữ thư mục đó; khi quay lại bản cài đặt, cài lại gói đầy đủ để khôi phục đăng ký dịch vụ tương ứng.
 
-若已启用“开机自启”，切换构建目录后还需用新版客户端保存一次该设置，或在普通客户端退出后执行新版的 `--unattended-enable`，以更新登录后的 GUI 启动任务。单独修复服务不会更新这个任务的程序路径。
+Nếu đã bật “Tự khởi động cùng hệ thống”, sau khi đổi thư mục biên dịch còn cần dùng ứng dụng mới lưu lại cài đặt này một lần, hoặc chạy `--unattended-enable` của bản mới sau khi ứng dụng thông thường thoát để cập nhật tác vụ khởi động GUI sau đăng nhập. Chỉ sửa dịch vụ không cập nhật đường dẫn chương trình của tác vụ này.
 
-### 开机后尚未登录时远控
+### Điều khiển từ xa sau khi khởi động nhưng chưa đăng nhập
 
-在“设置 → 开机自启”中开启并保存，主界面的本机 ID 和密码可以在登录前后通用，无需另记一套连接信息。也可以在完整安装目录中打开**管理员 PowerShell**启用同一功能；首次使用 CLI 启用前，先关闭普通客户端，或直接使用运行中客户端的设置开关：
+Bật trong “Cài đặt → Tự khởi động cùng hệ thống” rồi lưu; ID máy này và mật khẩu trên giao diện chính dùng chung trước và sau đăng nhập, không cần nhớ bộ thông tin kết nối khác. Bạn cũng có thể mở **PowerShell với quyền quản trị viên** trong thư mục cài đặt đầy đủ để bật cùng tính năng; trước khi bật bằng CLI lần đầu, đóng ứng dụng thông thường, hoặc dùng ngay công tắc cài đặt trong ứng dụng đang chạy:
 
 ```powershell
 .\CrossDesk.exe --unattended-enable
-# 查看共享的设备 ID、密码、online 状态及当前托管方 mode
+# Xem ID thiết bị, mật khẩu dùng chung, trạng thái online và bên đang quản lý mode
 .\CrossDesk.exe --unattended-status
 ```
 
-使用返回的 `device_id` 和 `password` 连接。再次启用会保留共享身份；自建服务器的根证书需安装到本地计算机的信任存储。
+Dùng `device_id` và `password` trả về để kết nối. Bật lại giữ danh tính dùng chung; chứng chỉ gốc của máy chủ tự triển khai cần được cài vào kho tin cậy của máy tính cục bộ.
 
-启用后服务随 Windows 启动，不需要设置 Windows 自动登录或保存系统登录密码。退出 CrossDesk 界面不会停止后台远控；注销、切换用户、重启服务或网络中断仍可能导致断线。
+Sau khi bật, dịch vụ khởi động cùng Windows, không cần đặt Windows tự đăng nhập hay lưu mật khẩu đăng nhập hệ thống. Thoát giao diện CrossDesk không dừng điều khiển từ xa nền; đăng xuất, chuyển người dùng, khởi động lại dịch vụ hoặc gián đoạn mạng vẫn có thể gây ngắt kết nối.
 
-登录前可使用画面、键鼠、多屏及安全桌面控制。声音、文件、剪贴板和隐私屏需要用户登录并运行 CrossDesk 界面，退出界面后这些功能暂时不可用。共享资料位于 `%ProgramData%\CrossDeskUnattended`，仅管理员和 SYSTEM 可访问，日志位于其中的 `logs` 子目录。
+Trước đăng nhập có thể dùng hình ảnh, bàn phím, chuột, nhiều màn hình và điều khiển màn hình bảo mật. Âm thanh, tệp, bảng nhớ tạm và màn hình riêng tư cần người dùng đăng nhập và chạy giao diện CrossDesk; sau khi thoát giao diện, các tính năng này tạm không khả dụng. Dữ liệu dùng chung nằm ở `%ProgramData%\CrossDeskUnattended`, chỉ quản trị viên và SYSTEM truy cập được; nhật ký nằm trong thư mục con `logs` tại đó.
 
-没有实体显示器时，会尝试创建虚拟显示器，优先使用已记录的分辨率，没有记录时使用 1920×1080。实际效果取决于驱动是否可用；接入稳定的实体显示器后会尝试切回。
+Khi không có màn hình vật lý, ứng dụng thử tạo màn hình ảo, ưu tiên độ phân giải đã ghi nhận, nếu chưa có thì dùng 1920×1080. Kết quả thực tế phụ thuộc trình điều khiển có khả dụng hay không; sau khi kết nối màn hình vật lý ổn định, ứng dụng thử chuyển lại.
 
 ```powershell
-# 停止无人值守被控端，并恢复服务按需启动
+# Dừng máy được điều khiển không giám sát và khôi phục khởi động dịch vụ theo yêu cầu
 .\CrossDesk.exe --unattended-disable
 ```
 
-关闭设置中的“开机自启”等同于禁用无人值守模式；CLI 的启停结果也会反映在该开关中。禁用或卸载服务会取消无人值守启动，但保留受保护的机器配置；若需彻底清除凭据，在服务停止后由管理员删除该目录。
+Tắt “Tự khởi động cùng hệ thống” trong cài đặt tương đương tắt chế độ không giám sát; kết quả bật/tắt bằng CLI cũng phản ánh trên công tắc này. Tắt hoặc gỡ dịch vụ hủy khởi động không giám sát nhưng giữ cấu hình máy được bảo vệ; nếu cần xóa hoàn toàn thông tin xác thực, quản trị viên xóa thư mục đó sau khi dừng dịch vụ.
 
 <details>
-<summary>手动部署与服务管理命令</summary>
+<summary>Triển khai thủ công và lệnh quản lý dịch vụ</summary>
 
-保留完整安装目录；自行部署构建产物时，将 `CrossDesk.exe`、`crossdesk_service.exe`、`crossdesk_session_helper.exe` 及同次构建输出的全部 `.dll` 放在同一目录。在该目录打开管理员 PowerShell，按需执行：
+Giữ thư mục cài đặt đầy đủ; khi tự triển khai sản phẩm biên dịch, đặt `CrossDesk.exe`, `crossdesk_service.exe`, `crossdesk_session_helper.exe` và toàn bộ `.dll` của cùng lần biên dịch vào cùng thư mục. Mở PowerShell với quyền quản trị viên tại đó, thực hiện theo nhu cầu:
 
 ```powershell
 .\CrossDesk.exe --service-install
 .\CrossDesk.exe --service-start
 .\CrossDesk.exe --service-status
 .\CrossDesk.exe --service-ping
-# 停止或卸载服务
+# Dừng hoặc gỡ dịch vụ
 .\CrossDesk.exe --service-stop
 .\CrossDesk.exe --service-uninstall
 ```
 
 </details>
 
-出现“远端 Windows 服务不可用”时，检查被控电脑的安装和服务状态；普通桌面连接仍可使用，受保护界面的控制能力会受限。
+Khi gặp “Dịch vụ Windows từ xa không khả dụng”, kiểm tra cài đặt và trạng thái dịch vụ trên máy tính được điều khiển; kết nối màn hình thông thường vẫn dùng được, khả năng điều khiển giao diện được bảo vệ sẽ bị giới hạn.
 
 <a id="self-hosting"></a>
 
-## 自托管服务器
+## Máy chủ tự lưu trữ (self-host)
 
-可自行部署信令服务与 TURN 中继，并在桌面客户端 **☰ → 设置 → 常规 → 自托管配置** 中填写连接信息。控制端与被控端都需要启用同一套配置。
+Bạn có thể tự triển khai dịch vụ báo hiệu và chuyển tiếp TURN, rồi nhập thông tin kết nối trong **☰ → Cài đặt → Chung → Cấu hình máy chủ tự lưu trữ (self-host)** của ứng dụng máy tính. Máy điều khiển và máy được điều khiển đều cần bật cùng bộ cấu hình.
 
-- [自托管指南](SELF_HOSTING.md)：当前 Compose 部署入口、客户端设置、证书信任与排查。
-- [CrossDesk Server](https://github.com/kunkundi/crossdesk-server)：服务端源码与发布配置。
-- [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)：浏览器端源码与自托管说明。
+- [Hướng dẫn tự lưu trữ (self-host)](SELF_HOSTING.md): lối vào triển khai Compose hiện tại, cài đặt ứng dụng, tin cậy chứng chỉ và khắc phục sự cố.
+- [CrossDesk Server](https://github.com/kunkundi/crossdesk-server): mã nguồn máy chủ và cấu hình phát hành.
+- [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client): mã nguồn trình duyệt và tài liệu tự lưu trữ (self-host).
 
 <p align="center">
-  <img src="images/desktop-self-hosted-zh.png" width="720" alt="自托管服务器设置" />
+  <img src="images/desktop-self-hosted-zh.png" width="720" alt="Cài đặt máy chủ tự lưu trữ (self-host)" />
 </p>

@@ -372,7 +372,7 @@ int main(int argc, char* argv[]) {
     CSimpleIniA config;
     config.SetUnicode(true);
     config.LoadFile((paths.GetCachePath() / "config.ini").string().c_str());
-    console.SetLanguage(static_cast<int>(config.GetLongValue("Settings", "language", 10)));
+    console.SetLanguage(static_cast<int>(config.GetLongValue("Settings", "language", 11)));
     std::cout << console.Text("console_cli_help");
     return 0;
   }
@@ -465,7 +465,7 @@ int main(int argc, char* argv[]) {
       argc, argv, [&] { return RunApplication(argc, argv); }, [&] {
         crossdesk::PathManager paths("CrossDesk");
         if (console.Enable(paths.GetLogPath(), paths.GetCachePath() / "config.ini")) return true;
-        std::cerr << "无法初始化日志或控制台，启动失败。\n";
+        std::cerr << "Không thể khởi tạo nhật ký hoặc bảng điều khiển, khởi động thất bại.\n";
         return false;
       });
   if (console.active()) {

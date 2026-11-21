@@ -1,84 +1,84 @@
-# Linux 无头运行
+# Chạy Linux không màn hình
 
-[返回 README](../README.md) · [English](HEADLESS_EN.md)
+[Về README](../README.md) · [English](HEADLESS_EN.md)
 
-无显示器的 Linux 主机可复用已有 X11 桌面，也可通过 Xvfb 创建独立虚拟桌面。画面采集、键鼠、光标和剪贴板使用同一个显示会话。
+Máy chủ Linux không có màn hình có thể tái sử dụng màn hình X11 hiện có hoặc tạo màn hình ảo độc lập qua Xvfb. Ghi hình, bàn phím, chuột, con trỏ và bảng nhớ tạm dùng cùng một phiên hiển thị.
 
-先按希望看到的桌面选择方式：
+Trước hết chọn cách theo màn hình bạn muốn thấy:
 
-- **已有桌面和打开的应用：** 按下节正常启动。
-- **服务器上的独立桌面：** 使用 [创建独立虚拟桌面](#创建独立虚拟桌面)。
-- **关闭终端后继续运行：** 查看 [后台运行](#后台运行)。
+- **Màn hình và ứng dụng đã mở hiện có:** Khởi động bình thường theo phần sau.
+- **Màn hình độc lập trên máy chủ:** Dùng [tạo màn hình ảo độc lập](#tạo-màn-hình-ảo-độc-lập).
+- **Tiếp tục chạy sau khi đóng terminal:** Xem [chạy nền](#chạy-nền).
 
-普通版与虚拟桌面版 DEB 的选择见 [安装指南](USER_GUIDE.md#installation)。无头模式用于让这台 Linux 电脑被远程访问；要在终端控制另一台电脑，请使用 [CLI](../apps/cli/README.md)。
+Xem chọn DEB thường hay bản màn hình ảo trong [hướng dẫn cài đặt](USER_GUIDE.md#installation). Chế độ không màn hình dùng để truy cập máy tính Linux này từ xa; để điều khiển máy khác trong terminal, dùng [CLI](../apps/cli/README.md).
 
-## 保留原来的 Ubuntu 桌面和应用
+## Giữ màn hình Ubuntu và ứng dụng ban đầu
 
-正常打开 CrossDesk 即可，程序会自动发现并选择当前用户的已有桌面，保留 Dock、任务栏、壁纸和已打开应用。无需知道 `:0`、`:10` 等显示编号，也无需设置 `DISPLAY`：
+Chỉ cần mở CrossDesk bình thường; chương trình tự phát hiện và chọn màn hình hiện có của người dùng hiện tại, giữ Dock, thanh tác vụ, hình nền và ứng dụng đã mở. Không cần biết số hiển thị như `:0`, `:10` hay đặt `DISPLAY`:
 
 ```bash
-# 安装包
+# Gói cài đặt
 crossdesk
-# 源码构建
+# Biên dịch từ mã nguồn
 xmake r crossdesk
 ```
 
-多个可用桌面同时存在时也会自动选择：优先启动环境中的桌面，其次是当前登录会话、系统标记的活动主桌面、其他活动桌面和仍在线的桌面。没有系统会话信息或优先级相同时，按稳定的显示顺序选择，避免每次启动切到不同桌面。失效会话与没有窗口管理器的空白 Xvfb 不会作为已有桌面选中。
+Khi có nhiều màn hình khả dụng, chương trình cũng tự chọn: ưu tiên màn hình trong môi trường khởi động, tiếp theo là phiên đang đăng nhập, màn hình chính hoạt động được hệ thống đánh dấu, màn hình hoạt động khác và màn hình vẫn trực tuyến. Khi không có thông tin phiên hệ thống hoặc cùng ưu tiên, chọn theo thứ tự hiển thị ổn định để tránh mỗi lần khởi động lại chuyển màn hình khác. Phiên mất hiệu lực và Xvfb trống không có trình quản lý cửa sổ không được chọn làm màn hình hiện có.
 
-复用已有桌面不依赖 Xvfb，也不会在退出 CrossDesk 时结束桌面或其他应用。若原会话已锁屏，远程会先看到系统锁屏界面，需要用该用户的系统密码解锁。
+Tái sử dụng màn hình hiện có không phụ thuộc Xvfb và không kết thúc màn hình hay ứng dụng khác khi thoát CrossDesk. Nếu phiên gốc đã khóa, từ xa sẽ thấy màn hình khóa hệ thống trước, cần mở khóa bằng mật khẩu hệ thống của người dùng đó.
 
-自动发现使用系统登录会话信息和当前用户的 X11 套接字，并验证窗口管理器确实可用。没有 systemd/logind 的发行版仍可自动发现并选择桌面。认证使用现有 `XAUTHORITY`（未设置时使用 Xlib 默认认证位置），必要时尝试当前用户的 GDM 认证文件。不会自动选择其他用户的桌面或登录欢迎界面。
+Tự phát hiện dùng thông tin phiên đăng nhập hệ thống và socket X11 của người dùng hiện tại, đồng thời xác minh trình quản lý cửa sổ thực sự khả dụng. Bản phân phối không có systemd/logind vẫn có thể tự phát hiện và chọn màn hình. Xác thực dùng `XAUTHORITY` hiện có (nếu chưa đặt thì dùng vị trí xác thực mặc định Xlib), khi cần thử tệp xác thực GDM của người dùng hiện tại. Không tự chọn màn hình người dùng khác hay giao diện chào đăng nhập.
 
-`--headless` 可用于显式触发这套自动选择流程，例如忽略终端里失效的 Wayland 环境变量。`--headless-display` 仅供需要覆盖默认选择的高级使用者或调试使用：
+`--headless` có thể kích hoạt rõ quy trình tự chọn này, ví dụ để bỏ qua biến môi trường Wayland mất hiệu lực trong terminal. `--headless-display` chỉ dành cho người dùng nâng cao cần ghi đè lựa chọn mặc định hoặc gỡ lỗi:
 
 ```bash
-crossdesk --headless-display :10  # 示例编号，以实际会话为准
+crossdesk --headless-display :10  # Số ví dụ, dùng theo phiên thực tế
 ```
 
-此覆盖选项只连接指定的已有桌面；无法连接或没有运行窗口管理器时会报错，不会悄悄创建另一块屏幕。
+Tùy chọn ghi đè này chỉ kết nối màn hình hiện có được chỉ định; nếu không kết nối được hoặc không có trình quản lý cửa sổ đang chạy sẽ báo lỗi, không âm thầm tạo màn hình khác.
 
-**不要添加 `--headless-size` 或 `--headless-session` 来连接原桌面**：它们用于创建独立 Xvfb。原桌面的分辨率由原来的显示服务管理。
+**Không thêm `--headless-size` hoặc `--headless-session` để kết nối màn hình gốc**: chúng dùng tạo Xvfb riêng. Độ phân giải màn hình gốc do dịch vụ hiển thị ban đầu quản lý.
 
-## 命令行控制台
+## Bảng điều khiển dòng lệnh
 
-无头模式下，终端只显示设备 ID、连接密码、在线状态和操作结果，常规日志写入文件。在 SSH / 无图形环境下普通启动会自动进入此模式；也可显式启用：
+Ở chế độ không màn hình, terminal chỉ hiện ID thiết bị, mật khẩu kết nối, trạng thái trực tuyến và kết quả thao tác; nhật ký thông thường ghi vào tệp. Khởi động bình thường qua SSH / môi trường không đồ họa sẽ tự vào chế độ này; cũng có thể bật rõ:
 
 ```bash
 xmake r crossdesk --headless
 ```
 
-程序运行后，在同一个终端输入命令并回车：
+Sau khi chương trình chạy, nhập lệnh trong cùng terminal rồi nhấn Enter:
 
-| 命令 | 作用 |
+| Lệnh | Tác dụng |
 | --- | --- |
-| `status` | 显示本机 ID、当前连接密码和在线状态 |
-| `settings` | 打开设置菜单，输入编号或名称修改；`back` 返回 |
-| `settings show` | 仅查看设置 |
-| `settings set 名称 值` | 直接修改一个设置 |
-| `password` | 提示输入新密码；6 位英文字母或数字，输入 `cancel` 取消 |
-| `password Ab12Cd` | 直接提交新密码（示例，请自行选择密码） |
-| `random` | 生成随机密码并提交修改 |
-| `help` | 显示帮助 |
-| `quit` | 关闭 CrossDesk；复用模式下不会关闭原桌面 |
+| `status` | Hiện ID máy này, mật khẩu kết nối hiện tại và trạng thái trực tuyến |
+| `settings` | Mở menu cài đặt, nhập số hoặc tên để sửa; `back` quay lại |
+| `settings show` | Chỉ xem cài đặt |
+| `settings set tên giá-trị` | Sửa trực tiếp một cài đặt |
+| `password` | Nhắc nhập mật khẩu mới; 6 chữ cái tiếng Anh hoặc chữ số, nhập `cancel` để hủy |
+| `password Ab12Cd` | Gửi trực tiếp mật khẩu mới (ví dụ, hãy tự chọn mật khẩu) |
+| `random` | Tạo mật khẩu ngẫu nhiên và gửi thay đổi |
+| `help` | Hiện trợ giúp |
+| `quit` | Đóng CrossDesk; ở chế độ tái sử dụng không đóng màn hình gốc |
 
-设置菜单与 GUI 共用 `config.ini`，每项修改校验通过后立即保存，无需另执行保存命令。输入 `cancel` 放弃正在编辑的值。控制台状态、菜单、密码提示和帮助跟随语言设置，支持中文、英文和俄文；命令名称保持不变。
+Menu cài đặt dùng chung `config.ini` với GUI; mỗi thay đổi được lưu ngay sau khi xác minh hợp lệ, không cần lệnh lưu riêng. Nhập `cancel` để bỏ giá trị đang sửa. Trạng thái bảng điều khiển, menu, lời nhắc mật khẩu và trợ giúp theo cài đặt ngôn ngữ, hỗ trợ cùng 11 ngôn ngữ với GUI, gồm tiếng Việt; tên lệnh không đổi.
 
-H.264 自动优先使用硬件编解码，不可用或初始化失败时回退到软件；AV1 使用软件编解码。硬件加速不再提供独立开关，旧配置中的 `hardware_video_codec` 会自动清理。
+H.264 tự ưu tiên mã hóa và giải mã phần cứng, quay về phần mềm nếu không khả dụng hoặc khởi tạo thất bại; AV1 dùng mã hóa và giải mã phần mềm. Tăng tốc phần cứng không còn công tắc riêng, cấu hình cũ `hardware_video_codec` được tự dọn.
 
-| 设置名称 | 可选值 / 格式 | 生效方式 |
+| Tên cài đặt | Giá trị / định dạng | Cách có hiệu lực |
 | --- | --- | --- |
-| `language` | `zh-CN` / `en-US` / `ru-RU` | 立即切换控制台和 GUI 语言，下次启动保留 |
-| `codec` | `h264` / `av1` | 保存后重新连接 |
-| `turn` | `off` / `auto` / `udp` / `tcp` | 保存后重新连接；`udp` / `tcp` 表示强制中继 |
-| `server_host` | 主机名、IP 或 HTTPS/WSS 信令地址，支持路径和显式端口 | 自托管未启用时保存备用，已启用时重连 |
-| `server_port` | `1`–`65535` | 同上 |
-| `self_hosted` | `on` / `off` | 先配置地址、端口，再开启；保存后重连 |
-| `privacy` | `on` / `off` | 后续远程连接的自动隐私屏行为 |
-| `file_path` | 已存在且可写的绝对目录；`default` 恢复默认 | 后续接收的文件；路径可含空格，无需额外引号 |
-| `autostart` | `on` / `off` | 下次图形桌面登录时启动；不等于系统服务开机启动 |
-| `daemon` | `on` / `off` | 普通模式下次启动生效；无头控制台仍保持前台 |
+| `language` | `system` / `zh-CN` / `en-US` / `ru-RU` / `zh-Hant` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `vi` | Chuyển ngôn ngữ bảng điều khiển và GUI ngay, giữ ở lần khởi động sau |
+| `codec` | `h264` / `av1` | Kết nối lại sau khi lưu |
+| `turn` | `off` / `auto` / `udp` / `tcp` | Kết nối lại sau khi lưu; `udp` / `tcp` nghĩa là buộc chuyển tiếp |
+| `server_host` | Tên máy, IP hoặc địa chỉ báo hiệu HTTPS/WSS, hỗ trợ đường dẫn và cổng rõ ràng | Nếu chưa bật tự lưu trữ thì lưu dự phòng, nếu đã bật thì kết nối lại |
+| `server_port` | `1`–`65535` | Như trên |
+| `self_hosted` | `on` / `off` | Cấu hình địa chỉ, cổng trước rồi bật; kết nối lại sau khi lưu |
+| `privacy` | `on` / `off` | Hành vi tự bật màn hình riêng tư của kết nối từ xa sau đó |
+| `file_path` | Thư mục tuyệt đối đã tồn tại và ghi được; `default` khôi phục mặc định | Tệp nhận sau đó; đường dẫn có thể có dấu cách, không cần thêm dấu ngoặc kép |
+| `autostart` | `on` / `off` | Khởi động khi đăng nhập màn hình đồ họa lần sau; không đồng nghĩa dịch vụ hệ thống khởi động cùng máy |
+| `daemon` | `on` / `off` | Có hiệu lực ở lần khởi động sau trong chế độ thường; bảng điều khiển không màn hình vẫn ở tiền cảnh |
 
-例如，在运行中的控制台输入：
+Ví dụ, nhập trong bảng điều khiển đang chạy:
 
 ```text
 settings
@@ -89,53 +89,53 @@ settings set codec av1
 settings set file_path /home/user/Received Files
 ```
 
-存在远程会话（含正在连接的会话）或尚未完成的密码修改时，连接相关设置会被拒绝，避免中断会话。修改服务器地址和端口前，应先结束远程会话。切换自托管可能切换到该服务器对应的 ID 和密码，以重新连接后的 `status` 为准。画质和帧率由控制端管理，Linux 无头模式采用 X11 采集，这些不提供额外的全局修改入口。
+Khi có phiên từ xa (kể cả đang kết nối) hoặc đổi mật khẩu chưa hoàn tất, cài đặt liên quan kết nối bị từ chối để tránh gián đoạn phiên. Nên kết thúc phiên từ xa trước khi đổi địa chỉ và cổng máy chủ. Chuyển tự lưu trữ có thể chuyển sang ID và mật khẩu tương ứng máy chủ đó; căn cứ `status` sau kết nối lại. Chất lượng hình ảnh và tốc độ khung hình do máy điều khiển quản lý, chế độ Linux không màn hình dùng ghi hình X11, không có thêm mục sửa toàn cục cho các mục này.
 
-修改密码需要连接到信令服务器。控制台会显示提交、确认和重新连接的结果；仅在服务器确认后采用新密码，并沿用 GUI 的凭据持久化与超时恢复流程。离线、密码格式错误或修改尚未完成时，会给出明确提示。密码修改会触发重新连接。
+Đổi mật khẩu cần kết nối máy chủ báo hiệu. Bảng điều khiển hiện kết quả gửi, xác nhận và kết nối lại; chỉ dùng mật khẩu mới sau khi máy chủ xác nhận, dùng cùng quy trình lưu thông tin xác thực và phục hồi hết thời gian như GUI. Khi ngoại tuyến, sai định dạng mật khẩu hoặc thay đổi chưa hoàn tất sẽ có thông báo rõ. Đổi mật khẩu kích hoạt kết nối lại.
 
-日志路径会在启动时显示，继续使用原有的 `crossdesk-YYYYMMDD-HHMMSS.log` 和 `minirtc-YYYYMMDD-HHMMSS.log`，文件命名和原有轮转规则不变，不额外创建无头模式日志文件。无头启动诊断写入 CrossDesk 日志；终端日志副本和第三方组件直接写向标准输出/标准错误的内容被静默处理。ID/密码状态输出直接送往终端，不经过日志系统。非交互运行（例如 systemd、重定向输出）默认不显示明文密码；标准输入关闭不会终止后台服务。
+Đường dẫn nhật ký hiện khi khởi động, tiếp tục dùng `crossdesk-YYYYMMDD-HHMMSS.log` và `minirtc-YYYYMMDD-HHMMSS.log`, giữ tên tệp và quy tắc luân chuyển cũ, không tạo riêng nhật ký chế độ không màn hình. Chẩn đoán khởi động không màn hình ghi vào nhật ký CrossDesk; bản sao nhật ký terminal và nội dung thành phần bên thứ ba ghi trực tiếp stdout/stderr được xử lý im lặng. Đầu ra trạng thái ID/mật khẩu gửi thẳng terminal, không qua hệ thống nhật ký. Chạy không tương tác (ví dụ systemd, chuyển hướng đầu ra) mặc định không hiện mật khẩu rõ; đóng đầu vào chuẩn không kết thúc dịch vụ nền.
 
-交互控制台在前台运行，内置 daemon 设置在此模式下不会将进程分离。当前已有旧版本进程时，需要退出旧实例后启动新版本才能使用控制台。
+Bảng điều khiển tương tác chạy ở tiền cảnh; cài đặt daemon tích hợp không tách tiến trình trong chế độ này. Khi đã có tiến trình bản cũ, cần thoát phiên bản đó rồi chạy bản mới mới dùng được bảng điều khiển.
 
-## 创建独立虚拟桌面
+## Tạo màn hình ảo độc lập
 
-Debian/Ubuntu 的普通版 `crossdesk` 不依赖 Xvfb 或 Xfce，复用已有桌面无需额外安装它们。需要完整独立桌面时，可选择 `crossdesk-virtual-desktop-xfce` 安装包：它包含同一份 CrossDesk 程序，并通过 APT 强依赖安装 Xvfb、Xfce 和 D-Bus 会话工具（`--no-install-recommends` 也不会跳过）。这些组件由系统软件源提供，安装包不是完整的离线桌面环境。
+Bản thường `crossdesk` trên Debian/Ubuntu không phụ thuộc Xvfb hay Xfce, tái sử dụng màn hình hiện có không cần cài thêm chúng. Nếu cần màn hình độc lập đầy đủ, có thể chọn gói `crossdesk-virtual-desktop-xfce`: chứa cùng chương trình CrossDesk và bắt buộc cài Xvfb, Xfce, công cụ phiên D-Bus qua APT (`--no-install-recommends` cũng không bỏ qua). Thành phần này do kho phần mềm hệ thống cung cấp, gói cài không phải môi trường màn hình ngoại tuyến đầy đủ.
 
-两个包只能安装一个。先退出 CrossDesk，使用 `sudo apt install ./所选安装包.deb` 升级或切换版本，再启动程序，原有用户配置会保留。安装与切换不会自动启动虚拟会话、修改默认桌面或删除此前安装的 Xfce。更新下载按已安装的包类型选择；若对应下载尚未发布或元数据不完整，会打开 Releases 列表供选择，不会自动改用另一种包。
+Chỉ được cài một trong hai gói. Thoát CrossDesk trước, dùng `sudo apt install ./goi-cai-dat-da-chon.deb` để nâng cấp hoặc chuyển phiên bản, rồi chạy chương trình, cấu hình người dùng cũ được giữ. Cài và chuyển không tự khởi động phiên ảo, sửa màn hình mặc định hay xóa Xfce đã cài trước. Tải cập nhật chọn theo loại gói đã cài; nếu chưa phát hành bản tải tương ứng hoặc siêu dữ liệu thiếu, mở danh sách Releases cho bạn chọn, không tự đổi loại gói khác.
 
-原来没有图形会话，或者希望单独开一套桌面时，可启动独立 Xfce 会话。Ubuntu / Debian 示例（虚拟桌面版已包含这些依赖；普通版和源码运行用户按需安装）：
+Khi ban đầu chưa có phiên đồ họa hoặc muốn mở màn hình riêng, có thể khởi động phiên Xfce độc lập. Ví dụ Ubuntu / Debian (bản màn hình ảo đã gồm phụ thuộc này; người dùng bản thường và chạy từ nguồn cài theo nhu cầu):
 
 ```bash
 sudo apt install xvfb xfce4 dbus
 crossdesk --headless-size 1920x1080 --headless-session startxfce4
 ```
 
-默认分辨率为 1920×1080，宽高必须是 320–8192 范围内的偶数。`--headless-session` 接收一个可执行程序名称或路径，通过独立的 `dbus-run-session` 启动。需要参数时，创建可执行脚本，在脚本中用 `exec` 启动桌面或窗口管理器。
+Độ phân giải mặc định 1920×1080, chiều rộng và cao phải là số chẵn trong phạm vi 320–8192. `--headless-session` nhận tên hoặc đường dẫn chương trình thực thi, khởi động qua `dbus-run-session` riêng. Nếu cần tham số, tạo script thực thi dùng `exec` để chạy môi trường màn hình hoặc trình quản lý cửa sổ.
 
-仅做画面采集调试时，可以明确启动裸 Xvfb：
+Nếu chỉ gỡ lỗi ghi hình, bạn có thể chủ động chạy Xvfb trần:
 
 ```bash
 sudo apt install xvfb
 crossdesk --headless-session none
 ```
 
-裸 Xvfb 只提供屏幕，**不会生成 Dock、任务栏或原来的应用窗口**。只使用 `--headless-size` 而未指定桌面会话也属于这一情况，启动诊断日志会记录提示。此前“只看到 CrossDesk，其余一片黑”就是因为进入了这种独立裸显示。
+Xvfb trần chỉ cung cấp màn hình, **không tạo Dock, thanh tác vụ hay cửa sổ ứng dụng gốc**. Chỉ dùng `--headless-size` mà không chỉ định phiên màn hình cũng thuộc trường hợp này, nhật ký chẩn đoán khởi động sẽ ghi lời nhắc. Tình trạng trước đây “chỉ thấy CrossDesk, còn lại đen” chính là do vào màn hình trần độc lập như vậy.
 
-## 自动选择与限制
+## Tự chọn và giới hạn
 
-- 普通图形启动继续使用现有 `DISPLAY` 或 Wayland 会话。X11 没有活动 RandR 输出或没有 RandR 扩展时，采集可用的根窗口。
-- `--headless`，或没有可连接的 `DISPLAY` 且未设置 Wayland 环境时，会先自动选择已有 X11 桌面，再回退到独立 Xvfb；没有桌面环境时，回退的裸 Xvfb 会明确提示其不包含 Dock 和原应用。
-- `--headless-display` 与 `--headless-size` / `--headless-session` 不能混用。
-- `--no-headless` 禁用自动发现和回退；`--headless-help` 查看命令说明。
-- 不会在显示会话之间迁移应用，也不会把运行中的会话自动切换到另一块屏幕。物理会话已经失效时，另建 Xvfb 无法恢复其应用。
+- Khởi động đồ họa thông thường tiếp tục dùng `DISPLAY` hoặc phiên Wayland hiện có. Khi X11 không có đầu ra RandR hoạt động hoặc không có phần mở rộng RandR, ghi hình cửa sổ gốc khả dụng.
+- `--headless`, hoặc khi không có `DISPLAY` kết nối được và chưa đặt môi trường Wayland, sẽ tự chọn màn hình X11 hiện có trước rồi mới chuyển sang Xvfb độc lập; khi không có môi trường màn hình, Xvfb trần dự phòng thông báo rõ không có Dock và ứng dụng gốc.
+- Không thể dùng lẫn `--headless-display` với `--headless-size` / `--headless-session`.
+- `--no-headless` tắt tự phát hiện và dự phòng; `--headless-help` xem giải thích lệnh.
+- Không di chuyển ứng dụng giữa các phiên hiển thị hay tự chuyển phiên đang chạy sang màn hình khác. Khi phiên vật lý đã mất hiệu lực, tạo Xvfb khác không khôi phục được ứng dụng của nó.
 
-## 后台运行
+## Chạy nền
 
-创建独立 Xvfb 时，在前台保留一个管理进程，监控 Xvfb、桌面会话和 CrossDesk。退出程序、发送 SIGINT / SIGTERM / SIGHUP，或任一受监控进程退出时，会清理该次会话的子进程与临时认证文件。显示编号由 Xvfb 自动分配，避免占用已有显示；TCP 监听关闭，X11 连接使用随机认证 cookie，认证文件仅当前用户可读。
+Khi tạo Xvfb độc lập, giữ một tiến trình quản lý ở tiền cảnh để giám sát Xvfb, phiên màn hình và CrossDesk. Khi thoát chương trình, gửi SIGINT / SIGTERM / SIGHUP hoặc bất kỳ tiến trình được giám sát nào thoát, các tiến trình con của phiên đó và tệp xác thực tạm được dọn. Xvfb tự cấp số hiển thị để tránh chiếm màn hình hiện có; lắng nghe TCP tắt, kết nối X11 dùng cookie xác thực ngẫu nhiên, tệp xác thực chỉ người dùng hiện tại đọc được.
 
-启动诊断日志会记录 `DISPLAY` 和 `XAUTHORITY` 路径；在同一用户的终端设置这两个变量后，可以将其他应用启动到虚拟桌面。认证文件会随会话退出被删除。
+Nhật ký chẩn đoán khởi động ghi đường dẫn `DISPLAY` và `XAUTHORITY`; sau khi đặt hai biến này trong terminal cùng người dùng, bạn có thể chạy ứng dụng khác vào màn hình ảo. Tệp xác thực bị xóa khi phiên thoát.
 
-需要开机后保持服务，可创建用户级 systemd 单元 `~/.config/systemd/user/crossdesk-headless.service`，并将 `ExecStart` 改为实际程序路径：
+Để giữ dịch vụ sau khởi động máy, có thể tạo unit systemd cấp người dùng `~/.config/systemd/user/crossdesk-headless.service`, đổi `ExecStart` thành đường dẫn chương trình thực tế:
 
 ```ini
 [Unit]
@@ -159,8 +159,8 @@ systemctl --user enable --now crossdesk-headless.service
 journalctl --user -u crossdesk-headless.service -f
 ```
 
-需要复用原桌面的服务应将 `ExecStart` 改为 `/usr/bin/crossdesk`（自动发现和选择；确保已有图形会话登录）。如需在用户未登录时运行用户服务，管理员需为该用户启用 linger：`sudo loginctl enable-linger 用户名`。独立 Xvfb 模式下内置 daemon 选项不会生效；systemd 负责重启整个虚拟桌面。停止该模式会结束虚拟桌面中的应用，请先保存工作。
+Dịch vụ cần tái sử dụng màn hình gốc nên đổi `ExecStart` thành `/usr/bin/crossdesk` (tự phát hiện và chọn; bảo đảm đã đăng nhập phiên đồ họa). Để chạy dịch vụ người dùng khi chưa đăng nhập, quản trị viên cần bật linger cho người dùng đó: `sudo loginctl enable-linger tên-người-dùng`. Ở chế độ Xvfb riêng, tùy chọn daemon tích hợp không có hiệu lực; systemd chịu trách nhiệm khởi động lại toàn bộ màn hình ảo. Dừng chế độ này kết thúc ứng dụng trong màn hình ảo, hãy lưu công việc trước.
 
-## 运行限制
+## Giới hạn khi chạy
 
-虚拟显示的 GUI 使用软件渲染，画面走 X11 → NV12 采集。视频编码仍遵循 CrossDesk 设置和本机编码器能力。声音依赖当前用户可用的音频服务；Xvfb 本身不提供虚拟声卡。此实现针对 Linux；Windows 无显示器支持见 [常见问题](FAQ.md)。
+GUI hiển thị ảo dùng kết xuất phần mềm, hình ảnh đi qua ghi hình X11 → NV12. Mã hóa video vẫn theo cài đặt CrossDesk và khả năng bộ mã hóa máy này. Âm thanh phụ thuộc dịch vụ âm thanh khả dụng của người dùng hiện tại; bản thân Xvfb không cung cấp card âm thanh ảo. Triển khai này dành cho Linux; xem hỗ trợ Windows không màn hình trong [câu hỏi thường gặp](FAQ.md).

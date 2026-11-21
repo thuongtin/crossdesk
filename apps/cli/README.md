@@ -1,20 +1,20 @@
 # CrossDesk CLI
 
-CrossDesk 的终端主控客户端，源码位于本仓库的 `apps/cli`。通过真实 MiniRTC ID 会话观看远程桌面；默认只读、静音。包含 ANSI 象限字符画面、局部放大和平移、Kitty / Sixel 图形后端，以及 Pi 自定义 TUI 扩展。
+Ứng dụng điều khiển terminal của CrossDesk, mã nguồn nằm trong `apps/cli` của kho mã này. Xem màn hình từ xa qua phiên ID MiniRTC thực; mặc định chỉ đọc, tắt tiếng. Có hình ảnh ký tự góc phần tư ANSI, phóng to cục bộ và di chuyển, backend đồ họa Kitty / Sixel, cùng tiện ích TUI tùy chỉnh cho Pi.
 
-## 画面预览
+## Xem trước hình ảnh
 
-| ANSI 字符画面 | Kitty 协议像素画面 |
+| Hình ảnh ký tự ANSI | Hình ảnh pixel giao thức Kitty |
 | --- | --- |
-| <img src="../../docs/images/cli-ansi-overview.png" width="480" alt="CrossDesk CLI 的 ANSI 全景输出，包含只读状态栏与快捷键提示" /> | <img src="../../docs/images/cli-kitty-overview.png" width="480" alt="CrossDesk CLI 的 Kitty 像素全景输出，显示同一远程桌面" /> |
+| <img src="../../docs/images/cli-ansi-overview.png" width="480" alt="Đầu ra toàn cảnh ANSI của CrossDesk CLI, gồm thanh trạng thái chỉ đọc và gợi ý phím tắt" /> | <img src="../../docs/images/cli-kitty-overview.png" width="480" alt="Đầu ra toàn cảnh pixel Kitty của CrossDesk CLI, hiển thị cùng màn hình từ xa" /> |
 
-显示效果取决于终端和窗口大小。默认 `auto` 依次选择 Kitty、Sixel、ANSI；普通终端可指定 `--renderer ansi`，支持对应协议的终端可指定 `--renderer kitty` 或 `--renderer sixel`。显式像素模式需要通过能力探测；增加 Sixel 输出不代表所有 Xshell 版本均可显示图片，终端本身也必须支持该协议。ANSI 全景适合查看桌面轮廓，阅读小字需进入细节模式。
+Hiệu quả hiển thị tùy terminal và kích thước cửa sổ. Mặc định `auto` lần lượt chọn Kitty, Sixel, ANSI; terminal thông thường có thể dùng `--renderer ansi`, terminal hỗ trợ giao thức tương ứng có thể dùng `--renderer kitty` hoặc `--renderer sixel`. Chế độ pixel chỉ định tường minh cần vượt qua kiểm tra khả năng; thêm đầu ra Sixel không có nghĩa mọi phiên bản Xshell đều hiển thị ảnh, bản thân terminal cũng phải hỗ trợ giao thức này. Toàn cảnh ANSI phù hợp xem bố cục màn hình; để đọc chữ nhỏ, cần vào chế độ chi tiết.
 
-## 安装与连接
+## Cài đặt và kết nối
 
-### 通过 npm 安装
+### Cài qua npm
 
-需要 **Node.js 22 或以上**和 npm。统一入口为 [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli)，分发目标为 macOS / Linux（x64、arm64）和 Windows（x64）。安装时自动选择对应的原生程序，无需 Xmake 或 C++ 编译工具链：
+Cần **Node.js 22 trở lên** và npm. Gói đầu vào chung là [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli), phân phối cho macOS / Linux (x64, arm64) và Windows (x64). Cài đặt tự chọn chương trình gốc tương ứng, không cần Xmake hay chuỗi công cụ biên dịch C++:
 
 ```sh
 npm install -g @chunkdash/crossdesk-cli@latest
@@ -22,20 +22,20 @@ crossdesk-cli doctor --json
 crossdesk-cli 123456789
 ```
 
-将示例 ID 替换为被控电脑的 9 位 ID，按提示隐藏输入密码。`doctor` 仅检查本机环境，不发起连接。更新到最新版时重新执行上述安装命令。
+Thay ID ví dụ bằng ID 9 chữ số của máy được điều khiển, nhập mật khẩu ẩn theo lời nhắc. `doctor` chỉ kiểm tra môi trường cục bộ, không kết nối. Chạy lại lệnh cài đặt trên để cập nhật bản mới nhất.
 
-无需全局安装时，使用 `npx`，首次运行会下载对应平台包：
+Nếu không cần cài toàn cục, dùng `npx`; lần chạy đầu tải gói nền tảng tương ứng:
 
 ```sh
 npx @chunkdash/crossdesk-cli@latest doctor --json
 npx @chunkdash/crossdesk-cli@latest 123456789
 ```
 
-请安装统一入口并保留 npm 的可选依赖，不要使用 `--omit=optional`。仅安装平台包不会注册命令。运行要求、旧包迁移及安装排障见 [安装指南](docs/npm-distribution.md)。
+Hãy cài gói đầu vào chung và giữ phụ thuộc tùy chọn npm, không dùng `--omit=optional`. Chỉ cài gói nền tảng không đăng ký lệnh. Xem yêu cầu chạy, chuyển đổi gói cũ và xử lý lỗi cài đặt trong [hướng dẫn cài đặt](docs/npm-distribution.md).
 
-### 从源码构建
+### Biên dịch từ mã nguồn
 
-在 CrossDesk 仓库根目录执行以下命令构建 CLI：
+Chạy các lệnh sau ở thư mục gốc kho mã CrossDesk để biên dịch CLI:
 
 ```sh
 ./apps/cli/scripts/prepare-deps.sh
@@ -45,11 +45,11 @@ xmake run crossdesk-cli doctor --json
 xmake run crossdesk-cli 123456789 --quality high --zoom native
 ```
 
-构建后可直接运行 `build/<platform>/<arch>/release/crossdesk-cli`，也可将对应目录加入 PATH；Windows 的文件名为 `crossdesk-cli.exe`。
+Sau khi biên dịch, bạn có thể chạy trực tiếp `build/<platform>/<arch>/release/crossdesk-cli` hoặc thêm thư mục tương ứng vào PATH; tên tệp trên Windows là `crossdesk-cli.exe`.
 
-### 常用连接命令
+### Lệnh kết nối thường dùng
 
-以下示例适用于 npm 全局安装，或已将原生程序加入 PATH 的环境。`crossdesk-cli <设备ID> [选项]` 为默认连接方式，`view <设备ID>` 保留为兼容别名。设备 ID 是格式示例，使用时替换为你有权访问的设备，密码通过隐藏提示输入：
+Các ví dụ sau dành cho cài npm toàn cục hoặc môi trường đã thêm chương trình gốc vào PATH. `crossdesk-cli <ID-thiết-bị> [tùy-chọn]` là cách kết nối mặc định, `view <ID-thiết-bị>` giữ làm bí danh tương thích. ID thiết bị chỉ minh họa định dạng; hãy thay bằng thiết bị bạn có quyền truy cập, nhập mật khẩu qua lời nhắc ẩn:
 
 ```sh
 crossdesk-cli 123456789 --renderer kitty
@@ -59,32 +59,32 @@ crossdesk-cli 123456789 --quality balanced --fps 8
 crossdesk-cli 123456789 --display 1
 ```
 
-默认请求 `high` 画质（最高 1920 × 1080）和清晰度优先策略，`--display` 的索引从 `0` 开始。交互 CLI 默认本地输出目标为 30 FPS，远端供帧会随输出耗时自适应；显式 `--fps` 固定目标和相应预览请求，各帧率下均优先保持分辨率，实际画质与帧率仍取决于设备、终端与链路。更多参数见 [主 README](../../README.md#cli) 和 [终端使用指南](docs/terminal-client.md)。
+Mặc định yêu cầu chất lượng `high` (tối đa 1920 × 1080) và ưu tiên độ rõ nét; chỉ số `--display` bắt đầu từ `0`. CLI tương tác mặc định nhắm đầu ra cục bộ 30 FPS, nguồn khung từ xa thích ứng theo thời gian xuất; `--fps` tường minh cố định mục tiêu và yêu cầu xem trước tương ứng. Ở mọi tốc độ khung hình đều ưu tiên giữ độ phân giải; chất lượng và tốc độ thực tế vẫn tùy thiết bị, terminal và đường truyền. Xem thêm tham số trong [README chính](../../README.md#cli) và [hướng dẫn terminal](docs/terminal-client.md).
 
-## 查看、控制与退出
+## Xem, điều khiển và thoát
 
-| 操作 | 按键 |
+| Thao tác | Phím |
 | --- | --- |
-| 开启远端控制 | 只读模式下按 `c` |
-| 缩放 | 只读或本地命令模式下用 `+` / `=` / `-` 以鼠标位置缩放；只读时也可用滚轮 |
-| 回到全景 | 只读或本地命令模式下按 `f`，同时重置倍率、平移和细节模式 |
-| 平移 | 只读或本地命令模式下用方向键或 `i` 上、`j` 左、`k` 下、`l` 右 |
-| 原始细节 | 只读时点击目标位置，或以 `--zoom native` 启动 |
-| 暂停远端输入并进入本地命令模式 | `Ctrl+]` |
-| 选择返回后的控制状态 | 本地命令模式下按 `c`，再按 `Esc` / `Ctrl+C` 返回 |
-| 退出连接 | 只读模式下按 `q` / `Ctrl+C`；控制模式下先按 `Ctrl+]`，再按 `q` |
+| Bật điều khiển từ xa | Nhấn `c` ở chế độ chỉ đọc |
+| Thu phóng | Dùng `+` / `=` / `-` quanh vị trí chuột ở chế độ chỉ đọc hoặc lệnh cục bộ; chế độ chỉ đọc cũng dùng được con lăn |
+| Về toàn cảnh | Nhấn `f` ở chế độ chỉ đọc hoặc lệnh cục bộ, đồng thời đặt lại tỷ lệ, vị trí và chế độ chi tiết |
+| Di chuyển khung nhìn | Dùng phím mũi tên hoặc `i` lên, `j` trái, `k` xuống, `l` phải ở chế độ chỉ đọc hoặc lệnh cục bộ |
+| Chi tiết nguyên bản | Nhấn vị trí đích ở chế độ chỉ đọc hoặc khởi động với `--zoom native` |
+| Tạm dừng nhập từ xa và vào chế độ lệnh cục bộ | `Ctrl+]` |
+| Chọn trạng thái điều khiển khi quay lại | Nhấn `c` ở chế độ lệnh cục bộ, rồi `Esc` / `Ctrl+C` để quay lại |
+| Thoát kết nối | Nhấn `q` / `Ctrl+C` ở chế độ chỉ đọc; ở chế độ điều khiển, nhấn `Ctrl+]` trước rồi `q` |
 
-缩放尽量保持鼠标下的画面内容原位；没有有效鼠标位置时沿用当前中心。底部提示随模式和窗口宽度调整，`Zoom at mouse` 表示鼠标锚点缩放，`Full view` / `Full` 表示恢复全景。
+Thu phóng cố giữ nội dung dưới chuột tại chỗ; nếu không có vị trí chuột hợp lệ, dùng tâm hiện tại. Gợi ý dưới cùng đổi theo chế độ và chiều rộng cửa sổ; `Zoom at mouse` là thu phóng neo chuột, `Full view` / `Full` là khôi phục toàn cảnh.
 
-本地命令模式在缩放、平移和按 `c` 后持续保持，直到手动返回。此模式中鼠标仅更新缩放锚点，点击和滚轮不执行视图操作。控制模式中的 `Ctrl+T`、`Ctrl+C` 和普通按键均传给远端。再次按 `Ctrl+]` 也可离开本地命令模式，若返回控制模式则同时向远端发送该组合键。
+Chế độ lệnh cục bộ tiếp tục sau thu phóng, di chuyển và nhấn `c` cho đến khi quay lại thủ công. Trong chế độ này chuột chỉ cập nhật điểm neo thu phóng; nhấn và lăn không thao tác khung nhìn. Ở chế độ điều khiển, `Ctrl+T`, `Ctrl+C` và phím thường đều gửi đến máy từ xa. Bạn cũng có thể nhấn lại `Ctrl+]` để rời chế độ lệnh cục bộ; nếu quay về chế độ điều khiển, tổ hợp này cũng được gửi đến máy từ xa.
 
-## 功能范围与更多帮助
+## Phạm vi tính năng và trợ giúp thêm
 
-CLI 仅控制远程电脑，不提供音频播放、文件传输、剪贴板同步或 IP 直连，也不能连接开启可信设备限制的电脑。被控端需要有可用桌面，自托管服务器需支持 CLI 临时身份。
+CLI chỉ điều khiển máy từ xa, không phát âm thanh, truyền tệp, đồng bộ bảng nhớ tạm hay kết nối IP trực tiếp; cũng không kết nối được máy bật giới hạn thiết bị đáng tin cậy. Máy được điều khiển cần màn hình khả dụng; máy chủ tự lưu trữ cần hỗ trợ danh tính tạm CLI.
 
-- [终端使用指南](docs/terminal-client.md)：参数、显示、输入、Pi 扩展和故障排查。
-- [npm 安装与分发](docs/npm-distribution.md)：平台要求、旧版迁移、打包和发布。
-- [兼容性与限制](docs/validation.md)：平台和终端的已确认范围。
-- [MCP 使用指南](../mcp/README.md)：通过 Agent 操作远端并实时监看。
-- [自动化接口](docs/automation-protocol.md) / [终端桥接接口](docs/bridge-protocol.md)：对接脚本、应用或自定义终端界面。
-- [源码与许可信息](docs/source-provenance.md)。
+- [Hướng dẫn terminal](docs/terminal-client.md): tham số, hiển thị, nhập liệu, tiện ích Pi và khắc phục sự cố.
+- [Cài đặt và phân phối npm](docs/npm-distribution.md): yêu cầu nền tảng, chuyển đổi bản cũ, đóng gói và phát hành.
+- [Tương thích và giới hạn](docs/validation.md): phạm vi nền tảng và terminal đã xác nhận.
+- [Hướng dẫn MCP](../mcp/README.md): thao tác máy từ xa qua Agent và theo dõi trực tiếp.
+- [Giao diện tự động hóa](docs/automation-protocol.md) / [giao diện cầu nối terminal](docs/bridge-protocol.md): tích hợp script, ứng dụng hoặc giao diện terminal tùy chỉnh.
+- [Thông tin mã nguồn và giấy phép](docs/source-provenance.md).

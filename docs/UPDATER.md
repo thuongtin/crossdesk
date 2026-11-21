@@ -1,87 +1,87 @@
-# 更新 CrossDesk
+# Cập nhật CrossDesk
 
-[返回首页](../README.md) · [设置与更新](USER_GUIDE.md#settings) · [构建与发布](#升级器构建与发布)
+[Về trang chủ](../README.md) · [Cài đặt và cập nhật](USER_GUIDE.md#settings) · [Biên dịch và phát hành](#biên-dịch-và-phát-hành-trình-nâng-cấp)
 
-桌面端可以在 **主菜单 → 关于 → 检查更新** 查看新版本。发现新版本后，先阅读更新说明，再按界面提供的“安装更新”或下载入口继续。
+Trên máy tính, bạn có thể xem phiên bản mới tại **Menu chính → Giới thiệu → Kiểm tra cập nhật**. Sau khi phát hiện bản mới, đọc ghi chú cập nhật trước, rồi tiếp tục qua “Cài đặt bản cập nhật” hoặc lối vào tải xuống trên giao diện.
 
-## 安装更新
+## Cài đặt bản cập nhật
 
-1. 保存远端正在编辑的内容，等待文件传输完成。安装过程会中断连接。
-2. 点击 **安装更新** 并确认，等待下载及校验完成。
-3. 按操作系统提示提供安装授权。
-4. 安装完成后等待 CrossDesk 重新打开，在“关于”中确认版本，再重新连接远端。
+1. Lưu nội dung đang sửa trên máy từ xa, chờ truyền tệp hoàn tất. Cài đặt sẽ ngắt kết nối.
+2. Nhấn **Cài đặt bản cập nhật** và xác nhận, chờ tải xuống và xác minh hoàn tất.
+3. Cấp quyền cài đặt theo lời nhắc hệ điều hành.
+4. Cài xong, chờ CrossDesk mở lại, xác nhận phiên bản trong “Giới thiệu”, rồi kết nối lại máy từ xa.
 
-macOS / Linux 在准备阶段取消授权会保留原程序和连接。下载或校验失败时不会关闭主程序，可检查网络后重试。
+Trên macOS / Linux, hủy cấp quyền ở giai đoạn chuẩn bị giữ chương trình và kết nối cũ. Tải xuống hoặc xác minh thất bại không đóng chương trình chính, bạn có thể kiểm tra mạng rồi thử lại.
 
-## 为什么只有下载按钮
+## Vì sao chỉ có nút tải xuống
 
-以下情况需要手动安装：
+Các trường hợp sau cần cài thủ công:
 
-- 使用便携版或没有配置更新验证公钥的自行构建版本。
-- 安装位置不受应用内更新支持。
-- 当前发布包没有可用的签名更新信息，或校验未通过。
+- Dùng bản portable hoặc bản tự biên dịch chưa cấu hình khóa công khai xác minh cập nhật.
+- Vị trí cài không được cập nhật trong ứng dụng hỗ trợ.
+- Gói phát hành hiện tại không có thông tin cập nhật đã ký khả dụng hoặc xác minh không thành công.
 
-从 [官网](https://www.crossdesk.cn/) 或 [GitHub Releases](https://github.com/kunkundi/crossdesk/releases) 下载与你的系统和架构匹配的完整安装包，关闭 CrossDesk 后安装。保留原有安装类型；Linux 普通版和虚拟桌面版按实际用途选择。
+Tải gói cài đầy đủ khớp hệ thống và kiến trúc của bạn từ [trang web chính thức](https://www.crossdesk.cn/) hoặc [GitHub Releases](https://github.com/kunkundi/crossdesk/releases), đóng CrossDesk rồi cài. Giữ loại cài đặt cũ; chọn bản Linux thường hoặc màn hình ảo theo nhu cầu thực tế.
 
-## 各平台注意事项
+## Lưu ý từng nền tảng
 
-| 平台 | 更新方式与要求 |
+| Nền tảng | Cách cập nhật và yêu cầu |
 | --- | --- |
-| Windows 安装版 | 使用完整安装包更新主程序、服务及辅助程序；需要管理员授权 |
-| Windows 便携版 | 下载并解压完整便携包；若注册过服务，还需更新服务指向的目录，见 [服务管理](USER_GUIDE.md#windows-service-development-update) |
-| macOS | 应用内安装支持 `/Applications/CrossDesk.app`；其他位置使用 PKG 手动安装 |
-| Linux | DEB 安装版需要系统授权组件和可用的包管理器；更新会按已安装类型选择普通包或虚拟桌面包 |
-| iOS / iPadOS | 从 App Store 更新；自行签名的应用按原签名方式重新安装 |
-| Android / HarmonyOS | 按应用或发布页面提供的入口下载，沿用兼容的签名方式安装 |
+| Bản cài đặt Windows | Dùng gói đầy đủ cập nhật chương trình chính, dịch vụ và trình trợ giúp; cần quyền quản trị viên |
+| Bản Windows portable | Tải và giải nén gói portable đầy đủ; nếu đã đăng ký dịch vụ, còn cần cập nhật thư mục dịch vụ trỏ đến, xem [quản lý dịch vụ](USER_GUIDE.md#windows-service-development-update) |
+| macOS | Cài trong ứng dụng hỗ trợ `/Applications/CrossDesk.app`; vị trí khác cài PKG thủ công |
+| Linux | Bản cài DEB cần thành phần cấp quyền hệ thống và trình quản lý gói khả dụng; cập nhật chọn gói thường hoặc màn hình ảo theo loại đã cài |
+| iOS / iPadOS | Cập nhật từ App Store; ứng dụng tự ký cài lại theo cách ký cũ |
+| Android / HarmonyOS | Tải qua lối vào do ứng dụng hoặc trang phát hành cung cấp, cài bằng cách ký tương thích |
 
-Linux 自行配置了 systemd 或其他进程守护时，先停止相应服务，再安装更新，完成后重新启动。否则旧进程可能阻止安装。
+Nếu Linux tự cấu hình systemd hoặc trình giám sát tiến trình khác, dừng dịch vụ tương ứng trước rồi cài cập nhật, sau đó khởi động lại. Nếu không, tiến trình cũ có thể ngăn cài đặt.
 
-## 更新失败怎么办
+## Xử lý khi cập nhật thất bại
 
-| 现象 | 处理方法 |
+| Hiện tượng | Cách xử lý |
 | --- | --- |
-| 无法下载或校验失败 | 检查网络、系统时间及下载来源，重试或手动下载官方完整包 |
-| 请求授权但未继续 | 确认系统授权窗口；Linux 检查桌面授权代理是否可用 |
-| 提示程序仍在运行 | 退出其他用户会话中的 CrossDesk，并停止自行配置的守护服务后重试 |
-| 安装后未自动打开 | 手动启动 CrossDesk；仍失败时用完整安装包修复安装 |
-| 更新后锁屏输入不可用 | 确认 Windows 主程序、服务和会话辅助程序来自同一版本 |
-| 仅构建日期不同却不提示更新 | 更新按数字版本及补丁号比较，仅日期变化不会触发升级 |
+| Không tải được hoặc xác minh thất bại | Kiểm tra mạng, giờ hệ thống và nguồn tải, thử lại hoặc tải thủ công gói chính thức đầy đủ |
+| Yêu cầu cấp quyền nhưng không tiếp tục | Xác nhận cửa sổ cấp quyền hệ thống; trên Linux kiểm tra tác nhân cấp quyền màn hình có khả dụng không |
+| Báo chương trình vẫn chạy | Thoát CrossDesk trong phiên người dùng khác và dừng dịch vụ giám sát tự cấu hình rồi thử lại |
+| Không tự mở sau cài đặt | Chạy CrossDesk thủ công; nếu vẫn thất bại, sửa cài đặt bằng gói đầy đủ |
+| Nhập liệu màn hình khóa không dùng được sau cập nhật | Xác nhận chương trình chính, dịch vụ và trình trợ giúp phiên Windows cùng phiên bản |
+| Chỉ khác ngày biên dịch nhưng không nhắc cập nhật | Cập nhật so sánh phiên bản số và số bản vá, chỉ đổi ngày không kích hoạt nâng cấp |
 
-安装中断不会保证自动回滚。不要只替换一个可执行文件来修复安装，应使用对应平台的完整安装包。仍无法恢复时，通过 **反馈与建议 → 导出诊断日志** 提交问题，附上更新前后版本与错误内容。
+Cài đặt gián đoạn không bảo đảm tự quay lui. Không chỉ thay một tệp thực thi để sửa cài đặt; nên dùng gói đầy đủ của nền tảng tương ứng. Nếu vẫn không khôi phục được, báo cáo qua **Phản hồi và góp ý → Xuất nhật ký chẩn đoán**, đính kèm phiên bản trước/sau và nội dung lỗi.
 
-## 自行构建版本
+## Bản tự biên dịch
 
-不设置更新公钥也能正常运行和检查版本，但需手动下载安装。启用应用内更新时，需配置 [构建参数](BUILD.md#update-public-key) 和下文的 [发布签名](#发布密钥)。
+Không đặt khóa công khai cập nhật vẫn chạy và kiểm tra phiên bản bình thường nhưng cần tải và cài thủ công. Khi bật cập nhật trong ứng dụng, cần cấu hình [tham số biên dịch](BUILD.md#update-public-key) và [ký phát hành](#khóa-phát-hành) bên dưới.
 
-## 升级器构建与发布
+## Biên dịch và phát hành trình nâng cấp
 
-Windows、macOS 和 Linux 的升级核心位于 `apps/desktop/src/updater`，平台实现位于 `apps/desktop/src/platform/<平台>/updater`。安装版随主程序构建升级器，便携版只提供手动下载。
+Lõi nâng cấp Windows, macOS và Linux ở `apps/desktop/src/updater`, triển khai nền tảng ở `apps/desktop/src/platform/<nền-tảng>/updater`. Bản cài đặt biên dịch trình nâng cấp cùng chương trình chính; bản portable chỉ tải thủ công.
 
-### 安装协调流程
+### Quy trình phối hợp cài đặt
 
-1. 用户点击“安装更新”并确认连接和文件传输将中断。
-2. 主程序异步下载，显示进度，并验证签名、大小和 SHA-256。
-3. 升级器从私有暂存目录启动，取得安装目录对应的维护锁。
-4. macOS/Linux 先请求系统授权，再由提权后的安装进程再次验证签名、
-   将包复制到只有管理员可写的私有目录并验证副本。完成这些步骤后才
-   通知主程序退出；等待授权期间远程连接继续运行，取消授权不会关闭
-   主程序。准备阶段最多等待五分钟。
-5. 主程序收到就绪通知后提交安装并正常退出。Windows 保持原有流程：
-   先等待同一用户的 GUI 和守护进程退出，再启动提权安装进程验证副本。
-6. 安装进程确认相关程序退出后调用平台安装器。macOS/Linux 未收到
-   主程序的安装提交、收到取消通知或等待提交超时时，不执行安装。
-7. 升级器以原调用者身份重启程序。新程序进入 GUI 事件循环后确认启动；
-   90 秒内未收到确认会记录失败。启动确认不依赖远程服务器连通性。
+1. Người dùng nhấn “Cài đặt bản cập nhật” và xác nhận kết nối và truyền tệp sẽ bị ngắt.
+2. Chương trình chính tải bất đồng bộ, hiện tiến độ và xác minh chữ ký, kích thước, SHA-256.
+3. Trình nâng cấp khởi động từ thư mục tạm riêng, lấy khóa bảo trì cho thư mục cài đặt tương ứng.
+4. macOS/Linux yêu cầu quyền hệ thống trước, sau đó tiến trình cài đã nâng quyền xác minh lại chữ ký,
+   sao chép gói vào thư mục riêng chỉ quản trị viên ghi được và xác minh bản sao. Chỉ sau các bước này mới
+   thông báo chương trình chính thoát; trong khi chờ cấp quyền, kết nối từ xa vẫn chạy, hủy cấp quyền không đóng
+   chương trình chính. Giai đoạn chuẩn bị chờ tối đa năm phút.
+5. Khi nhận thông báo sẵn sàng, chương trình chính gửi xác nhận cài và thoát bình thường. Windows giữ quy trình cũ:
+   chờ GUI và tiến trình nền cùng người dùng thoát trước, rồi chạy tiến trình cài nâng quyền để xác minh bản sao.
+6. Sau khi xác nhận chương trình liên quan đã thoát, tiến trình cài gọi trình cài nền tảng. macOS/Linux không cài nếu chưa nhận
+   xác nhận cài của chương trình chính, nhận thông báo hủy hoặc hết thời gian chờ xác nhận.
+7. Trình nâng cấp khởi động lại chương trình bằng danh tính bên gọi ban đầu. Chương trình mới xác nhận khởi động sau khi vào vòng lặp sự kiện GUI;
+   nếu không nhận xác nhận trong 90 giây thì ghi nhận thất bại. Xác nhận khởi động không phụ thuộc kết nối máy chủ từ xa.
 
-系统代码签名不是这里的更新来源验证机制。Windows/macOS 安全检查、
-管理员授权，以及现有 macOS 安装包的权限处理仍然适用。
+Ký mã hệ thống không phải cơ chế xác minh nguồn cập nhật ở đây. Kiểm tra bảo mật Windows/macOS,
+quyền quản trị viên và xử lý quyền trong gói cài macOS hiện có vẫn áp dụng.
 
-## 发布密钥
+## Khóa phát hành
 
-客户端内置一个 Ed25519 公钥，发布端保存对应的私钥。不要把私钥提交到
-仓库，也不要在普通构建或不可信 PR 的工作流中提供私钥。
+Ứng dụng tích hợp một khóa công khai Ed25519, bên phát hành giữ khóa riêng tương ứng. Không commit khóa riêng vào
+kho mã, cũng không cung cấp cho quy trình biên dịch thường hay PR không đáng tin cậy.
 
-用 OpenSSL 在可信环境生成密钥：
+Dùng OpenSSL tạo khóa trong môi trường đáng tin cậy:
 
 ```sh
 openssl genpkey -algorithm ED25519 -out crossdesk-update-private.pem
@@ -89,107 +89,107 @@ openssl pkey -in crossdesk-update-private.pem -pubout -outform DER -out crossdes
 python3 -c "from pathlib import Path; p=Path('crossdesk-update-public.der').read_bytes(); assert len(p)==44 and p[:12].hex()=='302a300506032b6570032100'; print(p[12:].hex())"
 ```
 
-在 GitHub 仓库配置：
+Cấu hình trong kho GitHub:
 
-- Actions variable `CROSSDESK_UPDATE_PUBLIC_KEY`：上述 64 位小写十六进制公钥。
-- Actions secret `CROSSDESK_UPDATE_PRIVATE_KEY`：PEM 私钥文件的完整内容。
+- Actions variable `CROSSDESK_UPDATE_PUBLIC_KEY`: Khóa công khai 64 ký tự thập lục phân viết thường ở trên.
+- Actions secret `CROSSDESK_UPDATE_PRIVATE_KEY`: Toàn bộ nội dung tệp khóa riêng PEM.
 
-桌面构建工作流将公钥传给 Xmake。只有发布清单生成步骤读取私钥。
-首次需要手动安装包含升级器、公钥及新安装元数据的版本。
+Quy trình biên dịch máy tính truyền khóa công khai cho Xmake. Chỉ bước tạo bản kê phát hành đọc khóa riêng.
+Lần đầu cần cài thủ công phiên bản chứa trình nâng cấp, khóa công khai và siêu dữ liệu cài đặt mới.
 
-GitHub Actions 从分支手动打包时，在 `Build and Release` 的
-`Run workflow` 中填写 `desktop_version`（例如 `1.7.2`），`patch` 保持
-`0`。三个桌面平台会使用同一个数字版本并追加构建日期。空着不填的分支
-构建使用 `0.0.0-日期`；版本标签构建继续使用标签中的版本号。
-`desktop_version` 只影响桌面安装包，不改变移动端版本。
+Khi đóng gói thủ công từ nhánh bằng GitHub Actions, trong `Run workflow` của
+`Build and Release`, nhập `desktop_version` (ví dụ `1.7.2`), giữ `patch` là
+`0`. Ba nền tảng máy tính dùng cùng phiên bản số và thêm ngày biên dịch. Bản biên dịch nhánh
+để trống dùng `0.0.0-ngày`; biên dịch tag phiên bản tiếp tục dùng số phiên bản trong tag.
+`desktop_version` chỉ ảnh hưởng gói cài máy tính, không đổi phiên bản di động.
 
-`prepare-version` 前置任务统一生成完整桌面版本，通过 job outputs 传给
-Linux、macOS、Windows 和发布任务。无日期标签使用前置任务运行当天的
-北京时间日期，显式日期标签使用标签中的日期；后续任务不再重新计算。
-构建跨午夜或单独重跑发布任务时，继续使用前置任务确定的版本。
+Tác vụ tiền đề `prepare-version` tạo thống nhất phiên bản máy tính đầy đủ, truyền qua job outputs cho
+Linux, macOS, Windows và tác vụ phát hành. Tag không có ngày dùng ngày theo giờ Bắc Kinh vào ngày chạy tác vụ tiền đề,
+tag có ngày rõ ràng dùng ngày trong tag; tác vụ sau không tính lại.
+Khi biên dịch qua nửa đêm hoặc chạy lại riêng tác vụ phát hành, tiếp tục dùng phiên bản tác vụ tiền đề đã xác định.
 
-不要使用 `vauto-update-20261020` 这类分支名作为版本号验证升级。
-新版本必须增加数字版本或 patch；只改变日期不视为升级。例如先手动安装
-`v1.7.2-20261020`，再验证到 `v1.7.3-20261020` 的升级。
-分支手动构建只上传 Actions 构建产物，不会自动发布版本清单。
+Không dùng tên nhánh như `vauto-update-20261020` làm số phiên bản để kiểm chứng nâng cấp.
+Phiên bản mới phải tăng phiên bản số hoặc patch; chỉ đổi ngày không được coi là nâng cấp. Ví dụ cài thủ công
+`v1.7.2-20261020` trước, rồi kiểm chứng nâng cấp lên `v1.7.3-20261020`.
+Biên dịch nhánh thủ công chỉ tải sản phẩm biên dịch Actions lên, không tự phát hành bản kê phiên bản.
 
-发布脚本按数字版本和 patch 比较版本，忽略构建日期。编辑或重新发布旧的
-桌面 Release 时，保留服务器现有清单并在 Actions 日志中说明跳过原因；
-同版本仍可更新发布说明，新版本正常发布。各平台下载记录也不会被较低
-版本覆盖，包括独立移动端发布和桌面 Release 附带的移动端安装包。
+Script phát hành so sánh phiên bản số và patch, bỏ qua ngày biên dịch. Khi sửa hoặc phát hành lại Release máy tính
+cũ, giữ bản kê hiện có trên máy chủ và nêu lý do bỏ qua trong nhật ký Actions;
+cùng phiên bản vẫn có thể cập nhật ghi chú phát hành, bản mới phát hành bình thường. Bản ghi tải xuống từng nền tảng cũng không bị phiên bản thấp hơn
+ghi đè, kể cả phát hành di động riêng và gói di động kèm Release máy tính.
 
-桌面 Release 中所有桌面安装包及便携包的完整版本必须与标签去掉 `v`
-前缀后的版本一致，包括日期和 patch 的位置；不能只按数字版本比较。
-任一包不匹配时，脚本报告标签、平台、文件名及双方版本，终止清单生成，
-不写入输出文件。手动发布时应使用与安装包一致的完整版本标签，例如
-`v1.7.4-20261021`。iOS、Android 安装包保持独立版本。
+Phiên bản đầy đủ của mọi gói cài máy tính và gói portable trong Release máy tính phải khớp phiên bản tag sau khi bỏ
+tiền tố `v`, gồm cả vị trí ngày và patch; không được chỉ so sánh phiên bản số.
+Nếu bất kỳ gói nào không khớp, script báo tag, nền tảng, tên tệp và phiên bản hai bên, dừng tạo bản kê,
+không ghi tệp đầu ra. Khi phát hành thủ công, nên dùng tag phiên bản đầy đủ khớp gói cài, ví dụ
+`v1.7.4-20261021`. Gói cài iOS, Android giữ phiên bản độc lập.
 
-本地构建可以设置同名环境变量，或使用：
+Biên dịch cục bộ có thể đặt biến môi trường cùng tên hoặc dùng:
 
 ```sh
-xmake f --CROSSDESK_UPDATE_PUBLIC_KEY=<64位小写十六进制公钥>
+xmake f --CROSSDESK_UPDATE_PUBLIC_KEY=<khóa-công-khai-64-ký-tự-thập-lục-phân-viết-thường>
 xmake b crossdesk
 ```
 
-没有公钥的构建可以正常运行和检查版本，但不执行自动安装。
-私钥与公钥不匹配时，清单生成失败。当前只支持单个公钥；更换公钥前需要
-设计过渡版本，不能直接替换发布私钥而让旧客户端继续自动升级。
+Bản biên dịch không có khóa công khai vẫn chạy và kiểm tra phiên bản bình thường nhưng không tự cài.
+Nếu khóa riêng và công khai không khớp, tạo bản kê thất bại. Hiện chỉ hỗ trợ một khóa công khai; trước khi đổi khóa cần
+thiết kế phiên bản chuyển tiếp, không được thay thẳng khóa riêng phát hành rồi để ứng dụng cũ tiếp tục tự nâng cấp.
 
-## 清单格式
+## Định dạng bản kê
 
-`.github/scripts/update_version_manifest.py` 为安装包写入 `size`、`sha256`。
-配置私钥后，桌面安装包还包含：
+`.github/scripts/update_version_manifest.py` ghi `size`, `sha256` cho gói cài.
+Sau khi cấu hình khóa riêng, gói cài máy tính còn chứa:
 
 ```json
 {
   "update": {
     "payload": "{\"filename\":\"...\",\"platform\":\"windows-x64\",\"schema\":1,\"sha256\":\"...\",\"size\":123,\"url\":\"...\",\"version\":\"...\"}",
-    "signature": "128位小写十六进制Ed25519签名"
+    "signature": "chữ-ký-Ed25519-128-ký-tự-thập-lục-phân-viết-thường"
   }
 }
 ```
 
-签名覆盖 `payload` 字符串的原始 UTF-8 字节；客户端先验签，再解析。
-签名包含版本、平台、包名、下载地址、大小和哈希，避免下载记录被互换。
-仅允许 `https://downloads.crossdesk.cn/` 下与版本和平台匹配的包名，
-禁止下载重定向，包大小上限为 2 GiB，禁止同版本安装及降级。
-便携包和移动端包不会获得此自动安装入口。
+Chữ ký bao phủ byte UTF-8 gốc của chuỗi `payload`; ứng dụng xác minh chữ ký trước rồi phân tích.
+Chữ ký gồm phiên bản, nền tảng, tên gói, địa chỉ tải, kích thước và hàm băm để tránh tráo bản ghi tải xuống.
+Chỉ cho phép tên gói dưới `https://downloads.crossdesk.cn/` khớp phiên bản và nền tảng,
+cấm chuyển hướng tải xuống, giới hạn kích thước gói 2 GiB, cấm cài cùng phiên bản và hạ cấp.
+Gói portable và di động không có lối vào tự cài này.
 
-## 平台边界
+## Ranh giới nền tảng
 
-- Windows：安装目录必须匹配 HKLM 卸载记录中的 `InstallLocation`。
-  停止 CrossDesk 服务并等待其退出；确认同一路径的主程序全部结束后，
-  以 `/S /CROSSDESK_UPDATE /D=...` 调用 NSIS。升级模式不按进程名强杀
-  程序，且由升级器负责重启。原先运行的服务会尝试恢复。
-- macOS：支持 `/Applications/CrossDesk.app`，通过系统授权调用
-  `/usr/sbin/installer` 安装 PKG。其他安装位置使用手动下载。
-  升级器只能依赖系统动态库，打包时验证这一点。
-- Linux：支持 `/usr/lib/crossdesk/crossdesk-bin`，根据 `package-name`
-  选择普通包或虚拟桌面包。使用 `pkexec` 授权和 `apt-get install`
-  安装本地 DEB；禁止包管理器自动删除依赖。需要可用的授权代理。
-  重启时恢复原来的 `--headless`、`--no-headless`、`--headless-display`、
-  `--headless-size` 和 `--headless-session` 参数，包括安装失败后的重启；
-  内部运行模式参数不会重放。
-  自定义 systemd/headless supervisor 必须由管理员先协调停止；
-  检测到仍在运行的程序会中止升级，不猜测或停止其他服务。
+- Windows: Thư mục cài phải khớp `InstallLocation` trong bản ghi gỡ cài HKLM.
+  Dừng dịch vụ CrossDesk và chờ thoát; sau khi xác nhận mọi chương trình chính cùng đường dẫn đã kết thúc,
+  gọi NSIS bằng `/S /CROSSDESK_UPDATE /D=...`. Chế độ nâng cấp không buộc kết thúc
+  chương trình theo tên tiến trình; trình nâng cấp chịu trách nhiệm khởi động lại. Dịch vụ chạy trước đó được thử khôi phục.
+- macOS: Hỗ trợ `/Applications/CrossDesk.app`, gọi
+  `/usr/sbin/installer` qua cấp quyền hệ thống để cài PKG. Vị trí cài khác tải thủ công.
+  Trình nâng cấp chỉ được phụ thuộc thư viện động hệ thống; điều này được kiểm tra khi đóng gói.
+- Linux: Hỗ trợ `/usr/lib/crossdesk/crossdesk-bin`, chọn
+  gói thường hoặc màn hình ảo theo `package-name`. Dùng `pkexec` cấp quyền và `apt-get install`
+  cài DEB cục bộ; cấm trình quản lý gói tự xóa phụ thuộc. Cần tác nhân cấp quyền khả dụng.
+  Khi khởi động lại, khôi phục tham số gốc `--headless`, `--no-headless`, `--headless-display`,
+  `--headless-size` và `--headless-session`, kể cả khởi động lại sau cài thất bại;
+  không phát lại tham số chế độ chạy nội bộ.
+  Quản trị viên phải phối hợp dừng systemd/headless supervisor tùy chỉnh trước;
+  phát hiện chương trình vẫn chạy sẽ hủy nâng cấp, không đoán hay dừng dịch vụ khác.
 
-退出等待有时间限制，跨用户仍有程序运行会报告失败。维护锁在进程退出时
-由系统释放，遗留的 POSIX 锁文件不会被当作正在升级。
+Chờ thoát có giới hạn thời gian; nếu còn chương trình chạy thuộc người dùng khác sẽ báo thất bại. Hệ thống nhả khóa bảo trì khi tiến trình
+thoát, tệp khóa POSIX còn lại không bị coi là đang nâng cấp.
 
-## 失败处理与验证
+## Xử lý thất bại và kiểm chứng
 
-下载、验签或准备失败时不关闭主程序。主程序退出后的安装失败会尝试
-重启；macOS/Linux 在退出前取消授权时保留原程序和连接。
-`last-update` 位于应用缓存目录，指向私有暂存目录；`request.json` 和
-`result.json` 保留升级版本及结果，未完成的任务不会自动重放。新版本确认
-启动后先通知升级器，再清除 `last-update`，避免临时目录被系统清理后
-误报升级中断；旧客户端已经确认成功的记录也会在下次启动时清除。
-升级器随后删除大型安装包，保留少量诊断文件。失败任务保留记录和下载包
-便于排查。
+Tải xuống, xác minh chữ ký hoặc chuẩn bị thất bại không đóng chương trình chính. Cài thất bại sau khi chương trình chính thoát sẽ thử
+khởi động lại; macOS/Linux giữ chương trình và kết nối cũ khi hủy cấp quyền trước lúc thoát.
+`last-update` ở thư mục bộ nhớ đệm ứng dụng, trỏ đến thư mục tạm riêng; `request.json` và
+`result.json` giữ phiên bản nâng cấp và kết quả, tác vụ chưa hoàn tất không tự phát lại. Sau khi bản mới xác nhận
+khởi động, thông báo trình nâng cấp trước rồi xóa `last-update` để tránh báo nhầm nâng cấp gián đoạn khi thư mục tạm bị hệ thống
+dọn; bản ghi đã được ứng dụng cũ xác nhận thành công cũng bị xóa ở lần khởi động sau.
+Sau đó trình nâng cấp xóa gói cài lớn, giữ một ít tệp chẩn đoán. Tác vụ thất bại giữ bản ghi và gói đã tải
+để thuận tiện điều tra.
 
-NSIS、PKG 和 DEB 的安装操作不是跨平台事务。当前没有自动回滚承诺：
-安装中断或新版本启动失败时，保留错误并提供手动修复安装路径。不能通过
-只恢复 EXE 来回滚服务、依赖库或配置迁移。
+Thao tác cài NSIS, PKG và DEB không phải giao dịch xuyên nền tảng. Hiện không cam kết tự quay lui:
+nếu cài bị gián đoạn hoặc bản mới khởi động thất bại, giữ lỗi và cung cấp cách sửa cài thủ công. Không thể
+chỉ khôi phục EXE để quay lui dịch vụ, thư viện phụ thuộc hoặc di chuyển cấu hình.
 
 ```sh
 xmake b update_checker_test version_checker_test
@@ -199,6 +199,6 @@ python3 -m unittest discover -s .github/scripts -p test_update_version_manifest.
 xmake lua apps/desktop/tests/build_define_scope_test.lua windows true
 ```
 
-发布前仍须在各平台的隔离安装环境验证：授权取消、其他会话占用、服务
-退出、安装失败、升级器自身更新和新程序启动确认。不要在开发机上通过
-自动运行生产安装包来代替这些安装测试。
+Trước phát hành vẫn cần kiểm chứng trong môi trường cài đặt cách ly trên từng nền tảng: hủy cấp quyền, phiên khác đang dùng, dịch vụ
+thoát, cài thất bại, tự cập nhật trình nâng cấp và xác nhận chương trình mới khởi động. Không tự chạy gói cài sản xuất trên máy phát triển
+để thay thế các kiểm thử cài đặt này.

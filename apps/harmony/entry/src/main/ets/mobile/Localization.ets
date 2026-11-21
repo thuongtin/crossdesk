@@ -14,20 +14,20 @@ export function languageIndex(tag: string): number {
     if (parts.includes('-hans-')) return 0;
     return ['-hant-', '-tw-', '-hk-', '-mo-'].some((part: string) => parts.includes(part)) ? 3 : 0;
   }
-  const codes = ['zh', 'en', 'ru', 'zh-hant', 'ja', 'ko', 'de', 'fr', 'es', 'pt'];
+  const codes = ['zh', 'en', 'ru', 'zh-hant', 'ja', 'ko', 'de', 'fr', 'es', 'pt', 'vi'];
   const index = codes.indexOf(base);
-  return index < 0 ? 1 : index;
+  return index < 0 ? 10 : index;
 }
 
 export function currentLanguage(): number {
-  try { return languageProvider ? languageIndex(languageProvider()) : 1; }
-  catch { return 1; }
+  try { return languageProvider ? languageIndex(languageProvider()) : 10; }
+  catch { return 10; }
 }
 
 export function tr(key: string, args: string[] = []): string {
   // The pure models can also run before an ability installs its locale provider.
   const values = translations[key];
-  let text = languageProvider && values ? values[currentLanguage()] || values[1] : key;
+  let text = values ? values[currentLanguage()] ?? values[10] : key;
   // A single replacement pass avoids interpreting placeholder-like user data.
   text = text.replace(/\{(\d+)\}/g, (match: string, index: string) => {
     const value = args[Number(index)];

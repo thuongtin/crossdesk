@@ -69,7 +69,7 @@ bool DrawPrivacyCover(HDC dc, const RECT& rect, UINT dpi, HINSTANCE module,
   std::array<Line, kInstructionLines + 1> lines{{
       {unlock_hint, 17, FW_NORMAL, RGB(166, 174, 186)},
       {L"+", 16, FW_SEMIBOLD, RGB(229, 233, 240)},
-      {L" CrossDesk 远程控制中", 29, FW_SEMIBOLD, RGB(255, 255, 255)},
+      {L" CrossDesk · Điều khiển từ xa", 29, FW_SEMIBOLD, RGB(255, 255, 255)},
   }};
   constexpr UINT flags = DT_CENTER | DT_WORDBREAK | DT_NOPREFIX;
   constexpr UINT brand_flags = DT_LEFT | DT_SINGLELINE | DT_NOPREFIX;

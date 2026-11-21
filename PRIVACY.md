@@ -2,89 +2,89 @@
 
 Last updated: October 15, 2026
 
-[中文](#中文) | [English](#english)
+[Tiếng Việt](#tiếng-việt) | [English](#english)
 
-## 中文
+## Tiếng Việt
 
-更新日期：2026 年 10 月 15 日
+Cập nhật ngày: 15 tháng 10 năm 2026
 
-CrossDesk 重视您的个人信息与隐私保护。本政策说明我们在提供远程桌面服务时如何处理相关信息，以及您可以如何管理授权、保存的内容和数据请求。请在使用前阅读并了解本政策。
+CrossDesk coi trọng việc bảo vệ thông tin cá nhân và quyền riêng tư của bạn. Chính sách này giải thích cách chúng tôi xử lý thông tin liên quan khi cung cấp dịch vụ máy tính từ xa, cũng như cách bạn quản lý quyền đã cấp, nội dung đã lưu và yêu cầu dữ liệu. Hãy đọc và tìm hiểu chính sách trước khi sử dụng. Bản tiếng Việt này là bản dịch của chính sách gốc tiếng Trung.
 
-### 一、适用范围
+### I. Phạm vi áp dụng
 
-本政策适用于 CrossDesk 桌面客户端、iOS、Android 与鸿蒙移动客户端，以及由 CrossDesk 项目维护者（以下简称“我们”）提供的默认网络服务。
+Chính sách này áp dụng cho ứng dụng máy tính CrossDesk, ứng dụng di động iOS, Android và HarmonyOS, cùng các dịch vụ mạng mặc định do những người bảo trì dự án CrossDesk (sau đây gọi là “chúng tôi”) cung cấp.
 
-如果您选择自行部署或使用其他运营者提供的服务器，该服务器所处理的信息、保存期限及安全管理由相应运营者负责。请在使用前了解其隐私政策。本政策中有关客户端本地数据处理的说明仍适用。
+Nếu bạn tự triển khai hoặc dùng máy chủ do nhà vận hành khác cung cấp, nhà vận hành tương ứng chịu trách nhiệm về thông tin máy chủ xử lý, thời hạn lưu và quản lý bảo mật. Hãy tìm hiểu chính sách quyền riêng tư của họ trước khi sử dụng. Các giải thích về xử lý dữ liệu cục bộ của ứng dụng trong chính sách này vẫn áp dụng.
 
-### 二、我们处理的信息及用途
+### II. Thông tin chúng tôi xử lý và mục đích sử dụng
 
-**设备连接与身份验证。** 为登记设备、验证连接权限、查询在线状态及建立远程连接，客户端与服务端会处理设备 ID、认证信息及在线状态。服务端还会保存设备身份及认证校验信息、在线与离线时间、客户端版本与平台、设备关联记录，并生成必要的运行和安全日志，用于维持服务、排查故障及防止滥用。
+**Kết nối thiết bị và xác thực danh tính.** Để đăng ký thiết bị, xác minh quyền kết nối, truy vấn trạng thái trực tuyến và thiết lập kết nối từ xa, ứng dụng và máy chủ xử lý ID thiết bị, thông tin xác thực và trạng thái trực tuyến. Máy chủ còn lưu danh tính thiết bị và thông tin kiểm tra xác thực, thời điểm trực tuyến và ngoại tuyến, phiên bản và nền tảng ứng dụng, bản ghi liên kết thiết bị, đồng thời tạo nhật ký vận hành và bảo mật cần thiết để duy trì dịch vụ, khắc phục sự cố và ngăn lạm dụng.
 
-**必要的网络信息。** 建立连接、网络地址转换穿透及中继转发需要处理 IP 地址、端口等网络信息。这些信息用于通信和网络诊断，不等同于读取设备的定位权限。连接服务、中继服务及网络请求可能产生相应日志。
+**Thông tin mạng cần thiết.** Thiết lập kết nối, xuyên NAT và chuyển tiếp cần xử lý thông tin mạng như địa chỉ IP, cổng. Thông tin này dùng cho liên lạc và chẩn đoán mạng, không đồng nghĩa với truy cập quyền vị trí của thiết bị. Dịch vụ kết nối, dịch vụ chuyển tiếp và yêu cầu mạng có thể tạo nhật ký tương ứng.
 
-**远程会话内容。** 您发起或接受远程连接后，软件根据使用的功能在参与会话的设备之间传输画面、音频、键盘和鼠标操作、剪贴板文本及文件。会话内容可能包含个人或工作信息，请仅连接您拥有或已获授权使用的设备，并按需管理共享内容。
+**Nội dung phiên từ xa.** Sau khi bạn bắt đầu hoặc chấp nhận kết nối từ xa, phần mềm truyền hình ảnh, âm thanh, thao tác bàn phím và chuột, văn bản bảng nhớ tạm và tệp giữa các thiết bị tham gia phiên, tùy tính năng sử dụng. Nội dung phiên có thể chứa thông tin cá nhân hoặc công việc; hãy chỉ kết nối thiết bị bạn sở hữu hoặc được phép sử dụng, quản lý nội dung chia sẻ theo nhu cầu.
 
-**版本检查。** 桌面客户端启动后会获取版本信息；iOS 与 Android 客户端在连接成功并收到远端版本信息后，会获取最新桌面版本信息，用于提示升级。该请求不携带设备 ID 或远端版本号，但网络服务会处理完成请求所必需的网络信息。
+**Kiểm tra phiên bản.** Ứng dụng máy tính lấy thông tin phiên bản sau khi khởi động; ứng dụng iOS và Android lấy thông tin phiên bản máy tính mới nhất sau khi kết nối thành công và nhận thông tin phiên bản từ xa để nhắc nâng cấp. Yêu cầu này không mang ID thiết bị hoặc số phiên bản từ xa, nhưng dịch vụ mạng xử lý thông tin mạng cần thiết để hoàn tất yêu cầu.
 
-CrossDesk 未集成广告投放、广告追踪或用户行为分析功能。客户端不会主动上传诊断日志、崩溃报告或用户行为分析数据。您主动向我们提交问题或日志时，请先移除与问题无关的个人信息及连接凭据。
+CrossDesk không tích hợp phân phối quảng cáo, theo dõi quảng cáo hoặc phân tích hành vi người dùng. Ứng dụng không chủ động tải lên nhật ký chẩn đoán, báo cáo sự cố hay dữ liệu phân tích hành vi người dùng. Khi chủ động gửi sự cố hoặc nhật ký cho chúng tôi, hãy xóa thông tin cá nhân và thông tin xác thực kết nối không liên quan trước.
 
-### 三、数据传输与相关服务
+### III. Truyền dữ liệu và các dịch vụ liên quan
 
-我们提供设备登记、连接协商、中继转发及版本检查服务。即使您使用自托管连接服务，客户端仍会按前述条件访问我们提供的版本服务。
+Chúng tôi cung cấp dịch vụ đăng ký thiết bị, thương lượng kết nối, chuyển tiếp và kiểm tra phiên bản. Ngay cả khi bạn dùng dịch vụ kết nối tự lưu trữ (self-host), ứng dụng vẫn truy cập dịch vụ phiên bản do chúng tôi cung cấp theo các điều kiện đã nêu.
 
-远程会话内容优先在参与会话的设备间直接传输，必要时通过配置的中继服务器转发。中继服务用于实时转发，不提供会话录像或文件归档。客户端本地保存的画面预览和接收文件，按本政策相关说明处理。
+Nội dung phiên từ xa ưu tiên truyền trực tiếp giữa thiết bị tham gia, khi cần sẽ qua máy chủ chuyển tiếp được cấu hình. Dịch vụ chuyển tiếp dùng để chuyển tiếp theo thời gian thực, không cung cấp ghi hình phiên hay lưu trữ tệp. Ảnh xem trước và tệp nhận được lưu cục bộ trên ứng dụng được xử lý theo các phần liên quan trong chính sách này.
 
-自托管服务器由您选择的运营者管理。更换连接服务器后，设备登记、连接协商及中继数据将由相应运营者处理。
+Máy chủ tự lưu trữ do nhà vận hành bạn chọn quản lý. Sau khi đổi máy chủ kết nối, nhà vận hành tương ứng sẽ xử lý đăng ký thiết bị, thương lượng kết nối và dữ liệu chuyển tiếp.
 
-### 四、信息保存与安全措施
+### IV. Lưu thông tin và biện pháp bảo mật
 
-**客户端本地数据。** 软件会在本机保存连接设置、用户偏好、最近连接记录及必要的运行日志，以支持后续使用和故障排查。iOS 中的本机登录凭据及您选择记住的远程连接密码保存在系统钥匙串中，不通过 iCloud 钥匙串同步；旧版偏好中的本机登录凭据在成功迁入钥匙串后删除。
+**Dữ liệu cục bộ của ứng dụng.** Phần mềm lưu cài đặt kết nối, tùy chọn người dùng, lịch sử kết nối gần đây và nhật ký vận hành cần thiết trên máy này để hỗ trợ sử dụng sau và khắc phục sự cố. Thông tin đăng nhập máy này và mật khẩu kết nối từ xa bạn chọn ghi nhớ trên iOS được lưu trong chuỗi khóa hệ thống, không đồng bộ qua Chuỗi khóa iCloud; thông tin đăng nhập máy này trong tùy chọn cũ được xóa sau khi chuyển thành công vào chuỗi khóa.
 
-Android 中的设备身份及您选择保存的访问密码使用 Android Keystore 密钥加密后保存在本机，应用本地数据不纳入设备备份。
+Trên Android, danh tính thiết bị và mật khẩu truy cập bạn chọn lưu được mã hóa bằng khóa Android Keystore rồi lưu trên máy này; dữ liệu cục bộ ứng dụng không nằm trong bản sao lưu thiết bị.
 
-**远程画面预览。** iOS 与 Android 默认不保存远程画面预览。只有您在“设置 → 隐私”单独开启并确认后，才会从下一次连接起，每次连接保存一张远程画面，用于最近连接预览。预览仅保存在本机，不上传，并设置为不纳入设备备份。您可以单独清除预览；关闭保存或撤回隐私授权也会清除已有预览。旧版本未经此选择保存的预览会在升级后清理。
+**Ảnh xem trước màn hình từ xa.** iOS và Android mặc định không lưu ảnh xem trước màn hình từ xa. Chỉ sau khi bạn bật riêng và xác nhận trong “Cài đặt → Quyền riêng tư”, từ lần kết nối tiếp theo, mỗi lần kết nối mới lưu một ảnh màn hình từ xa để xem trước kết nối gần đây. Ảnh xem trước chỉ lưu trên máy này, không tải lên và được đặt không đưa vào bản sao lưu thiết bị. Bạn có thể xóa riêng ảnh xem trước; tắt lưu hoặc rút lại chấp thuận quyền riêng tư cũng xóa ảnh hiện có. Ảnh được bản cũ lưu mà chưa có lựa chọn này sẽ được dọn sau khi nâng cấp.
 
-**接收的文件。** iOS 接收文件保存在本应用的文件目录中，您可通过系统“文件”应用管理或删除。清除画面预览不会删除接收文件或最近连接记录。
+**Tệp nhận được.** Tệp nhận trên iOS lưu trong thư mục tệp của ứng dụng này; bạn có thể quản lý hoặc xóa bằng ứng dụng “Tệp” của hệ thống. Xóa ảnh xem trước không xóa tệp nhận hay lịch sử kết nối gần đây.
 
-**服务端记录。** 为支持再次连接、服务运维和安全排查，设备身份、状态、关联记录及运行日志可能在连接结束后继续保存。保存范围和期限受服务运行需要、部署规则及适用的保留要求约束。您可以通过下述联系方式查询与您设备相关的信息及保存期限，或提出删除请求。撤回隐私授权、删除本地记录或卸载客户端，不会自动删除已产生的服务端记录；日志、备份和快照需分别核查和处理。
+**Bản ghi máy chủ.** Để hỗ trợ kết nối lại, vận hành dịch vụ và điều tra bảo mật, danh tính, trạng thái, bản ghi liên kết thiết bị và nhật ký vận hành có thể tiếp tục được lưu sau khi kết nối kết thúc. Phạm vi và thời hạn lưu chịu ràng buộc bởi nhu cầu vận hành dịch vụ, quy tắc triển khai và yêu cầu lưu giữ áp dụng. Bạn có thể dùng thông tin liên hệ dưới đây để hỏi về thông tin liên quan thiết bị của mình và thời hạn lưu hoặc yêu cầu xóa. Rút lại chấp thuận quyền riêng tư, xóa lịch sử cục bộ hoặc gỡ ứng dụng không tự xóa bản ghi máy chủ đã tạo; nhật ký, bản sao lưu và ảnh chụp nhanh cần được kiểm tra và xử lý riêng.
 
-iOS 通过系统钥匙串和文件保护机制保护相应本地数据，默认信令连接进行 TLS 证书校验。请妥善保管设备和连接凭据，避免向无关人员共享访问密码。
+iOS bảo vệ dữ liệu cục bộ tương ứng bằng chuỗi khóa hệ thống và cơ chế bảo vệ tệp; kết nối báo hiệu mặc định xác minh chứng chỉ TLS. Hãy bảo quản thiết bị và thông tin xác thực kết nối, tránh chia sẻ mật khẩu truy cập cho người không liên quan.
 
-Android 与鸿蒙移动端默认信令连接同样进行 TLS 证书校验。
+Kết nối báo hiệu mặc định trên Android và HarmonyOS di động cũng xác minh chứng chỉ TLS.
 
-鸿蒙移动端使用系统 Asset Store 加密保存设备身份及您选择保存的访问密码，明确禁止凭据跨设备同步。设置和连接记录按服务器隔离。远程预览默认关闭，单独确认后从下一次连接起保存一张 640×360 预览；预览保存在应用私有缓存中，不上传，可随时清除，也可能被系统回收。关闭预览或撤回联网授权会清除预览。接收文件保存在应用私有目录，您可在会话中通过系统文件选择器导出。
+HarmonyOS di động dùng Asset Store hệ thống để mã hóa và lưu danh tính thiết bị cùng mật khẩu truy cập bạn chọn lưu, cấm rõ việc đồng bộ thông tin xác thực giữa các thiết bị. Cài đặt và lịch sử kết nối tách riêng theo máy chủ. Xem trước từ xa mặc định tắt; sau khi xác nhận riêng, từ lần kết nối sau lưu một ảnh 640×360; ảnh ở bộ nhớ đệm riêng của ứng dụng, không tải lên, có thể xóa bất kỳ lúc nào và cũng có thể bị hệ thống thu hồi. Tắt xem trước hoặc rút lại quyền kết nối mạng sẽ xóa ảnh xem trước. Tệp nhận lưu trong thư mục riêng của ứng dụng; bạn có thể xuất qua trình chọn tệp hệ thống trong phiên.
 
-### 五、移动端权限与授权选择
+### V. Quyền trên thiết bị di động và lựa chọn cấp quyền
 
-**隐私授权。** iOS、Android 与鸿蒙移动端 首次使用，或从未提供此选择的旧版升级时，您需阅读本政策、主动勾选并点击同意后，客户端才会登记本机身份、连接信令服务和查询设备在线状态。拒绝后仍可查看设置、离线隐私政策和本地连接记录，远程连接功能暂不可用。未授权时，重新打开或从后台返回应用会再次提示。
+**Chấp thuận quyền riêng tư.** Khi dùng iOS, Android và HarmonyOS di động lần đầu hoặc nâng cấp từ bản cũ chưa cung cấp lựa chọn này, bạn cần đọc chính sách, chủ động đánh dấu chọn và nhấn đồng ý trước khi ứng dụng đăng ký danh tính máy này, kết nối dịch vụ báo hiệu và truy vấn trạng thái trực tuyến thiết bị. Nếu từ chối, bạn vẫn xem được cài đặt, chính sách quyền riêng tư ngoại tuyến và lịch sử kết nối cục bộ, tính năng kết nối từ xa tạm không khả dụng. Khi chưa chấp thuận, mở lại ứng dụng hoặc trở về từ nền sẽ nhắc lại.
 
-**撤回同意。** 您可以在“设置 → 隐私 → 隐私与授权”中查看隐私政策、授权状态或撤回授权。客户端将停止远程会话、信令连接和版本检查，关闭并清除本地画面预览。再次使用连接功能前需重新同意；重新同意不会自动开启画面预览保存。撤回不影响撤回前已经发生的信息处理，也不等同于删除服务端数据。
+**Rút lại đồng ý.** Bạn có thể xem chính sách quyền riêng tư, trạng thái chấp thuận hoặc rút lại chấp thuận trong “Cài đặt → Quyền riêng tư → Quyền riêng tư và cấp quyền”. Ứng dụng dừng phiên từ xa, kết nối báo hiệu và kiểm tra phiên bản, tắt và xóa ảnh xem trước cục bộ. Cần đồng ý lại trước khi dùng lại tính năng kết nối; đồng ý lại không tự bật lưu ảnh xem trước. Việc rút lại không ảnh hưởng xử lý thông tin đã diễn ra trước đó, cũng không đồng nghĩa xóa dữ liệu máy chủ.
 
-**系统权限与会话功能。** iOS 客户端作为控制端接收远程电脑的画面与音频，不采集本机屏幕、摄像头或麦克风。局域网访问权限用于连接本地网络中的设备，您可在系统设置中管理。发送文件通过系统文件选择器选择，不要求开放整个文件库。当前 iOS 界面不读取或发送本机剪贴板文本；远端发送的剪贴板文本可在会话中写入本机剪贴板。
+**Quyền hệ thống và tính năng phiên.** Ứng dụng iOS đóng vai trò máy điều khiển nhận hình ảnh và âm thanh máy tính từ xa, không thu màn hình, camera hay micrô máy này. Quyền truy cập mạng cục bộ dùng để kết nối thiết bị trong mạng cục bộ; bạn có thể quản lý trong cài đặt hệ thống. Tệp gửi được chọn qua trình chọn tệp hệ thống, không yêu cầu mở toàn bộ thư viện tệp. Giao diện iOS hiện không đọc hay gửi văn bản bảng nhớ tạm máy này; văn bản bảng nhớ tạm do máy từ xa gửi có thể được ghi vào bảng nhớ tạm máy này trong phiên.
 
-Android 客户端同样作为控制端接收远程画面与音频，不采集本机屏幕、摄像头或麦克风。发送及保存文件通过系统文件选择器完成，不要求开放整个文件库。剪贴板文本仅在您主动发送或复制远端文本时传输或写入本机，会话结束时清除应用内缓存的远端剪贴板文本。
+Ứng dụng Android cũng đóng vai trò máy điều khiển nhận hình ảnh và âm thanh từ xa, không thu màn hình, camera hay micrô máy này. Gửi và lưu tệp qua trình chọn tệp hệ thống, không yêu cầu mở toàn bộ thư viện tệp. Văn bản bảng nhớ tạm chỉ truyền hoặc ghi vào máy này khi bạn chủ động gửi hoặc sao chép văn bản từ xa; văn bản bảng nhớ tạm từ xa được lưu đệm trong ứng dụng sẽ xóa khi phiên kết thúc.
 
-Android 远程会话优先使用系统画中画在切换应用后继续显示画面。画中画不可用时，通过前台服务和连接通知保持您已建立的远程连接；后台暂停本地画面渲染和音频播放，不申请悬浮窗权限。通知权限用于提供返回及断开入口，CPU 唤醒锁用于会话后台期间维持连接，返回前台或会话结束时释放。您可以在应用或连接通知中断开，移除应用任务也会结束会话及保活服务。
+Phiên từ xa Android ưu tiên hình trong hình hệ thống để tiếp tục hiển thị hình ảnh khi bạn chuyển ứng dụng. Khi hình trong hình không khả dụng, dịch vụ tiền cảnh và thông báo kết nối giữ kết nối từ xa bạn đã thiết lập; ở nền, tạm dừng kết xuất hình ảnh cục bộ và phát âm thanh, không yêu cầu quyền cửa sổ nổi. Quyền thông báo cung cấp lối vào quay lại và ngắt kết nối; khóa đánh thức CPU giữ kết nối trong thời gian phiên ở nền, được nhả khi về tiền cảnh hoặc kết thúc phiên. Bạn có thể ngắt trong ứng dụng hoặc thông báo kết nối; xóa tác vụ ứng dụng cũng kết thúc phiên và dịch vụ duy trì kết nối.
 
-鸿蒙手机和平板只作为控制端，不申请本机录屏、输入注入、摄像头或麦克风权限；文件选择和剪贴板操作由您主动触发。已建立会话在切入后台时优先使用系统画中画，提供静音控制；画中画不可用时申请数据传输后台任务并显示系统通知。若系统不允许或停止后台任务且画中画不可用，会话会断开。后台切换释放远端按键；空闲后台不维持信令连接。完成联网授权后，应用在前台检查鸿蒙本机版本，并在连接后检查远端版本；版本请求不携带设备身份或远端版本。
+Điện thoại và máy tính bảng HarmonyOS chỉ làm máy điều khiển, không yêu cầu quyền ghi màn hình, chèn đầu vào, camera hay micrô máy này; chọn tệp và thao tác bảng nhớ tạm do bạn chủ động kích hoạt. Phiên đã thiết lập ưu tiên hình trong hình hệ thống khi về nền, có điều khiển tắt tiếng; nếu không khả dụng thì yêu cầu tác vụ nền truyền dữ liệu và hiện thông báo hệ thống. Nếu hệ thống không cho phép hoặc dừng tác vụ nền trong khi hình trong hình không khả dụng, phiên sẽ ngắt. Chuyển về nền nhả phím từ xa; ứng dụng rảnh ở nền không giữ kết nối báo hiệu. Sau khi cấp quyền kết nối mạng, ứng dụng kiểm tra phiên bản HarmonyOS máy này ở tiền cảnh và kiểm tra phiên bản từ xa sau kết nối; yêu cầu phiên bản không mang danh tính thiết bị hay phiên bản từ xa.
 
-应用及通信组件使用本地文件元数据、应用偏好和计时接口实现文件传输、设置保存及网络计时，不使用这些信息制作设备指纹或进行广告追踪。
+Ứng dụng và thành phần liên lạc dùng siêu dữ liệu tệp cục bộ, tùy chọn ứng dụng và giao diện thời gian để truyền tệp, lưu cài đặt và đo thời gian mạng, không dùng thông tin này để tạo dấu vân tay thiết bị hay theo dõi quảng cáo.
 
-### 六、查询与删除请求
+### VI. Yêu cầu truy vấn và xóa
 
-您可以管理本地最近连接记录、保存的画面预览及接收文件。删除某条最近连接记录时，其预览及已保存的远程连接密码也会删除。
+Bạn có thể quản lý lịch sử kết nối gần đây cục bộ, ảnh xem trước đã lưu và tệp nhận được. Xóa một bản ghi kết nối gần đây cũng xóa ảnh xem trước và mật khẩu kết nối từ xa đã lưu của nó.
 
-如需查询、获取数据摘要或删除默认服务中与您设备相关的记录，请通过下述邮箱联系我们，说明设备 ID 和请求范围。为避免未经授权的披露或删除，我们会核实请求权限；请勿通过邮件发送访问密码、私钥或其他敏感凭据。
+Để truy vấn, nhận bản tóm tắt dữ liệu hoặc xóa bản ghi liên quan thiết bị của bạn trong dịch vụ mặc định, hãy liên hệ qua email dưới đây, nêu ID thiết bị và phạm vi yêu cầu. Để tránh tiết lộ hoặc xóa trái phép, chúng tôi xác minh quyền của người yêu cầu; không gửi mật khẩu truy cập, khóa riêng hoặc thông tin xác thực nhạy cảm khác qua email.
 
-删除服务端设备身份后，原身份及对应凭据将失效，再次连接可能登记为新设备。数据库记录的删除不表示日志、备份或其他设备上已接收的内容同时删除。使用自托管服务时，请向相应服务器运营者提出服务端数据请求。
+Sau khi xóa danh tính thiết bị trên máy chủ, danh tính gốc và thông tin xác thực tương ứng mất hiệu lực; kết nối lại có thể đăng ký thành thiết bị mới. Xóa bản ghi cơ sở dữ liệu không có nghĩa nhật ký, bản sao lưu hoặc nội dung đã nhận trên thiết bị khác cũng bị xóa. Khi dùng dịch vụ tự lưu trữ (self-host), hãy gửi yêu cầu dữ liệu máy chủ đến nhà vận hành máy chủ tương ứng.
 
-### 七、政策更新与联系方式
+### VII. Thay đổi chính sách và thông tin liên hệ
 
-本政策可能随功能及服务方式调整而更新，更新后的内容和日期将在隐私政策中公布。您可随时在应用设置中查阅当前随应用提供的政策文本。
+Chính sách này có thể cập nhật theo thay đổi tính năng và cách cung cấp dịch vụ; nội dung mới và ngày cập nhật sẽ công bố trong chính sách quyền riêng tư. Bạn có thể xem văn bản chính sách hiện đi kèm ứng dụng trong cài đặt bất kỳ lúc nào.
 
-如对本政策或个人信息处理有疑问，请联系：
+Nếu có thắc mắc về chính sách này hoặc việc xử lý thông tin cá nhân, hãy liên hệ:
 
-邮箱：[junkun.di@hotmail.com](mailto:junkun.di@hotmail.com)
+Email: [junkun.di@hotmail.com](mailto:junkun.di@hotmail.com)
 
 ---
 

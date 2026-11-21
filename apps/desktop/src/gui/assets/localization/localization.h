@@ -40,7 +40,7 @@ inline const std::vector<LanguageOption>& GetSupportedLanguages() {
       {"zh-CN", "简体中文"}, {"en-US", "English"}, {"ru-RU", "Русский"},
       {"zh-Hant", "繁體中文"}, {"ja", "日本語"}, {"ko", "한국어"},
       {"de", "Deutsch"}, {"fr", "Français"}, {"es", "Español"},
-      {"pt-BR", "Português (Brasil)"}};
+      {"pt-BR", "Português (Brasil)"}, {"vi", "Tiếng Việt"}};
   return kSupportedLanguages;
 }
 
@@ -48,8 +48,8 @@ namespace detail {
 
 inline int ClampLanguageIndex(int language_index) {
   if (language_index == kSystemLanguage) return SystemLanguage();
-  return language_index >= 0 && language_index < kSystemLanguage
-             ? language_index : kEnglishLanguage;
+  return language_index >= 0 && language_index <= kVietnameseLanguage
+             ? language_index : kVietnameseLanguage;
 }
 
 using TranslationTable = std::unordered_map<std::string, std::vector<std::string>>;
@@ -67,7 +67,7 @@ inline const std::string& GetLiteralText(const std::string& key, int language) {
   const auto it = LiteralTable().find(key);
   if (it == LiteralTable().end()) return empty;
   const auto& values = it->second;
-  return values[ClampLanguageIndex(language)];
+  return values[TranslationColumn(ClampLanguageIndex(language))];
 }
 inline const std::string& GetTranslatedText(const std::string& key, int language) {
   static const std::unordered_map<std::string, std::string> names = [] {
@@ -115,7 +115,7 @@ inline const wchar_t* GetWindowsLocalizedLabel(
     int language_index, const char* key, const wchar_t* fallback,
     std::vector<std::wstring>& cache) {
   const int normalized_index = detail::ClampLanguageIndex(language_index);
-  std::wstring& cached_text = cache[normalized_index];
+  std::wstring& cached_text = cache[detail::TranslationColumn(normalized_index)];
   if (!cached_text.empty()) {
     return cached_text.c_str();
   }

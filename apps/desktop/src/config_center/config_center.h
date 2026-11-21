@@ -22,7 +22,7 @@ class ConfigCenter {
   enum class LANGUAGE {
     CHINESE = 0, ENGLISH = 1, RUSSIAN = 2, TRADITIONAL_CHINESE = 3,
     JAPANESE = 4, KOREAN = 5, GERMAN = 6, FRENCH = 7, SPANISH = 8,
-    BRAZILIAN_PORTUGUESE = 9, SYSTEM = 10
+    BRAZILIAN_PORTUGUESE = 9, SYSTEM = 10, VIETNAMESE = 11
   };
   enum class CONNECTION_MODE { DEVICE_ID = 0, DIRECT_IP = 1 };
   enum class VIDEO_ENCODE_FORMAT { H264 = 0, AV1 = 1 };
@@ -104,7 +104,7 @@ class ConfigCenter {
   std::unique_ptr<IniStorage> ini_;
   const char* section_ = "Settings";
 
-  LANGUAGE language_ = LANGUAGE::SYSTEM;
+  LANGUAGE language_ = LANGUAGE::VIETNAMESE;
   CONNECTION_MODE connection_mode_ = CONNECTION_MODE::DEVICE_ID;
   bool enable_ip_direct_ = true;
   VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::H264;

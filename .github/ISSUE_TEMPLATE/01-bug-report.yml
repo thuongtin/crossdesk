@@ -1,5 +1,5 @@
-name: 问题反馈 / Bug report
-description: 报告 CrossDesk 的错误或异常行为。Report a bug or unexpected behavior in CrossDesk.
+name: Báo lỗi / Bug report
+description: Báo lỗi hoặc hành vi bất thường của CrossDesk. Report a bug or unexpected behavior in CrossDesk.
 title: "[Bug] "
 labels: [bug]
 assignees: [kunkundi]
@@ -7,22 +7,22 @@ body:
   - type: markdown
     attributes:
       value: |
-        只需描述问题，其余选填。中文或英文均可。
-        Only a problem description is required. Chinese or English is welcome.
+        Chỉ cần mô tả vấn đề, các mục khác tùy chọn. Bạn có thể dùng tiếng Việt hoặc tiếng Anh.
+        Only a problem description is required. Vietnamese or English is welcome.
 
   - type: textarea
     id: problem
     attributes:
-      label: 问题描述 / Problem description
-      description: 遇到了什么问题？如方便，也请说明触发操作或错误提示。What went wrong? If possible, include what you were doing or any error message.
+      label: Mô tả vấn đề / Problem description
+      description: Bạn gặp vấn đề gì? Nếu tiện, nêu thao tác gây lỗi hoặc thông báo lỗi. What went wrong? If possible, include what you were doing or any error message.
     validations:
       required: true
 
   - type: input
     id: environment
     attributes:
-      label: 使用环境（选填） / Environment (optional)
-      description: 操作系统和 CrossDesk 版本；连接问题可填写两端信息。OS and CrossDesk version; include both devices for connection issues.
+      label: Môi trường (tùy chọn) / Environment (optional)
+      description: Hệ điều hành và phiên bản CrossDesk; lỗi kết nối có thể ghi cả hai thiết bị. OS and CrossDesk version; include both devices for connection issues.
       placeholder: Windows 11 → macOS 15; CrossDesk x.y.z
     validations:
       required: false
@@ -30,9 +30,9 @@ body:
   - type: textarea
     id: attachments
     attributes:
-      label: 截图或日志（选填） / Screenshots or logs (optional)
+      label: Ảnh chụp hoặc nhật ký (tùy chọn) / Screenshots or logs (optional)
       description: |
-        可直接拖入截图、录屏或日志文件，请隐去密码等敏感信息。
+        Có thể kéo thả ảnh chụp, ghi màn hình hoặc tệp nhật ký; hãy che mật khẩu và thông tin nhạy cảm khác.
         Drag in screenshots, recordings, or logs. Hide passwords and other sensitive information.
     validations:
       required: false

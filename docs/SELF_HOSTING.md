@@ -1,37 +1,37 @@
-# 自托管服务器
+# Máy chủ tự lưu trữ (self-host)
 
-[返回 README](../README.md) · [English](SELF_HOSTING_EN.md)
+[Về README](../README.md) · [English](SELF_HOSTING_EN.md)
 
-CrossDesk 的信令服务与 TURN 中继由独立的 [CrossDesk Server](https://github.com/kunkundi/crossdesk-server) 项目维护。本页说明部署入口与当前客户端的配置方法；服务端文件请使用同一 Release 中的配套版本。
+Dịch vụ báo hiệu và chuyển tiếp TURN của CrossDesk được duy trì trong dự án riêng [CrossDesk Server](https://github.com/kunkundi/crossdesk-server). Trang này trình bày lối vào triển khai và cách cấu hình ứng dụng hiện tại; hãy dùng các tệp máy chủ đồng bộ trong cùng một Release.
 
-使用公共服务时无需自行部署。需要让设备接入自己的服务器时，再按本页操作。升级到要求设备身份认证的新版客户端前，请先更新服务端，再让两端使用同一服务器地址和端口。
+Khi dùng dịch vụ công cộng, bạn không cần tự triển khai. Chỉ làm theo trang này khi cần kết nối thiết bị đến máy chủ riêng. Trước khi nâng cấp lên ứng dụng mới yêu cầu xác thực danh tính thiết bị, hãy cập nhật máy chủ trước, rồi cho cả hai bên dùng cùng địa chỉ và cổng máy chủ.
 
-## 1. 部署服务端
+## 1. Triển khai máy chủ
 
-以下步骤面向已安装 Docker Engine 和 Compose 插件的 Linux 服务器；先确认 `docker compose version` 可用。当前 Compose 使用主机网络，分别运行信令服务和 Coturn。
+Các bước sau dành cho máy chủ Linux đã cài Docker Engine và plugin Compose; trước hết xác nhận `docker compose version` hoạt động. Compose hiện dùng mạng máy chủ, chạy riêng dịch vụ báo hiệu và Coturn.
 
-按 [服务端部署文档](https://github.com/kunkundi/crossdesk-server#运行服务)，从其 [Releases](https://github.com/kunkundi/crossdesk-server/releases) 下载 `compose.yaml` 和 `env.example`，放到同一目录。在该目录执行：
+Theo [tài liệu triển khai máy chủ](https://github.com/kunkundi/crossdesk-server#运行服务), tải `compose.yaml` và `env.example` từ [Releases](https://github.com/kunkundi/crossdesk-server/releases) của dự án đó, đặt vào cùng thư mục. Thực hiện trong thư mục này:
 
 ```bash
 cp env.example .env
 ```
 
-用文本编辑器修改 `.env`，至少核对以下内容，填写完成后再启动。完整参数以配套的环境文件为准，也可参考服务端仓库的 [环境变量示例](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/.env.example)。
+Dùng trình soạn thảo văn bản sửa `.env`, kiểm tra ít nhất các mục sau, nhập xong rồi mới khởi động. Tham số đầy đủ theo tệp môi trường đi kèm; bạn cũng có thể tham khảo [ví dụ biến môi trường](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/.env.example) trong kho máy chủ.
 
-| 配置 | 填写内容 |
+| Cấu hình | Nội dung cần nhập |
 | --- | --- |
-| `CROSSDESK_IMAGE` | 与下载的配置匹配的固定发布 tag |
-| `EXTERNAL_IP` / `INTERNAL_IP` | 服务器真实公网 / 内网 IP；不要直接使用示例地址 |
-| `CROSSDESK_SERVER_PORT` | 信令端口，例如 `9099` |
-| `COTURN_PORT` | 中继端口，例如 `3478` |
-| `MIN_PORT` / `MAX_PORT` | TURN 媒体端口范围 |
-| `COTURN_AUTH_SECRET` | 信令服务与 Coturn 的共享密钥；不填入客户端 |
-| `COTURN_STATELESS_NONCE_SECRET` | 独立生成、持久保存的 nonce 密钥 |
-| `CROSSDESK_DATA_DIR` / `CROSSDESK_LOG_DIR` | 数据、证书和日志的持久化位置 |
+| `CROSSDESK_IMAGE` | Tag phát hành cố định khớp cấu hình đã tải |
+| `EXTERNAL_IP` / `INTERNAL_IP` | IP công cộng / nội bộ thực tế của máy chủ; không dùng trực tiếp địa chỉ ví dụ |
+| `CROSSDESK_SERVER_PORT` | Cổng báo hiệu, ví dụ `9099` |
+| `COTURN_PORT` | Cổng chuyển tiếp, ví dụ `3478` |
+| `MIN_PORT` / `MAX_PORT` | Phạm vi cổng đa phương tiện TURN |
+| `COTURN_AUTH_SECRET` | Khóa bí mật dùng chung của dịch vụ báo hiệu và Coturn; không nhập vào ứng dụng |
+| `COTURN_STATELESS_NONCE_SECRET` | Khóa bí mật nonce được tạo riêng và lưu bền vững |
+| `CROSSDESK_DATA_DIR` / `CROSSDESK_LOG_DIR` | Vị trí lưu bền vững dữ liệu, chứng chỉ và nhật ký |
 
-两个密钥分别用 `openssl rand -hex 32` 生成。防火墙及云安全组需允许信令端口 TCP、中继端口 TCP/UDP，以及所选媒体端口范围 UDP。容器挂载和网络配置见 [官方 Compose 文件](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/compose.yaml)。
+Tạo riêng hai khóa bí mật bằng `openssl rand -hex 32`. Tường lửa và nhóm bảo mật đám mây cần cho phép cổng báo hiệu TCP, cổng chuyển tiếp TCP/UDP và phạm vi cổng đa phương tiện UDP đã chọn. Xem cấu hình gắn kết container và mạng trong [tệp Compose chính thức](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/compose.yaml).
 
-保存配置后，校验并启动：
+Sau khi lưu cấu hình, kiểm tra và khởi động:
 
 ```bash
 sudo docker compose config -q
@@ -40,33 +40,33 @@ sudo docker compose up -d
 sudo docker compose ps
 ```
 
-## 2. 配置桌面客户端
+## 2. Cấu hình ứng dụng máy tính
 
-使用自签证书时，先按 [证书信任步骤](#3-配置信任证书) 在两端导入根证书，再检查连接状态。
+Khi dùng chứng chỉ tự ký, trước hết nhập chứng chỉ gốc trên cả hai bên theo [các bước tin cậy chứng chỉ](#3-cấu-hình-tin-cậy-chứng-chỉ), rồi kiểm tra trạng thái kết nối.
 
-1. 断开现有会话，点击主窗口右上角 **☰ → 设置**。
-2. 在设置列表中向下滚动，点击 **自托管配置** 一行的 **编辑** 按钮。
-3. 填写 **服务器地址**、**信令服务端口**，点击“确认”。地址支持主机名或 IP（如 `my-server.example.com`），也支持带路径的信令地址（如 `my-server.example.com/signal-path`）或 `https://` / `wss://` URL。URL 内明确填写的端口优先；否则使用单独填写的信令服务端口。所有连接均使用 WSS，带路径的地址需要反向代理将该路径转发到信令 WebSocket 服务，普通网页地址不能直接用于信令连接。
-4. 回到设置窗口，打开 **自托管配置** 右侧开关，再点击“保存”。
-5. 在控制端和被控端执行相同配置。等待两端都显示“已连接服务器”，再使用被控端当前显示的 ID 发起连接。
+1. Ngắt các phiên hiện có, nhấn **☰ → Cài đặt** ở góc trên bên phải cửa sổ chính.
+2. Cuộn xuống trong danh sách cài đặt, nhấn nút **Chỉnh sửa** ở hàng **Cấu hình máy chủ tự lưu trữ (self-host)**.
+3. Nhập **Địa chỉ máy chủ**, **Cổng dịch vụ báo hiệu**, nhấn “Xác nhận”. Địa chỉ hỗ trợ tên máy hoặc IP (như `my-server.example.com`), địa chỉ báo hiệu có đường dẫn (như `my-server.example.com/signal-path`) hoặc URL `https://` / `wss://`. Cổng được ghi rõ trong URL được ưu tiên; nếu không, dùng cổng dịch vụ báo hiệu nhập riêng. Mọi kết nối đều dùng WSS; địa chỉ có đường dẫn cần proxy ngược chuyển tiếp đường dẫn đó đến dịch vụ WebSocket báo hiệu, địa chỉ trang web thông thường không thể dùng trực tiếp cho kết nối báo hiệu.
+4. Trở về cửa sổ cài đặt, bật công tắc bên phải **Cấu hình máy chủ tự lưu trữ (self-host)** rồi nhấn “Lưu”.
+5. Cấu hình giống nhau trên máy điều khiển và máy được điều khiển. Chờ cả hai bên hiển thị “Đã kết nối máy chủ”, rồi dùng ID hiện hiển thị trên máy được điều khiển để kết nối.
 
-地址与端口在最后确认设置时一起保存；格式无效或保存失败时会保留输入并显示错误。
+Địa chỉ và cổng được lưu cùng nhau khi xác nhận cài đặt cuối cùng; nếu định dạng không hợp lệ hoặc lưu thất bại, nội dung nhập được giữ và lỗi được hiển thị.
 
 <p align="center">
-  <img src="images/desktop-self-hosted-zh.png" width="720" alt="当前 Slint 客户端自托管设置：服务器地址与信令端口" />
+  <img src="images/desktop-self-hosted-zh.png" width="720" alt="Cài đặt tự lưu trữ của ứng dụng Slint hiện tại: địa chỉ máy chủ và cổng báo hiệu" />
 </p>
 
-切换服务器后请重新核对本机 ID；设备身份与服务端相关，旧服务上的 ID 不应直接套用。
+Sau khi chuyển máy chủ, hãy kiểm tra lại ID máy này; danh tính thiết bị gắn với máy chủ, không nên áp dụng trực tiếp ID của dịch vụ cũ.
 
-## 3. 配置信任证书
+## 3. Cấu hình tin cậy chứng chỉ
 
-客户端通过 TLS 连接信令服务。证书必须覆盖填写的域名 / IP，且被客户端系统信任。使用受信任 CA 签发的证书时按服务端说明配置证书链；使用自签证书时，需要信任自己部署的根证书。
+Ứng dụng kết nối dịch vụ báo hiệu qua TLS. Chứng chỉ phải bao gồm tên miền / IP đã nhập và được hệ thống ứng dụng tin cậy. Khi dùng chứng chỉ do CA đáng tin cậy cấp, cấu hình chuỗi chứng chỉ theo hướng dẫn máy chủ; khi dùng chứng chỉ tự ký, cần tin cậy chứng chỉ gốc do bạn triển khai.
 
-默认的 [证书生成脚本](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/docker/generate_certs.sh) 只将 `EXTERNAL_IP` 写入证书的地址范围；使用这份证书时，客户端应填写该 IP。改用域名需要配置包含该域名的证书。已有证书存在时，[启动脚本](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/docker/start.sh) 会复用它们，修改 `.env` 中的 IP 不会自动更新证书。
+[Script tạo chứng chỉ](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/docker/generate_certs.sh) mặc định chỉ ghi `EXTERNAL_IP` vào phạm vi địa chỉ của chứng chỉ; khi dùng chứng chỉ này, bạn nên nhập IP đó trong ứng dụng. Chuyển sang tên miền cần cấu hình chứng chỉ chứa tên miền đó. Khi đã có chứng chỉ, [script khởi động](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/docker/start.sh) dùng lại chúng; đổi IP trong `.env` không tự cập nhật chứng chỉ.
 
-默认证书文件位于服务端数据目录下的 `certs/`。将自己服务器的 `api.crossdesk.cn_root.crt` 下载到客户端机器，再执行对应平台命令；不要导入来源不明的根证书。
+Tệp chứng chỉ mặc định ở `certs/` trong thư mục dữ liệu máy chủ. Tải `api.crossdesk.cn_root.crt` từ máy chủ của bạn về máy chạy ứng dụng, rồi thực hiện lệnh cho nền tảng tương ứng; không nhập chứng chỉ gốc không rõ nguồn gốc.
 
-**Windows（管理员 PowerShell）：**
+**Windows (PowerShell với quyền quản trị viên):**
 
 ```powershell
 certutil -addstore "Root" "C:\path\to\api.crossdesk.cn_root.crt"
@@ -86,18 +86,18 @@ sudo security add-trusted-cert -d -r trustRoot \
   -k /Library/Keychains/System.keychain /path/to/api.crossdesk.cn_root.crt
 ```
 
-完成后重新打开客户端。自签证书并不等于没有加密，但根证书信任和主机名校验必须正确配置。
+Sau khi xong, mở lại ứng dụng. Chứng chỉ tự ký không có nghĩa là không mã hóa, nhưng bắt buộc cấu hình đúng tin cậy chứng chỉ gốc và xác minh tên máy.
 
-## 4. Web 与 iOS
+## 4. Web và iOS
 
-- **Web：** 按 [Web 客户端项目](https://github.com/kunkundi/crossdesk-web-client) 配置自己的信令连接。浏览器必须信任该服务的证书；不要通过关闭 TLS 校验解决证书错误。
-- **iOS：** 在“设置 → 服务器”填写信令服务器、信令端口与 STUN/TURN 端口，然后点击“应用”。自签证书需要在设备上安装对应根证书并启用信任。
+- **Web:** Cấu hình kết nối báo hiệu riêng theo [dự án ứng dụng Web](https://github.com/kunkundi/crossdesk-web-client). Trình duyệt phải tin cậy chứng chỉ của dịch vụ này; không khắc phục lỗi chứng chỉ bằng cách tắt xác minh TLS.
+- **iOS:** Nhập máy chủ báo hiệu, cổng báo hiệu và cổng STUN/TURN trong “Cài đặt → Máy chủ”, rồi nhấn “Áp dụng”. Chứng chỉ tự ký cần cài chứng chỉ gốc tương ứng trên thiết bị và bật tin cậy.
 
-## 排查顺序
+## Thứ tự khắc phục sự cố
 
-- **未连接服务器 / TLS 错误：** 先检查地址、信令端口、证书有效期、证书主机名及根证书信任。
-- **已连服务器但设备离线：** 确认两端连接同一服务、被控端仍在运行，并重新复制当前 ID。
-- **P2P 连接失败：** 默认已允许中继回退；可开启“强制中继连接”排查直连问题。检查 Coturn 状态、TURN 端口和媒体端口范围，并核对客户端与服务端版本兼容性。
-- **配置修改未生效：** 在配置目录重新执行 `sudo docker compose up -d`；单纯重启容器不会应用修改过的环境变量。
+- **Chưa kết nối máy chủ / lỗi TLS:** Kiểm tra địa chỉ, cổng báo hiệu, thời hạn chứng chỉ, tên máy trong chứng chỉ và tin cậy chứng chỉ gốc trước.
+- **Đã kết nối máy chủ nhưng thiết bị ngoại tuyến:** Xác nhận hai bên kết nối cùng dịch vụ, máy được điều khiển vẫn chạy và sao chép lại ID hiện tại.
+- **Kết nối P2P thất bại:** Mặc định đã cho phép chuyển sang chuyển tiếp khi cần; có thể bật “Buộc kết nối chuyển tiếp” để kiểm tra sự cố kết nối trực tiếp. Kiểm tra trạng thái Coturn, cổng TURN và phạm vi cổng đa phương tiện, đồng thời đối chiếu tương thích phiên bản ứng dụng và máy chủ.
+- **Thay đổi cấu hình chưa có hiệu lực:** Chạy lại `sudo docker compose up -d` trong thư mục cấu hình; chỉ khởi động lại container không áp dụng biến môi trường đã thay đổi.
 
-日志、备份和迁移操作请参考 [服务端维护说明](https://github.com/kunkundi/crossdesk-server)。
+Về thao tác nhật ký, sao lưu và di chuyển, tham khảo [tài liệu bảo trì máy chủ](https://github.com/kunkundi/crossdesk-server).

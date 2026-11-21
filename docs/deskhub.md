@@ -1,119 +1,119 @@
-# 桌面墙（DeskHub）使用指南
+# Hướng dẫn Bức tường màn hình (DeskHub)
 
-[返回首页](../README.md) · [完整使用指南](USER_GUIDE.md#deskhub) · [传输实现与接口](#传输实现与接口)
+[Về trang chủ](../README.md) · [Hướng dẫn sử dụng đầy đủ](USER_GUIDE.md#deskhub) · [Triển khai truyền tải và giao diện](#triển-khai-truyền-tải-và-giao-diện)
 
-桌面墙用来同时查看多台远程电脑，按分组整理设备，放大控制其中一台，或执行批量操作。从主窗口左上角的 **桌面墙** 打开。
+Bức tường màn hình dùng để xem nhiều máy tính từ xa cùng lúc, sắp xếp thiết bị theo nhóm, phóng to điều khiển một máy hoặc thao tác hàng loạt. Mở từ **Bức tường màn hình (DeskHub)** ở góc trên trái cửa sổ chính.
 
-## 添加和连接设备
+## Thêm và kết nối thiết bị
 
-1. 点击 **添加 → 通过设备 ID 添加**，填写设备 ID、密码及可选分组，再点击 **添加并连接**。
-2. 如果设备已在近期连接中，选择 **从近期连接添加**，勾选需要的设备并导入，再通过 **选择 → 连接** 建立连接。
-3. 只有勾选“记住密码”才保存密码；没有保存时，连接会提示输入。
+1. Nhấn **Thêm → Thêm bằng ID thiết bị**, nhập ID, mật khẩu và nhóm tùy chọn, rồi nhấn **Thêm và kết nối**.
+2. Nếu thiết bị đã trong kết nối gần đây, chọn **Thêm từ kết nối gần đây**, đánh dấu thiết bị cần rồi nhập, sau đó thiết lập kết nối qua **Chọn → Kết nối**.
+3. Chỉ lưu mật khẩu khi đánh dấu “Nhớ mật khẩu”; nếu chưa lưu, kết nối sẽ nhắc nhập.
 
-设备成员、分组、顺序和窗口布局会保留。重启客户端后需要手动连接。删除桌面墙成员与断开当前连接是不同操作，请留意确认提示。
+Thành viên, nhóm, thứ tự và bố cục cửa sổ được giữ. Sau khi khởi động lại ứng dụng cần kết nối thủ công. Xóa thành viên Bức tường màn hình khác với ngắt kết nối hiện tại, hãy chú ý lời nhắc xác nhận.
 
-## 整理和查看画面
+## Sắp xếp và xem hình ảnh
 
-- 通过分组筛选设备；翻页不会断开连接。
-- 拖动网格分隔线统一调整卡片大小。
-- 将设备拖到另一台设备上可以交换位置；拖到窗口左右边缘或翻页按钮并稍作停留，可以跨页移动。
-- 开启 **精简模式** 可隐藏名称和管理工具栏；全屏可扩大画面区域。
-- 点击画面进入只读放大视图。上方缩略图用于切换设备，中间分隔条用于调整缩略图与主画面的大小。
+- Lọc thiết bị qua nhóm; lật trang không ngắt kết nối.
+- Kéo đường phân cách lưới để điều chỉnh đồng bộ kích thước thẻ.
+- Kéo thiết bị lên thiết bị khác để đổi chỗ; kéo đến mép trái/phải cửa sổ hoặc nút lật trang và dừng một chút để chuyển qua trang.
+- Bật **Chế độ thu gọn** để ẩn tên và thanh công cụ quản lý; toàn màn hình mở rộng vùng hình ảnh.
+- Nhấn hình ảnh để vào chế độ phóng to chỉ xem. Hình thu nhỏ phía trên dùng chuyển thiết bị, thanh phân cách giữa dùng chỉnh kích thước hình thu nhỏ và hình chính.
 
-## 接管与释放控制
+## Tiếp quản và nhả điều khiển
 
-放大画面后点击 **接管操控**，键鼠才会发送给远端。点击 **释放操控** 或按 **Ctrl / ⌘ + Shift + Esc** 释放。切换设备或窗口失焦也会释放控制。
+Sau khi phóng to hình, nhấn **Tiếp quản điều khiển** thì bàn phím, chuột mới gửi đến máy từ xa. Nhấn **Nhả điều khiển** hoặc **Ctrl / ⌘ + Shift + Esc** để nhả. Chuyển thiết bị hoặc cửa sổ mất tiêu điểm cũng nhả điều khiển.
 
-需要显示器切换、隐私屏、文件传输等完整工具时，可以从主窗口“近期连接”打开已连接设备的独立会话窗口。关闭该独立窗口不会断开仍由桌面墙使用的连接。
+Khi cần đầy đủ công cụ như chuyển màn hình, màn hình riêng tư, truyền tệp, bạn có thể mở cửa sổ phiên riêng của thiết bị đã kết nối từ “Kết nối gần đây” ở cửa sổ chính. Đóng cửa sổ riêng đó không ngắt kết nối vẫn được Bức tường màn hình dùng.
 
-## 群控的操作范围
+## Phạm vi thao tác điều khiển nhóm
 
-在放大视图点击 **开启群控**，当前设备的键鼠操作会同步到 **所有已连接设备**，包括其他分组、其他分页，以及未显示在墙内的连接。范围不受批量勾选限制，新连接的设备也会接收后续输入。
+Nhấn **Bật điều khiển nhóm** trong chế độ phóng to để đồng bộ thao tác bàn phím, chuột của thiết bị hiện tại đến **mọi thiết bị đã kết nối**, gồm nhóm khác, trang khác và kết nối không hiển thị trong tường. Phạm vi không bị giới hạn bởi lựa chọn hàng loạt; thiết bị mới kết nối cũng nhận đầu vào tiếp theo.
 
-各设备接收相同的坐标和按键，不会按不同屏幕尺寸自动调整。开启前先确认连接列表和各设备画面。点击“关闭群控”恢复单台控制；释放操控、切换设备、窗口失焦或主控设备断开时，群控也会结束。
+Các thiết bị nhận cùng tọa độ và phím, không tự chỉnh theo kích thước màn hình khác nhau. Trước khi bật, xác nhận danh sách kết nối và hình từng thiết bị. Nhấn “Dừng điều khiển nhóm” để trở về điều khiển một máy; nhả điều khiển, chuyển thiết bị, cửa sổ mất tiêu điểm hoặc máy điều khiển chính ngắt kết nối cũng kết thúc điều khiển nhóm.
 
-## 批量连接、静音和传文件
+## Kết nối, tắt tiếng và gửi tệp hàng loạt
 
-1. 点击 **选择**，勾选设备，或使用 **全选**。
-2. 选择 **连接**、**断开**，或打开 **更多** 执行静音、取消静音和文件分发。
-3. 断开和文件分发会列出操作目标，确认后执行。
+1. Nhấn **Chọn**, đánh dấu thiết bị hoặc dùng **Chọn tất cả**.
+2. Chọn **Kết nối**, **Ngắt kết nối**, hoặc mở **Thêm** để tắt tiếng, bật tiếng và phân phối tệp.
+3. Ngắt kết nối và phân phối tệp liệt kê đối tượng thao tác, thực hiện sau xác nhận.
 
-“全选”包含当前分组的全部分页。翻页保留选择，切换分组清空选择。提交后的操作目标不会随着后续选择变化。
+“Chọn tất cả” gồm mọi trang của nhóm hiện tại. Lật trang giữ lựa chọn, đổi nhóm xóa lựa chọn. Đối tượng thao tác đã gửi không đổi theo lựa chọn sau đó.
 
-连接和文件分发最多同时启动 4 个操作，其余显示“排队中”。断开会取消该设备排队中的操作；一台设备等待密码不影响其他设备。文件进度可在对应的独立会话窗口查看。批量任务不会在重启后继续。
+Kết nối và phân phối tệp khởi động tối đa 4 thao tác cùng lúc, phần còn lại hiện “Đang xếp hàng”. Ngắt kết nối hủy thao tác đang xếp hàng của thiết bị đó; một máy chờ mật khẩu không ảnh hưởng máy khác. Xem tiến độ tệp trong cửa sổ phiên riêng tương ứng. Tác vụ hàng loạt không tiếp tục sau khởi động lại.
 
-桌面墙连接默认静音。需要声音时，对所选设备执行 **更多 → 取消静音**；放大或接管不会自动开启声音。目前不提供批量远程命令或重启功能。
+Kết nối Bức tường màn hình mặc định tắt tiếng. Khi cần âm thanh, thực hiện **Thêm → Bật tiếng** cho thiết bị đã chọn; phóng to hoặc tiếp quản không tự bật âm thanh. Hiện không có lệnh từ xa hay khởi động lại hàng loạt.
 
-## 调整清晰度、帧率和带宽
+## Điều chỉnh độ rõ, tốc độ khung hình và băng thông
 
-打开主窗口 **设置 → 桌面墙**，修改后点击 **保存**。设置会应用到当前及后续桌面墙连接，普通连接不受影响。
+Mở **Cài đặt → Bức tường màn hình (DeskHub)** ở cửa sổ chính, sửa rồi nhấn **Lưu**. Cài đặt áp dụng cho kết nối Bức tường màn hình hiện tại và sau đó, không ảnh hưởng kết nối thường.
 
-| 设置 | 如何选择 |
+| Cài đặt | Cách chọn |
 | --- | --- |
-| 分辨率上限 | 自动模式随缩略图和放大画面调整；需要更多细节时提高上限，需要节省网络时降低上限 |
-| 帧率 | 跟随设备设置，或选择 15 / 30 / 60 FPS；以观察为主时可降低帧率 |
-| 视频总带宽 | 默认 20 Mbps，可选 2 / 5 / 10 / 20 / 50 / 100 Mbps；放大画面优先获得带宽 |
+| Giới hạn độ phân giải | Chế độ tự động điều chỉnh theo hình thu nhỏ và hình phóng to; tăng giới hạn khi cần chi tiết, giảm khi cần tiết kiệm mạng |
+| Tốc độ khung hình | Theo cài đặt thiết bị hoặc chọn 15 / 30 / 60 FPS; có thể giảm khi chủ yếu quan sát |
+| Tổng băng thông video | Mặc định 20 Mbps, chọn 2 / 5 / 10 / 20 / 50 / 100 Mbps; hình phóng to được ưu tiên băng thông |
 
-这里调整的是传输画面，不会改变远端系统的显示分辨率。视频总带宽是支持该功能的桌面墙连接共享的持续目标，不包括音频、文件传输、普通连接和不支持的旧客户端，也不是瞬时流量的硬上限。
+Ở đây điều chỉnh hình truyền đi, không đổi độ phân giải hiển thị hệ thống từ xa. Tổng băng thông video là mục tiêu duy trì chung của kết nối Bức tường màn hình hỗ trợ tính năng này, không gồm âm thanh, truyền tệp, kết nối thường và ứng dụng cũ không hỗ trợ, cũng không phải trần cứng lưu lượng tức thời.
 
-支持相应功能的被控端会暂停不可见设备的视频，重新显示时恢复；连接和已主动开启的声音仍保留。旧版设备可能无法应用分辨率、帧率或带宽选项，必要时更新两端客户端。
+Máy được điều khiển hỗ trợ tính năng tương ứng tạm dừng video của thiết bị không hiển thị, khôi phục khi hiển thị lại; kết nối và âm thanh đã chủ động bật vẫn giữ. Thiết bị cũ có thể không áp dụng được tùy chọn độ phân giải, tốc độ khung hình hoặc băng thông; khi cần, cập nhật ứng dụng cả hai đầu.
 
-## 查看状态与结束使用
+## Xem trạng thái và kết thúc sử dụng
 
-底部 **网络状态** 显示所有已连接设备的直连 / 中继、加密、收发速率、画面延时、丢包率、分辨率和帧率。列表不受当前分组和分页限制。“—”表示暂时没有有效数据，不一定是连接异常。
+**Trạng thái mạng** phía dưới hiện trực tiếp / chuyển tiếp, mã hóa, tốc độ gửi nhận, độ trễ hình ảnh, tỷ lệ mất gói, độ phân giải và tốc độ khung hình của mọi thiết bị đã kết nối. Danh sách không bị giới hạn bởi nhóm và trang hiện tại. “—” nghĩa là tạm chưa có dữ liệu hợp lệ, không nhất thiết là lỗi kết nối.
 
-**关闭桌面墙会断开全部远程设备连接，并关闭共用连接的独立会话窗口。** 如果只是暂时不看画面，请最小化窗口。
+**Đóng Bức tường màn hình sẽ ngắt mọi kết nối thiết bị từ xa và đóng cửa sổ phiên riêng dùng chung kết nối.** Nếu chỉ tạm không xem hình ảnh, hãy thu nhỏ cửa sổ.
 
-## 传输实现与接口
+## Triển khai truyền tải và giao diện
 
-以下说明预览订阅、版本兼容、带宽分配和底层接口。
+Phần sau giải thích đăng ký xem trước, tương thích phiên bản, phân bổ băng thông và giao diện tầng dưới.
 
-### 预览与兼容性
+### Xem trước và tương thích
 
 
-自动分辨率模式下，桌面墙发起或接管的会话在能力协商后默认请求最长边不超过 320 像素的画面。点卡片展开后，根据视频显示区域的实际物理像素（包含 HiDPI 缩放）请求分辨率；全屏、退出全屏和调整窗口大小后会重新计算，尺寸稳定 200 毫秒后更新订阅。返回网格或切换到其他设备后恢复缩略图尺寸。不可见设备暂停视频；如果同一设备仍在可见的独立串流窗口显示，则继续传输。同一会话同时在独立串流窗口显示时，按两个可见视频区域中较大的尺寸请求，避免小预览降低大窗口的清晰度。选择固定或原始分辨率后使用对应上限；恢复自动后重新跟随视图。普通连接页发起且未加入桌面墙管理的会话保留原有分辨率行为。
+Trong chế độ độ phân giải tự động, phiên do Bức tường màn hình khởi tạo hoặc tiếp quản mặc định yêu cầu hình có cạnh dài nhất không quá 320 pixel sau thương lượng khả năng. Khi nhấn thẻ để mở rộng, yêu cầu độ phân giải theo pixel vật lý thực tế của vùng hiển thị video (gồm co giãn HiDPI); tính lại sau khi toàn màn hình, thoát toàn màn hình hoặc đổi kích thước cửa sổ, cập nhật đăng ký sau khi kích thước ổn định 200 mili giây. Về lưới hoặc chuyển thiết bị khác khôi phục kích thước hình thu nhỏ. Thiết bị không hiển thị tạm dừng video; nếu cùng thiết bị vẫn hiện trong cửa sổ luồng riêng đang hiển thị, tiếp tục truyền. Khi cùng phiên đồng thời hiện trong cửa sổ luồng riêng, yêu cầu theo kích thước lớn hơn của hai vùng video đang hiển thị để tránh xem trước nhỏ giảm độ rõ cửa sổ lớn. Chọn độ phân giải cố định hoặc gốc sẽ dùng giới hạn tương ứng; khôi phục tự động lại theo khung nhìn. Phiên khởi tạo từ trang kết nối thường và chưa do Bức tường màn hình quản lý giữ hành vi độ phân giải cũ.
 
-被控端按连接分别在编码前缩放，完整保留桌面比例，不放大超过源画面的尺寸，也不修改被控端屏幕的系统分辨率。请求的宽高是上限，画质和网络自适应仍可降低实际发送尺寸。默认跟随每个会话原有的 30／60 帧设置；指定帧率仅覆盖桌面墙订阅，不修改会话的画质或原有帧率偏好。声音仍需明确开启。
+Máy được điều khiển co giãn riêng từng kết nối trước mã hóa, giữ đầy đủ tỷ lệ màn hình, không phóng lớn vượt kích thước nguồn hay đổi độ phân giải hệ thống của màn hình máy đó. Chiều rộng và cao yêu cầu là giới hạn trên, thích ứng chất lượng và mạng vẫn có thể giảm kích thước gửi thực tế. Mặc định theo cài đặt 30／60 khung hình ban đầu mỗi phiên; chỉ định tốc độ khung hình chỉ ghi đè đăng ký Bức tường màn hình, không sửa chất lượng hoặc tùy chọn tốc độ ban đầu của phiên. Âm thanh vẫn cần bật rõ.
 
-15 帧订阅使用编码前发送节流和稳定的逐显示流时间预算，并采用保持分辨率策略，避免低帧率触发交互视频的画质降级。30／60 帧选项使用编码器自身的交互帧率控制。仅向声明 `supports_deskhub_fps15` 的对端发送 `fps=15`；缺少该能力的 v1／v2 对端使用原有 `fps=60, frame_rate=30` 格式回退到 30 FPS，未声明预览能力的更旧版本保持原行为。协议仍接受旧控制端的 1／8 帧请求，但设置界面不再提供这两个档位。
+Đăng ký 15 khung hình dùng tiết lưu gửi trước mã hóa và ngân sách thời gian ổn định cho từng luồng hiển thị, áp dụng chiến lược giữ độ phân giải để tránh tốc độ khung hình thấp kích hoạt giảm chất lượng video tương tác. Tùy chọn 30／60 dùng điều khiển tốc độ tương tác của chính bộ mã hóa. Chỉ gửi `fps=15` cho đối tác khai báo `supports_deskhub_fps15`; đối tác v1／v2 thiếu khả năng này dùng định dạng cũ `fps=60, frame_rate=30` để về 30 FPS, bản cũ hơn chưa khai báo xem trước giữ hành vi cũ. Giao thức vẫn nhận yêu cầu 1／8 khung hình từ máy điều khiển cũ nhưng giao diện cài đặt không còn hai mức này.
 
-预览在解码回调中随收到的画面生成有界缩略图，可见桌面墙随 UI 刷新显示最新帧。UI 不处理全分辨率转换，只保留当前可见设备的最新预览，超过 5 秒未更新会标记停帧。画面保持比例，以完整矩形显示；表格单元格与画面之间保留内边距，不裁切桌面内容或画面边角。实际显示帧率受设备性能与网络状况影响。
+Ảnh xem trước được tạo thành hình thu nhỏ có giới hạn trong callback giải mã theo hình nhận được; Bức tường màn hình đang hiển thị trình bày khung mới nhất theo nhịp làm mới UI. UI không xử lý chuyển đổi độ phân giải đầy đủ, chỉ giữ ảnh mới nhất của thiết bị đang hiển thị, đánh dấu đứng hình khi hơn 5 giây chưa cập nhật. Hình giữ tỷ lệ, hiển thị hình chữ nhật đầy đủ; ô bảng và hình có khoảng đệm, không cắt nội dung màn hình hay góc hình. Tốc độ hiển thị thực tế chịu ảnh hưởng hiệu năng thiết bị và mạng.
 
-连接旧版被控端时，若仅声明 `supports_deskhub_preview`，控制端发送原有 v1 订阅；若未声明预览能力，则不发送该订阅，沿用其视频策略。旧控制端连接新版被控端时继续使用原分辨率；v1 订阅也会清除此前的尺寸限制。只有同时声明 `supports_deskhub_preview` 与 `supports_deskhub_resolution` 的被控端才会收到 v2 尺寸请求，旧版本不承诺发送端节省资源。
+Khi kết nối máy được điều khiển cũ, nếu chỉ khai báo `supports_deskhub_preview`, máy điều khiển gửi đăng ký v1 cũ; nếu chưa khai báo khả năng xem trước, không gửi đăng ký, dùng chiến lược video của nó. Máy điều khiển cũ kết nối máy được điều khiển mới tiếp tục dùng độ phân giải gốc; đăng ký v1 cũng xóa giới hạn kích thước trước đó. Chỉ máy được điều khiển khai báo cả `supports_deskhub_preview` và `supports_deskhub_resolution` mới nhận yêu cầu kích thước v2; bản cũ không cam kết tiết kiệm tài nguyên bên gửi.
 
-### 视频带宽分配
+### Phân bổ băng thông video
 
-“设置 → 桌面墙 → 视频总带宽”配置所有支持带宽协商的桌面墙会话共享的视频预算，默认 20 Mbps，可选 2、5、10、20、50、100 Mbps。保存立即应用，取消不生效，重启后保留；恢复默认后需要保存。它是视频的持续目标预算，包含发送端为视频纠错、重传及 RTP 开销预留的份额；音频、文件传输、普通连接及不支持带宽协商的旧版设备不计入，关键帧和切换期间的瞬时速率可能超过预算。
+“Cài đặt → Bức tường màn hình (DeskHub) → Tổng băng thông video” cấu hình ngân sách video chung cho mọi phiên Bức tường màn hình hỗ trợ thương lượng băng thông, mặc định 20 Mbps, chọn 2, 5, 10, 20, 50, 100 Mbps. Lưu áp dụng ngay, hủy không có hiệu lực, giữ sau khởi động lại; khôi phục mặc định cần lưu. Đây là ngân sách mục tiêu video duy trì, gồm phần bên gửi dành cho sửa lỗi video, truyền lại và chi phí RTP; âm thanh, truyền tệp, kết nối thường và thiết bị cũ không hỗ trợ thương lượng không tính vào, tốc độ tức thời khi gửi khung khóa và chuyển đổi có thể vượt ngân sách.
 
-控制端根据请求的分辨率和帧率估算每台设备的需求上限。先为每台可见设备保留至多 100 Kbps 的基础份额（总预算不足时等分），再按权重分配剩余预算：展开画面或可见的独立串流窗口权重为缩略图的 4 倍。相同规格、相同优先级的设备基本均分；达到需求上限的设备让出剩余额度，不强制用满总预算。默认缩略图 320 × 320 上限、30 FPS 的需求预算为 500 Kbps。分配随连接、分页、分组、窗口可见性以及分辨率／帧率变化更新，独立串流窗口和墙内画面使用同一份设备预算。需求和总预算未变化时复用分配结果，不随 UI 刷新重复计算。
+Máy điều khiển ước lượng trần nhu cầu từng thiết bị theo độ phân giải và tốc độ khung hình yêu cầu. Trước hết dành tối đa 100 Kbps cơ sở cho mỗi thiết bị đang hiển thị (chia đều nếu tổng ngân sách không đủ), rồi chia phần còn lại theo trọng số: hình mở rộng hoặc cửa sổ luồng riêng đang hiển thị có trọng số gấp 4 hình thu nhỏ. Thiết bị cùng quy cách và ưu tiên được chia gần đều; thiết bị đạt trần nhu cầu nhường phần còn lại, không bắt buộc dùng hết tổng ngân sách. Hình thu nhỏ mặc định giới hạn 320 × 320, 30 FPS có ngân sách nhu cầu 500 Kbps. Phân bổ cập nhật theo kết nối, trang, nhóm, khả năng hiển thị cửa sổ và thay đổi độ phân giải／tốc độ khung hình; cửa sổ luồng riêng và hình trong tường dùng chung ngân sách thiết bị. Khi nhu cầu và tổng ngân sách không đổi, tái dùng kết quả, không tính lặp theo làm mới UI.
 
-翻页、切换分组、隐藏或最小化桌面墙后，没有可见画面的墙内会话发送 `fps=0` 暂停视频，保留连接和主动开启的音频。重新可见后恢复当前需求并请求关键帧。单纯重新分配带宽不会触发所有设备同时发送关键帧，也不会重置 15 FPS 的发送节奏。
+Sau lật trang, đổi nhóm, ẩn hoặc thu nhỏ Bức tường màn hình, phiên trong tường không có hình hiển thị gửi `fps=0` để tạm dừng video, giữ kết nối và âm thanh đã chủ động bật. Khi hiển thị lại, khôi phục nhu cầu hiện tại và yêu cầu khung khóa. Chỉ phân bổ lại băng thông không làm mọi thiết bị đồng thời gửi khung khóa hay đặt lại nhịp gửi 15 FPS.
 
-预算不代表测速结果。每条连接原有的拥塞控制继续工作，发送端使用网络可用带宽与设备预算中的较小值，并在设备的多个活动显示流之间再分配。视频探测速率受同一设备额度约束，以便网络恢复或画面展开后继续升速；额度下降会取消旧探测，暂停视频时关闭探测和填充包。只有声明 `supports_deskhub_bandwidth` 的对端会收到带宽字段；支持预览但不支持带宽协商的旧版仍能暂停不可见视频，更旧版本保持原行为。
+Ngân sách không đại diện kết quả đo tốc độ. Điều khiển tắc nghẽn cũ từng kết nối vẫn hoạt động; bên gửi dùng giá trị nhỏ hơn giữa băng thông mạng khả dụng và ngân sách thiết bị, rồi phân bổ lại giữa các luồng hiển thị hoạt động của thiết bị. Tốc độ dò video chịu giới hạn cùng thiết bị để tiếp tục tăng tốc sau phục hồi mạng hay mở rộng hình; giảm hạn mức hủy lần dò cũ, tạm dừng video tắt dò và gói đệm. Chỉ đối tác khai báo `supports_deskhub_bandwidth` mới nhận trường băng thông; bản cũ hỗ trợ xem trước nhưng không thương lượng băng thông vẫn tạm dừng video không hiển thị, bản cũ hơn giữ hành vi cũ.
 
-### 协议与接口
+### Giao thức và giao diện
 
-可靠控制通道的 `deskhub_preview` v2 保留 v1 的 `request_id`、`fps`、`quality`、`frame_rate`、`preference`、`audio` 字段，新增必填 `width`、`height` 整数，单位为物理像素。两个值均为 0 表示恢复源尺寸上限，否则两个值均须在 2～16384 之间；非法或缺失的值不应用。`deskhub_preview_status` 回传请求的协议版本、请求 ID 与 `accepted`。请求 ID 跳过 0，支持 32 位回绕，重复或过期请求不会覆盖新设置。断开会话清除订阅和 15 FPS 协商能力，再连接会重新发送当前需求。15 FPS 扩展通过可选能力 `supports_deskhub_fps15` 协商，沿用 v1／v2 的字段结构，使用 `fps=15, frame_rate=30`，在编码前将实际输入限制为 15 FPS。
+`deskhub_preview` v2 trên kênh điều khiển tin cậy giữ trường `request_id`, `fps`, `quality`, `frame_rate`, `preference`, `audio` của v1, thêm số nguyên bắt buộc `width`, `height`, đơn vị pixel vật lý. Cả hai bằng 0 nghĩa là khôi phục giới hạn kích thước nguồn; nếu không, cả hai phải trong 2～16384, giá trị sai hoặc thiếu không được áp dụng. `deskhub_preview_status` trả phiên bản giao thức yêu cầu, ID yêu cầu và `accepted`. ID yêu cầu bỏ qua 0, hỗ trợ quay vòng 32 bit; yêu cầu trùng hoặc hết hạn không ghi đè cài đặt mới. Ngắt phiên xóa đăng ký và khả năng thương lượng 15 FPS, kết nối lại gửi lại nhu cầu hiện tại. Mở rộng 15 FPS thương lượng qua khả năng tùy chọn `supports_deskhub_fps15`, giữ cấu trúc trường v1／v2, dùng `fps=15, frame_rate=30`, giới hạn đầu vào thực tế 15 FPS trước mã hóa.
 
-带宽扩展沿用 v1／v2，增加可选整数 `max_bitrate_bps`（0～100000000，单位 bps），仅向声明 `supports_deskhub_bandwidth` 的对端发送。0 或缺省表示解除额外的视频预算限制；暂停视频仍使用 `fps=0`。非法字段拒绝整个订阅，断开后清除能力，重连重新协商。MiniRTC 的 `MiniRtcUpdateVideoBitrateLimit(peer, remote_id, remote_id_size, max_bitrate_bps)` 为指定连接的所有视频流设置合计预算，不改变音频与数据发送；返回 0 表示已进入拥塞控制队列，-1 表示参数、连接或传输不支持。
+Mở rộng băng thông giữ v1／v2, thêm số nguyên tùy chọn `max_bitrate_bps` (0～100000000, đơn vị bps), chỉ gửi đối tác khai báo `supports_deskhub_bandwidth`. 0 hoặc thiếu nghĩa là bỏ giới hạn ngân sách video bổ sung; tạm dừng video vẫn dùng `fps=0`. Trường sai từ chối toàn bộ đăng ký, ngắt kết nối xóa khả năng, kết nối lại thương lượng lại. `MiniRtcUpdateVideoBitrateLimit(peer, remote_id, remote_id_size, max_bitrate_bps)` của MiniRTC đặt tổng ngân sách cho mọi luồng video của kết nối chỉ định, không đổi gửi âm thanh và dữ liệu; trả 0 nghĩa là đã vào hàng đợi điều khiển tắc nghẽn, -1 nghĩa là tham số, kết nối hoặc truyền tải không hỗ trợ.
 
-MiniRTC 新增 `MiniRtcUpdateVideoResolution(peer, remote_id, remote_id_size, width, height)` 接口，返回 0 表示已接受，-1 表示参数、连接或传输类型不支持。它为指定控制端的所有显示流设置独立尺寸上限，切换时丢弃旧设置尚未发出的编码结果，并请求新关键帧；底层自适应也以这个上限作为有效源尺寸。
+MiniRTC thêm giao diện `MiniRtcUpdateVideoResolution(peer, remote_id, remote_id_size, width, height)`, trả 0 nghĩa là đã chấp nhận, -1 nghĩa là tham số, kết nối hoặc kiểu truyền tải không hỗ trợ. Đặt giới hạn kích thước riêng cho mọi luồng hiển thị của máy điều khiển chỉ định, bỏ kết quả mã hóa chưa gửi của cài đặt cũ khi chuyển và yêu cầu khung khóa mới; thích ứng tầng dưới cũng dùng giới hạn này làm kích thước nguồn hiệu dụng.
 
-`MiniRtcSetVideoSendPaused(peer, remote_id, remote_id_size, paused)` 与 `MiniRtcSetAudioSendPaused(peer, remote_id, remote_id_size, paused)` 分别控制指定连接的所有视频／音频发送通道，`true` 暂停、`false` 恢复。重复设置不产生额外操作；返回 0 表示接受，-1 表示参数、连接或传输类型不支持。视频暂停阻止新帧进入编码，废弃旧编码结果，并在发送队列上清除待发视频／重传／纠错包，停止探测和填充；恢复请求新关键帧。音频暂停阻止 PCM 编码并清理待发音频，恢复时仅发送新音频。已交给网络的包无法撤回。API 保留连接、采集源、码率与画质设置以及其他媒体／数据通道，也不改变其他控制端的发送状态。
+`MiniRtcSetVideoSendPaused(peer, remote_id, remote_id_size, paused)` và `MiniRtcSetAudioSendPaused(peer, remote_id, remote_id_size, paused)` lần lượt điều khiển mọi kênh gửi video／âm thanh của kết nối chỉ định, `true` tạm dừng, `false` khôi phục. Đặt lặp không tạo thao tác thêm; trả 0 nghĩa là chấp nhận, -1 nghĩa là tham số, kết nối hoặc kiểu truyền tải không hỗ trợ. Tạm dừng video ngăn khung mới vào mã hóa, bỏ kết quả mã hóa cũ, dọn gói video／truyền lại／sửa lỗi chờ gửi trên hàng đợi gửi, dừng dò và đệm; khôi phục yêu cầu khung khóa mới. Tạm dừng âm thanh ngăn mã hóa PCM và dọn âm thanh chờ gửi, khôi phục chỉ gửi âm thanh mới. Gói đã giao mạng không thể rút lại. API giữ kết nối, nguồn ghi hình, cài đặt tốc độ bit và chất lượng cùng kênh đa phương tiện／dữ liệu khác, không đổi trạng thái gửi cho máy điều khiển khác.
 
-桌面墙将 `fps=0` 和 `audio=false` 分别映射到上述 API；应用层仅保留低帧率节流，不再使用 `1 bps` 代替视频暂停或在采集回调中过滤静音音频。接收端仍保留静音门控及播放队列清理，以立即停止播放网络中已在途的音频。旧版 `audio_capture` 命令在支持新 API 的传输中也按连接静音，已有订阅的音频状态优先；不支持 API 的旧／Web 传输沿用采集开关回退。
+Bức tường màn hình ánh xạ `fps=0` và `audio=false` vào API trên tương ứng; tầng ứng dụng chỉ giữ tiết lưu tốc độ khung hình thấp, không còn dùng `1 bps` thay tạm dừng video hay lọc âm thanh tắt tiếng trong callback ghi. Bên nhận vẫn giữ cổng tắt tiếng và dọn hàng đợi phát để ngừng ngay âm thanh đang trên mạng. Lệnh `audio_capture` cũ cũng tắt tiếng theo kết nối trên truyền tải hỗ trợ API mới, trạng thái âm thanh đăng ký hiện có được ưu tiên; truyền tải cũ／Web không hỗ trợ API vẫn dùng dự phòng công tắc ghi âm.
 
-## 批量操作与配置存储
+## Thao tác hàng loạt và lưu cấu hình
 
-连接和文件分发最多并行启动 4 个操作。尚未开始连接的设备卡片显示“排队中”，轮到后自动切换为实际连接状态。断开立即执行，同时取消该设备排队中的操作及重连请求，不等待文件传输完成。单台等待密码不会阻塞其他设备，可以从对应设备的放大视图填写密码。连接状态显示在设备卡片上，文件传输详情可在该设备的独立串流窗口中查看。
+Kết nối và phân phối tệp khởi động tối đa 4 thao tác song song. Thẻ thiết bị chưa bắt đầu kết nối hiện “Đang xếp hàng”, đến lượt tự chuyển sang trạng thái kết nối thực tế. Ngắt kết nối thực hiện ngay, đồng thời hủy thao tác xếp hàng và yêu cầu kết nối lại của thiết bị đó, không chờ truyền tệp xong. Một thiết bị chờ mật khẩu không chặn máy khác; có thể nhập mật khẩu trong chế độ phóng to của thiết bị tương ứng. Trạng thái kết nối hiện trên thẻ, chi tiết truyền tệp xem trong cửa sổ luồng riêng của thiết bị.
 
-批量操作仅在本次运行中执行，不提供任务列表、操作历史或重启后的恢复。成员资料与窗口状态（含共享格子宽度）保存在应用缓存目录的 `deskhub.json` 和 `deskhub.json.window` 中，不含设备密码和文件内容。
+Thao tác hàng loạt chỉ chạy lần này, không có danh sách tác vụ, lịch sử thao tác hay phục hồi sau khởi động lại. Dữ liệu thành viên và trạng thái cửa sổ (gồm chiều rộng ô chung) lưu trong `deskhub.json` và `deskhub.json.window` ở thư mục bộ nhớ đệm ứng dụng, không chứa mật khẩu thiết bị và nội dung tệp.
 
-`deskhub.json` 第 2 版分别保存分组记录和桌面墙设备 ID，通过可选的 `device_order` 保存手动排列顺序，并通过可选的 `stream_settings` 保存分辨率预设及帧率。没有手动顺序的旧配置继续使用原有排列。缺少或无效的设置使用自动分辨率和跟随设备帧率，不影响设备成员。已保存的 1／8 FPS 自动迁移为 15 FPS，保留原分辨率预设；原有 30／60 FPS 设置保持不变。第 1 版配置仍可读取，原有桌面墙成员、分组和顺序会保留；旧版数据未记录加入来源，因此不会自动移除已有成员。
+`deskhub.json` phiên bản 2 lưu riêng bản ghi nhóm và ID thiết bị Bức tường màn hình, dùng `device_order` tùy chọn để lưu thứ tự thủ công và `stream_settings` tùy chọn để lưu cấu hình sẵn độ phân giải và tốc độ khung hình. Cấu hình cũ không có thứ tự thủ công tiếp tục dùng cách sắp xếp cũ. Cài đặt thiếu hoặc sai dùng độ phân giải tự động và tốc độ theo thiết bị, không ảnh hưởng thành viên. 1／8 FPS đã lưu tự chuyển thành 15 FPS, giữ cấu hình sẵn độ phân giải gốc; 30／60 FPS cũ không đổi. Vẫn đọc được cấu hình phiên bản 1, giữ thành viên, nhóm và thứ tự cũ; dữ liệu cũ không ghi nguồn thêm nên không tự xóa thành viên hiện có.
 
-批量远程命令、重启尚未提供。实际大规模并发容量需要用真实设备测量。
+Chưa có lệnh từ xa và khởi động lại hàng loạt. Năng lực đồng thời quy mô lớn thực tế cần đo bằng thiết bị thật.
 
-## 验证
+## Kiểm chứng
 
 ```sh
 xmake build crossdesk

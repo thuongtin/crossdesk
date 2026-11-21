@@ -5334,7 +5334,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
     return false;
   }
   language_button_value_ =
-      std::clamp(main->get_language_index(), 0, localization::kSystemLanguage);
+      std::clamp(main->get_language_index(), 0, localization::kVietnameseLanguage);
   video_encode_format_button_value_ = std::clamp(main->get_codec_index(), 0, 1);
   enable_self_hosted_ = main->get_self_hosted_enabled();
 #if !defined(__OHOS__)
