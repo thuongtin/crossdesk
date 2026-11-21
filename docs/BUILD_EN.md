@@ -1,6 +1,6 @@
 # Build from source
 
-[Back to README](../README_EN.md) · [中文](BUILD.md)
+[Back to README](../README_EN.md) · [Tiếng Việt](BUILD.md)
 
 Build dependencies, configuration, packaging, and signing are organized by platform below. Prebuilt packages are available from [downloads](../README_EN.md#download).
 
@@ -240,7 +240,7 @@ xmake b crossdesk
 
 You can also set the environment variable with the same name before building; the Xmake configuration value takes precedence. The value must encode a 32-byte Ed25519 public key as 64 lowercase hexadecimal characters. A nonempty value with an invalid format fails build configuration. Update manifests must be signed with the matching private key, and the installation must meet the other updater requirements, including a supported installation location. Portable builds always use manual downloads.
 
-GitHub Actions reads `CROSSDESK_UPDATE_PUBLIC_KEY` from repository variables. The matching private key is needed only when signing release manifests. See [updater build and release](UPDATER.md#升级器构建与发布) for key generation, manifest signing, and installation requirements.
+GitHub Actions reads `CROSSDESK_UPDATE_PUBLIC_KEY` from repository variables. The matching private key is needed only when signing release manifests. See [updater build and release](UPDATER.md#biên-dịch-và-phát-hành-trình-nâng-cấp) for key generation, manifest signing, and installation requirements.
 
 ## Build without CUDA
 

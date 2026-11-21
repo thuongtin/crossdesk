@@ -319,7 +319,7 @@ Cảm ơn [HelloGitHub](https://hellogithub.com/), [Bản tin người yêu côn
 
 Copyright (c) 2026 JUNKUN DI.
 
-CrossDesk sử dụng giấy phép [GPL-3.0-only](LICENSE). Xem thông tin quyền riêng tư trong [Chính sách quyền riêng tư](PRIVACY.md#中文).
+CrossDesk sử dụng giấy phép [GPL-3.0-only](LICENSE). Xem thông tin quyền riêng tư trong [Chính sách quyền riêng tư](PRIVACY.md#tiếng-việt).
 
 ### Chính sách ký mã
 

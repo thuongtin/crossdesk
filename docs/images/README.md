@@ -1,28 +1,28 @@
-# CrossDesk 界面配图 / Interface images
+# Hình minh họa giao diện CrossDesk / Interface images
 
-[中文 README](../../README.md) · [English README](../../README_EN.md) · [中文使用指南](../USER_GUIDE.md) · [English user guide](../USER_GUIDE_EN.md)
+[README tiếng Việt](../../README.md) · [English README](../../README_EN.md) · [Hướng dẫn sử dụng tiếng Việt](../USER_GUIDE.md) · [English user guide](../USER_GUIDE_EN.md)
 
-## 文件 / Files
+## Tệp / Files
 
-| 文件（`zh` / `en`） | 页面 | PNG 尺寸 |
+| Tệp (`zh` / `en`) | Trang | Kích thước PNG |
 | --- | --- | --- |
-| `desktop-main-*.png` | ID 连接模式 / ID mode | 1280 × 1008 |
-| `desktop-lan-*.png`（不含 `password`） | IP 直连模式 / Direct IP mode | 1280 × 1008 |
-| `desktop-lan-password-*.png` | IP 直连密码与记住密码 / Direct IP password dialog | 1280 × 1008 |
-| `desktop-settings-network-*.png` | IP 直连开关与网络设置 / Direct IP switch and Network settings | 1280 × 1008 |
-| `desktop-deskhub-*.png`（不含 `focus`） | 六设备桌面墙 / Six-device DeskHub grid | 1920 × 1064 |
-| `desktop-deskhub-focus-*.png` | 桌面墙放大视图 / Enlarged DeskHub view | 1920 × 1460 |
-| `desktop-settings-zh.png` / `desktop-settings-en.png` | 常规设置 / General settings | 1280 × 1008 |
-| `desktop-settings-deskhub-*.png` | 桌面墙传输设置 / DeskHub video settings | 1280 × 1008 |
-| `desktop-self-hosted-*.png` | 自托管设置 / Self-hosting | 1280 × 1008 |
-| `desktop-stream-video-settings-*.png` | 会话工具栏与画面设置 / Session video settings | 1920 × 1264 |
-| `desktop-about-*.png` | 关于与检查更新 / About and update check | 1280 × 1008 |
-| `desktop-files-*.png` | 双栏文件传输 / Dual-pane file transfer | 1920 × 1304 |
-| `desktop-feedback-*.png` | 反馈与诊断日志入口 / Feedback and diagnostic log export | 1280 × 1008 |
-| `web-client.png`（中文） | Web 连接首页 / Web connection page | 2560 × 1440 |
-| `cli-ansi-overview.png` | CLI ANSI 四象限全景 / ANSI quadrant overview | 1280 × 800 |
-| `cli-kitty-overview.png` | CLI Kitty 协议像素全景 / Kitty protocol pixel overview | 1280 × 800 |
+| `desktop-main-*.png` | Chế độ kết nối ID / ID mode | 1280 × 1008 |
+| `desktop-lan-*.png` (không gồm `password`) | Chế độ IP trực tiếp / Direct IP mode | 1280 × 1008 |
+| `desktop-lan-password-*.png` | Mật khẩu IP trực tiếp và nhớ mật khẩu / Direct IP password dialog | 1280 × 1008 |
+| `desktop-settings-network-*.png` | Công tắc IP trực tiếp và cài đặt mạng / Direct IP switch and Network settings | 1280 × 1008 |
+| `desktop-deskhub-*.png` (không gồm `focus`) | Lưới Bức tường màn hình (DeskHub) sáu thiết bị / Six-device DeskHub grid | 1920 × 1064 |
+| `desktop-deskhub-focus-*.png` | Chế độ phóng to Bức tường màn hình (DeskHub) / Enlarged DeskHub view | 1920 × 1460 |
+| `desktop-settings-zh.png` / `desktop-settings-en.png` | Cài đặt chung / General settings | 1280 × 1008 |
+| `desktop-settings-deskhub-*.png` | Cài đặt truyền hình ảnh Bức tường màn hình (DeskHub) / DeskHub video settings | 1280 × 1008 |
+| `desktop-self-hosted-*.png` | Cài đặt tự lưu trữ (self-host) / Self-hosting | 1280 × 1008 |
+| `desktop-stream-video-settings-*.png` | Thanh công cụ phiên và cài đặt hình ảnh / Session video settings | 1920 × 1264 |
+| `desktop-about-*.png` | Giới thiệu và kiểm tra cập nhật / About and update check | 1280 × 1008 |
+| `desktop-files-*.png` | Truyền tệp hai khung / Dual-pane file transfer | 1920 × 1304 |
+| `desktop-feedback-*.png` | Lối vào phản hồi và nhật ký chẩn đoán / Feedback and diagnostic log export | 1280 × 1008 |
+| `web-client.png` (tiếng Trung) | Trang kết nối Web chính / Web connection page | 2560 × 1440 |
+| `cli-ansi-overview.png` | Toàn cảnh CLI ANSI bốn góc phần tư / ANSI quadrant overview | 1280 × 800 |
+| `cli-kitty-overview.png` | Toàn cảnh điểm ảnh CLI qua giao thức Kitty / Kitty protocol pixel overview | 1280 × 800 |
 
-## 重新生成 / Regenerate
+## Tạo lại / Regenerate
 
-[更新文档配图](REGENERATE.md)
+[Cập nhật hình minh họa tài liệu](REGENERATE.md)

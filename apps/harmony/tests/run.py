@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix='crossdesk-harmony-test-') as temporary:
         run([work / name])
     if args.mobile:
         studio = Path(os.environ.get('DEVECO_STUDIO_HOME', '/Applications/DevEco-Studio.app/Contents'))
-        for test in ['localization_test.cjs', 'mobile_models_test.cjs', 'mobile_lifecycle_test.cjs', 'mobile_platform_test.cjs', 'mobile_store_test.cjs']:
+        for test in ['localization_test.cjs', 'privacy_policy_test.cjs', 'mobile_models_test.cjs', 'mobile_lifecycle_test.cjs', 'mobile_platform_test.cjs', 'mobile_store_test.cjs']:
             run([studio / 'tools/node/bin/node', APP / 'tests' / test,
                  studio / 'tools/ohpm/node_modules/typescript/lib/typescript.js',
                  APP / 'entry/src/main/ets/mobile'])

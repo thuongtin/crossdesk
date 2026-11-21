@@ -85,7 +85,7 @@ Trên máy tính, xem **☰ → Cài đặt → Đường dẫn lưu tệp**. T�
 
 ## Biên dịch Windows khi chưa cài CUDA như thế nào
 
-Bạn có thể biên dịch bằng `--USE_CUDA=false` trước. Khi cần hỗ trợ mã hóa và giải mã CUDA, cài phụ thuộc tương ứng theo [hướng dẫn biên dịch](BUILD.md); trong PowerShell, nên dùng `$env:CUDA_PATH = "实际安装目录"` để đặt biến môi trường.
+Bạn có thể biên dịch bằng `--USE_CUDA=false` trước. Khi cần hỗ trợ mã hóa và giải mã CUDA, cài phụ thuộc tương ứng theo [hướng dẫn biên dịch](BUILD.md); trong PowerShell, nên dùng `$env:CUDA_PATH = "<thư mục cài đặt thực tế>"` để đặt biến môi trường.
 
 ## Vì sao sản phẩm biên dịch iOS không thể cài trực tiếp
 

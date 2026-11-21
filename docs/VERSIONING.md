@@ -1,20 +1,20 @@
-# 版本与发布管理
+# Quản lý phiên bản và phát hành
 
-[返回首页](../README.md) · [自行构建](BUILD.md)
+[Về trang chủ](../README.md) · [Tự biên dịch](BUILD.md)
 
-## 查看已安装版本
+## Xem phiên bản đã cài
 
-桌面端打开 **菜单 → 关于**，移动端打开 **设置 → 关于**。反馈问题时同时提供控制端和被控端的版本；使用 CLI 或 MCP 时，还应提供工具包版本。
+Trên máy tính, mở **Menu → Giới thiệu**; trên thiết bị di động, mở **Cài đặt → Giới thiệu**. Khi báo cáo sự cố, cung cấp phiên bản cả máy điều khiển và máy được điều khiển; nếu dùng CLI hoặc MCP, nên cung cấp cả phiên bản bộ công cụ.
 
-下载页面的版本、应用显示的版本和仓库当前源码不一定相同。需要复现某个安装包时，优先使用关于页或开源信息中记录的源码标签、提交，而不是直接下载最新分支。
+Phiên bản trên trang tải, phiên bản ứng dụng hiển thị và mã nguồn hiện tại của kho mã không nhất thiết giống nhau. Khi cần tái hiện một gói cài, ưu tiên tag hoặc commit nguồn ghi ở trang giới thiệu hay thông tin nguồn mở, thay vì tải thẳng nhánh mới nhất.
 
-仅构建日期变化不会触发桌面升级提示，更新比较使用数字版本和补丁号。更新方式见 [更新指南](UPDATER.md)。
+Chỉ đổi ngày biên dịch không kích hoạt nhắc nâng cấp máy tính; cập nhật so sánh phiên bản số và số bản vá. Xem cách cập nhật trong [hướng dẫn cập nhật](UPDATER.md).
 
-## 源码版本管理
+## Quản lý phiên bản mã nguồn
 
-在仓库根目录使用 `python3 scripts/version.py` 查看、修改和检查版本，需要 Python 3.9 或更新版本，无需安装第三方依赖。版本分为三组：桌面、Android、iOS 和 HarmonyOS 共用客户端版本；CLI、MCP 和 DSH 插件共用工具版本；Pi 扩展独立编号。脚本只修改源码配置，不会创建 Git 标签、提交代码、构建或发布安装包。
+Dùng `python3 scripts/version.py` ở thư mục gốc kho mã để xem, sửa và kiểm tra phiên bản; cần Python 3.9 hoặc mới hơn, không cần phụ thuộc bên thứ ba. Phiên bản chia ba nhóm: máy tính, Android, iOS và HarmonyOS dùng chung phiên bản ứng dụng; CLI, MCP và plugin DSH dùng chung phiên bản công cụ; phần mở rộng Pi có số riêng. Script chỉ sửa cấu hình nguồn, không tạo tag Git, commit, biên dịch hay phát hành gói cài.
 
-## 查看和检查
+## Xem và kiểm tra
 
 ```sh
 python3 scripts/version.py show
@@ -25,28 +25,28 @@ python3 scripts/version.py show desktop --field version
 python3 scripts/version.py check
 ```
 
-`check` 校验版本格式、移动端构建号、重复字段和分组版本一致性。发现不一致时返回非零退出码并指出组件；用 `set client <版本>` 统一客户端，用 `set cli <版本>` 或 `set mcp <版本>` 统一 CLI、MCP、DSH 及原生依赖。单独检查任一客户端都会检查全部客户端；`check cli` 和 `check mcp` 也都会检查整个工具分组。
+`check` xác minh định dạng phiên bản, số bản dựng di động, trường trùng và thống nhất phiên bản nhóm. Nếu không khớp, trả mã thoát khác không và chỉ rõ thành phần; dùng `set client <phiên-bản>` để thống nhất ứng dụng, `set cli <phiên-bản>` hoặc `set mcp <phiên-bản>` để thống nhất CLI, MCP, DSH và phụ thuộc gốc. Kiểm tra riêng bất kỳ ứng dụng nào cũng kiểm tra toàn bộ ứng dụng; `check cli` và `check mcp` đều kiểm tra cả nhóm công cụ.
 
-`Check component versions` GitHub Action 在 push、PR 和手动运行时执行全部检查。各构建及 npm 发布工作流也会检查对应分组，不一致时停止。版本脚本不查询 npm 或应用商店；正式发布仍使用对应工作流的发布前检查。
+GitHub Action `Check component versions` chạy mọi kiểm tra khi push, PR và chạy thủ công. Quy trình biên dịch và phát hành npm cũng kiểm tra nhóm tương ứng, dừng nếu không khớp. Script phiên bản không truy vấn npm hay cửa hàng ứng dụng; phát hành chính thức vẫn dùng kiểm tra trước phát hành của quy trình tương ứng.
 
-## 可管理的组件
+## Thành phần có thể quản lý
 
-| 组件参数 | 版本来源及同步范围 |
+| Tham số thành phần | Nguồn phiên bản và phạm vi đồng bộ |
 | --- | --- |
-| `client` | 统一管理所有客户端版本，分别保留 Android、iOS、HarmonyOS 的构建号；`mobile` 是同一分组的别名，也会同步桌面版本 |
-| `desktop` | 修改版本时同步全部客户端；版本写入 `apps/desktop/xmake/options.lua` 的 `CROSSDESK_VERSION` 默认值，供 Windows、macOS、Linux 共用 |
-| `android` | 修改版本时同步全部客户端；`--build` 和 `bump android build` 只指定 Gradle 的 `crossdeskVersionCode` |
-| `ios` | 修改版本时同步全部客户端；`--build` 和 `bump ios build` 只指定 `CURRENT_PROJECT_VERSION`，同步 Debug 和 Release |
-| `harmony` | 修改版本时同步全部客户端；`--build` 和 `bump harmony build` 只指定 `AppScope/app.json5` 的 `versionCode` |
-| `cli` | 同步 CLI、MCP、DSH 和 MCP 的 CLI 依赖；CLI 写入 `apps/cli/package.json` 与 `apps/cli/xmake.lua`，五个平台原生 npm 包及入口包在打包时继承此版本 |
-| `mcp` | 与 `cli` 修改范围相同；MCP 写入 `apps/mcp/package.json`、锁文件中的根版本与根包版本、DSH 集成目录的包版本，以及 `src/native.ts` 的 `NATIVE_VERSION` |
-| `pi` | `apps/cli/plugins/pi/package.json` 的扩展版本 |
+| `client` | Quản lý thống nhất phiên bản mọi ứng dụng, giữ riêng số bản dựng Android, iOS, HarmonyOS; `mobile` là bí danh cùng nhóm, cũng đồng bộ phiên bản máy tính |
+| `desktop` | Sửa phiên bản đồng bộ mọi ứng dụng; ghi vào giá trị mặc định `CROSSDESK_VERSION` trong `apps/desktop/xmake/options.lua`, dùng chung Windows, macOS, Linux |
+| `android` | Sửa phiên bản đồng bộ mọi ứng dụng; `--build` và `bump android build` chỉ đặt `crossdeskVersionCode` của Gradle |
+| `ios` | Sửa phiên bản đồng bộ mọi ứng dụng; `--build` và `bump ios build` chỉ đặt `CURRENT_PROJECT_VERSION`, đồng bộ Debug và Release |
+| `harmony` | Sửa phiên bản đồng bộ mọi ứng dụng; `--build` và `bump harmony build` chỉ đặt `versionCode` của `AppScope/app.json5` |
+| `cli` | Đồng bộ CLI, MCP, DSH và phụ thuộc CLI của MCP; CLI ghi vào `apps/cli/package.json` và `apps/cli/xmake.lua`, năm gói npm gốc nền tảng và gói đầu vào kế thừa phiên bản này khi đóng gói |
+| `mcp` | Cùng phạm vi sửa với `cli`; MCP ghi vào `apps/mcp/package.json`, phiên bản gốc và gói gốc trong tệp khóa, phiên bản gói thư mục tích hợp DSH và `NATIVE_VERSION` trong `src/native.ts` |
+| `pi` | Phiên bản phần mở rộng trong `apps/cli/plugins/pi/package.json` |
 
-npm 组件若有 `package-lock.json`，脚本会同步其中的根版本和 `packages[""].version`，不会改动依赖包版本。DSH 与 MCP 一起分发，不需要独立设置 DSH 发布版本。HarmonyOS 的模块描述、SDK `modelVersion` 和本地类型库版本不属于应用发布版本，保持各自的用途。
+Nếu thành phần npm có `package-lock.json`, script đồng bộ phiên bản gốc và `packages[""].version`, không đổi phiên bản gói phụ thuộc. DSH phân phối cùng MCP, không cần đặt phiên bản phát hành DSH riêng. Mô tả mô-đun HarmonyOS, `modelVersion` SDK và phiên bản thư viện kiểu cục bộ không thuộc phiên bản phát hành ứng dụng, giữ mục đích riêng.
 
-## 设置版本
+## Đặt phiên bản
 
-以下均为命令示例，替换为准备发布的版本：
+Các lệnh sau đều là ví dụ; thay bằng phiên bản chuẩn bị phát hành:
 
 ```sh
 python3 scripts/version.py set client 1.7.7 --android-build 5 --ios-build 7 --harmony-build 10002
@@ -55,21 +55,21 @@ python3 scripts/version.py set mcp 0.3.0
 python3 scripts/version.py set pi 0.1.1
 ```
 
-所有修改命令都支持 `--dry-run`，先显示将要修改的文件差异：
+Mọi lệnh sửa hỗ trợ `--dry-run`, hiện trước khác biệt tệp sắp sửa:
 
 ```sh
 python3 scripts/version.py set mcp 0.3.0 --dry-run
 ```
 
-版本参数填写 `X.Y.Z`，不包含标签前缀 `v`、日期或构建元数据。CLI、MCP、Pi 另支持 `X.Y.Z-rc.N` 等预发布版本。客户端共用版本各段限制在 `0–65535`，以适配 Windows 版本资源。
+Tham số phiên bản là `X.Y.Z`, không gồm tiền tố tag `v`, ngày hoặc siêu dữ liệu biên dịch. CLI, MCP, Pi còn hỗ trợ bản tiền phát hành như `X.Y.Z-rc.N`. Mỗi phần phiên bản chung ứng dụng giới hạn `0–65535` để phù hợp tài nguyên phiên bản Windows.
 
-`set client` 可分别传入 `--android-build`、`--ios-build`、`--harmony-build`，不接受含义不明确的 `--build`。`set android 1.7.7 --build 5` 同样会将全部客户端发布版本设为 `1.7.7`，但 `--build 5` 只指定 Android 构建号，其余移动端按各自的构建号递增。`set ios`、`set harmony` 对称处理；`set desktop` 同样同步全部客户端，但不接受 `--build`。
+`set client` có thể nhận riêng `--android-build`, `--ios-build`, `--harmony-build`, không nhận `--build` mơ hồ. `set android 1.7.7 --build 5` cũng đặt phiên bản phát hành mọi ứng dụng thành `1.7.7`, nhưng `--build 5` chỉ đặt số bản dựng Android, các nền tảng di động khác tăng theo số riêng. `set ios`, `set harmony` xử lý tương tự; `set desktop` cũng đồng bộ mọi ứng dụng nhưng không nhận `--build`.
 
-各端发布版本变化而未显式指定构建号时，该端构建号自动加一；相同版本且未指定构建号时不改动文件。例如从所有客户端 `1.7.6`、Android / iOS / HarmonyOS 构建号分别为 `4` / `6` / `10001` 执行 `set client 1.7.7`，结果为所有客户端 `1.7.7`、构建号 `5` / `7` / `10002`。修复版本差异时，仅版本实际变化的端自动增加构建号。显式构建号不得降低，修改应用版本时构建号必须增加。脚本统一使用正整数构建号：Android 最大 `2100000000`，iOS 最大 `9999`，HarmonyOS 最大 `2147483647`。
+Khi phiên bản phát hành một nền tảng thay đổi mà không chỉ định số bản dựng, số đó tự tăng một; nếu cùng phiên bản và chưa chỉ định số bản dựng thì không sửa tệp. Ví dụ, từ mọi ứng dụng `1.7.6`, số bản dựng Android / iOS / HarmonyOS lần lượt `4` / `6` / `10001`, chạy `set client 1.7.7` cho kết quả mọi ứng dụng `1.7.7`, số bản dựng `5` / `7` / `10002`. Khi sửa lệch phiên bản, chỉ nền tảng thực sự đổi phiên bản tự tăng số bản dựng. Số chỉ định rõ không được giảm; khi đổi phiên bản ứng dụng, số bản dựng bắt buộc tăng. Script thống nhất dùng số nguyên dương: Android tối đa `2100000000`, iOS tối đa `9999`, HarmonyOS tối đa `2147483647`.
 
-修改前会先验证全部目标字段，验证失败不写文件；写入保留文件格式和权限，并使用逐文件原子替换。发生写入错误时会尝试还原已经写入的文件，修改后仍应检查 `git diff`。
+Trước khi sửa, xác minh mọi trường đích; nếu thất bại không ghi tệp. Ghi giữ định dạng và quyền tệp, thay thế nguyên tử từng tệp. Nếu ghi lỗi, thử khôi phục tệp đã ghi; sau sửa vẫn nên kiểm tra `git diff`.
 
-## 递增版本
+## Tăng phiên bản
 
 ```sh
 python3 scripts/version.py bump cli patch
@@ -79,24 +79,24 @@ python3 scripts/version.py bump client major --dry-run
 python3 scripts/version.py bump android build
 ```
 
-`major`、`minor`、`patch` 递增对应数字，并清零较低位；例如 `1.2.3` 递增 `minor` 得到 `1.3.0`。`bump client patch` 和对任一客户端执行 `bump ... patch` 都会同步提升全部客户端发布版本，并分别增加移动端构建号。`bump cli` 和 `bump mcp` 都会同步 CLI、MCP、DSH 和 MCP 的原生依赖。分组内原本不一致时，先使用 `set` 明确统一到哪个版本。
+`major`, `minor`, `patch` tăng số tương ứng, đặt các phần thấp hơn về không; ví dụ `1.2.3` tăng `minor` thành `1.3.0`. `bump client patch` và `bump ... patch` trên bất kỳ ứng dụng nào đều đồng bộ tăng phiên bản phát hành mọi ứng dụng, tăng riêng số bản dựng di động. `bump cli` và `bump mcp` đều đồng bộ CLI, MCP, DSH và phụ thuộc gốc MCP. Nếu trong nhóm vốn không khớp, dùng `set` để chỉ rõ phiên bản thống nhất trước.
 
-`bump android build`、`bump ios build`、`bump harmony build` 只增加指定端的构建号，其余端保持不变；不提供 `bump client build` 或 `bump mobile build`。当前是预发布版本时使用 `set` 明确指定下一个版本，例如 `set mcp 0.2.0-rc.2` 或 `set mcp 0.2.0`。
+`bump android build`, `bump ios build`, `bump harmony build` chỉ tăng số bản dựng nền tảng chỉ định, giữ nguyên các nền tảng khác; không có `bump client build` hay `bump mobile build`. Khi đang là bản tiền phát hành, dùng `set` chỉ rõ phiên bản tiếp theo, ví dụ `set mcp 0.2.0-rc.2` hoặc `set mcp 0.2.0`.
 
-## CLI、MCP 与 DSH 的共同版本
+## Phiên bản chung của CLI, MCP và DSH
 
-CLI、MCP、DSH 集成元数据和 MCP 的原生依赖版本必须完全相同，当前均为 `0.2.0`。执行 `set cli 0.3.0` 或 `set mcp 0.3.0` 会将它们一起设为 `0.3.0`，只需执行其中一条命令。预发布后缀也必须一致。不提供单独设置原生依赖版本的参数。
+Phiên bản CLI, MCP, siêu dữ liệu tích hợp DSH và phụ thuộc gốc MCP phải giống hoàn toàn, hiện đều là `0.2.0`. Chạy `set cli 0.3.0` hoặc `set mcp 0.3.0` sẽ đặt tất cả thành `0.3.0`, chỉ cần một trong hai lệnh. Hậu tố tiền phát hành cũng phải khớp. Không có tham số đặt riêng phiên bản phụ thuộc gốc.
 
-MCP 通用 npm 包从 `NATIVE_VERSION` 生成五个平台包的精确依赖；MCP 的 `--version` 和协议握手读取包版本。DSH 随 MCP 同包分发，不另发插件版本。
+Gói npm MCP chung tạo phụ thuộc chính xác cho năm gói nền tảng từ `NATIVE_VERSION`; `--version` và bắt tay giao thức MCP đọc phiên bản gói. DSH phân phối cùng gói MCP, không phát hành phiên bản plugin riêng.
 
-先通过 CLI 发布工作流发布同版本的五个平台原生包和 CLI 入口，再发布 MCP。即使只修改 MCP，也要为两者准备同一个新版本并按此顺序发布。CLI 与 MCP 仍使用各自的发布工作流和标签前缀；例如同一次版本更新使用 `cli-v0.3.0` 与 `mcp-v0.3.0`，建议指向同一提交。
+Trước hết phát hành năm gói gốc nền tảng và đầu vào CLI cùng phiên bản qua quy trình phát hành CLI, rồi phát hành MCP. Dù chỉ sửa MCP, vẫn cần chuẩn bị cùng phiên bản mới cho cả hai và phát hành theo thứ tự này. CLI và MCP vẫn dùng quy trình và tiền tố tag riêng; ví dụ cùng lần cập nhật dùng `cli-v0.3.0` và `mcp-v0.3.0`, nên trỏ cùng commit.
 
-CLI 构建工作流为每个平台附带生成 `crossdesk-mcp-<平台>` 安装包。源码版本不一致时，构建、MCP 打包和发布检查会报错；平台安装包还要求传入的原生包版本一致。工具版本不影响客户端版本和 Pi 扩展版本。
+Quy trình biên dịch CLI tạo kèm gói cài `crossdesk-mcp-<nền-tảng>` cho từng nền tảng. Nếu phiên bản nguồn không khớp, biên dịch, đóng gói MCP và kiểm tra phát hành báo lỗi; gói cài nền tảng còn yêu cầu phiên bản gói gốc truyền vào khớp. Phiên bản công cụ không ảnh hưởng phiên bản ứng dụng và phần mở rộng Pi.
 
-## 与构建和发布配合
+## Phối hợp biên dịch và phát hành
 
-客户端版本同时控制本地 Xmake 默认值，以及 GitHub Actions 分支构建未填写 `desktop_version` 时的默认版本。已有 Xmake 配置可能保留缓存，应重新配置；显式 `--CROSSDESK_VERSION`、Actions 的 `desktop_version` 和发布标签继续按原流程覆盖默认值。正式发布时应使标签的基础版本与客户端源码版本一致。日期和热修订后缀仍由发布流程处理，本脚本不修改既有标签格式。各端可分开构建和发布，但共用同一个源码发布版本。
+Phiên bản ứng dụng đồng thời điều khiển mặc định Xmake cục bộ và phiên bản mặc định khi biên dịch nhánh GitHub Actions không nhập `desktop_version`. Cấu hình Xmake hiện có có thể giữ bộ nhớ đệm, nên cấu hình lại; `--CROSSDESK_VERSION` tường minh, `desktop_version` Actions và tag phát hành tiếp tục ghi đè mặc định theo quy trình cũ. Phát hành chính thức nên khớp phiên bản cơ sở tag với phiên bản nguồn ứng dụng. Ngày và hậu tố hotfix vẫn do quy trình phát hành xử lý, script này không sửa định dạng tag hiện có. Các nền tảng có thể biên dịch và phát hành riêng nhưng dùng cùng phiên bản phát hành nguồn.
 
-修改并检查后，审阅、提交和推送源码，再按实际版本创建对应标签：CLI 使用 `cli-v<版本>`，MCP 使用 `mcp-v<版本>`。移动端沿用 `android-v<版本>-YYYYMMDD`、`ios-v<版本>-YYYYMMDD`。已发布版本不能用不同内容覆盖；版本修改脚本不会替你判断某个版本是否已在注册表中使用。
+Sau sửa và kiểm tra, rà soát, commit và push nguồn rồi tạo tag tương ứng phiên bản thực: CLI dùng `cli-v<phiên-bản>`, MCP dùng `mcp-v<phiên-bản>`. Di động tiếp tục dùng `android-v<phiên-bản>-YYYYMMDD`, `ios-v<phiên-bản>-YYYYMMDD`. Không ghi đè bản đã phát hành bằng nội dung khác; script sửa phiên bản không xác định hộ bạn phiên bản đã được dùng trên registry hay chưa.
 
-相关说明：[桌面构建](BUILD.md) · [CLI 发布](../apps/cli/docs/npm-distribution.md#ci-与发布) · [MCP 发布](../apps/mcp/DEVELOPMENT.md#github-actions-发布到-npm)。
+Tài liệu liên quan: [biên dịch máy tính](BUILD.md) · [phát hành CLI](../apps/cli/docs/npm-distribution.md#ci-与发布) · [phát hành MCP](../apps/mcp/DEVELOPMENT.md#github-actions-发布到-npm).

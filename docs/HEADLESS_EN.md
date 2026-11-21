@@ -1,6 +1,6 @@
 # Linux headless operation
 
-[README](../README_EN.md) · [中文](HEADLESS.md)
+[README](../README_EN.md) · [Tiếng Việt](HEADLESS.md)
 
 CrossDesk can reuse an existing X11 desktop or create a separate Xvfb desktop on a Linux host without a monitor. Capture, input, cursor and clipboard use the same display.
 

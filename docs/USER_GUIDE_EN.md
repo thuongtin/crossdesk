@@ -1,6 +1,6 @@
 # CrossDesk user guide
 
-[Project overview](../README_EN.md) · [中文](USER_GUIDE.md)
+[Project overview](../README_EN.md) · [Tiếng Việt](USER_GUIDE.md)
 
 Start with [download and installation](../README_EN.md#download). This guide covers connections and everyday controls. Some new features may not be included in released packages; check the notes for your version.
 
@@ -102,7 +102,7 @@ Click **DeskHub** at the top left of the main window to open a separate window. 
 
 DeskHub connections are muted by default. Enable sound with **Select → More → Unmute**. The bottom **Network** button shows direct / relay mode, encryption, receive/send rates, video latency, packet loss, resolution, and frame rate for all connected devices. For the full single-session toolbar, including display switching and privacy screens, click a connected device under **Recent Connections** in the main window to open its separate session window.
 
-**Closing DeskHub disconnects all remote devices and closes session windows sharing those connections; minimizing it keeps connections open.** The disconnect scope includes all groups and pages, regardless of selection. See the [DeskHub guide](deskhub.md) (Chinese) for further controls, preview behavior, and compatibility details.
+**Closing DeskHub disconnects all remote devices and closes session windows sharing those connections; minimizing it keeps connections open.** The disconnect scope includes all groups and pages, regardless of selection. See the [DeskHub guide](deskhub.md) (Vietnamese) for further controls, preview behavior, and compatibility details.
 
 <a id="session"></a>
 
@@ -179,7 +179,7 @@ Open **☰ → Settings** in the top-right corner, choose **General / DeskHub**,
 
 | Setting | Purpose |
 | --- | --- |
-| Language | Follow the system by default, or select Simplified / Traditional Chinese, English, Russian, Japanese, Korean, German, French, Spanish, or Brazilian Portuguese; see [localization](../localization/README.md) (Chinese) |
+| Language | Follow the system by default, or select Simplified / Traditional Chinese, English, Russian, Japanese, Korean, German, French, Spanish, or Brazilian Portuguese; see [localization](../localization/README.md) (Vietnamese) |
 | Capture Method (Windows) | Auto / DXGI / WGC / GDI; choose Auto for automatic headless adaptation |
 | Video Encode Format | H.264 / AV1; H.264 automatically prefers hardware codecs, with software fallback when unavailable or initialization fails; desktop AV1 uses software codecs |
 | Enable direct IP | Enabled by default; saving starts or stops direct IP immediately. Disabling disconnects IP sessions, stops listeners, and hides the mode button; the choice persists across restarts |
@@ -239,7 +239,7 @@ Devices supporting preview subscriptions can pause video while their views are h
 
 ### Check for updates
 
-CrossDesk checks for new versions on startup. You can also open **Menu → About → Check for updates** and read the release notes. Follow the available install or download option. Save work and finish file transfers before installing; connections will be interrupted. See the [update guide](UPDATER.md) (Chinese) for recovery steps.
+CrossDesk checks for new versions on startup. You can also open **Menu → About → Check for updates** and read the release notes. Follow the available install or download option. Save work and finish file transfers before installing; connections will be interrupted. See the [update guide](UPDATER.md) (Vietnamese) for recovery steps.
 
 <a id="feedback"></a>
 
@@ -257,7 +257,7 @@ Open **☰ → Feedback & suggestions** in the main window. **Give feedback on G
 
 If the computer enables **Only allow trusted devices**, first copy the controller’s pairing information, add it to the computer’s trusted list, and compare fingerprints. On desktop, open **Settings → General → Privacy → Manage trusted devices**; on iOS, Android, and HarmonyOS mobile, open **Settings → This device’s pairing info**. The connection password is still required.
 
-Check that every controller you intend to use supports pairing before enabling the restriction. The current terminal CLI does not. See the [pairing and migration guide](CONNECTIONS.md#trusted-devices) (Chinese).
+Check that every controller you intend to use supports pairing before enabling the restriction. The current terminal CLI does not. See the [pairing and migration guide](CONNECTIONS.md#trusted-devices) (Vietnamese).
 
 <a id="ios"></a>
 
@@ -270,7 +270,7 @@ Install the native controller on your iPhone or iPad to access a remote computer
 3. Choose a mouse mode in Settings: **Relative Position** works like a trackpad; **Absolute Position** maps touches directly to the remote screen.
 4. Tap the floating icon to expand the menu, then switch displays, open the keyboard, toggle audio, or send files. Received files are stored in `Documents/Received` and can be exported using the share button beside the transfer status.
 
-The app receives remote text into the iOS clipboard. Tap **剪贴板** (Clipboard) in the floating menu to send local text to the remote computer. Text is limited to **128 KiB** per transfer; empty or oversized text displays a hint.
+The app receives remote text into the iOS clipboard. Tap **Clipboard** in the floating menu to send local text to the remote computer. Text is limited to **128 KiB** per transfer; empty or oversized text displays a hint.
 
 Pinch to zoom and use two fingers to pan the enlarged view. Native and browser controls may differ. The app follows the system or per-app language; see the [language guide](../localization/README.md).
 

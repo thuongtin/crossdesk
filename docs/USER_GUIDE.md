@@ -131,7 +131,7 @@ Mỗi lần sao chép tối đa 128 tệp thông thường; với thư mục, h�
 
 Bên nhận Linux tương thích FUSE 2 và FUSE 3, dùng thư viện thời gian chạy và công cụ gắn kết hiện có của hệ thống để cung cấp tệp đọc theo yêu cầu. Khi chạy, thử FUSE 3 trước (`libfuse3.so.3` hoặc `libfuse3.so.4`), nếu không khả dụng thì thử FUSE 2 (`libfuse.so.2`). Người dùng hiện tại vẫn cần truy cập được `/dev/fuse` và gắn kết hệ thống tệp FUSE.
 
-Gói Debian khai báo phụ thuộc chọn một trong hai: `fuse3 (>= 3.2) | fuse (>= 2.9)`. Khi cài qua APT hoặc nâng cấp trong ứng dụng, có sẵn bất kỳ phiên bản nào đều đáp ứng phụ thuộc, không bắt buộc thay bằng phiên bản kia; nếu chưa có cả hai, trình quản lý gói cài FUSE 3 và thư viện thời gian chạy của nó. Nâng cấp trong ứng dụng giữ biện pháp bảo vệ không cho tự xóa gói. Dùng trực tiếp `dpkg -i` không tải phụ thuộc còn thiếu; nên dùng `sudo apt install ./安装包.deb`.
+Gói Debian khai báo phụ thuộc chọn một trong hai: `fuse3 (>= 3.2) | fuse (>= 2.9)`. Khi cài qua APT hoặc nâng cấp trong ứng dụng, có sẵn bất kỳ phiên bản nào đều đáp ứng phụ thuộc, không bắt buộc thay bằng phiên bản kia; nếu chưa có cả hai, trình quản lý gói cài FUSE 3 và thư viện thời gian chạy của nó. Nâng cấp trong ứng dụng giữ biện pháp bảo vệ không cho tự xóa gói. Dùng trực tiếp `dpkg -i` không tải phụ thuộc còn thiếu; nên dùng `sudo apt install ./ten-goi-cai-dat.deb`.
 
 Nếu môi trường triển khai thủ công thiếu FUSE, hoặc container hay quyền hệ thống ngăn gắn kết, bên nhận nhắc kiểm tra cài đặt FUSE và quyền gắn kết, bạn vẫn có thể dùng cửa sổ truyền tệp; điều khiển từ xa, bảng nhớ tạm văn bản và sao chép tệp đến thiết bị khác không chịu giới hạn này.
 
@@ -179,7 +179,7 @@ Nhấn **☰ → Cài đặt** ở góc trên bên phải cửa sổ chính, chu
 
 | Cài đặt | Giải thích |
 | --- | --- |
-| Ngôn ngữ | Mặc định theo hệ thống, cũng có thể chọn thủ công tiếng Trung giản thể, tiếng Trung phồn thể, tiếng Anh, tiếng Nga, tiếng Nhật, tiếng Hàn, tiếng Đức, tiếng Pháp, tiếng Tây Ban Nha hoặc tiếng Bồ Đào Nha Brazil; xem [tài liệu bản địa hóa](../localization/README.md) |
+| Ngôn ngữ | Bản cài đặt mới của phiên bản này mặc định chọn Tiếng Việt. Bạn có thể chọn thủ công một trong 11 ngôn ngữ: tiếng Trung giản thể, tiếng Anh, tiếng Nga, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Đức, tiếng Pháp, tiếng Tây Ban Nha, tiếng Bồ Đào Nha Brazil và Tiếng Việt, hoặc chọn “Theo hệ thống”. Nếu không có ngôn ngữ hệ thống phù hợp, ứng dụng dùng tiếng Việt; lựa chọn trong cấu hình hiện có được giữ nguyên. Xem [tài liệu bản địa hóa](../localization/README.md) |
 | Định dạng mã hóa video | H.264 / AV1; H.264 tự ưu tiên mã hóa và giải mã phần cứng, chuyển về phần mềm nếu không khả dụng hoặc khởi tạo thất bại; AV1 trên máy tính dùng mã hóa và giải mã phần mềm |
 | Bật kết nối IP | Mặc định bật; lưu sẽ bật/tắt IP trực tiếp ngay. Tắt sẽ ngắt phiên IP, dừng lắng nghe và ẩn nút chế độ cửa sổ chính, giữ trạng thái sau khi khởi động lại |
 | Buộc kết nối chuyển tiếp | Khi tắt, tự chọn phương thức kết nối, cho phép P2P và chuyển sang chuyển tiếp TURN khi cần; khi bật, chỉ kết nối qua chuyển tiếp |
