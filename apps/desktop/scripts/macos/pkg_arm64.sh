@@ -113,13 +113,13 @@ cat > "${CONTENTS_DIR}/Info.plist" <<EOF
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSCameraUsageDescription</key>
-    <string>应用需要访问摄像头</string>
+    <string>Ứng dụng cần truy cập camera</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>应用需要访问麦克风</string>
+    <string>Ứng dụng cần truy cập micro</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>应用需要发送 Apple 事件</string>
+    <string>Ứng dụng cần gửi sự kiện Apple</string>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>应用需要录屏权限以捕获屏幕内容</string>
+    <string>Ứng dụng cần quyền ghi màn hình để thu nội dung màn hình</string>
 </dict>
 </plist>
 EOF
@@ -143,7 +143,7 @@ fi
 mkdir -p build_pkg_resources
 cat > build_pkg_resources/welcome.html <<EOF
 <!doctype html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="utf-8">
     <style>
@@ -166,11 +166,11 @@ cat > build_pkg_resources/welcome.html <<EOF
     </style>
 </head>
 <body>
-    <h1>欢迎安装 ${INSTALLER_TITLE}</h1>
-    <p>CrossDesk 需要 macOS ${MACOS_MIN_VERSION} 或更高版本，将安装到“应用程序”文件夹。</p>
-    <p>首次启动时，CrossDesk 会引导你在系统设置中授予必要权限，包括辅助功能、录屏与系统录音等。</p>
-    <p>正式签名版本正常升级时会保留已有权限。从未签名或 ad-hoc 旧版升级后，请退出旧版并启动新版。新版会迁移当前用户的录屏与辅助功能授权，并引导你重新授权。遇到异常可在“设置 → 系统权限”中重试或稍后处理。</p>
-    <p>安装完成后，请从“应用程序”文件夹启动 CrossDesk。</p>
+    <h1>Chào mừng bạn cài đặt ${INSTALLER_TITLE}</h1>
+    <p>CrossDesk yêu cầu macOS ${MACOS_MIN_VERSION} trở lên và sẽ được cài vào thư mục “Ứng dụng”.</p>
+    <p>Khi khởi động lần đầu, CrossDesk sẽ hướng dẫn bạn cấp các quyền cần thiết trong cài đặt hệ thống, gồm trợ năng, ghi màn hình và ghi âm thanh hệ thống.</p>
+    <p>Nâng cấp bình thường từ bản đã ký chính thức sẽ giữ quyền hiện có. Khi nâng cấp từ bản cũ chưa ký hoặc ký ad-hoc, hãy thoát bản cũ rồi mở bản mới. Bản mới sẽ di chuyển quyền ghi màn hình và trợ năng của người dùng hiện tại, đồng thời hướng dẫn bạn cấp lại quyền. Nếu gặp bất thường, bạn có thể thử lại trong “Cài đặt → Quyền hệ thống” hoặc xử lý sau.</p>
+    <p>Sau khi cài xong, hãy mở CrossDesk từ thư mục “Ứng dụng”.</p>
 </body>
 </html>
 EOF

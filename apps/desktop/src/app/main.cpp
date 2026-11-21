@@ -465,7 +465,7 @@ int main(int argc, char* argv[]) {
       argc, argv, [&] { return RunApplication(argc, argv); }, [&] {
         crossdesk::PathManager paths("CrossDesk");
         if (console.Enable(paths.GetLogPath(), paths.GetCachePath() / "config.ini")) return true;
-        std::cerr << "无法初始化日志或控制台，启动失败。\n";
+        std::cerr << "Không thể khởi tạo nhật ký hoặc bảng điều khiển, khởi động thất bại.\n";
         return false;
       });
   if (console.active()) {

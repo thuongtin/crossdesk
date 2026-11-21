@@ -22,94 +22,95 @@ const icons = {
 };
 const icon = (name: keyof typeof icons) => `<svg class="icon icon-${name}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const root = document.querySelector<HTMLDivElement>("#app")!;
+document.documentElement.lang = "vi";
 root.innerHTML = `
 <header class="app-header">
-  <div class="brand"><img class="brand-logo" src="${CROSSDESK_LOGO}" alt="" width="24" height="24"><h1>CrossDesk</h1><span class="brand-context">Agent 会话</span></div>
-  <div class="header-right"><button id="details-toggle" class="quiet" aria-expanded="false" aria-controls="sidebar">${icon("info")}<span id="details-label">会话详情</span></button><span class="connection" id="connection" role="status"><span id="connection-label">等待连接</span></span></div>
+  <div class="brand"><img class="brand-logo" src="${CROSSDESK_LOGO}" alt="" width="24" height="24"><h1>CrossDesk</h1><span class="brand-context">Phiên Agent</span></div>
+  <div class="header-right"><button id="details-toggle" class="quiet" aria-expanded="false" aria-controls="sidebar">${icon("info")}<span id="details-label">Chi tiết phiên</span></button><span class="connection" id="connection" role="status"><span id="connection-label">Đang chờ kết nối</span></span></div>
 </header>
 <div id="error" role="alert" hidden></div>
 <main>
-  <button id="details-backdrop" class="details-backdrop" aria-label="关闭会话详情" tabindex="-1" hidden></button>
+  <button id="details-backdrop" class="details-backdrop" aria-label="Đóng chi tiết phiên" tabindex="-1" hidden></button>
   <aside id="sidebar" aria-labelledby="sidebar-title">
-    <div class="sidebar-heading"><h2 id="sidebar-title">授权 Agent 连接</h2><button id="details-close" class="quiet icon-button" aria-label="关闭会话详情">×</button></div>
-    <div id="connect-form" role="form" aria-label="连接远程电脑">
-      <p class="authorization-note">选择设备并授权后，Agent 将继续任务。你可以在这里查看画面或暂停控制。</p>
+    <div class="sidebar-heading"><h2 id="sidebar-title">Cấp quyền kết nối cho Agent</h2><button id="details-close" class="quiet icon-button" aria-label="Đóng chi tiết phiên">×</button></div>
+    <div id="connect-form" role="form" aria-label="Kết nối máy tính từ xa">
+      <p class="authorization-note">Sau khi bạn chọn thiết bị và cấp quyền, Agent sẽ tiếp tục tác vụ. Bạn có thể xem hình ảnh hoặc tạm dừng điều khiển tại đây.</p>
       <fieldset id="connection-fields">
-        <label for="device">设备</label><select id="device"><option value="">连接新设备</option></select>
+        <label for="device">Thiết bị</label><select id="device"><option value="">Kết nối thiết bị mới</option></select>
         <div id="new-device">
-          <label for="device-id">设备 ID</label><input id="device-id" inputmode="numeric" autocomplete="off" placeholder="输入 9 位设备 ID" maxlength="11">
+          <label for="device-id">ID thiết bị</label><input id="device-id" inputmode="numeric" autocomplete="off" placeholder="Nhập ID thiết bị 9 chữ số" maxlength="11">
         </div>
-        <label for="password">访问密码</label><div class="password-field"><input id="password" type="password" autocomplete="off" maxlength="256" placeholder="输入远端访问密码"><button type="button" id="password-toggle" aria-label="显示密码" aria-pressed="false">显示</button></div>
-        <label for="mode">授权范围</label><select id="mode" aria-describedby="mode-description"><option value="observe">仅查看画面</option><option value="control">允许 Agent 操作</option></select>
-        <p class="field-hint" id="mode-description">Agent 可以查看屏幕，无法操作键鼠。</p>
-        <details class="preferences"><summary>保存与授权</summary>
-          <div id="new-device-label"><label for="label">设备备注 <span class="optional">可选</span></label><input id="label" placeholder="例如：工作电脑" maxlength="80"></div>
+        <label for="password">Mật khẩu truy cập</label><div class="password-field"><input id="password" type="password" autocomplete="off" maxlength="256" placeholder="Nhập mật khẩu truy cập từ xa"><button type="button" id="password-toggle" aria-label="Hiện mật khẩu" aria-pressed="false">Hiện</button></div>
+        <label for="mode">Phạm vi cấp quyền</label><select id="mode" aria-describedby="mode-description"><option value="observe">Chỉ xem hình ảnh</option><option value="control">Cho phép Agent thao tác</option></select>
+        <p class="field-hint" id="mode-description">Agent có thể xem màn hình, không thể thao tác chuột và bàn phím.</p>
+        <details class="preferences"><summary>Lưu và cấp quyền</summary>
+          <div id="new-device-label"><label for="label">Ghi chú thiết bị <span class="optional">Không bắt buộc</span></label><input id="label" placeholder="Ví dụ: Máy tính công việc" maxlength="80"></div>
           <div class="checks">
-            <label><input id="save" type="checkbox"><span>保存设备</span></label>
-            <label><input id="remember" type="checkbox" disabled><span>记住密码<small>保存在本机系统凭据库</small></span></label>
-            <label><input id="remember-unlock" type="checkbox" disabled><span>保存锁屏密码并允许自动解锁<small>独立保存在本机系统凭据库</small></span></label>
-            <label><input id="authorize" type="checkbox" disabled><span>允许下次自动连接<small>沿用本次授权范围</small></span></label>
+            <label><input id="save" type="checkbox"><span>Lưu thiết bị</span></label>
+            <label><input id="remember" type="checkbox" disabled><span>Nhớ mật khẩu<small>Lưu trong kho xác thực hệ thống trên máy này</small></span></label>
+            <label><input id="remember-unlock" type="checkbox" disabled><span>Lưu mật khẩu khóa màn hình và cho phép tự mở khóa<small>Lưu riêng trong kho xác thực hệ thống trên máy này</small></span></label>
+            <label><input id="authorize" type="checkbox" disabled><span>Cho phép tự kết nối lần sau<small>Dùng lại phạm vi cấp quyền lần này</small></span></label>
           </div>
-          <div id="saved-unlock-field" hidden><label for="saved-unlock-password">系统锁屏密码</label><input id="saved-unlock-password" type="password" autocomplete="off" maxlength="256"></div>
+          <div id="saved-unlock-field" hidden><label for="saved-unlock-password">Mật khẩu khóa màn hình hệ thống</label><input id="saved-unlock-password" type="password" autocomplete="off" maxlength="256"></div>
         </details>
-        <details id="advanced"><summary>高级设置</summary>
-          <label for="server">服务器</label><input id="server" value="api.crossdesk.cn" autocomplete="off">
-          <div class="row"><div><label for="port">端口</label><input id="port" type="number" min="1" max="65535" value="9099"></div><div><label for="display">显示器索引</label><input id="display" type="number" min="0" max="63" value="0"></div></div>
+        <details id="advanced"><summary>Cài đặt nâng cao</summary>
+          <label for="server">Máy chủ</label><input id="server" value="api.crossdesk.cn" autocomplete="off">
+          <div class="row"><div><label for="port">Cổng</label><input id="port" type="number" min="1" max="65535" value="9099"></div><div><label for="display">Chỉ số màn hình</label><input id="display" type="number" min="0" max="63" value="0"></div></div>
         </details>
       </fieldset>
-      <button id="connect" type="button" class="primary" disabled><span id="connect-label">授权并连接</span>${icon("arrow")}</button>
-      <p class="privacy">密码不会发送到 Agent 对话中。</p>
+      <button id="connect" type="button" class="primary" disabled><span id="connect-label">Cấp quyền và kết nối</span>${icon("arrow")}</button>
+      <p class="privacy">Mật khẩu không được gửi vào hội thoại Agent.</p>
     </div>
     <div id="session-card" hidden>
-      <div class="device-card"><div class="device-icon">${icon("monitor")}</div><div class="device-identity"><strong id="session-device">远程电脑</strong><span id="session-platform">已连接</span></div></div>
-      <dl class="session-details"><div id="session-device-id-row" hidden><dt>设备 ID</dt><dd id="session-device-id"></dd></div><div><dt>访问权限</dt><dd id="session-access"></dd></div><div><dt>显示器</dt><dd id="session-display"></dd></div><div><dt>Agent 状态</dt><dd id="session-agent"></dd></div><div><dt>锁屏密码</dt><dd id="session-unlock-credential"></dd></div><div id="session-unlock-row" hidden><dt>解锁状态</dt><dd class="session-unlock-details"><span id="session-unlock-state"></span></dd></div></dl>
-      <label class="check"><input id="recovery" type="checkbox"><span>断线自动恢复</span></label>
-      <p class="session-note">关闭页面不会断开连接。</p>
+      <div class="device-card"><div class="device-icon">${icon("monitor")}</div><div class="device-identity"><strong id="session-device">Máy tính từ xa</strong><span id="session-platform">Đã kết nối</span></div></div>
+      <dl class="session-details"><div id="session-device-id-row" hidden><dt>ID thiết bị</dt><dd id="session-device-id"></dd></div><div><dt>Quyền truy cập</dt><dd id="session-access"></dd></div><div><dt>Màn hình</dt><dd id="session-display"></dd></div><div><dt>Trạng thái Agent</dt><dd id="session-agent"></dd></div><div><dt>Mật khẩu khóa màn hình</dt><dd id="session-unlock-credential"></dd></div><div id="session-unlock-row" hidden><dt>Trạng thái mở khóa</dt><dd class="session-unlock-details"><span id="session-unlock-state"></span></dd></div></dl>
+      <label class="check"><input id="recovery" type="checkbox"><span>Tự khôi phục khi mất kết nối</span></label>
+      <p class="session-note">Đóng trang không ngắt kết nối.</p>
     </div>
   </aside>
-  <section class="workspace" aria-label="远程画面与会话控制">
+  <section class="workspace" aria-label="Hình ảnh từ xa và điều khiển phiên">
     <div class="viewer-card">
       <div class="viewer-toolbar">
-        <div class="viewer-title"><h2 id="device-name">远程画面</h2><span id="agent-state" role="status">等待授权</span></div>
+        <div class="viewer-title"><h2 id="device-name">Hình ảnh từ xa</h2><span id="agent-state" role="status">Đang chờ cấp quyền</span></div>
         <div class="viewer-controls">
-          <button id="return-agent" class="soft" hidden>${icon("arrow")}<span>交还 Agent</span></button>
-          <button id="pause" title="暂停 Agent 控制" hidden disabled>${icon("pause")}<span id="pause-label">暂停 Agent</span></button>
-          <button id="more-toggle" class="quiet icon-button" aria-label="会话选项" title="会话选项" aria-expanded="false" aria-controls="session-menu" aria-haspopup="dialog">${icon("more")}</button>
+          <button id="return-agent" class="soft" hidden>${icon("arrow")}<span>Trả quyền cho Agent</span></button>
+          <button id="pause" title="Tạm dừng điều khiển của Agent" hidden disabled>${icon("pause")}<span id="pause-label">Tạm dừng Agent</span></button>
+          <button id="more-toggle" class="quiet icon-button" aria-label="Tùy chọn phiên" title="Tùy chọn phiên" aria-expanded="false" aria-controls="session-menu" aria-haspopup="dialog">${icon("more")}</button>
         </div>
       </div>
-      <div id="attention" class="attention" role="status" hidden><span>Agent 等待系统解锁</span><button id="unlock-open" type="button" hidden>输入密码</button></div>
+      <div id="attention" class="attention" role="status" hidden><span>Agent đang chờ mở khóa hệ thống</span><button id="unlock-open" type="button" hidden>Nhập mật khẩu</button></div>
       <div class="screen" id="screen">
-        <canvas id="frame" role="img" aria-label="远程桌面实时画面" hidden></canvas>
+        <canvas id="frame" role="img" aria-label="Hình ảnh trực tiếp của desktop từ xa" hidden></canvas>
         <canvas id="agent-cursor" aria-hidden="true"></canvas>
-        <textarea id="remote-input" aria-label="远程键盘输入" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+        <textarea id="remote-input" aria-label="Nhập bàn phím từ xa" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
         <div class="control-halo" aria-hidden="true"></div>
-        <div id="empty"><div class="empty-icon">${icon("monitor")}</div><h3 id="empty-title">未连接设备</h3><p id="empty-description">选择设备并输入访问密码。</p></div>
-        <div class="stale" id="stale" role="status" hidden>画面暂未更新</div>
+        <div id="empty"><div class="empty-icon">${icon("monitor")}</div><h3 id="empty-title">Chưa kết nối thiết bị</h3><p id="empty-description">Chọn thiết bị và nhập mật khẩu truy cập.</p></div>
+        <div class="stale" id="stale" role="status" hidden>Hình ảnh tạm chưa cập nhật</div>
       </div>
-      <div class="telemetry"><span id="video-state">待连接</span><div class="stream-metrics"><span id="resolution">—</span><span id="fps">—</span></div><span id="session-info">等待设备连接</span></div>
+      <div class="telemetry"><span id="video-state">Chờ kết nối</span><div class="stream-metrics"><span id="resolution">—</span><span id="fps">—</span></div><span id="session-info">Đang chờ thiết bị kết nối</span></div>
     </div>
-    <div class="video-options"><button id="video-retry" hidden>重新加载画面</button><button id="video-browser" hidden>在浏览器中观看</button></div>
+    <div class="video-options"><button id="video-retry" hidden>Tải lại hình ảnh</button><button id="video-browser" hidden>Xem trong trình duyệt</button></div>
     <p id="panel-status" class="panel-status" role="status" hidden></p>
   </section>
 </main>
-<div id="session-menu" class="session-menu" role="dialog" aria-label="会话选项" hidden>
-  <p class="menu-caption">查看与人工干预</p>
-  <button id="focus-view" class="quiet" aria-label="放大画面" aria-pressed="false" disabled>${icon("expand")}<span id="focus-label">放大画面</span></button>
-  <button id="take-over" class="quiet" disabled>${icon("mouse")}<span id="take-over-label">人工接管</span></button>
-  <div class="menu-audio"><button id="audio-play" class="quiet" aria-label="播放声音" aria-pressed="false" disabled>${icon("volume")}<span id="audio-label">播放声音</span></button><label class="audio-volume"><span>音量</span><input id="audio-volume" type="range" min="0" max="1" step="0.05" value="1" disabled></label></div>
-  <button id="disconnect" class="quiet danger" disabled>${icon("power")}<span>断开连接</span></button>
-  <p class="menu-note">断开会结束当前远程会话。</p>
+<div id="session-menu" class="session-menu" role="dialog" aria-label="Tùy chọn phiên" hidden>
+  <p class="menu-caption">Xem và can thiệp thủ công</p>
+  <button id="focus-view" class="quiet" aria-label="Phóng to hình ảnh" aria-pressed="false" disabled>${icon("expand")}<span id="focus-label">Phóng to hình ảnh</span></button>
+  <button id="take-over" class="quiet" disabled>${icon("mouse")}<span id="take-over-label">Tiếp quản thủ công</span></button>
+  <div class="menu-audio"><button id="audio-play" class="quiet" aria-label="Phát âm thanh" aria-pressed="false" disabled>${icon("volume")}<span id="audio-label">Phát âm thanh</span></button><label class="audio-volume"><span>Âm lượng</span><input id="audio-volume" type="range" min="0" max="1" step="0.05" value="1" disabled></label></div>
+  <button id="disconnect" class="quiet danger" disabled>${icon("power")}<span>Ngắt kết nối</span></button>
+  <p class="menu-note">Ngắt kết nối sẽ kết thúc phiên từ xa hiện tại.</p>
 </div>
 <dialog id="unlock-dialog" class="unlock-dialog" aria-labelledby="unlock-title" aria-describedby="unlock-status">
-  <div class="unlock-dialog-header"><h2 id="unlock-title">解锁远程电脑</h2><button id="unlock-close" type="button" aria-label="关闭解锁弹窗">×</button></div>
+  <div class="unlock-dialog-header"><h2 id="unlock-title">Mở khóa máy tính từ xa</h2><button id="unlock-close" type="button" aria-label="Đóng hộp mở khóa">×</button></div>
   <p id="unlock-status" role="status"></p>
   <form id="unlock-form">
-    <label for="unlock-password">系统锁屏密码</label><input id="unlock-password" type="password" autocomplete="off" maxlength="256" required autofocus>
-    <div class="checks"><label><input id="unlock-remember" type="checkbox"><span>保存密码并允许以后自动解锁<small>独立保存在本机系统凭据库</small></span></label></div>
-    <div class="unlock-buttons"><button id="unlock-submit" class="primary" type="submit">解锁</button><button id="unlock-cancel" type="button">取消解锁</button></div>
+    <label for="unlock-password">Mật khẩu khóa màn hình hệ thống</label><input id="unlock-password" type="password" autocomplete="off" maxlength="256" required autofocus>
+    <div class="checks"><label><input id="unlock-remember" type="checkbox"><span>Lưu mật khẩu và cho phép tự mở khóa sau<small>Lưu riêng trong kho xác thực hệ thống trên máy này</small></span></label></div>
+    <div class="unlock-buttons"><button id="unlock-submit" class="primary" type="submit">Mở khóa</button><button id="unlock-cancel" type="button">Hủy mở khóa</button></div>
   </form>
 </dialog>
-<div id="unlock-toast" class="unlock-toast" role="status" hidden><div><strong id="unlock-toast-title"></strong><p id="unlock-toast-message"></p></div><button id="unlock-toast-close" type="button" aria-label="关闭解锁提示">×</button></div>`;
+<div id="unlock-toast" class="unlock-toast" role="status" hidden><div><strong id="unlock-toast-title"></strong><p id="unlock-toast-message"></p></div><button id="unlock-toast-close" type="button" aria-label="Đóng thông báo mở khóa">×</button></div>`;
 const element = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const input = (id: string) => element<HTMLInputElement>(id);
@@ -142,66 +143,66 @@ const humanInput = new HumanInput(element("screen"), element<HTMLTextAreaElement
   (args) => invoke("input", args), showError);
 function ownsInput() { return status.control_owner === "human" && status.human_view === context?.view_id; }
 const messages: Record<string, string> = {
-  AUDIO_INVALID: "远端音频格式无效。",
-  AUDIO_UNAVAILABLE: "尚未收到远端声音，请检查远端音频捕获权限。",
-  HUMAN_CONTROL_ACTIVE: "远端正在由人工操作，请先交还 Agent。",
-  STALE_OBSERVATION: "画面已变化，请等待新画面后继续操作。",
-  STALE_CONTROL: "控制权已交接。",
-  INPUT_QUEUE_FULL: "输入过快，已释放按键，请稍后继续。",
-  NATIVE_INPUT_UNSUPPORTED: "请更新原生 CLI 以启用人工接管。",
-  VIDEO_UNSUPPORTED: "当前浏览器不支持此视频格式，请使用支持 WebCodecs 的浏览器。",
-  VIDEO_UNAVAILABLE: "视频通道暂不可用。可重新加载画面；内嵌面板受限时请在浏览器中观看。",
-  VIDEO_POLICY_BLOCKED: "宿主的安全策略阻止了实时视频连接。",
-  VIDEO_INVALID: "视频格式发生变化，请重新加载画面。",
-  VIDEO_LIMIT: "观看面板数量已达上限，请关闭其他面板。",
-  AUTH_FAILED: "访问密码错误，请重新输入。",
-  AUTH_REQUIRED: "请输入访问密码，或在本机 setup 中配置凭据。",
-  CONNECTION_FAILED: "连接失败，请检查设备是否在线及服务器设置。",
-  CONNECTION_TIMEOUT: "等待远端画面超时，请检查远端状态后重试。",
-  CONNECTION_LOST: "远程连接已中断。请检查远端状态并重新连接。",
-  signaling_timeout: "连接信令服务器超时，请检查本机网络、代理和服务器状态。",
-  signaling_disconnected: "信令连接已中断，请检查本机网络、代理和服务器状态。",
-  signaling_login_failed: "信令服务器登录失败，请检查服务器配置。",
-  tls_certificate_error: "信令服务器证书验证失败，请检查证书和本机时间。",
-  cli_identity_not_supported: "信令服务器需要支持 CLI 身份注册，请更新服务器。",
-  join_request_failed: "发送设备连接请求失败，请检查信令连接。",
-  incorrect_password: "访问密码错误，请重新输入。",
-  device_not_found: "设备 ID 无效或已过期，请确认设备 ID。",
-  device_offline_or_unavailable: "远端设备暂不可连接，请检查被控端的在线状态。",
-  connection_timeout: "等待远端连接超时，请检查被控端和网络状态。",
-  connection_failed: "远端连接建立失败，请检查双方网络和中继服务器状态。",
-  connection_lost: "远端连接已中断，请检查双方网络状态。",
-  remote_disconnected: "远端已断开连接。",
-  display_not_available: "所选显示器当前不可用，请检查显示器索引。",
-  media_initialization_failed: "本机媒体组件初始化失败，请检查原生 CLI 运行环境。",
-  control_event_overflow: "连接事件队列已满，请稍后重新连接。",
-  SESSION_REPLACED: "连接已恢复，请使用更新后的会话。",
-  SESSION_LIMIT: "活动连接已达到八个，请先断开一个连接。",
-  DEVICE_BUSY: "此设备已有活动连接。",
-  CREDENTIAL_STORE_UNAVAILABLE: "系统凭据库不可用，密码未保存。",
-  CREDENTIAL_ROLLBACK_FAILED: "凭据保存中断，请通过本机 setup 重新配置密码。",
+  AUDIO_INVALID: "Định dạng âm thanh từ xa không hợp lệ.",
+  AUDIO_UNAVAILABLE: "Chưa nhận được âm thanh từ xa, hãy kiểm tra quyền ghi âm phía từ xa.",
+  HUMAN_CONTROL_ACTIVE: "Người dùng đang thao tác máy từ xa, hãy trả quyền cho Agent trước.",
+  STALE_OBSERVATION: "Hình ảnh đã thay đổi, hãy chờ hình mới rồi tiếp tục thao tác.",
+  STALE_CONTROL: "Quyền điều khiển đã được bàn giao.",
+  INPUT_QUEUE_FULL: "Nhập quá nhanh, đã nhả các phím. Hãy tiếp tục sau.",
+  NATIVE_INPUT_UNSUPPORTED: "Hãy cập nhật CLI gốc để bật tiếp quản thủ công.",
+  VIDEO_UNSUPPORTED: "Trình duyệt hiện tại không hỗ trợ định dạng video này, hãy dùng trình duyệt hỗ trợ WebCodecs.",
+  VIDEO_UNAVAILABLE: "Kênh video tạm không khả dụng. Bạn có thể tải lại hình ảnh; nếu bảng nhúng bị giới hạn, hãy xem trong trình duyệt.",
+  VIDEO_POLICY_BLOCKED: "Chính sách bảo mật của host đã chặn kết nối video trực tiếp.",
+  VIDEO_INVALID: "Định dạng video đã thay đổi, hãy tải lại hình ảnh.",
+  VIDEO_LIMIT: "Số bảng xem đã đạt giới hạn, hãy đóng các bảng khác.",
+  AUTH_FAILED: "Sai mật khẩu truy cập, hãy nhập lại.",
+  AUTH_REQUIRED: "Hãy nhập mật khẩu truy cập hoặc cấu hình thông tin xác thực qua setup trên máy này.",
+  CONNECTION_FAILED: "Kết nối thất bại, hãy kiểm tra thiết bị có trực tuyến và cài đặt máy chủ.",
+  CONNECTION_TIMEOUT: "Quá hạn chờ hình ảnh từ xa, hãy kiểm tra trạng thái máy từ xa rồi thử lại.",
+  CONNECTION_LOST: "Kết nối từ xa đã bị ngắt. Hãy kiểm tra trạng thái máy từ xa và kết nối lại.",
+  signaling_timeout: "Quá hạn kết nối máy chủ tín hiệu, hãy kiểm tra mạng, proxy trên máy này và trạng thái máy chủ.",
+  signaling_disconnected: "Kết nối tín hiệu đã bị ngắt, hãy kiểm tra mạng, proxy trên máy này và trạng thái máy chủ.",
+  signaling_login_failed: "Đăng nhập máy chủ tín hiệu thất bại, hãy kiểm tra cấu hình máy chủ.",
+  tls_certificate_error: "Xác minh chứng chỉ máy chủ tín hiệu thất bại, hãy kiểm tra chứng chỉ và thời gian máy này.",
+  cli_identity_not_supported: "Máy chủ tín hiệu cần hỗ trợ đăng ký danh tính CLI, hãy cập nhật máy chủ.",
+  join_request_failed: "Gửi yêu cầu kết nối thiết bị thất bại, hãy kiểm tra kết nối tín hiệu.",
+  incorrect_password: "Sai mật khẩu truy cập, hãy nhập lại.",
+  device_not_found: "ID thiết bị không hợp lệ hoặc đã hết hạn, hãy xác nhận ID thiết bị.",
+  device_offline_or_unavailable: "Tạm không thể kết nối thiết bị từ xa, hãy kiểm tra trạng thái trực tuyến của máy được điều khiển.",
+  connection_timeout: "Quá hạn chờ kết nối từ xa, hãy kiểm tra máy được điều khiển và trạng thái mạng.",
+  connection_failed: "Không thể thiết lập kết nối từ xa, hãy kiểm tra mạng hai bên và trạng thái máy chủ chuyển tiếp.",
+  connection_lost: "Kết nối từ xa đã bị ngắt, hãy kiểm tra trạng thái mạng hai bên.",
+  remote_disconnected: "Máy từ xa đã ngắt kết nối.",
+  display_not_available: "Màn hình đã chọn hiện không khả dụng, hãy kiểm tra chỉ số màn hình.",
+  media_initialization_failed: "Khởi tạo thành phần media cục bộ thất bại, hãy kiểm tra môi trường chạy CLI gốc.",
+  control_event_overflow: "Hàng đợi sự kiện kết nối đã đầy, hãy kết nối lại sau.",
+  SESSION_REPLACED: "Kết nối đã khôi phục, hãy dùng phiên đã cập nhật.",
+  SESSION_LIMIT: "Đã có tám kết nối hoạt động, hãy ngắt một kết nối trước.",
+  DEVICE_BUSY: "Thiết bị này đã có kết nối hoạt động.",
+  CREDENTIAL_STORE_UNAVAILABLE: "Kho xác thực hệ thống không khả dụng, mật khẩu chưa được lưu.",
+  CREDENTIAL_ROLLBACK_FAILED: "Lưu thông tin xác thực bị gián đoạn, hãy cấu hình lại mật khẩu qua setup trên máy này.",
   PAIRING_REQUIRED:
-    "请在终端运行 Agent 工具结果中的 setup --open-panel 配对命令，再打开面板。",
-  PANEL_UNAUTHORIZED: "面板授权已失效，请重新打开。",
-  VIEW_UNAUTHORIZED: "此面板已失效，请使用最新打开的面板。",
-  CONTROL_DENIED: "当前会话没有控制权限，或已被人工暂停。",
-  UNLOCK_PENDING: "请先完成或取消当前解锁请求。",
-  UNLOCK_CREDENTIAL_REQUIRED: "请输入系统锁屏密码。",
-  UNLOCK_EXPIRED: "解锁请求已失效，请让 Agent 重新观察锁屏并发起请求。",
-  UNLOCK_NOT_CONFIRMED: "系统解锁状态尚待确认，请检查远端画面。",
-  NATIVE_UNLOCK_UNSUPPORTED: "请更新原生 CLI，以启用锁屏解锁。",
-  SAVE_DEVICE_REQUIRED: "请先保存设备，再保存锁屏密码。",
-  SAVE_UNLOCK_REQUIRED: "请勾选保存锁屏密码。",
+    "Hãy chạy lệnh ghép đôi setup --open-panel từ kết quả công cụ Agent trong terminal, rồi mở lại bảng.",
+  PANEL_UNAUTHORIZED: "Quyền của bảng đã hết hiệu lực, hãy mở lại.",
+  VIEW_UNAUTHORIZED: "Bảng này đã hết hiệu lực, hãy dùng bảng mới mở nhất.",
+  CONTROL_DENIED: "Phiên hiện tại không có quyền điều khiển hoặc đã bị người dùng tạm dừng.",
+  UNLOCK_PENDING: "Hãy hoàn tất hoặc hủy yêu cầu mở khóa hiện tại trước.",
+  UNLOCK_CREDENTIAL_REQUIRED: "Hãy nhập mật khẩu khóa màn hình hệ thống.",
+  UNLOCK_EXPIRED: "Yêu cầu mở khóa đã hết hiệu lực, hãy để Agent quan sát lại màn hình khóa và gửi yêu cầu mới.",
+  UNLOCK_NOT_CONFIRMED: "Trạng thái mở khóa hệ thống chưa được xác nhận, hãy kiểm tra hình ảnh từ xa.",
+  NATIVE_UNLOCK_UNSUPPORTED: "Hãy cập nhật CLI gốc để bật mở khóa màn hình.",
+  SAVE_DEVICE_REQUIRED: "Hãy lưu thiết bị trước khi lưu mật khẩu khóa màn hình.",
+  SAVE_UNLOCK_REQUIRED: "Hãy chọn lưu mật khẩu khóa màn hình.",
   NATIVE_PACKAGE_MISSING:
-    "缺少对应平台的 CLI 运行组件，请检查包安装是否启用了 optional dependencies。",
-  INVALID_ARGUMENT: "请检查设备 ID、服务器和输入内容。",
-  DEVICE_ALIAS_CONFLICT: "这个备注已属于另一台设备，请换一个备注。",
+    "Thiếu thành phần chạy CLI cho nền tảng tương ứng, hãy kiểm tra đã bật optional dependencies khi cài gói.",
+  INVALID_ARGUMENT: "Hãy kiểm tra ID thiết bị, máy chủ và nội dung nhập.",
+  DEVICE_ALIAS_CONFLICT: "Ghi chú này đã thuộc thiết bị khác, hãy dùng ghi chú khác.",
 };
 function text(id: string, value: string) {
   if (element(id).textContent !== value) element(id).textContent = value;
 }
 function platformName(platform?: string) {
-  return ({ macos: "macOS", windows: "Windows", linux: "Linux", android: "Android", ios: "iOS" } as Record<string, string>)[platform ?? ""] ?? "远程电脑";
+  return ({ macos: "macOS", windows: "Windows", linux: "Linux", android: "Android", ios: "iOS" } as Record<string, string>)[platform ?? ""] ?? "Máy tính từ xa";
 }
 function resetMetrics() {
   humanInput.setFrame(undefined);
@@ -214,7 +215,7 @@ function resetMetrics() {
 function setFocus(focused: boolean) {
   root.classList.toggle("focus-mode", focused);
   const button = element<HTMLButtonElement>("focus-view");
-  const label = focused ? "还原布局" : "放大画面";
+  const label = focused ? "Khôi phục bố cục" : "Phóng to hình ảnh";
   text("focus-label", label);
   if (focused) setDetails(false);
   button.setAttribute("aria-pressed", String(focused));
@@ -227,7 +228,7 @@ function setDetails(open: boolean) {
   root.classList.toggle("details-open", open);
   element("details-backdrop").hidden = !open;
   element("details-toggle").setAttribute("aria-expanded", String(open));
-  text("details-label", open ? "收起详情" : "会话详情");
+  text("details-label", open ? "Thu gọn chi tiết" : "Chi tiết phiên");
   if (open) { setSessionMenu(false, false); element("details-close").focus(); }
   else if (restoreFocus && !root.classList.contains("focus-mode")) element("details-toggle").focus();
 }
@@ -274,27 +275,27 @@ window.addEventListener("keydown", (event) => {
 });
 function hidePassword() {
   input("password").type = "password";
-  text("password-toggle", "显示");
-  element("password-toggle").setAttribute("aria-label", "显示密码");
+  text("password-toggle", "Hiện");
+  element("password-toggle").setAttribute("aria-label", "Hiện mật khẩu");
   element("password-toggle").setAttribute("aria-pressed", "false");
 }
 element("password-toggle").onclick = () => {
   if (input("password").type === "text") return hidePassword();
   input("password").type = "text";
-  text("password-toggle", "隐藏");
-  element("password-toggle").setAttribute("aria-label", "隐藏密码");
+  text("password-toggle", "Ẩn");
+  element("password-toggle").setAttribute("aria-label", "Ẩn mật khẩu");
   element("password-toggle").setAttribute("aria-pressed", "true");
 };
 select("mode").onchange = () => {
   text("mode-description", select("mode").value === "control"
-    ? "Agent 可以操作键鼠，你可以随时暂停。"
-    : "Agent 可以查看屏幕，无法操作键鼠。");
+    ? "Agent có thể thao tác chuột và bàn phím, bạn có thể tạm dừng bất cứ lúc nào."
+    : "Agent có thể xem màn hình, không thể thao tác chuột và bàn phím.");
 };
 function showError(error: unknown) {
   const code = error instanceof Error ? error.message : "INTERNAL_ERROR";
   element("error").textContent =
     messages[code] ??
-    `操作未完成（${/^[A-Z_]+$/.test(code) ? code : "CONNECTION_ERROR"}）`;
+    `Thao tác chưa hoàn tất (${/^[A-Z_]+$/.test(code) ? code : "CONNECTION_ERROR"})`;
   element("error").hidden = false;
 }
 function check(result: Data): Data {
@@ -313,7 +314,7 @@ async function devices() {
     input("port").value = String(result.defaults.port);
   }
   const chosen = select("device").value || context?.device_alias || "";
-  select("device").replaceChildren(new Option("连接新设备", ""));
+  select("device").replaceChildren(new Option("Kết nối thiết bị mới", ""));
   savedDevices = result.devices ?? [];
   for (const d of savedDevices)
     select("device").add(
@@ -332,8 +333,8 @@ function deviceChanged() {
   element("new-device-label").hidden = saved;
   input("server").disabled = input("port").disabled = saved;
   input("password").placeholder = saved
-    ? "留空使用已保存的密码"
-    : "输入远端访问密码";
+    ? "Để trống để dùng mật khẩu đã lưu"
+    : "Nhập mật khẩu truy cập từ xa";
 }
 select("device").onchange = deviceChanged;
 input("save").onchange = () => {
@@ -389,12 +390,12 @@ function renderUnlock(s: Data) {
   const device = savedDevices.find((d) => d.device_alias === s.device_alias);
   if (request?.credential_saved && device) device.unlock_credential_provider = "keyring";
   const provider = request?.credential_saved ? "keyring" : device?.unlock_credential_provider;
-  text("session-unlock-credential", provider === "keyring" ? "已保存 · 自动解锁"
-    : provider === "environment" ? "环境变量 · 自动解锁" : "待配置");
+  text("session-unlock-credential", provider === "keyring" ? "Đã lưu · Tự mở khóa"
+    : provider === "environment" ? "Biến môi trường · Tự mở khóa" : "Chờ cấu hình");
   element("session-unlock-row").hidden = !visible;
   const states: Record<string, string> = {
-    preparing: "准备中", awaiting_password: "等待密码", submitting: "提交中",
-    submitted: "已提交", verifying: "验证中", verified: "已解锁", cancelled: "已取消", failed: "提交失败",
+    preparing: "Đang chuẩn bị", awaiting_password: "Đang chờ mật khẩu", submitting: "Đang gửi",
+    submitted: "Đã gửi", verifying: "Đang xác minh", verified: "Đã mở khóa", cancelled: "Đã hủy", failed: "Gửi thất bại",
   };
   text("session-unlock-state", states[request?.state] ?? "—");
   element("session-unlock-state").dataset.state = request?.state ?? "";
@@ -407,16 +408,16 @@ function renderUnlock(s: Data) {
   element<HTMLButtonElement>("unlock-submit").disabled = unlockBusy;
   element<HTMLButtonElement>("unlock-cancel").disabled = unlockBusy;
   text("unlock-status", unlockError || (unlockBusy || request?.state === "submitting"
-    ? "正在提交解锁，请稍候。" : "请确认远端系统密码框已聚焦，然后输入锁屏密码。"));
+    ? "Đang gửi yêu cầu mở khóa, vui lòng chờ." : "Hãy xác nhận ô mật khẩu hệ thống từ xa đã có tiêu điểm, rồi nhập mật khẩu khóa màn hình."));
   if (visible && pending && stateChanged) openUnlockDialog();
   if (visible && finished) {
-    text("unlock-toast-title", request.state === "verified" ? "系统已解锁" : request.state === "submitted" ? "解锁请求已提交"
-      : request.state === "cancelled" ? "解锁已取消" : "解锁操作未完成");
-    let message = ["submitted", "verified"].includes(request.state) ? "Agent 将检查画面并继续任务。" : "";
-    if (request.credential_saved) message = "锁屏密码已保存，Agent 将检查画面并继续任务。";
-    if (request.error) message = messages[request.error.code] ?? "请检查远端画面后再发起解锁。";
+    text("unlock-toast-title", request.state === "verified" ? "Hệ thống đã mở khóa" : request.state === "submitted" ? "Đã gửi yêu cầu mở khóa"
+      : request.state === "cancelled" ? "Đã hủy mở khóa" : "Thao tác mở khóa chưa hoàn tất");
+    let message = ["submitted", "verified"].includes(request.state) ? "Agent sẽ kiểm tra hình ảnh và tiếp tục tác vụ." : "";
+    if (request.credential_saved) message = "Đã lưu mật khẩu khóa màn hình, Agent sẽ kiểm tra hình ảnh và tiếp tục tác vụ.";
+    if (request.error) message = messages[request.error.code] ?? "Hãy kiểm tra hình ảnh từ xa rồi yêu cầu mở khóa lại.";
     if (request.persistence_error) message = request.persistence_error === "UNLOCK_NOT_CONFIRMED"
-      ? "锁屏密码需要在解锁确认后保存，请检查远端画面。" : "密码保存失败，可通过本机 setup 重新配置。";
+      ? "Mật khẩu khóa màn hình cần được lưu sau khi xác nhận mở khóa, hãy kiểm tra hình ảnh từ xa." : "Lưu mật khẩu thất bại, bạn có thể cấu hình lại qua setup trên máy này.";
     text("unlock-toast-message", message);
     element("unlock-toast-message").hidden = !message;
     element("unlock-toast").dataset.state = request.state;
@@ -441,7 +442,7 @@ element<HTMLFormElement>("unlock-form").onsubmit = async (event) => {
     renderStatus({ ...status, unlock: result.unlock });
     await devices();
   } catch (error) {
-    unlockError = messages[error instanceof Error ? error.message : ""] ?? "解锁请求暂时无法提交，请检查连接状态。";
+    unlockError = messages[error instanceof Error ? error.message : ""] ?? "Tạm không thể gửi yêu cầu mở khóa, hãy kiểm tra trạng thái kết nối.";
   }
   finally { args.password = undefined; unlockBusy = false; renderUnlock(status); }
 };
@@ -452,7 +453,7 @@ element("unlock-cancel").onclick = async () => {
     const result = await invoke("unlock", { request_id: unlockRequestId, cancel: true });
     renderStatus({ ...status, unlock: result.unlock });
   } catch (error) {
-    unlockError = messages[error instanceof Error ? error.message : ""] ?? "取消请求暂时无法提交，请检查连接状态。";
+    unlockError = messages[error instanceof Error ? error.message : ""] ?? "Tạm không thể gửi yêu cầu hủy, hãy kiểm tra trạng thái kết nối.";
     renderUnlock(status);
   }
 };
@@ -465,14 +466,14 @@ function renderStatus(s: Data) {
   status = s;
   element<HTMLButtonElement>("audio-play").disabled = !connected || usePreview;
   input("audio-volume").disabled = !connected || usePreview;
-  const audioLabel = audioPlayer.enabled ? "静音" : "播放声音";
+  const audioLabel = audioPlayer.enabled ? "Tắt tiếng" : "Phát âm thanh";
   text("audio-label", audioLabel);
   element("audio-play").setAttribute("aria-label", audioLabel);
   element("audio-play").setAttribute("aria-pressed", String(audioPlayer.enabled));
   element("audio-play").title = audioLabel;
   if (!connected || changedSession) audioPlayer.flush();
   humanInput.update(connected && ownsInput() ? s.human_input_epoch : undefined);
-  text("take-over-label", ownsInput() ? "交还 Agent" : "人工接管");
+  text("take-over-label", ownsInput() ? "Trả quyền cho Agent" : "Tiếp quản thủ công");
   element("take-over").setAttribute("aria-pressed", String(ownsInput()));
   element<HTMLButtonElement>("take-over").disabled = !connected || !s.control_allowed ||
     s.viewer_input_protocol !== "events/1" || controlBusy || (!imageAt && !ownsInput());
@@ -486,32 +487,32 @@ function renderStatus(s: Data) {
   root.dataset.connecting = String(connecting);
   root.dataset.controlling = String(connected && s.control === true && s.control_allowed === true && !s.human_paused);
   element("connection").dataset.state = connected ? "online" : connecting ? "connecting" : lost && !disconnectedByUser ? "offline" : "idle";
-  text("connection-label", connected ? "已连接" : connecting ? "正在连接" : lost ? "未连接" : "等待连接");
+  text("connection-label", connected ? "Đã kết nối" : connecting ? "Đang kết nối" : lost ? "Chưa kết nối" : "Đang chờ kết nối");
   element("connect-form").hidden = connected || s.state === "reconnecting";
   element("session-card").hidden = !connected && s.state !== "reconnecting";
-  text("sidebar-title", hasSession ? "会话详情" : "授权 Agent 连接");
-  text("device-name", hasSession ? s.device_alias || "远程电脑" : "远程画面");
+  text("sidebar-title", hasSession ? "Chi tiết phiên" : "Cấp quyền kết nối cho Agent");
+  text("device-name", hasSession ? s.device_alias || "Máy tính từ xa" : "Hình ảnh từ xa");
   if (!hasSession || changedSession) { setDetails(false); setSessionMenu(false, false); }
   // Native control state describes permissions/ownership, not task execution.
   const agentState = s.state === "reconnecting" ? "recovering" : !connected ? "idle"
     : s.control_owner === "human" ? "human" : s.human_paused ? "paused"
     : s.unlock?.state === "awaiting_password" ? "unlock"
     : !s.control_allowed ? "observe" : s.control ? "enabled" : "idle";
-  const agentLabel = s.state === "reconnecting" ? "正在恢复连接" : !connected ? "等待授权"
-    : agentState === "human" ? ownsInput() ? "人工接管中 · Agent 已让出控制" : "其他面板正在人工操作"
-    : agentState === "paused" ? "Agent 控制已暂停" : agentState === "unlock" ? "Agent 等待系统解锁"
-    : agentState === "observe" ? "Agent 仅查看" : agentState === "enabled" ? "Agent 控制已启用" : "Agent 控制未启用";
+  const agentLabel = s.state === "reconnecting" ? "Đang khôi phục kết nối" : !connected ? "Đang chờ cấp quyền"
+    : agentState === "human" ? ownsInput() ? "Đang tiếp quản thủ công · Agent đã nhường quyền điều khiển" : "Người dùng đang thao tác trong bảng khác"
+    : agentState === "paused" ? "Điều khiển của Agent đã tạm dừng" : agentState === "unlock" ? "Agent đang chờ mở khóa hệ thống"
+    : agentState === "observe" ? "Agent chỉ xem" : agentState === "enabled" ? "Đã bật điều khiển của Agent" : "Chưa bật điều khiển của Agent";
   text("agent-state", agentLabel);
   element("agent-state").dataset.state = agentState;
   const platform = platformName(s.platform);
-  text("session-info", connected ? `${platform} · 显示器 ${(s.display ?? 0) + 1}` : "等待设备连接");
-  text("session-device", s.device_alias || "远程电脑");
+  text("session-info", connected ? `${platform} · Màn hình ${(s.display ?? 0) + 1}` : "Đang chờ thiết bị kết nối");
+  text("session-device", s.device_alias || "Máy tính từ xa");
   text("session-platform", platform);
   const device = savedDevices.find((d) => d.device_alias === s.device_alias);
   element("session-device-id-row").hidden = !device;
   text("session-device-id", device ? String(device.device_id).replace(/(\d{3})(?=\d)/g, "$1 ") : "");
-  text("session-access", s.control_allowed ? "查看与操作" : "仅查看");
-  text("session-display", `显示器 ${(s.display ?? 0) + 1}`);
+  text("session-access", s.control_allowed ? "Xem và thao tác" : "Chỉ xem");
+  text("session-display", `Màn hình ${(s.display ?? 0) + 1}`);
   text("session-agent", agentLabel);
   input("recovery").checked = s.reconnect_enabled === true;
   input("recovery").disabled = !s.session_id;
@@ -519,14 +520,14 @@ function renderStatus(s: Data) {
   element<HTMLButtonElement>("pause").disabled = !connected || !s.control_allowed || controlBusy || s.control_owner === "human";
   element("pause").hidden = !connected || !s.control_allowed || s.control_owner === "human";
   element("pause").classList.toggle("soft", !!s.human_paused);
-  const pauseLabel = s.human_paused ? "恢复 Agent" : "暂停 Agent";
+  const pauseLabel = s.human_paused ? "Tiếp tục Agent" : "Tạm dừng Agent";
   text("pause-label", pauseLabel);
-  element("pause").title = s.human_paused ? "恢复 Agent 控制" : "暂停 Agent 控制";
+  element("pause").title = s.human_paused ? "Tiếp tục điều khiển của Agent" : "Tạm dừng điều khiển của Agent";
   element<HTMLButtonElement>("disconnect").disabled = !s.session_id || controlBusy || busy;
   element<HTMLButtonElement>("connect").disabled = busy || connected || !invoke;
   element<HTMLFieldSetElement>("connection-fields").disabled = busy;
   element("connect").setAttribute("aria-busy", String(busy));
-  text("connect-label", busy ? "正在连接…" : "授权并连接");
+  text("connect-label", busy ? "Đang kết nối…" : "Cấp quyền và kết nối");
   if (!connected) {
     element("frame").hidden = true;
     element("empty").hidden = false;
@@ -539,9 +540,9 @@ function renderStatus(s: Data) {
     element("empty").hidden = false;
   }
   if (!imageAt && !videoFailed) {
-    text("empty-title", connecting || connected ? "正在建立远程连接" : lost ? "会话已结束" : "未连接设备");
-    text("empty-description", connecting || connected ? "正在等待远端画面，请稍候。" : lost ? "请重新连接设备。" : "选择设备并输入访问密码。");
-    text("video-state", connecting || connected ? "等待画面" : "待连接");
+    text("empty-title", connecting || connected ? "Đang thiết lập kết nối từ xa" : lost ? "Phiên đã kết thúc" : "Chưa kết nối thiết bị");
+    text("empty-description", connecting || connected ? "Đang chờ hình ảnh từ xa, vui lòng chờ." : lost ? "Hãy kết nối lại thiết bị." : "Chọn thiết bị và nhập mật khẩu truy cập.");
+    text("video-state", connecting || connected ? "Đang chờ hình ảnh" : "Chờ kết nối");
     element("video-state").dataset.state = "idle";
   }
 }
@@ -698,11 +699,11 @@ async function startPreview() {
     element("video-retry").hidden = false;
     element("video-browser").hidden = !CROSSDESK_APPS;
     element("stale").hidden = !imageAt;
-    text("video-state", "画面不可用");
+    text("video-state", "Hình ảnh không khả dụng");
     element("video-state").dataset.state = "stale";
     if (!imageAt) {
-      text("empty-title", "暂时无法显示画面");
-      text("empty-description", "会话仍然保留。请尝试重新加载画面。");
+      text("empty-title", "Tạm không thể hiển thị hình ảnh");
+      text("empty-description", "Phiên vẫn được giữ. Hãy thử tải lại hình ảnh.");
     }
   };
   const presented = (info: FrameInfo) => {
@@ -713,11 +714,11 @@ async function startPreview() {
     element("empty").hidden = true;
     element("stale").hidden = true;
     const size = `${info.width} × ${info.height}`;
-    const rate = info.fps > 0 ? `${info.fps.toFixed(1)} FPS` : "测量中";
+    const rate = info.fps > 0 ? `${info.fps.toFixed(1)} FPS` : "Đang đo";
     if (size !== frameSize) { frameSize = size; text("resolution", size); }
     if (rate !== frameRate) { frameRate = rate; text("fps", rate); }
     element<HTMLButtonElement>("focus-view").disabled = false;
-    text("video-state", usePreview ? "预览" : "实时");
+    text("video-state", usePreview ? "Xem trước" : "Trực tiếp");
     element("video-state").dataset.state = "live";
   };
   try {
@@ -726,7 +727,7 @@ async function startPreview() {
       element<HTMLButtonElement>("audio-play").disabled = true;
       input("audio-volume").disabled = true;
       element("error").hidden = true;
-      text("panel-status", "实时视频不可用，已切换为内嵌预览：最高每秒 1 帧，不含声音。需要流畅画面时可使用浏览器面板。");
+      text("panel-status", "Video trực tiếp không khả dụng, đã chuyển sang xem trước nhúng: tối đa 1 khung/giây, không âm thanh. Bạn có thể dùng bảng trình duyệt nếu cần hình ảnh mượt.");
       element("panel-status").hidden = false;
       const preview = new PreviewPlayer(element<HTMLCanvasElement>("frame"), status.generation,
         (args) => invoke("preview", args), presented, failed);
@@ -762,7 +763,7 @@ element("video-browser").onclick = async () => {
     for (const name of ["connect", "pause", "disconnect"])
       element<HTMLButtonElement>(name).disabled = true;
     element("panel-status").hidden = false;
-    element("panel-status").textContent = "浏览器观看面板已打开。";
+    element("panel-status").textContent = "Đã mở bảng xem trong trình duyệt.";
   } catch (error) { showError(error); }
 };
 async function poll() {
@@ -783,7 +784,7 @@ async function poll() {
     const stale = !!imageAt && Date.now() - imageAt > 2000;
     element("stale").hidden = !stale;
     if (stale) {
-      text("video-state", "等待画面");
+      text("video-state", "Đang chờ hình ảnh");
       element("video-state").dataset.state = "stale";
       text("fps", "—");
       frameRate = "";

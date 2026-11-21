@@ -21,6 +21,17 @@ inline slint::SharedString Text(const std::string& value) {
 }
 
 template <typename Component>
+void ApplySlintLiterals(const Component& component, int language_index) {
+  const int language = localization::detail::ClampLanguageIndex(language_index);
+  auto& gallery = component->template global<ui::GalleryStrings>();
+  gallery.set_language(language);
+  std::vector<slint::SharedString> literals;
+  for (const auto* key : localization::detail::kSlintLiterals)
+    literals.push_back(Text(localization::Literal(key, language)));
+  gallery.set_texts(std::make_shared<slint::VectorModel<slint::SharedString>>(literals));
+}
+
+template <typename Component>
 void ApplyServerStrings(const Component& component, int language_index) {
   const int language = localization::detail::ClampLanguageIndex(language_index);
   auto& strings = component->template global<ui::ServerStrings>();
@@ -40,16 +51,12 @@ inline int ApplyMainWindowStrings(
     int language_index) {
   const int language =
       localization::detail::ClampLanguageIndex(language_index);
+  ApplySlintLiterals(window, language);
   auto& gallery = window->global<ui::GalleryStrings>();
-  gallery.set_language(language);
   const auto& retry = localization::Literal("请在 {0} 秒后重试", language);
   const auto split = retry.find("{0}");
   gallery.set_retry_prefix(Text(retry.substr(0, split)));
   gallery.set_retry_suffix(Text(split == std::string::npos ? "" : retry.substr(split + 3)));
-  std::vector<slint::SharedString> literals;
-  for (const auto* key : localization::detail::kSlintLiterals)
-    literals.push_back(Text(localization::Literal(key, language)));
-  gallery.set_texts(std::make_shared<slint::VectorModel<slint::SharedString>>(literals));
   std::vector<slint::SharedString> languages;
   for (const auto& option : localization::GetSupportedLanguages()) {
     if (option.code == "vi")

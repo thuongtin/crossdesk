@@ -55,6 +55,23 @@ class LocalizationTest(unittest.TestCase):
         output = generate.render(data)['apps/android/app/src/main/res/values/strings.xml']
         self.assertIn(f'name="{generate.resource_id("连接")}" formatted="false">""</string>', output)
 
+    def test_file_browser_catalog_and_generated_literals(self):
+        cases = {
+            '文件传输': 'Truyền tệp',
+            '此目录为空': 'Thư mục này trống',
+            '目录列表未能完整加载，请刷新重试。':
+                'Không thể tải đầy đủ danh sách thư mục, hãy làm mới để thử lại.',
+            '已传输 ': 'Đã truyền ',
+        }
+        header = self.outputs['apps/desktop/src/gui/assets/localization/localization_data.h']
+        for key, vietnamese in cases.items():
+            with self.subTest(key=key):
+                self.assertIn(key, self.data['platforms']['desktop'])
+                self.assertIn(key, self.data['slint'])
+                self.assertEqual(set(self.data['strings'][key]), set(self.data['languages']))
+                self.assertEqual(self.data['strings'][key]['vi'], vietnamese)
+                self.assertIn(json.dumps(vietnamese, ensure_ascii=False), header)
+
     def test_ios_fallback_and_bundle_registration(self):
         app = generate.ROOT / 'apps/ios'
         with (app / 'CrossDeskMobile/Info.plist').open('rb') as handle:
