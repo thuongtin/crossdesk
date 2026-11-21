@@ -14,7 +14,7 @@ Hiệu quả hiển thị tùy terminal và kích thước cửa sổ. Mặc đ�
 
 ### Cài qua npm
 
-Cần **Node.js 22 trở lên** và npm. Gói đầu vào chung là [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli), phân phối cho macOS / Linux (x64, arm64) và Windows (x64). Cài đặt tự chọn chương trình gốc tương ứng, không cần Xmake hay chuỗi công cụ biên dịch C++:
+Cần **Node.js 22 trở lên** và npm. Gói đầu vào chung là [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli), phân phối cho macOS / Linux (x64, arm64) và Windows (x64). Cài đặt tự chọn chương trình native tương ứng, không cần Xmake hay chuỗi công cụ biên dịch C++:
 
 ```sh
 npm install -g @chunkdash/crossdesk-cli@latest
@@ -49,7 +49,7 @@ Sau khi biên dịch, bạn có thể chạy trực tiếp `build/<platform>/<ar
 
 ### Lệnh kết nối thường dùng
 
-Các ví dụ sau dành cho cài npm toàn cục hoặc môi trường đã thêm chương trình gốc vào PATH. `crossdesk-cli <ID-thiết-bị> [tùy-chọn]` là cách kết nối mặc định, `view <ID-thiết-bị>` giữ làm bí danh tương thích. ID thiết bị chỉ minh họa định dạng; hãy thay bằng thiết bị bạn có quyền truy cập, nhập mật khẩu qua lời nhắc ẩn:
+Các ví dụ sau dành cho cài npm toàn cục hoặc môi trường đã thêm chương trình native vào PATH. `crossdesk-cli <ID-thiết-bị> [tùy-chọn]` là cách kết nối mặc định, `view <ID-thiết-bị>` giữ làm bí danh tương thích. ID thiết bị chỉ minh họa định dạng; hãy thay bằng thiết bị bạn có quyền truy cập, nhập mật khẩu qua lời nhắc ẩn:
 
 ```sh
 crossdesk-cli 123456789 --renderer kitty
@@ -80,7 +80,7 @@ Chế độ lệnh cục bộ tiếp tục sau thu phóng, di chuyển và nhấ
 
 ## Phạm vi tính năng và trợ giúp thêm
 
-CLI chỉ điều khiển máy từ xa, không phát âm thanh, truyền tệp, đồng bộ bảng nhớ tạm hay kết nối IP trực tiếp; cũng không kết nối được máy bật giới hạn thiết bị đáng tin cậy. Máy được điều khiển cần màn hình khả dụng; máy chủ tự lưu trữ cần hỗ trợ danh tính tạm CLI.
+CLI chỉ điều khiển máy từ xa, không phát âm thanh, truyền tệp, đồng bộ clipboard hay kết nối IP trực tiếp; cũng không kết nối được máy bật giới hạn thiết bị đáng tin cậy. Máy được điều khiển cần màn hình khả dụng; máy chủ self-host cần hỗ trợ danh tính tạm CLI.
 
 - [Hướng dẫn terminal](docs/terminal-client.md): tham số, hiển thị, nhập liệu, tiện ích Pi và khắc phục sự cố.
 - [Cài đặt và phân phối npm](docs/npm-distribution.md): yêu cầu nền tảng, chuyển đổi bản cũ, đóng gói và phát hành.

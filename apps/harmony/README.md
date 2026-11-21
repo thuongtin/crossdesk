@@ -21,7 +21,7 @@ Trang quản lý xử lý riêng nhập liệu cục bộ, hỗ trợ 16 tổ h�
 
 ## Xác thực thiết bị đáng tin cậy trên di động
 
-“Cài đặt → Thông tin ghép đôi máy này” trên điện thoại và máy tính bảng cho xem dấu vân tay và sao chép thông tin ghép nối. Dán vào “Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy” trên máy được điều khiển và đối chiếu dấu vân tay, rồi có thể kết nối máy bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”; vẫn cần xác minh mật khẩu kết nối.
+“Cài đặt → Thông tin ghép đôi máy này” trên điện thoại và máy tính bảng cho xem fingerprint và sao chép thông tin ghép nối. Dán vào “Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy” trên máy được điều khiển và đối chiếu fingerprint, rồi có thể kết nối máy bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”; vẫn cần xác minh mật khẩu kết nối.
 
 Chế độ di động dùng giao thức thách thức–đáp ứng Ed25519 chung; khóa riêng lưu bền qua AssetStore, cấm đồng bộ, không đưa vào bộ nhớ đệm, nhật ký hay thông tin ghép nối. Khởi động lại, xóa bộ nhớ đệm, đổi máy chủ và ID đăng nhập máy này không đổi khóa công khai; khóa đã khởi tạo hỏng, không khả dụng hoặc mất sẽ báo lỗi, không tự đổi khóa. Sau khi xóa dữ liệu ứng dụng hoặc cài lại, cần ghép nối lại.
 
@@ -85,7 +85,7 @@ Dùng DevEco mở dự án được tạo để gỡ lỗi và ký. Hãy sửa m
 - `libs/wire`: giao thức chung của kho mã.
 - `libs/controller/include/file_transfer_core.h`: lõi truyền tệp chung cho HarmonyOS PC, nền tảng máy tính khác và di động; `mobile_file_transfer_session.h` chỉ giữ thích ứng vòng đời tệp di động.
 
-Truyền tệp dùng chung logic chia khối, cửa sổ xác nhận, ghép lại sai thứ tự, hết hạn và hủy, giữ định dạng wire hiện có. PC tiếp tục dùng hàng đợi nhiều tệp, danh sách tiến độ, cài đặt thư mục và quy tắc thêm dấu thời gian khi trùng tên của máy tính chung, không xóa tệp gốc gửi; di động tiếp tục dùng bản sao tạm từ bộ chọn tệp và dọn sau thành công hoặc thất bại, tệp nhận vẫn lưu trong thư mục con riêng. Trạng thái nhận máy tính cách ly theo kết nối và đối tác, phản hồi chỉ nhận ACK đúng đối tác, ngắt kết nối dọn tệp nhận chưa xong.
+Truyền tệp dùng chung logic chia khối, cửa sổ xác nhận, ghép lại sai thứ tự, hết hạn và hủy, giữ định dạng wire hiện có. PC tiếp tục dùng hàng đợi nhiều tệp, danh sách tiến độ, cài đặt thư mục và quy tắc thêm dấu thời gian khi trùng tên của máy tính chung, không xóa tệp gốc gửi; di động tiếp tục dùng bản sao tạm từ bộ chọn tệp và dọn sau thành công hoặc thất bại, tệp nhận vẫn lưu trong thư mục con riêng. Trạng thái nhận máy tính cách ly theo kết nối và máy từ xa, phản hồi chỉ nhận ACK đúng máy từ xa, ngắt kết nối dọn tệp nhận chưa xong.
 
 ```bash
 python3 apps/harmony/tests/run.py --desktop --mobile
@@ -94,4 +94,4 @@ python3 apps/harmony/tests/verify_hap.py --mobile \
   apps/harmony/.native/mobile-project/entry/build/default/outputs/default/entry-default-unsigned.hap
 ```
 
-Kiểm thử phía máy chủ bao phủ giao thức, nhập liệu, ghi hình, màn hình, móc bàn phím, cửa sổ, bộ gõ, trạng thái tự khởi động và vòng đời di động. Chúng dùng khai báo SDK và giao diện hệ thống mô phỏng; ghi màn hình, cấp quyền nhập liệu, đa màn hình, âm thanh, nền và phiên dài hạn trên thiết bị thật vẫn cần nghiệm thu thiết bị.
+Kiểm thử phía máy chủ bao phủ giao thức, nhập liệu, ghi hình, màn hình, keyboard hook, cửa sổ, bộ gõ, trạng thái tự khởi động và vòng đời di động. Chúng dùng khai báo SDK và giao diện hệ thống mô phỏng; ghi màn hình, cấp quyền nhập liệu, đa màn hình, âm thanh, nền và phiên dài hạn trên thiết bị thật vẫn cần nghiệm thu thiết bị.

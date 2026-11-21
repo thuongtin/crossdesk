@@ -11,7 +11,7 @@ Tài liệu này giúp bạn chọn phương thức kết nối, quản lý thi�
 | ID thiết bị | Truy cập qua các mạng khác nhau, hoặc kết nối từ trình duyệt, điện thoại, terminal | Máy tính được điều khiển trực tuyến, hai bên kết nối cùng máy chủ, chuẩn bị ID gồm 9 chữ số và mật khẩu |
 | IP trực tiếp | Hai máy tính truy cập được nhau trong mạng LAN hoặc VPN | Hai bên bật IP trực tiếp, chuẩn bị IP, cổng và mật khẩu của chế độ này trên máy tính được điều khiển |
 
-Kết nối ID tự thử truyền trực tiếp giữa các thiết bị; nếu không thể kết nối trực tiếp thì có thể dùng chuyển tiếp. IP trực tiếp không phụ thuộc máy chủ báo hiệu, cũng không tự xuyên qua bộ định tuyến Internet. IP trực tiếp hiện dành cho ứng dụng máy tính thông thường Windows, macOS, Linux; thiết bị di động, Web và CLI terminal dùng kết nối ID.
+Kết nối ID tự thử truyền trực tiếp giữa các thiết bị; nếu không thể kết nối trực tiếp thì có thể dùng relay. IP trực tiếp không phụ thuộc signaling server, cũng không tự xuyên qua bộ định tuyến Internet. IP trực tiếp hiện dành cho ứng dụng máy tính thông thường Windows, macOS, Linux; thiết bị di động, Web và CLI terminal dùng kết nối ID.
 
 <a id="41-id-模式"></a>
 
@@ -23,9 +23,9 @@ Kết nối ID tự thử truyền trực tiếp giữa các thiết bị; nếu
 
 Khi đổi hoặc làm mới mật khẩu chế độ ID, máy được điều khiển cần kết nối máy chủ. Chờ đổi thành công và ứng dụng kết nối lại rồi mới dùng mật khẩu mới. Mật khẩu gồm 6 chữ số hoặc chữ cái tiếng Anh, phân biệt hoa thường.
 
-**Nâng cấp tự lưu trữ (self-host):** Ứng dụng máy tính mới cần máy chủ hỗ trợ xác thực danh tính thiết bị; hãy nâng cấp máy chủ trước rồi nâng cấp ứng dụng. Lần đầu nâng cấp danh tính cũ cần mật khẩu hiện có; sau khi nâng cấp, thiết bị còn dựa vào khóa danh tính lưu trên máy này để đăng nhập. Mật khẩu kết nối vẫn dùng để cho phép truy cập từ xa, không thể dùng riêng để khôi phục danh tính thiết bị đã mất.
+**Nâng cấp self-host:** Ứng dụng máy tính mới cần máy chủ hỗ trợ xác thực danh tính thiết bị; hãy nâng cấp máy chủ trước rồi nâng cấp ứng dụng. Lần đầu nâng cấp danh tính cũ cần mật khẩu hiện có; sau khi nâng cấp, thiết bị còn dựa vào khóa danh tính lưu trên máy này để đăng nhập. Mật khẩu kết nối vẫn dùng để cho phép truy cập từ xa, không thể dùng riêng để khôi phục danh tính thiết bị đã mất.
 
-Xem [cấu hình tự lưu trữ (self-host)](SELF_HOSTING.md) và [sao lưu danh tính](#backup).
+Xem [cấu hình self-host](SELF_HOSTING.md) và [sao lưu danh tính](#backup).
 
 <a id="42-ip-模式"></a>
 
@@ -41,9 +41,9 @@ Mặc định lắng nghe mọi giao diện mạng, có thể truy cập qua đ�
 
 ## Xem trạng thái kết nối và mã hóa
 
-Sau khi kết nối, mở **Trạng thái mạng** trên thanh công cụ phiên để xem trực tiếp / chuyển tiếp và trạng thái mã hóa. Phía dưới Bức tường màn hình cũng có lối vào tương ứng.
+Sau khi kết nối, mở **Trạng thái mạng** trên thanh công cụ phiên để xem trực tiếp / relay và trạng thái mã hóa. Phía dưới DeskHub cũng có mục tương ứng.
 
-IP trực tiếp yêu cầu truyền mã hóa. Để tương thích ứng dụng cũ, kết nối ID gốc có thể dùng truyền không mã hóa hoặc chỉ mã hóa một phần; không chỉ dựa vào “Đã kết nối máy chủ” để xác định trạng thái mã hóa phiên điều khiển từ xa. Nên dùng các phiên bản gần đây tương thích trên cả hai bên; nếu chưa xác nhận trạng thái, kiểm tra phiên bản và thông tin mạng trước.
+IP trực tiếp yêu cầu truyền mã hóa. Để tương thích ứng dụng cũ, kết nối ID native có thể dùng truyền không mã hóa hoặc chỉ mã hóa một phần; không chỉ dựa vào “Đã kết nối máy chủ” để xác định trạng thái mã hóa phiên điều khiển từ xa. Nên dùng các phiên bản gần đây tương thích trên cả hai bên; nếu chưa xác nhận trạng thái, kiểm tra phiên bản và thông tin mạng trước.
 
 IP trực tiếp không xác minh danh tính chứng chỉ của máy tính được điều khiển dựa trên lịch sử kết nối trước đây. Tên, địa chỉ hoặc mật khẩu đã lưu không chứng minh đang kết nối đúng máy tính cũ; hãy dùng mạng đáng tin cậy và đối chiếu địa chỉ bên kia. Giới hạn thiết bị đáng tin cậy dưới đây dùng để máy được điều khiển xác minh máy điều khiển, không thay thế xác nhận danh tính máy tính được điều khiển.
 
@@ -55,7 +55,7 @@ IP trực tiếp không xác minh danh tính chứng chỉ của máy tính đư
 Tùy chọn này mặc định tắt. Sau khi bật, máy điều khiển bắt buộc nằm trong danh sách tin cậy của máy này và vẫn cần nhập đúng mật khẩu kết nối.
 
 1. **Sao chép thông tin ghép đôi trên máy điều khiển.** Trên máy tính, mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Quản lý thiết bị đáng tin cậy**; trên điện thoại và máy tính bảng, mở **Cài đặt → Thông tin ghép đôi máy này**.
-2. **Thêm trên máy được điều khiển.** Dán thông tin ghép đôi và thêm tại **Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy**, đối chiếu dấu vân tay với máy điều khiển qua kênh đáng tin cậy.
+2. **Thêm trên máy được điều khiển.** Dán thông tin ghép đôi và thêm tại **Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy**, đối chiếu fingerprint với máy điều khiển qua kênh đáng tin cậy.
 3. **Bật giới hạn.** Máy được điều khiển chọn **Chỉ cho phép thiết bị đáng tin cậy điều khiển** rồi lưu, sau đó kết nối theo quy trình bình thường.
 
 Thông tin ghép đôi không chứa mật khẩu kết nối hay khóa riêng. Tin cậy là một chiều; nếu muốn điều khiển lẫn nhau, cần thêm bên kia trên cả hai máy. Thêm và xóa được lưu ngay; khi bật giới hạn, xóa một thiết bị sẽ ngắt kết nối của nó; danh sách rỗng sẽ từ chối tất cả máy điều khiển.
@@ -94,8 +94,8 @@ Khởi động lại ứng dụng, dọn bộ nhớ đệm hoặc đổi máy ch
 
 - **Thiết bị ngoại tuyến:** Xác nhận máy được điều khiển đang chạy, không ngủ, hai bên dùng cùng máy chủ.
 - **Sai mật khẩu:** Đối chiếu mật khẩu của chế độ hiện tại, nhập lại thay vì tiếp tục dùng mật khẩu cũ đã lưu.
-- **Xác minh thiết bị đáng tin cậy thất bại:** Đối chiếu lại dấu vân tay và danh sách, xác nhận ứng dụng hỗ trợ ghép đôi.
+- **Xác minh thiết bị đáng tin cậy thất bại:** Đối chiếu lại fingerprint và danh sách, xác nhận ứng dụng hỗ trợ ghép đôi.
 - **Thử quá thường xuyên:** Dừng thử liên tục, chờ theo thông báo rồi dùng mật khẩu đúng. Thời gian chờ sau khi IP trực tiếp kích hoạt giới hạn là 15 phút.
-- **Kết nối được máy chủ nhưng không kết nối được máy tính:** Chế độ ID có thể thử buộc chuyển tiếp; chế độ IP kiểm tra địa chỉ, cổng thực tế và tường lửa hai bên.
+- **Kết nối được máy chủ nhưng không kết nối được máy tính:** Chế độ ID có thể thử buộc dùng relay; chế độ IP kiểm tra địa chỉ, cổng thực tế và tường lửa hai bên.
 
 Xem thêm cách khắc phục trong [câu hỏi thường gặp](FAQ.md).

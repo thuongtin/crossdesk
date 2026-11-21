@@ -8,24 +8,24 @@ Tài liệu này giải thích tô-pô mạng, xác thực danh tính, thương 
 
 ## 1. Ranh giới hai chế độ
 
-Hai chế độ dùng lại ghi màn hình, mã hóa, truyền âm thanh và video, bàn phím, chuột, xử lý tệp và bảng nhớ tạm. Khác biệt chính là **cách tìm thiết bị, nơi xác minh mật khẩu và kênh trao đổi tham số kết nối**.
+Hai chế độ dùng lại ghi màn hình, mã hóa, truyền âm thanh và video, bàn phím, chuột, xử lý tệp và clipboard. Khác biệt chính là **cách tìm thiết bị, nơi xác minh mật khẩu và kênh trao đổi tham số kết nối**.
 
-“Kết nối ID” không đồng nghĩa “chuyển tiếp qua mạng công cộng”: sau khi tìm thiết bị qua ID, dữ liệu điều khiển có thể kết nối trực tiếp trong mạng cục bộ hoặc xuyên NAT, dùng chuyển tiếp TURN khi cần. “IP trực tiếp” vẫn thương lượng kết nối, chỉ là thông điệp thương lượng trao đổi trực tiếp giữa hai máy.
+“Kết nối ID” không đồng nghĩa “relay qua mạng công cộng”: sau khi tìm thiết bị qua ID, dữ liệu điều khiển có thể kết nối trực tiếp trong mạng cục bộ hoặc xuyên NAT, dùng TURN relay khi cần. “IP trực tiếp” vẫn thương lượng kết nối, chỉ là thông điệp thương lượng trao đổi trực tiếp giữa hai máy.
 
 | Hạng mục | Chế độ kết nối ID | Chế độ IP trực tiếp |
 | --- | --- | --- |
 | Người dùng nhập | ID thiết bị 9 chữ số và mật khẩu | Địa chỉ IPv4/IPv6 dạng số, cổng tùy chọn và mật khẩu |
-| Định vị thiết bị | Thiết bị và trạng thái trực tuyến do dịch vụ báo hiệu quản lý | Kết nối thẳng `IP:cổng` chỉ định |
-| Nơi xác minh mật khẩu | Máy điều khiển gửi Join, dịch vụ báo hiệu trả kết quả xác minh | Máy được điều khiển xác minh mật khẩu nhận được trên máy đó |
-| Kênh báo hiệu | Cả hai kết nối WSS dịch vụ chính thức hoặc tự triển khai | Máy điều khiển kết nối thẳng WSS máy được điều khiển |
+| Định vị thiết bị | Thiết bị và trạng thái trực tuyến do dịch vụ signaling quản lý | Kết nối thẳng `IP:cổng` chỉ định |
+| Nơi xác minh mật khẩu | Máy điều khiển gửi Join, dịch vụ signaling trả kết quả xác minh | Máy được điều khiển xác minh mật khẩu nhận được trên máy đó |
+| Kênh signaling | Cả hai kết nối WSS dịch vụ chính thức hoặc tự triển khai | Máy điều khiển kết nối thẳng WSS máy được điều khiển |
 | Chính sách ICE | `ManagedServers`, dùng cấu hình ICE máy chủ gửi xuống | `HostOnly`, giới hạn IPv4/IPv6 hai bên của kết nối WSS này |
 | Đường dữ liệu | P2P trực tiếp hoặc dùng TURN theo cấu hình và mạng | UDP trực tiếp hai bên, không dự phòng TURN |
-| Yêu cầu mã hóa dữ liệu gốc | Thương lượng SRTP theo khả năng đối tác, giữ nhánh tương thích bản cũ, xem phần 4.1 | Bắt buộc hỗ trợ SRTP video, âm thanh và dữ liệu, nếu không từ chối thiết lập phiên |
-| Yêu cầu mạng bên ngoài | Tùy vị trí triển khai báo hiệu và STUN/TURN | Phiên trực tiếp không phụ thuộc dịch vụ mạng bên ngoài |
+| Yêu cầu mã hóa dữ liệu native | Thương lượng SRTP theo khả năng máy từ xa, giữ nhánh tương thích bản cũ, xem phần 4.1 | Bắt buộc hỗ trợ SRTP video, âm thanh và dữ liệu, nếu không từ chối thiết lập phiên |
+| Yêu cầu mạng bên ngoài | Tùy vị trí triển khai signaling và STUN/TURN | Phiên trực tiếp không phụ thuộc dịch vụ mạng bên ngoài |
 | Cổng máy này | Người dùng không cần cung cấp cổng lắng nghe điều khiển từ xa cố định | Lưu riêng cổng thương lượng TCP cho mỗi IP cục bộ, lần đầu ưu tiên `52888` |
 | Mật khẩu và lịch sử gần đây | Thông tin xác thực ID và bản ghi `cloud_id` | Thông tin xác thực LAN riêng và bản ghi `lan_direct` |
 
-Lưu đồ sau chủ yếu mô tả ứng dụng máy tính gốc kết nối với nhau. Khi trình duyệt vào qua chế độ ID, MiniRTC dùng `DataChannelConnection` thích ứng WebRTC; không thể kết nối thẳng đầu vào thương lượng WSS LAN để thay giao thức ứng dụng Web.
+Lưu đồ sau chủ yếu mô tả ứng dụng máy tính native kết nối với nhau. Khi trình duyệt vào qua chế độ ID, MiniRTC dùng `DataChannelConnection` thích ứng WebRTC; không thể kết nối thẳng đầu vào thương lượng WSS LAN để thay giao thức ứng dụng Web.
 
 ## 2. Chế độ kết nối ID
 
@@ -33,25 +33,25 @@ Lưu đồ sau chủ yếu mô tả ứng dụng máy tính gốc kết nối v�
 
 ```mermaid
 flowchart LR
-    C["Máy điều khiển CrossDesk"] <-->|"WSS: đăng nhập, Join, SDP, địa chỉ ứng viên"| S["Dịch vụ báo hiệu chính thức hoặc tự triển khai"]
+    C["Máy điều khiển CrossDesk"] <-->|"WSS: đăng nhập, Join, SDP, địa chỉ ICE candidate"| S["Dịch vụ signaling chính thức hoặc tự triển khai"]
     H["Máy được điều khiển CrossDesk"] <-->|"WSS: đăng nhập, trạng thái trực tuyến, thương lượng kết nối"| S
     C -.->|"Dò địa chỉ"| U["Dịch vụ STUN"]
     H -.->|"Dò địa chỉ"| U
     C <-->|"Đường dữ liệu P2P"| H
-    C <-->|"Đường dữ liệu chuyển tiếp"| T["Dịch vụ TURN"]
-    T <-->|"Đường dữ liệu chuyển tiếp"| H
+    C <-->|"Đường dữ liệu qua relay"| T["Dịch vụ TURN"]
+    T <-->|"Đường dữ liệu qua relay"| H
 ```
 
-P2P và TURN trên đường nét liền biểu thị đường dữ liệu có thể chọn, không có nghĩa mỗi phiên đồng thời dùng cả hai. Báo hiệu chịu trách nhiệm thông điệp điều khiển, TURN chuyển tiếp dữ liệu; dù triển khai cùng máy chủ vẫn là hai trách nhiệm khác nhau.
+P2P và TURN trên đường nét liền biểu thị đường dữ liệu có thể chọn, không có nghĩa mỗi phiên đồng thời dùng cả hai. Signaling chịu trách nhiệm thông điệp điều khiển, TURN chuyển tiếp dữ liệu; dù triển khai cùng máy chủ vẫn là hai trách nhiệm khác nhau.
 
 ### 2.2 Thiết lập kết nối
 
-Trình tự sau lấy ứng dụng máy tính gốc hai bên hỗ trợ SRTP video, âm thanh và dữ liệu làm ví dụ; xem tương thích bản cũ ở phần 4.1. “Máy điều khiển” trong hình đại diện cả tiến trình ứng dụng; Peer thường trú và Peer phiên điều khiển của nó lập WSS riêng.
+Trình tự sau lấy ứng dụng máy tính native hai bên hỗ trợ SRTP video, âm thanh và dữ liệu làm ví dụ; xem tương thích bản cũ ở phần 4.1. “Máy điều khiển” trong hình đại diện cả tiến trình ứng dụng; Peer thường trú và Peer phiên điều khiển của nó lập WSS riêng.
 
 ```mermaid
 sequenceDiagram
     participant C as Máy điều khiển
-    participant S as Dịch vụ báo hiệu
+    participant S as Dịch vụ signaling
     participant H as Máy được điều khiển
     H->>S: Peer thường trú đăng nhập qua WSS, giữ thiết bị có thể tìm thấy
     C->>S: Peer thường trú đăng nhập, truy vấn trạng thái đích khi cần
@@ -65,10 +65,10 @@ sequenceDiagram
         S->>C: Chuyển tiếp offer và cấu hình kết nối
         C->>S: answer
         S->>H: Chuyển tiếp answer
-        C->>S: Địa chỉ ứng viên ICE máy này
-        S->>H: Chuyển tiếp ứng viên máy điều khiển
-        H->>S: Địa chỉ ứng viên ICE máy này
-        S->>C: Chuyển tiếp ứng viên máy được điều khiển
+        C->>S: Địa chỉ ICE candidate máy này
+        S->>H: Chuyển tiếp ICE candidate của máy điều khiển
+        H->>S: Địa chỉ ICE candidate máy này
+        S->>C: Chuyển tiếp ICE candidate của máy được điều khiển
         Note over C,H: ICE chọn đường khả dụng: P2P hoặc TURN
         Note over C,H: Hình này giả định cả hai hỗ trợ SRTP video, âm thanh và dữ liệu
         C->>H: Bắt tay mã hóa và dữ liệu điều khiển (qua đường đã chọn)
@@ -76,15 +76,15 @@ sequenceDiagram
     end
 ```
 
-1. `GuiRuntime::CreateConnectionPeer()` tạo MiniRTC Peer thường trú máy này, `MiniRtcInit()` kết nối báo hiệu và đăng nhập. Khi điều khiển thiết bị khác, `ConnectTo()` tạo hoặc tái dùng `RemoteSession` và Peer điều khiển tương ứng; Peer phiên đó đăng nhập dưới danh tính `C-<ID-máy-này>`, dùng kết nối báo hiệu riêng.
-2. Kết nối tương tác thường dò trực tuyến khi cần; kết nối nền Bức tường màn hình có thể xác định khả dụng trực tiếp từ kết quả Join. Nếu chưa có mật khẩu, hỏi bằng hộp thoại cục bộ trước, không gửi trước một yêu cầu mật khẩu rỗng.
-3. Lời gọi máy tính hiện tại là `MiniRtcJoinConnection(peer, "ID-đích@mật-khẩu")`, MiniRTC đặt vào `transmission_id` của `join_transmission`, gửi qua WSS đến báo hiệu. Nếu chưa đăng nhập xong, Join chờ kết quả đăng nhập.
-4. Thông báo tham gia từ máy chủ khiến máy được điều khiển khởi tạo offer, máy điều khiển trả answer; cả hai chuyển tiếp ứng viên ICE qua máy chủ. Máy chủ hỗ trợ giao thức mới cung cấp cấu hình ICE và thời hạn cho mỗi kết nối, ứng dụng vẫn giữ đường tương thích máy chủ cũ.
-5. MiniRTC chọn trực tiếp hay chuyển tiếp theo cài đặt chuyển tiếp, khả năng đối tác và mạng. Dữ liệu không truyền qua WebSocket báo hiệu. Ứng dụng máy tính hiện luôn yêu cầu SRTP; phiên ID gốc vẫn cho phép tương thích bản cũ ở phần 4.1, nên yêu cầu SRTP không có nghĩa cuối cùng mọi dữ liệu đều được mã hóa.
+1. `GuiRuntime::CreateConnectionPeer()` tạo MiniRTC Peer thường trú máy này, `MiniRtcInit()` kết nối signaling và đăng nhập. Khi điều khiển thiết bị khác, `ConnectTo()` tạo hoặc tái dùng `RemoteSession` và Peer điều khiển tương ứng; Peer phiên đó đăng nhập dưới danh tính `C-<ID-máy-này>`, dùng kết nối signaling riêng.
+2. Kết nối tương tác thường dò trực tuyến khi cần; kết nối nền DeskHub có thể xác định khả dụng trực tiếp từ kết quả Join. Nếu chưa có mật khẩu, hỏi bằng hộp thoại cục bộ trước, không gửi trước một yêu cầu mật khẩu rỗng.
+3. Lời gọi máy tính hiện tại là `MiniRtcJoinConnection(peer, "ID-đích@mật-khẩu")`, MiniRTC đặt vào `transmission_id` của `join_transmission`, gửi qua WSS đến signaling. Nếu chưa đăng nhập xong, Join chờ kết quả đăng nhập.
+4. Thông báo tham gia từ máy chủ khiến máy được điều khiển khởi tạo offer, máy điều khiển trả answer; cả hai chuyển tiếp ICE candidate qua máy chủ. Máy chủ hỗ trợ giao thức mới cung cấp cấu hình ICE và thời hạn cho mỗi kết nối, ứng dụng vẫn giữ đường tương thích máy chủ cũ.
+5. MiniRTC chọn trực tiếp hay relay theo cài đặt relay, khả năng máy từ xa và mạng. Dữ liệu không truyền qua WebSocket signaling. Ứng dụng máy tính hiện luôn yêu cầu SRTP; phiên ID native vẫn cho phép tương thích bản cũ ở phần 4.1, nên yêu cầu SRTP không có nghĩa cuối cùng mọi dữ liệu đều được mã hóa.
 
-Dịch vụ chính thức và tự lưu trữ dùng cùng đường xử lý, khác địa chỉ, tin cậy chứng chỉ và cấu hình triển khai. Cả hai đầu bắt buộc vào cùng dịch vụ. Trạng thái đăng nhập ID và kết nối dữ liệu điều khiển quản lý riêng, báo hiệu có xử lý kết nối lại và phục hồi phiên; không thể coi mỗi lần báo hiệu kết nối lại là tạo phiên điều khiển mới.
+Dịch vụ chính thức và self-host dùng cùng đường xử lý, khác địa chỉ, tin cậy chứng chỉ và cấu hình triển khai. Cả hai đầu bắt buộc vào cùng dịch vụ. Trạng thái đăng nhập ID và kết nối dữ liệu điều khiển quản lý riêng, signaling có xử lý kết nối lại và phục hồi phiên; không thể coi mỗi lần signaling kết nối lại là tạo phiên điều khiển mới.
 
-Mã tương ứng: [quy trình kết nối máy tính](../apps/desktop/src/gui/runtime/connection_runtime.cpp), [khởi tạo Peer máy này](../apps/desktop/src/gui/runtime/gui_runtime.cpp), [đăng nhập và Join MiniRTC](../deps/submodules/minirtc/src/pc/peer_connection.cpp), [TLS báo hiệu và kết nối lại](../deps/submodules/minirtc/src/ws/ws_client.cpp).
+Mã tương ứng: [quy trình kết nối máy tính](../apps/desktop/src/gui/runtime/connection_runtime.cpp), [khởi tạo Peer máy này](../apps/desktop/src/gui/runtime/gui_runtime.cpp), [đăng nhập và Join MiniRTC](../deps/submodules/minirtc/src/pc/peer_connection.cpp), [TLS signaling và kết nối lại](../deps/submodules/minirtc/src/ws/ws_client.cpp).
 
 ## 3. Chế độ IP trực tiếp
 
@@ -108,14 +108,14 @@ flowchart LR
 
 `52888` hoặc cổng tùy chỉnh người dùng nhập là **đầu vào xác thực và thương lượng TCP của máy được điều khiển**. Video, âm thanh và dữ liệu nghiệp vụ dùng cổng UDP do ICE thương lượng, không cố định chiếm cùng `52888`. Chỉ mở cổng TCP thương lượng không đủ bảo đảm dữ liệu điều khiển qua tường lửa.
 
-Kênh thương lượng LAN dùng TLS 1.3, đường dẫn `/crossdesk/lan/v2` và giao thức con WebSocket `crossdesk.lan.v2`. Không cần triển khai báo hiệu trung tâm nhưng mỗi máy bật tính năng này đều cung cấp dịch vụ lắng nghe cục bộ. Đăng nhập nền chế độ ID cũ có thể vẫn chạy; “phiên IP không phụ thuộc mạng bên ngoài” không có nghĩa cả tiến trình tuyệt đối không truy cập mạng bên ngoài.
+Kênh thương lượng LAN dùng TLS 1.3, đường dẫn `/crossdesk/lan/v2` và giao thức con WebSocket `crossdesk.lan.v2`. Không cần triển khai signaling trung tâm nhưng mỗi máy bật tính năng này đều cung cấp dịch vụ lắng nghe cục bộ. Đăng nhập nền chế độ ID cũ có thể vẫn chạy; “phiên IP không phụ thuộc mạng bên ngoài” không có nghĩa cả tiến trình tuyệt đối không truy cập mạng bên ngoài.
 
 ### 3.2 Khởi tạo và lắng nghe nhiều địa chỉ
 
 `GuiRuntime::InitializeLan()` tạo `lan::SessionManager` khi tính năng bật và môi trường chủ hỗ trợ. Trình quản lý tải danh tính LAN, chứng chỉ, mật khẩu và cấu hình cổng cục bộ; nếu chưa có mật khẩu, tạo bất đồng bộ mật khẩu sáu chữ cái tiếng Anh hoặc chữ số trước, bắt đầu nhận kết nối khi chuẩn bị xong.
 
 - `LocalIpInterfaces()` liệt kê IPv4/IPv6 unicast không loopback trên giao diện bật, gồm VPN và giao diện ảo; chế độ lắng nghe riêng khi tắt lắng nghe mọi giao diện dùng `physical_only` lọc card vật lý. Chỉ nhận địa chỉ IP dạng số, không phân giải tên máy; IPv6 chuẩn hóa dạng nén, địa chỉ link-local giữ scope ID máy này.
-- Trình quản lý làm mới ảnh chụp giao diện khoảng mỗi 2 giây. Mặc định dùng một bộ lắng nghe dual-stack `::` (tắt `IPV6_V6ONLY`), nếu IPv6 không khả dụng thì về `0.0.0.0`; giao diện cho chọn IPv4/IPv6 thực, gồm VPN, để chia sẻ. Tắt “Lắng nghe trên tất cả giao diện IP” trong “Cài đặt → Chung → Kết nối mạng” rồi lưu sẽ chuyển sang lắng nghe riêng địa chỉ card vật lý, giao diện cũng chỉ liệt kê chúng. Địa chỉ wildcard chỉ dùng bind, không làm đích kết nối hay ứng viên ICE.
+- Trình quản lý làm mới ảnh chụp giao diện khoảng mỗi 2 giây. Mặc định dùng một bộ lắng nghe dual-stack `::` (tắt `IPV6_V6ONLY`), nếu IPv6 không khả dụng thì về `0.0.0.0`; giao diện cho chọn IPv4/IPv6 thực, gồm VPN, để chia sẻ. Tắt “Lắng nghe trên tất cả interface mạng” trong “Cài đặt → Chung → Kết nối mạng” rồi lưu sẽ chuyển sang lắng nghe riêng địa chỉ card vật lý, giao diện cũng chỉ liệt kê chúng. Địa chỉ wildcard chỉ dùng bind, không làm đích kết nối hay ICE candidate.
 - Cấu hình mỗi IP lần đầu ưu tiên thử `52888`; nếu không bind được, yêu cầu hệ điều hành cấp cổng và lưu cổng thực khi vẫn giữ socket để tránh tranh chấp “dò rồi nhả, lúc dùng bị chiếm”.
 - Cổng đã lưu xung đột sẽ báo lỗi và thử lại cổng cũ, không tự đổi số. Sửa cổng thủ công theo thứ tự “bind cổng mới → lưu cấu hình → thay lắng nghe”, giữ cài đặt cũ khi thất bại.
 - “Chuyển IP” chỉ đổi địa chỉ hiển thị và chia sẻ. Đổi cổng dừng nhận kết nối mới ở cổng cũ nhưng giữ phiên đã xác thực và lắng nghe IP khác.
@@ -124,9 +124,9 @@ Kênh thương lượng LAN dùng TLS 1.3, đường dẫn `/crossdesk/lan/v2` v
 
 Đổi phạm vi lắng nghe dừng acceptor cũ trước, bind lắng nghe đích rồi lưu nguyên tử chế độ và cổng mới; nếu thất bại giữ cài đặt cũ và thử bind lại cổng cũ, nếu khôi phục thất bại thì bảo trì nền tiếp tục thử và hiện lỗi. Giữ kênh đã xác thực, đóng kênh chưa xác thực xong. Chế độ mọi giao diện giữ cùng bộ lắng nghe khi thêm/bớt card, phiên hiện có vẫn xử lý theo sự tồn tại địa chỉ cục bộ thực của nó.
 
-Chính sách LAN ở đây giới hạn địa chỉ ứng viên, không dựa “có mạng bên ngoài không” để xác định chế độ, cũng không chỉ kiểm tra địa chỉ thuộc dải riêng. Kết nối thực vẫn cần đường TCP và UDP đến IPv4/IPv6 hai bên dùng cho kết nối WSS này thông suốt.
+Chính sách LAN ở đây giới hạn địa chỉ ICE candidate, không dựa “có mạng bên ngoài không” để xác định chế độ, cũng không chỉ kiểm tra địa chỉ thuộc dải riêng. Kết nối thực vẫn cần đường TCP và UDP đến IPv4/IPv6 hai bên dùng cho kết nối WSS này thông suốt.
 
-Đầu cuối IPv6 hiển thị và lưu vào văn bản chia sẻ dạng `[địa-chỉ%phạm-vi-cục-bộ]:cổng`, IPv6 trần dùng cổng mặc định; lịch sử gần đây lưu riêng địa chỉ chuẩn hóa và cổng. Địa chỉ socket IPv4-mapped được lắng nghe wildcard nhận sẽ chuyển về IPv4 thường; đầu vào người dùng không chấp nhận địa chỉ mapped, loopback, chưa xác định hoặc multicast. Lắng nghe IPv6 từng địa chỉ bật `IPV6_V6ONLY` để tránh chồng lắng nghe IPv4.
+Endpoint IPv6 hiển thị và lưu vào văn bản chia sẻ dạng `[địa-chỉ%phạm-vi-cục-bộ]:cổng`, IPv6 trần dùng cổng mặc định; lịch sử gần đây lưu riêng địa chỉ chuẩn hóa và cổng. Địa chỉ socket IPv4-mapped được lắng nghe wildcard nhận sẽ chuyển về IPv4 thường; đầu vào người dùng không chấp nhận địa chỉ mapped, loopback, chưa xác định hoặc multicast. Lắng nghe IPv6 từng địa chỉ bật `IPV6_V6ONLY` để tránh chồng lắng nghe IPv4.
 
 ### 3.3 Trình tự xác thực và thương lượng
 
@@ -162,7 +162,7 @@ sequenceDiagram
 
 IP trực tiếp do **máy điều khiển** khởi tạo offer. ID nội bộ hai bên và `session_id` ngẫu nhiên dùng định tuyến phiên này, người dùng không cần điền ID thiết bị. Thông điệp thương lượng mang ID phiên và số thứ tự tăng nghiêm ngặt; trình quản lý kiểm tra thứ tự trạng thái rồi gọi `MiniRtcReceiveDirectSignal()`. MiniRTC kiểm tra thêm SDP, số ứng viên, địa chỉ, sự nhất quán định danh ICE và loại ứng viên trùng.
 
-SessionManager truyền IPv4/IPv6 cục bộ và đối tác của socket WSS hiện tại vào `MiniRtcInitDirectPeer()`, MiniRTC tạo chính sách `HostOnly`, khởi động ICE worker riêng, không đăng nhập đám mây. MiniRTC giao thông điệp thương lượng cho SessionManager qua callback `SignalSender`, rồi gửi bằng WSS.
+SessionManager truyền IPv4/IPv6 cục bộ và máy từ xa của socket WSS hiện tại vào `MiniRtcInitDirectPeer()`, MiniRTC tạo chính sách `HostOnly`, khởi động ICE worker riêng, không đăng nhập đám mây. MiniRTC giao thông điệp thương lượng cho SessionManager qua callback `SignalSender`, rồi gửi bằng WSS.
 
 MiniRTC tắt truy cập máy chủ STUN/TURN, UPnP, ICE TCP và mở rộng xuyên mạng công cộng, chỉ thu ứng viên UDP host của IPv4/IPv6 cục bộ chỉ định. Bản vá `direct-peer-address` của libnice kiểm tra cả ứng viên từ xa và nguồn đến: từ chối IP không khớp trước khi phân tích kiểm tra kết nối STUN, học ứng viên mới hoặc trả dữ liệu. Bản tin kiểm tra STUN của chính ICE vẫn dùng giữa hai bên, khác với truy cập máy chủ STUN.
 
@@ -176,7 +176,7 @@ Mã tương ứng: [tầng truyền tải LAN](../apps/desktop/src/network/lan/l
 
 ### 4.1 Chế độ ID
 
-Ứng dụng thiết lập WSS với báo hiệu, dùng tin cậy hệ thống và xác minh TLS nền tảng. Danh tính đăng nhập phân biệt theo mục đích Peer:
+Ứng dụng thiết lập WSS với signaling, dùng tin cậy hệ thống và xác minh TLS nền tảng. Danh tính đăng nhập phân biệt theo mục đích Peer:
 
 | Tình huống | Danh tính đăng nhập và trách nhiệm |
 | --- | --- |
@@ -192,19 +192,19 @@ Callback tùy chọn `MiniRtcOnSignalExchange` của MiniRTC cho phép thay yêu
 
 Khi kết nối thiết bị đích, Peer phiên điều khiển vẫn đặt `ID-đích@mật-khẩu-đích` vào Join, máy chủ trả thành công, sai thông tin xác thực, giới hạn tần suất hoặc bận. Đăng nhập chữ ký thiết bị chỉ chứng minh sở hữu ID máy này, không cấp quyền điều khiển thiết bị khác. Máy chủ cộng thất bại theo máy điều khiển B đã xác minh và cặp “B → A” (lần lượt 20／5 lần), không giữ tổng thất bại A; thất bại B không kích hoạt thời gian chờ mật khẩu khi C kết nối A. Hàng đợi xác thực và hạn mức tính toán cũng tách theo máy điều khiển đã xác minh. Ứng dụng cũ chưa xác minh, danh tính tạm Web／CLI xử lý theo IP nguồn, không thể tự xưng `C-B` để lấy ngân sách B. Đăng nhập `C-B` của B đã gắn khóa bắt buộc hỗ trợ giao thức chữ ký; ứng dụng cũ cùng NAT vẫn chia sẻ giới hạn IP, kiểm soát rủi ro IP tường minh và trần tài nguyên máy chủ vẫn áp dụng.
 
-TLS báo hiệu và mã hóa dữ liệu điều khiển là hai đường riêng. Bắt tay DTLS và xử lý SRTP điều khiển gốc ở MiniRTC; không thể coi “báo hiệu dùng TLS” đồng nghĩa “hình truyền qua TLS WebSocket”.
+TLS signaling và mã hóa dữ liệu điều khiển là hai đường riêng. Bắt tay DTLS và xử lý SRTP điều khiển native ở MiniRTC; không thể coi “signaling dùng TLS” đồng nghĩa “hình truyền qua TLS WebSocket”.
 
-Sau khi định dạng SDP và trường khả năng xác minh thành công, `NegotiateSrtp()` của phiên ID gốc giữ các nhánh tương thích sau:
+Sau khi định dạng SDP và trường khả năng xác minh thành công, `NegotiateSrtp()` của phiên ID native giữ các nhánh tương thích sau:
 
-| Khả năng SDP đối tác | Xử lý trong phiên ID gốc hiện tại |
+| Khả năng SDP máy từ xa | Xử lý trong phiên ID native hiện tại |
 | --- | --- |
-| Có dấu vân tay DTLS và khai báo khả năng SRTP âm thanh/dữ liệu | Thương lượng SRTP video, âm thanh và dữ liệu, dùng truyền mã hóa sau trao đổi khóa DTLS |
-| Có dấu vân tay DTLS nhưng chưa khai báo SRTP âm thanh/dữ liệu | Giữ tương thích bản cũ: video dùng SRTP, âm thanh và dữ liệu dạng rõ |
-| Không có dấu vân tay DTLS | Tắt SRTP cho truyền tải đó, cho vào đường tương thích, không từ chối kết nối trực tiếp vì thiếu dấu vân tay theo quy tắc chế độ IP |
+| Có fingerprint DTLS và khai báo khả năng SRTP âm thanh/dữ liệu | Thương lượng SRTP video, âm thanh và dữ liệu, dùng truyền mã hóa sau trao đổi khóa DTLS |
+| Có fingerprint DTLS nhưng chưa khai báo SRTP âm thanh/dữ liệu | Giữ tương thích bản cũ: video dùng SRTP, âm thanh và dữ liệu dạng rõ |
+| Không có fingerprint DTLS | Tắt SRTP cho truyền tải đó, cho vào đường tương thích, không từ chối kết nối trực tiếp vì thiếu fingerprint theo quy tắc chế độ IP |
 
-Bảng này áp dụng cho truyền tải gốc `MiniRtcConnection`. Trình duyệt dùng đường thích ứng WebRTC của `DataChannelConnection`, không suy hành vi mã hóa từ bảng này.
+Bảng này áp dụng cho truyền tải native `MiniRtcConnection`. Trình duyệt dùng đường thích ứng WebRTC của `DataChannelConnection`, không suy hành vi mã hóa từ bảng này.
 
-Mã tương ứng: [xác thực đăng nhập tầng ứng dụng](../apps/desktop/src/gui/runtime/device_login.cpp), [khởi tạo danh tính thường trú](../apps/desktop/src/gui/runtime/gui_runtime.cpp), [đăng nhập và Join phiên điều khiển](../apps/desktop/src/gui/runtime/connection_runtime.cpp), [callback báo hiệu chung](../deps/submodules/minirtc/src/api/minirtc.h), [thương lượng khả năng SRTP](../deps/submodules/minirtc/src/transport/ice_transport.cpp).
+Mã tương ứng: [xác thực đăng nhập tầng ứng dụng](../apps/desktop/src/gui/runtime/device_login.cpp), [khởi tạo danh tính thường trú](../apps/desktop/src/gui/runtime/gui_runtime.cpp), [đăng nhập và Join phiên điều khiển](../apps/desktop/src/gui/runtime/connection_runtime.cpp), [callback signaling chung](../deps/submodules/minirtc/src/api/minirtc.h), [thương lượng khả năng SRTP](../deps/submodules/minirtc/src/transport/ice_transport.cpp).
 
 ### 4.2 Chế độ IP
 
@@ -212,10 +212,10 @@ IP trực tiếp dùng **gửi mật khẩu trong TLS, máy được điều khi
 
 - Mật khẩu gồm 6 chữ cái ASCII hoặc chữ số, phân biệt hoa thường. Bản ghi xác minh dùng salt ngẫu nhiên và Argon2id, tham số hiện tại `m=19456 KiB, t=2, p=1`; không dùng SPAKE2+ hoặc trao đổi chứng minh mật khẩu bổ sung.
 - Để hiện mật khẩu ở cửa sổ chính và khôi phục sau khởi động lại, cục bộ còn lưu bản sao mật khẩu mã hóa AES-256-GCM; khóa và tệp thông tin xác thực được quyền người dùng máy này bảo vệ. Tiến trình đọc được các tệp này vẫn khôi phục được mật khẩu.
-- LAN WSS nhận chứng chỉ tự ký vượt kiểm tra cơ bản như thời hạn, tự ký và mục đích chứng chỉ; không thực hiện tin cậy thiết bị lịch sử, TOFU, ghim chứng chỉ hoặc xác nhận danh tính thiết bị. Xác minh mật khẩu cấp quyền máy điều khiển truy cập máy được điều khiển, bản thân không chứng minh đối tác chính là thiết bị lần trước.
-- DTLS vẫn kiểm tra dấu vân tay chứng chỉ thương lượng trong SDP lần này. Trực tiếp yêu cầu thương lượng thành công SRTP video, âm thanh và dữ liệu, chỉ gửi `secure_ready` sau khi xuất khóa và cài phiên mã hóa thành công; runtime máy tính sau đó đặt `authorized`, mở callback nghiệp vụ.
+- LAN WSS nhận chứng chỉ tự ký vượt kiểm tra cơ bản như thời hạn, tự ký và mục đích chứng chỉ; không thực hiện tin cậy thiết bị lịch sử, TOFU, ghim chứng chỉ hoặc xác nhận danh tính thiết bị. Xác minh mật khẩu cấp quyền máy điều khiển truy cập máy được điều khiển, bản thân không chứng minh máy từ xa chính là thiết bị lần trước.
+- DTLS vẫn kiểm tra fingerprint chứng chỉ thương lượng trong SDP lần này. Trực tiếp yêu cầu thương lượng thành công SRTP video, âm thanh và dữ liệu, chỉ gửi `secure_ready` sau khi xuất khóa và cài phiên mã hóa thành công; runtime máy tính sau đó đặt `authorized`, mở callback nghiệp vụ.
 
-Điều này nghĩa là bắt gói thụ động không đọc thẳng được mật khẩu trong TLS, nhưng mô hình hiện tại không nhận diện máy được điều khiển bị giả mạo bằng tin cậy chứng chỉ bền vững. Xác minh dấu vân tay DTLS phiên hiện tại cũng không cung cấp bảo đảm danh tính lịch sử này.
+Điều này nghĩa là bắt gói thụ động không đọc thẳng được mật khẩu trong TLS, nhưng mô hình hiện tại không nhận diện máy được điều khiển bị giả mạo bằng tin cậy chứng chỉ bền vững. Xác minh fingerprint DTLS phiên hiện tại cũng không cung cấp bảo đảm danh tính lịch sử này.
 
 Giới hạn xác thực đếm riêng theo IP nguồn tầng truyền tải và đích thông tin xác thực máy này, trần hiện tại là 20 lần thất bại nguồn và 5 lần đích. Mỗi nhóm đếm dùng **cửa sổ hiệu lực 900 giây**; nếu chưa đạt ngưỡng, hết cửa sổ xóa số thất bại cũ. Khi một nhóm đạt ngưỡng, tính lại từ lúc lần xác minh thất bại đó hoàn tất, vào **thời gian chờ đủ 900 giây**, yêu cầu bị chặn trong thời gian này không kéo dài nó. Bất kỳ chiều nào đang chờ đều chặn xác minh mật khẩu.
 
@@ -231,7 +231,7 @@ Máy tính và bản iOS, Android, HarmonyOS di động mới hỗ trợ xác th
 
 Giới hạn thiết bị đáng tin cậy mặc định tắt, xác thực và cấp quyền hoàn toàn do tầng ứng dụng CrossDesk thực hiện. Máy được điều khiển tạo thử thách ngẫu nhiên 32 byte mỗi phiên mới, máy điều khiển ký miền giao thức `crossdesk.device-trust.v1`, số ngẫu nhiên thử thách, khóa công khai máy này, ID và tên thiết bị. Sau xác minh chữ ký, máy được điều khiển còn bắt buộc xác nhận khóa công khai trong danh sách tin cậy cục bộ mới mở quyền điều khiển; cùng ID hoặc tên không thay được khớp khóa công khai.
 
-Thêm lần đầu hỗ trợ ghép đôi ngoại tuyến: sao chép thông tin ghép đôi máy này ở máy điều khiển, chuyển cho máy được điều khiển qua kênh hai bên chấp nhận; máy được điều khiển dán rồi nhấn “Thêm” để xác minh và ghi danh sách tin cậy, cũng hỗ trợ thêm máy này, không cần xem trước và xác nhận lần hai. Khóa công khai đã có không thêm trùng, xem dấu vân tay đầy đủ trong danh sách. Kết quả sao chép hiện ở “Thông tin ghép đôi máy này”, kết quả thêm hiện ở vùng thêm. Thông tin ghép đôi chỉ chứa khóa công khai và thông tin hiển thị, không có khóa riêng hay mật khẩu, không cần lập kết nối từ xa hay tắt giới hạn trước. Nhập chỉ cập nhật danh sách, kết nối sau vẫn cần xác minh mật khẩu cũ và chữ ký thời gian thực; bản thân thông tin ghép đôi không chứng minh nguồn, người dùng xác nhận nguồn qua kênh chuyển. Cũng có thể tiếp tục chọn thêm từ máy điều khiển đã kết nối và xác thực danh tính.
+Thêm lần đầu hỗ trợ ghép đôi ngoại tuyến: sao chép thông tin ghép đôi máy này ở máy điều khiển, chuyển cho máy được điều khiển qua kênh hai bên chấp nhận; máy được điều khiển dán rồi nhấn “Thêm” để xác minh và ghi danh sách tin cậy, cũng hỗ trợ thêm máy này, không cần xem trước và xác nhận lần hai. Khóa công khai đã có không thêm trùng, xem fingerprint đầy đủ trong danh sách. Kết quả sao chép hiện ở “Thông tin ghép đôi máy này”, kết quả thêm hiện ở vùng thêm. Thông tin ghép đôi chỉ chứa khóa công khai và thông tin hiển thị, không có khóa riêng hay mật khẩu, không cần lập kết nối từ xa hay tắt giới hạn trước. Nhập chỉ cập nhật danh sách, kết nối sau vẫn cần xác minh mật khẩu cũ và chữ ký thời gian thực; bản thân thông tin ghép đôi không chứng minh nguồn, người dùng xác nhận nguồn qua kênh chuyển. Cũng có thể tiếp tục chọn thêm từ máy điều khiển đã kết nối và xác thực danh tính.
 
 Thử thách hiệu lực 10 giây, chỉ nhận một chứng minh thành công. Thông báo đã kết nối lặp dùng thử thách và hạn hiện tại; ngắt hoặc vào lại giai đoạn kết nối xóa trạng thái xác thực, lần kết nối sau tạo thử thách mới. Khi bật giới hạn, thiết bị chưa chứng minh xong, chữ ký sai hoặc khóa không trong danh sách không có quyền điều khiển; ứng dụng cũ không hỗ trợ giao thức tầng ứng dụng cũng không qua được. Tắt giới hạn giữ hành vi kết nối cũ.
 
@@ -239,9 +239,9 @@ MiniRTC chỉ gửi nhận thông điệp ứng dụng này qua kênh dữ liệ
 
 Khóa riêng thiết bị lưu trong `identity.json` ở thư mục bộ nhớ đệm; đăng nhập máy chủ và xác thực thiết bị đáng tin cậy dùng chung khóa, phân biệt mục đích chữ ký bằng miền giao thức khác nhau. Quyền tệp macOS/Linux là `0600`, Windows dùng ACL người dùng hiện tại; lưu danh tính bảo vệ đọc ghi qua `identity.json.lock`, cập nhật nguyên tử dựa nội dung mới nhất. Tệp khóa không chứa thông tin xác thực, không cần sao lưu.
 
-Danh sách tin cậy lưu trong `trusted-devices/devices.json` ở thư mục cấu hình; định dạng mới chỉ gồm khóa công khai, tên và ID thiết bị tin cậy, có thể chứa máy này. Khóa riêng máy này trong định dạng cũ tự chuyển vào `identity.json`, chỉ xóa khỏi tệp danh sách khi ghi bền thành công, nên giữ dấu vân tay và ghép đôi cũ. Có thể thử lại chuyển đổi gián đoạn; phát hiện khóa hai nơi xung đột sẽ ngừng tải, không tự ghi đè. Dịch vụ Windows không giám sát dùng cùng bố cục trong thư mục hồ sơ riêng.
+Danh sách tin cậy lưu trong `trusted-devices/devices.json` ở thư mục cấu hình; định dạng mới chỉ gồm khóa công khai, tên và ID thiết bị tin cậy, có thể chứa máy này. Khóa riêng máy này trong định dạng cũ tự chuyển vào `identity.json`, chỉ xóa khỏi tệp danh sách khi ghi bền thành công, nên giữ fingerprint và ghép đôi cũ. Có thể thử lại chuyển đổi gián đoạn; phát hiện khóa hai nơi xung đột sẽ ngừng tải, không tự ghi đè. Dịch vụ Windows không giám sát dùng cùng bố cục trong thư mục hồ sơ riêng.
 
-Chỉ xóa bộ nhớ đệm ID/mật khẩu thường không xóa khóa riêng, nhưng chỉ khóa riêng không lấy lại được ID đã cấp, ứng dụng sẽ yêu cầu ID mới. Giữ ID cũ nhưng mất khóa riêng sẽ không đăng nhập được danh tính đã gắn, cần khôi phục bản sao khóa riêng gốc hoặc xóa bộ nhớ đệm ID cũ để đăng ký lại. Sao chép bộ nhớ đệm ID và khóa riêng sẽ sao chép danh tính đăng nhập, không ràng buộc phần cứng; khi sao lưu nên bảo vệ cùng nhau. Xóa toàn thư mục bộ nhớ đệm còn đổi dấu vân tay ghép đôi, thiết bị khác cần tin cậy lại máy này. Để giữ danh sách thiết bị được điều khiển máy này, nên sao lưu cả danh sách tin cậy. Tệp danh tính hỏng hoặc quyền không an toàn sẽ ngừng tải và đăng nhập thiết bị; giới hạn tin cậy đã bật không tự tắt.
+Chỉ xóa bộ nhớ đệm ID/mật khẩu thường không xóa khóa riêng, nhưng chỉ khóa riêng không lấy lại được ID đã cấp, ứng dụng sẽ yêu cầu ID mới. Giữ ID cũ nhưng mất khóa riêng sẽ không đăng nhập được danh tính đã gắn, cần khôi phục bản sao khóa riêng gốc hoặc xóa bộ nhớ đệm ID cũ để đăng ký lại. Sao chép bộ nhớ đệm ID và khóa riêng sẽ sao chép danh tính đăng nhập, không ràng buộc phần cứng; khi sao lưu nên bảo vệ cùng nhau. Xóa toàn thư mục bộ nhớ đệm còn đổi fingerprint ghép đôi, thiết bị khác cần tin cậy lại máy này. Để giữ danh sách thiết bị được điều khiển máy này, nên sao lưu cả danh sách tin cậy. Tệp danh tính hỏng hoặc quyền không an toàn sẽ ngừng tải và đăng nhập thiết bị; giới hạn tin cậy đã bật không tự tắt.
 
 Mã tương ứng: [chữ ký thiết bị và lưu danh sách](../apps/desktop/src/gui/runtime/trusted_devices.cpp), [xác thực và cấp quyền tầng ứng dụng](../apps/desktop/src/gui/runtime/device_trust_runtime.cpp), [trạng thái kết nối và vòng đời xác thực](../apps/desktop/src/gui/runtime/peer_event_handler.cpp).
 
@@ -257,14 +257,14 @@ flowchart TD
     Managed --> Common["MiniRtcConnection / IceTransport / IceAgent"]
     Direct --> Common
     Common --> Events["PeerEventHandler"]
-    Events --> Features["Video và âm thanh, đầu vào, tệp, bảng nhớ tạm, màn hình riêng tư"]
+    Events --> Features["Video và âm thanh, đầu vào, tệp, clipboard, chế độ riêng tư"]
     Features --> Session["RemoteSession / Cửa sổ luồng"]
 ```
 
-Tầng truyền tải chung trong hình dành cho phiên máy tính gốc. Ứng dụng WebRTC trong chế độ ID dùng triển khai thích ứng riêng, chung giao diện nghiệp vụ tầng trên.
+Tầng truyền tải chung trong hình dành cho phiên máy tính native. Ứng dụng WebRTC trong chế độ ID dùng triển khai thích ứng riêng, chung giao diện nghiệp vụ tầng trên.
 
 - **Cách ly phiên:** Chế độ ID giữ Peer thường trú máy này và Peer phiên điều khiển. Mỗi phiên LAN có Direct Peer riêng, nội bộ dùng khóa ngẫu nhiên tiền tố `lan/` để tránh xung đột ID thiết bị; `lan_controllers_` quản lý phiên LAN hướng được điều khiển.
-- **Tái dùng nghiệp vụ:** `ControllerEvents()`, `WithController()` định tuyến đến Peer đúng theo loại phiên. Video, âm thanh, bàn phím, chuột, tệp và bảng nhớ tạm vẫn giao callback và mô-đun cũ; thiết bị ghi được quản lý theo nhu cầu kết nối tổng thể.
+- **Tái dùng nghiệp vụ:** `ControllerEvents()`, `WithController()` định tuyến đến Peer đúng theo loại phiên. Video, âm thanh, bàn phím, chuột, tệp và clipboard vẫn giao callback và mô-đun cũ; thiết bị ghi được quản lý theo nhu cầu kết nối tổng thể.
 - **Phân công luồng:** Thao tác công khai SessionManager và `Tick()` chạy trên luồng quản lý GUI; Transport dùng một luồng mạng Asio chung, callback chỉ gửi sự kiện có giới hạn. Tính mật khẩu, chuẩn bị và hủy Peer chạy trong tác vụ nền, MiniRTC tự xử lý công việc ICE và đa phương tiện.
 - **Cho phép dữ liệu:** Callback nghiệp vụ LAN kiểm tra quyền phiên và trạng thái đóng. Thông báo mã hóa sẵn sàng và dữ liệu đến có thể xen kẽ, một ít thông điệp điều khiển sớm tạm lưu trong hàng đợi giới hạn, xử lý theo thứ tự sau cấp quyền; dữ liệu nghiệp vụ khác không được cấp quyền sớm vì xếp hàng.
 - **Thứ tự đóng:** Đánh dấu đóng, dừng callback mới, hủy truyền tải liên quan phiên, đóng WSS; nền rút hết callback hiện có rồi thực hiện `MiniRtcCloseDirectSession()` và `MiniRtcDestroyPeer()`. Không hủy Peer trực tiếp trong callback mạng.
@@ -286,7 +286,7 @@ Mã tương ứng: [kết nối LAN với runtime máy tính](../apps/desktop/sr
 
 Chuyển cửa sổ chính về ID không ngừng lắng nghe LAN hay tự ngắt phiên LAN hiện có. Chỉ bỏ chọn “Bật kết nối IP” rồi lưu mới ngắt phiên LAN, giải phóng cổng lắng nghe, về ID và ẩn nút chế độ; phiên ID hiện có vẫn chạy. Bật lại khôi phục mật khẩu, cổng và lịch sử gần đây cũ.
 
-ID thiết bị trong lịch sử LAN dùng lưu hồ sơ, không xác nhận danh tính đối tác. Kết nối lại dùng IP/cổng bản ghi trước; dấu `LAN` trên giao diện biểu thị loại kết nối, không đại diện kết quả truy vấn trực tuyến máy chủ. Cả hai chế độ đều có thể ghi thiết bị mà không lưu mật khẩu.
+ID thiết bị trong lịch sử LAN dùng lưu hồ sơ, không xác nhận danh tính máy từ xa. Kết nối lại dùng IP/cổng bản ghi trước; dấu `LAN` trên giao diện biểu thị loại kết nối, không đại diện kết quả truy vấn trực tuyến máy chủ. Cả hai chế độ đều có thể ghi thiết bị mà không lưu mật khẩu.
 
 Các IP LAN khác nhau của cùng máy được điều khiển dùng chung mật khẩu LAN, lưu riêng cổng từng địa chỉ. Cập nhật nóng mật khẩu kết thúc xác thực chưa hoàn tất dùng thông tin cũ, phiên đã cấp quyền vẫn chạy; kết nối sau cần mật khẩu mới.
 
@@ -294,7 +294,7 @@ Mã tương ứng: [cấu hình toàn cục](../apps/desktop/src/config_center/c
 
 ## 7. Phạm vi hỗ trợ và điểm vào khắc phục
 
-IP trực tiếp hiện dành cho ứng dụng máy tính thường Windows, macOS, Linux. Trình duyệt, ứng dụng di động gốc, dịch vụ Windows trước đăng nhập và bảng điều khiển Linux không màn hình chưa có đầu vào trực tiếp này. IPv4/IPv6 dạng số và ứng viên UDP host là ràng buộc hiện tại. Chế độ mọi giao diện nhận được kết nối VPN hoặc card ảo, máy điều khiển cũng có thể khởi tạo qua chúng nhưng vẫn cần đường TCP, UDP hai bên thông suốt; không có phân giải tên máy, điều khiển loopback hay xuyên NAT mạng công cộng.
+IP trực tiếp hiện dành cho ứng dụng máy tính thường Windows, macOS, Linux. Trình duyệt, ứng dụng di động native, dịch vụ Windows trước đăng nhập và console Linux headless chưa có đầu vào trực tiếp này. IPv4/IPv6 dạng số và ứng viên UDP host là ràng buộc hiện tại. Chế độ mọi giao diện nhận được kết nối VPN hoặc card ảo, máy điều khiển cũng có thể khởi tạo qua chúng nhưng vẫn cần đường TCP, UDP hai bên thông suốt; không có phân giải tên máy, điều khiển loopback hay xuyên NAT mạng công cộng.
 
 | Hiện tượng | Tầng kiểm tra đầu tiên |
 | --- | --- |
@@ -307,4 +307,4 @@ IP trực tiếp hiện dành cho ứng dụng máy tính thường Windows, mac
 | Trực tiếp ngắt sau khi card ngoại tuyến hoặc đổi IP | IP cục bộ cũ đã biến mất chưa; phiên liên quan sẽ đóng, cần kết nối lại bằng IP/cổng hiện thông suốt |
 | Về chế độ ID vẫn có lắng nghe LAN | Chọn chế độ chỉ đổi đầu vào; dừng lắng nghe cần tắt công tắc chính tính năng IP |
 
-Xem các bước trong [hướng dẫn IP trực tiếp](USER_GUIDE.md#lan-direct), báo hiệu tự triển khai trong [tài liệu tự lưu trữ (self-host)](SELF_HOSTING.md). Tài liệu ghi kiến trúc hiện tại, không thay kết quả kiểm chứng thực tế Windows/Linux, xuyên máy hoặc phiên dài hạn.
+Xem các bước trong [hướng dẫn IP trực tiếp](USER_GUIDE.md#lan-direct), signaling tự triển khai trong [tài liệu self-host](SELF_HOSTING.md). Tài liệu ghi kiến trúc hiện tại, không thay kết quả kiểm chứng thực tế Windows/Linux, xuyên máy hoặc phiên dài hạn.

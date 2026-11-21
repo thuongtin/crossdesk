@@ -5,7 +5,7 @@ contact_links:
     about: Khắc phục kết nối, màn hình đen, quyền hệ thống và cài đặt. Troubleshoot connections, blank video, permissions, and installation.
   - name: Hướng dẫn sử dụng (tiếng Việt)
     url: https://github.com/kunkundi/crossdesk/blob/deskhub/docs/USER_GUIDE.md
-    about: Xem hướng dẫn kết nối, Bức tường màn hình, di động, truy cập không giám sát và tự triển khai.
+    about: Xem hướng dẫn kết nối, DeskHub, di động, truy cập không giám sát và tự triển khai.
   - name: User guide (English)
     url: https://github.com/kunkundi/crossdesk/blob/deskhub/docs/USER_GUIDE_EN.md
     about: Read about connections, DeskHub, mobile clients, unattended access, and self-hosting.

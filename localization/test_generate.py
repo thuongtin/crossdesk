@@ -49,6 +49,29 @@ class LocalizationTest(unittest.TestCase):
         output = generate.render(data)['apps/android/app/src/main/res/values-en/strings.xml']
         self.assertIn('"Kết nối"', output)
 
+    def test_vietnamese_feature_terminology(self):
+        cases = {
+            '桌面墙': 'DeskHub',
+            '剪贴板': 'Clipboard',
+            'TURN 中继': 'TURN relay',
+            '强制中继连接': 'Buộc kết nối qua relay',
+            '信令连接失败': 'Kết nối signaling thất bại',
+            '视频编码': 'Codec video',
+            '相对鼠标': 'Bàn di chuột',
+            '绝对鼠标': 'Chạm trực tiếp',
+            '查看指纹': 'Xem fingerprint',
+        }
+        for key, vietnamese in cases.items():
+            with self.subTest(key=key):
+                self.assertEqual(self.data['strings'][key]['vi'], vietnamese)
+                if key in self.data['platforms']['android']:
+                    for qualifier in ['values', 'values-vi']:
+                        self.assertEqual(self.android_strings(qualifier)[generate.resource_id(key)],
+                                         '"' + vietnamese + '"')
+                if key in self.data['platforms']['desktop']:
+                    header = self.outputs['apps/desktop/src/gui/assets/localization/localization_data.h']
+                    self.assertIn(json.dumps(vietnamese, ensure_ascii=False), header)
+
     def test_empty_translation_is_preserved(self):
         data = copy.deepcopy(self.data)
         data['strings']['连接']['vi'] = ''

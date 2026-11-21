@@ -20,9 +20,9 @@ Nếu bạn tự triển khai hoặc dùng máy chủ do nhà vận hành khác 
 
 **Kết nối thiết bị và xác thực danh tính.** Để đăng ký thiết bị, xác minh quyền kết nối, truy vấn trạng thái trực tuyến và thiết lập kết nối từ xa, ứng dụng và máy chủ xử lý ID thiết bị, thông tin xác thực và trạng thái trực tuyến. Máy chủ còn lưu danh tính thiết bị và thông tin kiểm tra xác thực, thời điểm trực tuyến và ngoại tuyến, phiên bản và nền tảng ứng dụng, bản ghi liên kết thiết bị, đồng thời tạo nhật ký vận hành và bảo mật cần thiết để duy trì dịch vụ, khắc phục sự cố và ngăn lạm dụng.
 
-**Thông tin mạng cần thiết.** Thiết lập kết nối, xuyên NAT và chuyển tiếp cần xử lý thông tin mạng như địa chỉ IP, cổng. Thông tin này dùng cho liên lạc và chẩn đoán mạng, không đồng nghĩa với truy cập quyền vị trí của thiết bị. Dịch vụ kết nối, dịch vụ chuyển tiếp và yêu cầu mạng có thể tạo nhật ký tương ứng.
+**Thông tin mạng cần thiết.** Thiết lập kết nối, xuyên NAT và relay cần xử lý thông tin mạng như địa chỉ IP, cổng. Thông tin này dùng cho liên lạc và chẩn đoán mạng, không đồng nghĩa với truy cập quyền vị trí của thiết bị. Dịch vụ kết nối, dịch vụ relay và yêu cầu mạng có thể tạo nhật ký tương ứng.
 
-**Nội dung phiên từ xa.** Sau khi bạn bắt đầu hoặc chấp nhận kết nối từ xa, phần mềm truyền hình ảnh, âm thanh, thao tác bàn phím và chuột, văn bản bảng nhớ tạm và tệp giữa các thiết bị tham gia phiên, tùy tính năng sử dụng. Nội dung phiên có thể chứa thông tin cá nhân hoặc công việc; hãy chỉ kết nối thiết bị bạn sở hữu hoặc được phép sử dụng, quản lý nội dung chia sẻ theo nhu cầu.
+**Nội dung phiên từ xa.** Sau khi bạn bắt đầu hoặc chấp nhận kết nối từ xa, phần mềm truyền hình ảnh, âm thanh, thao tác bàn phím và chuột, văn bản clipboard và tệp giữa các thiết bị tham gia phiên, tùy tính năng sử dụng. Nội dung phiên có thể chứa thông tin cá nhân hoặc công việc; hãy chỉ kết nối thiết bị bạn sở hữu hoặc được phép sử dụng, quản lý nội dung chia sẻ theo nhu cầu.
 
 **Kiểm tra phiên bản.** Ứng dụng máy tính lấy thông tin phiên bản sau khi khởi động; ứng dụng iOS và Android lấy thông tin phiên bản máy tính mới nhất sau khi kết nối thành công và nhận thông tin phiên bản từ xa để nhắc nâng cấp. Yêu cầu này không mang ID thiết bị hoặc số phiên bản từ xa, nhưng dịch vụ mạng xử lý thông tin mạng cần thiết để hoàn tất yêu cầu.
 
@@ -30,11 +30,11 @@ CrossDesk không tích hợp phân phối quảng cáo, theo dõi quảng cáo h
 
 ### III. Truyền dữ liệu và các dịch vụ liên quan
 
-Chúng tôi cung cấp dịch vụ đăng ký thiết bị, thương lượng kết nối, chuyển tiếp và kiểm tra phiên bản. Ngay cả khi bạn dùng dịch vụ kết nối tự lưu trữ (self-host), ứng dụng vẫn truy cập dịch vụ phiên bản do chúng tôi cung cấp theo các điều kiện đã nêu.
+Chúng tôi cung cấp dịch vụ đăng ký thiết bị, thương lượng kết nối, relay và kiểm tra phiên bản. Ngay cả khi bạn dùng dịch vụ kết nối self-host, ứng dụng vẫn truy cập dịch vụ phiên bản do chúng tôi cung cấp theo các điều kiện đã nêu.
 
-Nội dung phiên từ xa ưu tiên truyền trực tiếp giữa thiết bị tham gia, khi cần sẽ qua máy chủ chuyển tiếp được cấu hình. Dịch vụ chuyển tiếp dùng để chuyển tiếp theo thời gian thực, không cung cấp ghi hình phiên hay lưu trữ tệp. Ảnh xem trước và tệp nhận được lưu cục bộ trên ứng dụng được xử lý theo các phần liên quan trong chính sách này.
+Nội dung phiên từ xa ưu tiên truyền trực tiếp giữa thiết bị tham gia, khi cần sẽ qua relay server được cấu hình. Dịch vụ relay dùng để chuyển tiếp theo thời gian thực, không cung cấp ghi hình phiên hay lưu trữ tệp. Ảnh xem trước và tệp nhận được lưu cục bộ trên ứng dụng được xử lý theo các phần liên quan trong chính sách này.
 
-Máy chủ tự lưu trữ do nhà vận hành bạn chọn quản lý. Sau khi đổi máy chủ kết nối, nhà vận hành tương ứng sẽ xử lý đăng ký thiết bị, thương lượng kết nối và dữ liệu chuyển tiếp.
+Máy chủ self-host do nhà vận hành bạn chọn quản lý. Sau khi đổi máy chủ kết nối, nhà vận hành tương ứng sẽ xử lý đăng ký thiết bị, thương lượng kết nối và dữ liệu chuyển tiếp.
 
 ### IV. Lưu thông tin và biện pháp bảo mật
 
@@ -48,27 +48,27 @@ Trên Android, danh tính thiết bị và mật khẩu truy cập bạn chọn 
 
 **Bản ghi máy chủ.** Để hỗ trợ kết nối lại, vận hành dịch vụ và điều tra bảo mật, danh tính, trạng thái, bản ghi liên kết thiết bị và nhật ký vận hành có thể tiếp tục được lưu sau khi kết nối kết thúc. Phạm vi và thời hạn lưu chịu ràng buộc bởi nhu cầu vận hành dịch vụ, quy tắc triển khai và yêu cầu lưu giữ áp dụng. Bạn có thể dùng thông tin liên hệ dưới đây để hỏi về thông tin liên quan thiết bị của mình và thời hạn lưu hoặc yêu cầu xóa. Rút lại chấp thuận quyền riêng tư, xóa lịch sử cục bộ hoặc gỡ ứng dụng không tự xóa bản ghi máy chủ đã tạo; nhật ký, bản sao lưu và ảnh chụp nhanh cần được kiểm tra và xử lý riêng.
 
-iOS bảo vệ dữ liệu cục bộ tương ứng bằng chuỗi khóa hệ thống và cơ chế bảo vệ tệp; kết nối báo hiệu mặc định xác minh chứng chỉ TLS. Hãy bảo quản thiết bị và thông tin xác thực kết nối, tránh chia sẻ mật khẩu truy cập cho người không liên quan.
+iOS bảo vệ dữ liệu cục bộ tương ứng bằng chuỗi khóa hệ thống và cơ chế bảo vệ tệp; kết nối signaling mặc định xác minh chứng chỉ TLS. Hãy bảo quản thiết bị và thông tin xác thực kết nối, tránh chia sẻ mật khẩu truy cập cho người không liên quan.
 
-Kết nối báo hiệu mặc định trên Android và HarmonyOS di động cũng xác minh chứng chỉ TLS.
+Kết nối signaling mặc định trên Android và HarmonyOS di động cũng xác minh chứng chỉ TLS.
 
 HarmonyOS di động dùng Asset Store hệ thống để mã hóa và lưu danh tính thiết bị cùng mật khẩu truy cập bạn chọn lưu, cấm rõ việc đồng bộ thông tin xác thực giữa các thiết bị. Cài đặt và lịch sử kết nối tách riêng theo máy chủ. Xem trước từ xa mặc định tắt; sau khi xác nhận riêng, từ lần kết nối sau lưu một ảnh 640×360; ảnh ở bộ nhớ đệm riêng của ứng dụng, không tải lên, có thể xóa bất kỳ lúc nào và cũng có thể bị hệ thống thu hồi. Tắt xem trước hoặc rút lại quyền kết nối mạng sẽ xóa ảnh xem trước. Tệp nhận lưu trong thư mục riêng của ứng dụng; bạn có thể xuất qua trình chọn tệp hệ thống trong phiên.
 
 ### V. Quyền trên thiết bị di động và lựa chọn cấp quyền
 
-**Chấp thuận quyền riêng tư.** Khi dùng iOS, Android và HarmonyOS di động lần đầu hoặc nâng cấp từ bản cũ chưa cung cấp lựa chọn này, bạn cần đọc chính sách, chủ động đánh dấu chọn và nhấn đồng ý trước khi ứng dụng đăng ký danh tính máy này, kết nối dịch vụ báo hiệu và truy vấn trạng thái trực tuyến thiết bị. Nếu từ chối, bạn vẫn xem được cài đặt, chính sách quyền riêng tư ngoại tuyến và lịch sử kết nối cục bộ, tính năng kết nối từ xa tạm không khả dụng. Khi chưa chấp thuận, mở lại ứng dụng hoặc trở về từ nền sẽ nhắc lại.
+**Chấp thuận quyền riêng tư.** Khi dùng iOS, Android và HarmonyOS di động lần đầu hoặc nâng cấp từ bản cũ chưa cung cấp lựa chọn này, bạn cần đọc chính sách, chủ động đánh dấu chọn và nhấn đồng ý trước khi ứng dụng đăng ký danh tính máy này, kết nối dịch vụ signaling và truy vấn trạng thái trực tuyến thiết bị. Nếu từ chối, bạn vẫn xem được cài đặt, chính sách quyền riêng tư ngoại tuyến và lịch sử kết nối cục bộ, tính năng kết nối từ xa tạm không khả dụng. Khi chưa chấp thuận, mở lại ứng dụng hoặc trở về từ nền sẽ nhắc lại.
 
-**Rút lại đồng ý.** Bạn có thể xem chính sách quyền riêng tư, trạng thái chấp thuận hoặc rút lại chấp thuận trong “Cài đặt → Quyền riêng tư → Quyền riêng tư và cấp quyền”. Ứng dụng dừng phiên từ xa, kết nối báo hiệu và kiểm tra phiên bản, tắt và xóa ảnh xem trước cục bộ. Cần đồng ý lại trước khi dùng lại tính năng kết nối; đồng ý lại không tự bật lưu ảnh xem trước. Việc rút lại không ảnh hưởng xử lý thông tin đã diễn ra trước đó, cũng không đồng nghĩa xóa dữ liệu máy chủ.
+**Rút lại sự đồng ý.** Bạn có thể xem chính sách quyền riêng tư, trạng thái chấp thuận hoặc rút lại chấp thuận trong “Cài đặt → Quyền riêng tư → Quyền riêng tư và sự đồng ý”. Ứng dụng dừng phiên từ xa, kết nối signaling và kiểm tra phiên bản, tắt và xóa ảnh xem trước cục bộ. Cần đồng ý lại trước khi dùng lại tính năng kết nối; đồng ý lại không tự bật lưu ảnh xem trước. Việc rút lại không ảnh hưởng xử lý thông tin đã diễn ra trước đó, cũng không đồng nghĩa xóa dữ liệu máy chủ.
 
-**Quyền hệ thống và tính năng phiên.** Ứng dụng iOS đóng vai trò máy điều khiển nhận hình ảnh và âm thanh máy tính từ xa, không thu màn hình, camera hay micrô máy này. Quyền truy cập mạng cục bộ dùng để kết nối thiết bị trong mạng cục bộ; bạn có thể quản lý trong cài đặt hệ thống. Tệp gửi được chọn qua trình chọn tệp hệ thống, không yêu cầu mở toàn bộ thư viện tệp. Giao diện iOS hiện không đọc hay gửi văn bản bảng nhớ tạm máy này; văn bản bảng nhớ tạm do máy từ xa gửi có thể được ghi vào bảng nhớ tạm máy này trong phiên.
+**Quyền hệ thống và tính năng phiên.** Ứng dụng iOS đóng vai trò máy điều khiển nhận hình ảnh và âm thanh máy tính từ xa, không thu màn hình, camera hay micrô máy này. Quyền truy cập mạng cục bộ dùng để kết nối thiết bị trong mạng cục bộ; bạn có thể quản lý trong cài đặt hệ thống. Tệp gửi được chọn qua trình chọn tệp hệ thống, không yêu cầu mở toàn bộ thư viện tệp. Giao diện iOS hiện không đọc hay gửi văn bản clipboard máy này; văn bản clipboard do máy từ xa gửi có thể được ghi vào clipboard máy này trong phiên.
 
-Ứng dụng Android cũng đóng vai trò máy điều khiển nhận hình ảnh và âm thanh từ xa, không thu màn hình, camera hay micrô máy này. Gửi và lưu tệp qua trình chọn tệp hệ thống, không yêu cầu mở toàn bộ thư viện tệp. Văn bản bảng nhớ tạm chỉ truyền hoặc ghi vào máy này khi bạn chủ động gửi hoặc sao chép văn bản từ xa; văn bản bảng nhớ tạm từ xa được lưu đệm trong ứng dụng sẽ xóa khi phiên kết thúc.
+Ứng dụng Android cũng đóng vai trò máy điều khiển nhận hình ảnh và âm thanh từ xa, không thu màn hình, camera hay micrô máy này. Gửi và lưu tệp qua trình chọn tệp hệ thống, không yêu cầu mở toàn bộ thư viện tệp. Văn bản clipboard chỉ truyền hoặc ghi vào máy này khi bạn chủ động gửi hoặc sao chép văn bản từ xa; văn bản clipboard từ xa được lưu đệm trong ứng dụng sẽ xóa khi phiên kết thúc.
 
-Phiên từ xa Android ưu tiên hình trong hình hệ thống để tiếp tục hiển thị hình ảnh khi bạn chuyển ứng dụng. Khi hình trong hình không khả dụng, dịch vụ tiền cảnh và thông báo kết nối giữ kết nối từ xa bạn đã thiết lập; ở nền, tạm dừng kết xuất hình ảnh cục bộ và phát âm thanh, không yêu cầu quyền cửa sổ nổi. Quyền thông báo cung cấp lối vào quay lại và ngắt kết nối; khóa đánh thức CPU giữ kết nối trong thời gian phiên ở nền, được nhả khi về tiền cảnh hoặc kết thúc phiên. Bạn có thể ngắt trong ứng dụng hoặc thông báo kết nối; xóa tác vụ ứng dụng cũng kết thúc phiên và dịch vụ duy trì kết nối.
+Phiên từ xa Android ưu tiên hình trong hình hệ thống để tiếp tục hiển thị hình ảnh khi bạn chuyển ứng dụng. Khi hình trong hình không khả dụng, dịch vụ foreground và thông báo kết nối giữ kết nối từ xa bạn đã thiết lập; ở nền, tạm dừng hiển thị hình ảnh cục bộ và phát âm thanh, không yêu cầu quyền cửa sổ nổi. Thông báo cho phép quay lại phiên hoặc ngắt kết nối; CPU wake lock giữ CPU hoạt động trong thời gian phiên ở nền, được nhả khi trở lại màn hình hoặc kết thúc phiên. Bạn có thể ngắt trong ứng dụng hoặc thông báo kết nối; xóa tác vụ ứng dụng cũng kết thúc phiên và dịch vụ duy trì kết nối.
 
-Điện thoại và máy tính bảng HarmonyOS chỉ làm máy điều khiển, không yêu cầu quyền ghi màn hình, chèn đầu vào, camera hay micrô máy này; chọn tệp và thao tác bảng nhớ tạm do bạn chủ động kích hoạt. Phiên đã thiết lập ưu tiên hình trong hình hệ thống khi về nền, có điều khiển tắt tiếng; nếu không khả dụng thì yêu cầu tác vụ nền truyền dữ liệu và hiện thông báo hệ thống. Nếu hệ thống không cho phép hoặc dừng tác vụ nền trong khi hình trong hình không khả dụng, phiên sẽ ngắt. Chuyển về nền nhả phím từ xa; ứng dụng rảnh ở nền không giữ kết nối báo hiệu. Sau khi cấp quyền kết nối mạng, ứng dụng kiểm tra phiên bản HarmonyOS máy này ở tiền cảnh và kiểm tra phiên bản từ xa sau kết nối; yêu cầu phiên bản không mang danh tính thiết bị hay phiên bản từ xa.
+Điện thoại và máy tính bảng HarmonyOS chỉ làm máy điều khiển, không yêu cầu quyền ghi màn hình, gửi sự kiện bàn phím/chuột, camera hay micrô máy này; chọn tệp và thao tác clipboard do bạn chủ động kích hoạt. Phiên đã thiết lập ưu tiên hình trong hình hệ thống khi về nền, có điều khiển tắt tiếng; nếu không khả dụng thì yêu cầu tác vụ nền truyền dữ liệu và hiện thông báo hệ thống. Nếu hệ thống không cho phép hoặc dừng tác vụ nền trong khi hình trong hình không khả dụng, phiên sẽ ngắt. Chuyển về nền nhả phím từ xa; ứng dụng rảnh ở nền không giữ kết nối signaling. Sau khi cấp quyền kết nối mạng, ứng dụng kiểm tra phiên bản HarmonyOS máy này ở foreground và kiểm tra phiên bản từ xa sau kết nối; yêu cầu phiên bản không mang danh tính thiết bị hay phiên bản từ xa.
 
-Ứng dụng và thành phần liên lạc dùng siêu dữ liệu tệp cục bộ, tùy chọn ứng dụng và giao diện thời gian để truyền tệp, lưu cài đặt và đo thời gian mạng, không dùng thông tin này để tạo dấu vân tay thiết bị hay theo dõi quảng cáo.
+Ứng dụng và thành phần liên lạc dùng siêu dữ liệu tệp cục bộ, tùy chọn ứng dụng và giao diện thời gian để truyền tệp, lưu cài đặt và đo thời gian mạng, không dùng thông tin này để tạo fingerprint thiết bị hay theo dõi quảng cáo.
 
 ### VI. Yêu cầu truy vấn và xóa
 
@@ -76,7 +76,7 @@ Bạn có thể quản lý lịch sử kết nối gần đây cục bộ, ảnh
 
 Để truy vấn, nhận bản tóm tắt dữ liệu hoặc xóa bản ghi liên quan thiết bị của bạn trong dịch vụ mặc định, hãy liên hệ qua email dưới đây, nêu ID thiết bị và phạm vi yêu cầu. Để tránh tiết lộ hoặc xóa trái phép, chúng tôi xác minh quyền của người yêu cầu; không gửi mật khẩu truy cập, khóa riêng hoặc thông tin xác thực nhạy cảm khác qua email.
 
-Sau khi xóa danh tính thiết bị trên máy chủ, danh tính gốc và thông tin xác thực tương ứng mất hiệu lực; kết nối lại có thể đăng ký thành thiết bị mới. Xóa bản ghi cơ sở dữ liệu không có nghĩa nhật ký, bản sao lưu hoặc nội dung đã nhận trên thiết bị khác cũng bị xóa. Khi dùng dịch vụ tự lưu trữ (self-host), hãy gửi yêu cầu dữ liệu máy chủ đến nhà vận hành máy chủ tương ứng.
+Sau khi xóa danh tính thiết bị trên máy chủ, danh tính gốc và thông tin xác thực tương ứng mất hiệu lực; kết nối lại có thể đăng ký thành thiết bị mới. Xóa bản ghi cơ sở dữ liệu không có nghĩa nhật ký, bản sao lưu hoặc nội dung đã nhận trên thiết bị khác cũng bị xóa. Khi dùng dịch vụ self-host, hãy gửi yêu cầu dữ liệu máy chủ đến nhà vận hành máy chủ tương ứng.
 
 ### VII. Thay đổi chính sách và thông tin liên hệ
 

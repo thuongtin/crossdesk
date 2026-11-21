@@ -25,7 +25,7 @@ python3 scripts/version.py show desktop --field version
 python3 scripts/version.py check
 ```
 
-`check` xác minh định dạng phiên bản, số bản dựng di động, trường trùng và thống nhất phiên bản nhóm. Nếu không khớp, trả mã thoát khác không và chỉ rõ thành phần; dùng `set client <phiên-bản>` để thống nhất ứng dụng, `set cli <phiên-bản>` hoặc `set mcp <phiên-bản>` để thống nhất CLI, MCP, DSH và phụ thuộc gốc. Kiểm tra riêng bất kỳ ứng dụng nào cũng kiểm tra toàn bộ ứng dụng; `check cli` và `check mcp` đều kiểm tra cả nhóm công cụ.
+`check` xác minh định dạng phiên bản, số bản dựng di động, trường trùng và thống nhất phiên bản nhóm. Nếu không khớp, trả mã thoát khác không và chỉ rõ thành phần; dùng `set client <phiên-bản>` để thống nhất ứng dụng, `set cli <phiên-bản>` hoặc `set mcp <phiên-bản>` để thống nhất CLI, MCP, DSH và phụ thuộc native. Kiểm tra riêng bất kỳ ứng dụng nào cũng kiểm tra toàn bộ ứng dụng; `check cli` và `check mcp` đều kiểm tra cả nhóm công cụ.
 
 GitHub Action `Check component versions` chạy mọi kiểm tra khi push, PR và chạy thủ công. Quy trình biên dịch và phát hành npm cũng kiểm tra nhóm tương ứng, dừng nếu không khớp. Script phiên bản không truy vấn npm hay cửa hàng ứng dụng; phát hành chính thức vẫn dùng kiểm tra trước phát hành của quy trình tương ứng.
 
@@ -38,7 +38,7 @@ GitHub Action `Check component versions` chạy mọi kiểm tra khi push, PR v�
 | `android` | Sửa phiên bản đồng bộ mọi ứng dụng; `--build` và `bump android build` chỉ đặt `crossdeskVersionCode` của Gradle |
 | `ios` | Sửa phiên bản đồng bộ mọi ứng dụng; `--build` và `bump ios build` chỉ đặt `CURRENT_PROJECT_VERSION`, đồng bộ Debug và Release |
 | `harmony` | Sửa phiên bản đồng bộ mọi ứng dụng; `--build` và `bump harmony build` chỉ đặt `versionCode` của `AppScope/app.json5` |
-| `cli` | Đồng bộ CLI, MCP, DSH và phụ thuộc CLI của MCP; CLI ghi vào `apps/cli/package.json` và `apps/cli/xmake.lua`, năm gói npm gốc nền tảng và gói đầu vào kế thừa phiên bản này khi đóng gói |
+| `cli` | Đồng bộ CLI, MCP, DSH và phụ thuộc CLI của MCP; CLI ghi vào `apps/cli/package.json` và `apps/cli/xmake.lua`, năm gói native theo nền tảng và gói đầu vào kế thừa phiên bản này khi đóng gói |
 | `mcp` | Cùng phạm vi sửa với `cli`; MCP ghi vào `apps/mcp/package.json`, phiên bản gốc và gói gốc trong tệp khóa, phiên bản gói thư mục tích hợp DSH và `NATIVE_VERSION` trong `src/native.ts` |
 | `pi` | Phiên bản phần mở rộng trong `apps/cli/plugins/pi/package.json` |
 
@@ -79,17 +79,17 @@ python3 scripts/version.py bump client major --dry-run
 python3 scripts/version.py bump android build
 ```
 
-`major`, `minor`, `patch` tăng số tương ứng, đặt các phần thấp hơn về không; ví dụ `1.2.3` tăng `minor` thành `1.3.0`. `bump client patch` và `bump ... patch` trên bất kỳ ứng dụng nào đều đồng bộ tăng phiên bản phát hành mọi ứng dụng, tăng riêng số bản dựng di động. `bump cli` và `bump mcp` đều đồng bộ CLI, MCP, DSH và phụ thuộc gốc MCP. Nếu trong nhóm vốn không khớp, dùng `set` để chỉ rõ phiên bản thống nhất trước.
+`major`, `minor`, `patch` tăng số tương ứng, đặt các phần thấp hơn về không; ví dụ `1.2.3` tăng `minor` thành `1.3.0`. `bump client patch` và `bump ... patch` trên bất kỳ ứng dụng nào đều đồng bộ tăng phiên bản phát hành mọi ứng dụng, tăng riêng số bản dựng di động. `bump cli` và `bump mcp` đều đồng bộ CLI, MCP, DSH và phụ thuộc native MCP. Nếu trong nhóm vốn không khớp, dùng `set` để chỉ rõ phiên bản thống nhất trước.
 
 `bump android build`, `bump ios build`, `bump harmony build` chỉ tăng số bản dựng nền tảng chỉ định, giữ nguyên các nền tảng khác; không có `bump client build` hay `bump mobile build`. Khi đang là bản tiền phát hành, dùng `set` chỉ rõ phiên bản tiếp theo, ví dụ `set mcp 0.2.0-rc.2` hoặc `set mcp 0.2.0`.
 
 ## Phiên bản chung của CLI, MCP và DSH
 
-Phiên bản CLI, MCP, siêu dữ liệu tích hợp DSH và phụ thuộc gốc MCP phải giống hoàn toàn, hiện đều là `0.2.0`. Chạy `set cli 0.3.0` hoặc `set mcp 0.3.0` sẽ đặt tất cả thành `0.3.0`, chỉ cần một trong hai lệnh. Hậu tố tiền phát hành cũng phải khớp. Không có tham số đặt riêng phiên bản phụ thuộc gốc.
+Phiên bản CLI, MCP, siêu dữ liệu tích hợp DSH và phụ thuộc native MCP phải giống hoàn toàn, hiện đều là `0.2.0`. Chạy `set cli 0.3.0` hoặc `set mcp 0.3.0` sẽ đặt tất cả thành `0.3.0`, chỉ cần một trong hai lệnh. Hậu tố tiền phát hành cũng phải khớp. Không có tham số đặt riêng phiên bản phụ thuộc native.
 
 Gói npm MCP chung tạo phụ thuộc chính xác cho năm gói nền tảng từ `NATIVE_VERSION`; `--version` và bắt tay giao thức MCP đọc phiên bản gói. DSH phân phối cùng gói MCP, không phát hành phiên bản plugin riêng.
 
-Trước hết phát hành năm gói gốc nền tảng và đầu vào CLI cùng phiên bản qua quy trình phát hành CLI, rồi phát hành MCP. Dù chỉ sửa MCP, vẫn cần chuẩn bị cùng phiên bản mới cho cả hai và phát hành theo thứ tự này. CLI và MCP vẫn dùng quy trình và tiền tố tag riêng; ví dụ cùng lần cập nhật dùng `cli-v0.3.0` và `mcp-v0.3.0`, nên trỏ cùng commit.
+Trước hết phát hành năm gói native theo nền tảng và đầu vào CLI cùng phiên bản qua quy trình phát hành CLI, rồi phát hành MCP. Dù chỉ sửa MCP, vẫn cần chuẩn bị cùng phiên bản mới cho cả hai và phát hành theo thứ tự này. CLI và MCP vẫn dùng quy trình và tiền tố tag riêng; ví dụ cùng lần cập nhật dùng `cli-v0.3.0` và `mcp-v0.3.0`, nên trỏ cùng commit.
 
 Quy trình biên dịch CLI tạo kèm gói cài `crossdesk-mcp-<nền-tảng>` cho từng nền tảng. Nếu phiên bản nguồn không khớp, biên dịch, đóng gói MCP và kiểm tra phát hành báo lỗi; gói cài nền tảng còn yêu cầu phiên bản gói gốc truyền vào khớp. Phiên bản công cụ không ảnh hưởng phiên bản ứng dụng và phần mở rộng Pi.
 

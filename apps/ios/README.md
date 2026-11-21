@@ -336,7 +336,7 @@ sent; text is limited to 16 KiB and deletions to 16,384 characters per update.
 Hosts without this capability retain ASCII key input. Unsupported input is
 rejected with an explanation and is not queued for later replay. For hosts
 without text input support on an ordinary desktop, send text with
-**Bảng nhớ tạm** in the remote session menu, then use the computer keyboard's paste
+**Clipboard** in the remote session menu, then use the computer keyboard's paste
 shortcut.
 
 This development build forwards complete UTF-8 commits through the Windows
@@ -572,7 +572,7 @@ a data-channel problem:
    16-bit PCM through `AVAudioEngine`.
 3. **Clipboard:** copy a short text value on the remote desktop, then paste it
    into a text field on the phone to verify reception. Text is limited to
-   128 KiB. Tap **Bảng nhớ tạm** in the floating menu to send local clipboard text,
+   128 KiB. Tap **Clipboard** in the floating menu to send local clipboard text,
    then paste it on the remote desktop. Empty or oversized text displays a hint.
 4. **Displays:** open the display menu, switch every listed monitor, and check
    that the selected monitor appears and the displayed resolution updates

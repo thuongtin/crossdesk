@@ -14,7 +14,7 @@ crossdesk-cli 123456789
 
 Thay `123456789` bằng ID thiết bị 9 chữ số của máy tính, nhập mật khẩu ẩn theo lời nhắc terminal. `doctor` chỉ kiểm tra môi trường cục bộ, không kết nối từ xa.
 
-npm tải chương trình gốc phù hợp, không cần cài công cụ biên dịch. Hãy cài gói đầu vào chung `@chunkdash/crossdesk-cli`, giữ phụ thuộc tùy chọn, không dùng `--omit=optional`. Chỉ cài gói nền tảng không đăng ký lệnh `crossdesk-cli`.
+npm tải chương trình native phù hợp, không cần cài công cụ biên dịch. Hãy cài gói đầu vào chung `@chunkdash/crossdesk-cli`, giữ phụ thuộc tùy chọn, không dùng `--omit=optional`. Chỉ cài gói nền tảng không đăng ký lệnh `crossdesk-cli`.
 
 Nếu không cần cài toàn cục, có thể dùng:
 
@@ -66,7 +66,7 @@ npm uninstall -g @chunkdash/crossdesk-cli
 | --- | --- |
 | Không tìm thấy `crossdesk-cli` | Xác nhận cài gói đầu vào chung; sau cài toàn cục, kiểm tra thư mục lệnh npm toàn cục trong PATH hoặc dùng `npx` |
 | Không chạy trực tiếp được sau cài cục bộ | Lệnh cục bộ nằm ở `node_modules/.bin`, có thể dùng `npx crossdesk-cli` trong thư mục cài |
-| Thiếu gói nền tảng gốc | Bỏ thiết lập lược phụ thuộc tùy chọn, cài lại; kiểm tra mạng tải và phiên bản chọn có nền tảng tương ứng |
+| Thiếu gói native theo nền tảng | Bỏ thiết lập lược phụ thuộc tùy chọn, cài lại; kiểm tra mạng tải và phiên bản chọn có nền tảng tương ứng |
 | Báo không hỗ trợ phiên bản Node | Nâng lên Node.js 22 trở lên rồi cài lại |
 | Lỗi `GLIBC` / `GLIBCXX` hoặc phiên bản hệ thống | Kiểm tra yêu cầu trong gói, dùng hệ thống đáp ứng hoặc [tự biên dịch](terminal-client.md#biên-dịch-và-cài-đặt) chương trình phù hợp |
 | Không hỗ trợ chế độ hình ảnh | Dùng `--renderer ansi`, hình pixel cần terminal tự hỗ trợ Kitty hoặc Sixel |
@@ -91,15 +91,15 @@ npm --prefix apps/cli run pack:npm
 
 Script đọc phiên bản `apps/cli/package.json` và `apps/cli/xmake.lua`, kiểm tra khớp nhau; kiểm tra định dạng nhị phân, CPU, phụ thuộc liên kết động của nền tảng hiện tại, chạy `doctor --json` ngoại tuyến. macOS chỉ nhận thư viện động hệ thống, Linux chỉ nhận thư viện nền hệ thống đã liệt kê, Windows từ chối DLL chưa xử lý trong sản phẩm và runtime MSVC động. Đóng gói Windows chạy trong môi trường phát triển Visual Studio có `dumpbin.exe`. Script kiểm tra trước hai tệp đầu ra có tồn tại không, hoàn tất cả hai gói trong thư mục tạm rồi mới ghi đầu ra; nếu ghi thất bại, dọn gói vừa ghi lần này, không ghi đè sản phẩm trùng tên có sẵn.
 
-Mặc định đọc chương trình gốc từ `build/<platform>/<arch>/release/`, ghi hai `.tgz` vào `build/npm/`. Có thể chỉ định đường dẫn:
+Mặc định đọc chương trình native từ `build/<platform>/<arch>/release/`, ghi hai `.tgz` vào `build/npm/`. Có thể chỉ định đường dẫn:
 
 ```sh
 npm --prefix apps/cli run pack:npm -- --binary /absolute/path/crossdesk-cli --out-dir /absolute/path/output
 ```
 
-Mỗi máy biên dịch tạo gói gốc nền tảng hiện tại và gói khởi chạy chung cùng phiên bản. Ví dụ macOS arm64, phiên bản 0.1.0: tên là `chunkdash-crossdesk-cli-darwin-arm64-0.1.0.tgz` và `chunkdash-crossdesk-cli-0.1.0.tgz`; npm đặt tên tarball `@scope/name` thành `scope-name-version.tgz`. Mỗi trong năm artifact CI chứa một gói đầu vào, cuối cùng cần năm gói nền tảng và một gói đầu vào, tổng sáu tarball.
+Mỗi máy biên dịch tạo gói native theo nền tảng hiện tại và gói khởi chạy chung cùng phiên bản. Ví dụ macOS arm64, phiên bản 0.1.0: tên là `chunkdash-crossdesk-cli-darwin-arm64-0.1.0.tgz` và `chunkdash-crossdesk-cli-0.1.0.tgz`; npm đặt tên tarball `@scope/name` thành `scope-name-version.tgz`. Mỗi trong năm artifact CI chứa một gói đầu vào, cuối cùng cần năm gói nền tảng và một gói đầu vào, tổng sáu tarball.
 
-`apps/cli/npm/platforms.json` tập trung định nghĩa năm nền tảng; script kiểm tra tên gói hợp lệ, không trùng. Gói khởi chạy dùng `optionalDependencies` phiên bản chính xác để npm chỉ cài gói gốc khớp hệ thống và CPU. Cả sáu gói sinh ra có tác giả, kho nguồn, trang chủ, địa chỉ phản hồi và cấu hình phát hành công khai cho registry npm chính thức. Gói gốc chứa nhị phân, yêu cầu chạy, SHA-256 và ảnh chụp nguồn ứng dụng điều khiển hiện tại cùng MiniRTC. Giấy phép, nguồn tương ứng và tài liệu liên kết lại của phụ thuộc Xmake ngoài cần kèm bản chính thức; xem [nguồn gốc mã](source-provenance.md). Ảnh chụp nguồn đã gồm MiniRTC, giải nén không cần chạy `prepare-deps.sh`; trong `source/`, tắt máy tính và bật CLI tường minh theo hướng dẫn trên rồi biên dịch `crossdesk-cli`. Gói nguồn chỉ chứa CLI và phụ thuộc, không chứa ứng dụng máy tính hay di động.
+`apps/cli/npm/platforms.json` tập trung định nghĩa năm nền tảng; script kiểm tra tên gói hợp lệ, không trùng. Gói khởi chạy dùng `optionalDependencies` phiên bản chính xác để npm chỉ cài gói native khớp hệ thống và CPU. Cả sáu gói sinh ra có tác giả, kho nguồn, trang chủ, địa chỉ phản hồi và cấu hình phát hành công khai cho registry npm chính thức. Gói native chứa nhị phân, yêu cầu chạy, SHA-256 và ảnh chụp nguồn ứng dụng điều khiển hiện tại cùng MiniRTC. Giấy phép, nguồn tương ứng và tài liệu liên kết lại của phụ thuộc Xmake ngoài cần kèm bản chính thức; xem [nguồn gốc mã](source-provenance.md). Ảnh chụp nguồn đã gồm MiniRTC, giải nén không cần chạy `prepare-deps.sh`; trong `source/`, tắt máy tính và bật CLI tường minh theo hướng dẫn trên rồi biên dịch `crossdesk-cli`. Gói nguồn chỉ chứa CLI và phụ thuộc, không chứa ứng dụng máy tính hay di động.
 
 `private: true` trong `apps/cli/package.json` chỉ thư mục nguồn không phải sản phẩm phát hành. Chỉ phát hành tarball do script tạo; gói sinh ra không mang private.
 
@@ -116,11 +116,11 @@ npx --yes --offline \
 
 Cũng có thể cài hai tarball cục bộ bằng `npm install --ignore-scripts` trước rồi dùng `crossdesk-cli` trong thư mục cài. Kiểm chứng xem tương tác cần TTY thực và máy được điều khiển đã cấp quyền; doctor không kết nối từ xa.
 
-Ứng dụng chủ như Pi nên khởi động trực tiếp chương trình gốc để điều khiển tiến trình và mô tả mật khẩu riêng đáng tin cậy. Sau cài toàn cục, lấy đường dẫn qua `crossdesk-cli --print-binary-path`, đặt vào `CROSSDESK_CLI`; không đặt cả lệnh npx vào biến này.
+Ứng dụng tích hợp như Pi nên khởi động trực tiếp chương trình native để điều khiển tiến trình và mô tả mật khẩu riêng đáng tin cậy. Sau cài toàn cục, lấy đường dẫn qua `crossdesk-cli --print-binary-path`, đặt vào `CROSSDESK_CLI`; không đặt cả lệnh npx vào biến này.
 
 ## CI và phát hành
 
-`.github/workflows/build-cli.yml` cấu hình biên dịch release gốc, doctor, đóng gói năm nền tảng và tải tarball lên. Push thường, PR và biên dịch thủ công chỉ tạo artifact; `.github/workflows/release-cli.yml` dùng lại quy trình đó rồi tập hợp, phát hành sáu gói npm. Nhãn `cli-v*` chỉ vào quy trình phát hành CLI, không kích hoạt trùng biên dịch CLI riêng hay phát hành máy tính. Khi đổi tham chiếu MiniRTC, bắt buộc đẩy commit tương ứng lên remote submodule trước rồi mới đẩy CrossDesk; nếu không, checkout mới và CI thất bại khi tải submodule.
+`.github/workflows/build-cli.yml` cấu hình biên dịch release native, doctor, đóng gói năm nền tảng và tải tarball lên. Push thường, PR và biên dịch thủ công chỉ tạo artifact; `.github/workflows/release-cli.yml` dùng lại quy trình đó rồi tập hợp, phát hành sáu gói npm. Nhãn `cli-v*` chỉ vào quy trình phát hành CLI, không kích hoạt trùng biên dịch CLI riêng hay phát hành máy tính. Khi đổi tham chiếu MiniRTC, bắt buộc đẩy commit tương ứng lên remote submodule trước rồi mới đẩy CrossDesk; nếu không, checkout mới và CI thất bại khi tải submodule.
 
 ### Phát hành tự động GitHub Actions
 
@@ -132,16 +132,16 @@ Cũng có thể cài hai tarball cục bộ bằng `npm install --ignore-scripts
 | Đẩy `cli-v0.2.0-rc.1` | Kiểm tra nguồn phiên bản `0.2.0-rc.1`, biên dịch và phát hành vào `next` |
 | Chạy thủ công trên nhãn `cli-v*` tương ứng, bỏ `dry_run` | Phát hành thật; trên nhánh không được tắt diễn tập |
 
-Chuẩn bị bản tiếp theo bằng `python3 scripts/version.py set cli <phiên-bản>` tại gốc kho, đồng bộ CLI, MCP, plugin DSH và phụ thuộc gốc của MCP, rồi chạy `python3 scripts/version.py check cli`. `set mcp <phiên-bản>` có cùng phạm vi sửa, xem [quản lý phiên bản thành phần](../../../docs/VERSIONING.md). Phát hành gói nền tảng và đầu vào CLI trước, rồi MCP cùng phiên bản. Commit và đẩy mã rồi tạo nhãn cùng phiên bản. Ví dụ nguồn đã lên `0.2.1`:
+Chuẩn bị bản tiếp theo bằng `python3 scripts/version.py set cli <phiên-bản>` tại gốc kho, đồng bộ CLI, MCP, plugin DSH và phụ thuộc native của MCP, rồi chạy `python3 scripts/version.py check cli`. `set mcp <phiên-bản>` có cùng phạm vi sửa, xem [quản lý phiên bản thành phần](../../../docs/VERSIONING.md). Phát hành gói nền tảng và đầu vào CLI trước, rồi MCP cùng phiên bản. Commit và đẩy mã rồi tạo nhãn cùng phiên bản. Ví dụ nguồn đã lên `0.2.1`:
 
 ```sh
 git tag cli-v0.2.1
 git push origin cli-v0.2.1
 ```
 
-Gói `0.1.0` đã tải lên không được ghi đè bằng bản biên dịch mới; lần phát hành chương trình gốc sau nên dùng phiên bản mới. Diễn tập thủ công dùng `npm pack --dry-run` và kiểm tra nội dung, không gọi `npm publish` hay trao đổi thông tin xác thực OIDC; có thể chạy trên nhánh và kiểm tra bản đã phát hành, nhưng không kiểm chứng quyền phát hành npm. Chạy nhãn luôn kiểm tra phiên bản khớp. Mục chạy thủ công GitHub cần quy trình đã có trong nhánh mặc định.
+Gói `0.1.0` đã tải lên không được ghi đè bằng bản biên dịch mới; lần phát hành chương trình native sau nên dùng phiên bản mới. Diễn tập thủ công dùng `npm pack --dry-run` và kiểm tra nội dung, không gọi `npm publish` hay trao đổi thông tin xác thực OIDC; có thể chạy trên nhánh và kiểm tra bản đã phát hành, nhưng không kiểm chứng quyền phát hành npm. Chạy nhãn luôn kiểm tra phiên bản khớp. Mục chạy thủ công GitHub cần quy trình đã có trong nhánh mặc định.
 
-Job phát hành chỉ tải năm artifact `npm-*` của lần chạy hiện tại, giữ thư mục riêng. `release-npm.cjs` kiểm tra tên gói, phiên bản, nền tảng, phụ thuộc đầu vào, SHA-256 chương trình gốc và SHA-512 tarball; nội dung năm gói đầu vào bắt buộc giống nhau (cho phép khác CRLF Windows), thực dùng đầu vào sinh bởi Linux x64, giữ quyền khởi chạy Unix. Trước tải thật, kiểm tra trạng thái registry mọi gói; dừng nếu cùng phiên bản khác nội dung hoặc dist-tag đích đã trỏ bản mới hơn.
+Job phát hành chỉ tải năm artifact `npm-*` của lần chạy hiện tại, giữ thư mục riêng. `release-npm.cjs` kiểm tra tên gói, phiên bản, nền tảng, phụ thuộc đầu vào, SHA-256 chương trình native và SHA-512 tarball; nội dung năm gói đầu vào bắt buộc giống nhau (cho phép khác CRLF Windows), thực dùng đầu vào sinh bởi Linux x64, giữ quyền khởi chạy Unix. Trước tải thật, kiểm tra trạng thái registry mọi gói; dừng nếu cùng phiên bản khác nội dung hoặc dist-tag đích đã trỏ bản mới hơn.
 
 Thứ tự tải là năm gói nền tảng → chờ truy vấn được phiên bản chính xác, tính toàn vẹn và dist-tag → gói đầu vào → xác nhận cuối. Nếu npm xử lý bất đồng bộ, truy vấn mỗi 15 giây, mỗi đợt chờ tối đa 15 phút; không tải lặp chỉ vì chưa truy vấn thấy phiên bản. Phát hành thật có provenance, dùng xác thực OIDC ngắn hạn, chỉ job phát hành có `id-token: write`, toàn quy trình không cần `NPM_TOKEN`. Job phát hành chạy tuần tự, không ngắt phiên bản đang tải.
 
@@ -174,7 +174,7 @@ Sau khi tạo Trusted Publisher, nên **phát hành thật lần đầu trong 2 
 
 ### Bộ nhớ đệm biên dịch
 
-Biên dịch CLI lưu riêng công cụ Xmake và phụ thuộc gốc đã cài. Phụ thuộc gốc dùng thư mục tạm runner do `XMAKE_PKG_INSTALLDIR` chỉ định, không lưu cấu hình `.xmake` hay sản phẩm `build` dự án. Khóa đệm gồm loại runner, kiến trúc đích, phiên bản ảnh, Xmake và nội dung cấu hình, công thức phụ thuộc, bản vá; không gồm số lần chạy, không mất hiệu lực vì sửa C++ CLI, README hay siêu dữ liệu npm. Cập nhật ảnh có thể gồm trình biên dịch／SDK, nên sẽ tạo lại đệm; nếu cấu hình phụ thuộc đổi, chỉ nhận khóa đầy đủ mới, không dùng lại thư viện công thức cũ.
+Biên dịch CLI lưu riêng công cụ Xmake và phụ thuộc native đã cài. Phụ thuộc native dùng thư mục tạm runner do `XMAKE_PKG_INSTALLDIR` chỉ định, không lưu cấu hình `.xmake` hay sản phẩm `build` dự án. Khóa đệm gồm loại runner, kiến trúc đích, phiên bản ảnh, Xmake và nội dung cấu hình, công thức phụ thuộc, bản vá; không gồm số lần chạy, không mất hiệu lực vì sửa C++ CLI, README hay siêu dữ liệu npm. Cập nhật ảnh có thể gồm trình biên dịch／SDK, nên sẽ tạo lại đệm; nếu cấu hình phụ thuộc đổi, chỉ nhận khóa đầy đủ mới, không dùng lại thư viện công thức cũ.
 
 `Restore native dependencies` hiển thị có trúng bộ đệm không. `xmake f` từng nền tảng cài phụ thuộc thành công xong là chạy `Save native dependencies` ngay; CLI biên dịch, ký hay đóng gói thất bại sau đó vẫn tái dùng lần sau; cài phụ thuộc thất bại không lưu đệm thiếu. Linux chỉ cập nhật và cài APT cho công cụ hệ thống thiếu trong ảnh. Lần đầu, đệm bị xóa, ảnh/cấu hình phụ thuộc đổi vẫn cần tải／biên dịch; trúng đệm không có nghĩa bỏ biên dịch và đóng gói CLI.
 
@@ -189,7 +189,7 @@ npm org ls chunkdash --json --registry=https://registry.npmjs.org/
 
 Biên dịch lại gói cả năm nền tảng trước; tarball `crossdesk-cli-<nền-tảng>` cũ không tự thành gói có scope, chỉ đổi tên tệp không đổi tên trong gói. Gói nền tảng cũ đã phát hành giữ nguyên, đầu vào mới chỉ phụ thuộc gói `@chunkdash`. Mỗi lần phát hành cập nhật đồng bộ `apps/cli/package.json` và `apps/cli/xmake.lua`; nếu một gói đích đã phát hành phiên bản đó, không được ghi đè bằng nội dung mới.
 
-Nếu năm gói nền tảng `@chunkdash/crossdesk-cli-*` phiên bản `0.1.0` đã phát hành, lần này chỉ chuyển đầu vào `crossdesk-cli` sang `@chunkdash/crossdesk-cli`, có thể giữ `0.1.0` cho đầu vào mới, phụ thuộc năm phiên bản nền tảng cũ. Xác nhận tính toàn vẹn các phiên bản nền tảng trong registry rồi chỉ phát hành `chunkdash-crossdesk-cli-0.1.0.tgz` mới; không phát hành lại phiên bản nền tảng có sẵn. Cập nhật chương trình gốc sau vẫn cần nâng cả bộ và biên dịch lại.
+Nếu năm gói nền tảng `@chunkdash/crossdesk-cli-*` phiên bản `0.1.0` đã phát hành, lần này chỉ chuyển đầu vào `crossdesk-cli` sang `@chunkdash/crossdesk-cli`, có thể giữ `0.1.0` cho đầu vào mới, phụ thuộc năm phiên bản nền tảng cũ. Xác nhận tính toàn vẹn các phiên bản nền tảng trong registry rồi chỉ phát hành `chunkdash-crossdesk-cli-0.1.0.tgz` mới; không phát hành lại phiên bản nền tảng có sẵn. Cập nhật chương trình native sau vẫn cần nâng cả bộ và biên dịch lại.
 
 Tải và giải nén sáu tarball cùng commit, cùng phiên bản, phát hành trong thư mục đó. Dưới đây lấy 0.1.0 làm ví dụ, kiểm tra nội dung đóng gói trước, rồi lần lượt phát hành năm gói nền tảng vào `next`:
 
@@ -219,7 +219,7 @@ Tải và giải nén sáu tarball cùng commit, cùng phiên bản, phát hành
 
 Nếu npm trả đang xử lý (HTTP 202), chờ truy vấn được đúng phiên bản, không tải lặp ngay. Nếu gặp `403 Package name triggered spam detection`, dừng, giữ gói thành công, gửi tên gói, địa chỉ kho, phiên bản, nhật ký lỗi cho [hỗ trợ npm](https://www.npmjs.com/support) để xin xem xét; không tự thử lại cả lượt. Khôi phục bằng truy vấn đúng phiên bản mỗi gói trước, so `dist.integrity` registry với `integrity` của `npm pack <tep-cuc-bo.tgz> --dry-run --json --ignore-scripts`, chỉ phát hành bù gói chưa thành công; cùng phiên bản khác nội dung thì dừng và nâng cả bộ.
 
-Chỉ phát hành đầu vào chung sau khi truy vấn được mọi gói gốc và tính toàn vẹn khớp:
+Chỉ phát hành đầu vào chung sau khi truy vấn được mọi gói native và tính toàn vẹn khớp:
 
 ```sh
 (

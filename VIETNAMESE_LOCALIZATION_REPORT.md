@@ -28,14 +28,14 @@ Phân loại: (a) khóa kỹ thuật và bảng lookup, giữ nguyên; (b) bình
 | Khái niệm | Thuật ngữ tiếng Việt |
 |---|---|
 | Remote control / remote desktop | Điều khiển từ xa / màn hình từ xa |
-| Controller / host | Bên điều khiển / bên được điều khiển |
+| Controller / host | Máy điều khiển (controller) / máy được điều khiển (host) |
 | Local / remote | Máy này / máy từ xa |
-| Session / signaling | Phiên / báo hiệu |
+| Session / signaling | Phiên / signaling |
 | Connect / disconnect / reconnect | Kết nối / ngắt kết nối / kết nối lại |
 | File transfer / file browser | Truyền tệp / trình quản lý tệp |
 | Upload / download | Tải lên / tải xuống |
-| Clipboard / shortcut | Bảng nhớ tạm / phím tắt |
-| Privacy policy / privacy screen | Chính sách quyền riêng tư / màn hình riêng tư |
+| Clipboard / shortcut | Clipboard / phím tắt |
+| Privacy policy / privacy screen | Chính sách quyền riêng tư / chế độ riêng tư (Privacy Screen) |
 | Follow system / fallback | Theo hệ thống / ngôn ngữ dự phòng |
 | Permission / accessibility | Quyền / trợ năng |
 | Source / license / notice | Mã nguồn / giấy phép / thông báo |
