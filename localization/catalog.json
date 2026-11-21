@@ -219,7 +219,7 @@
       "es": "CrossDesk utiliza la red local para descubrir y establecer conexiones nativas de control remoto P2P.",
       "pt-BR": "CrossDesk usa a rede local para descobrir e estabelecer conexões de controle remoto P2P nativas.",
       "ru": "CrossDesk использует локальную сеть для обнаружения и установления собственных P2P-соединений удаленного управления.",
-      "vi": "CrossDesk sử dụng mạng cục bộ để phát hiện và thiết lập kết nối điều khiển từ xa P2P gốc."
+      "vi": "CrossDesk sử dụng mạng cục bộ để phát hiện và thiết lập kết nối điều khiển từ xa P2P native."
     },
     "CrossDesk 已停止，退出码": {
       "zh-Hans": "CrossDesk 已停止，退出码",
@@ -258,7 +258,7 @@
       "fr": "Console sans tête CrossDesk",
       "es": "Consola sin cabeza CrossDesk",
       "pt-BR": "Console sem cabeça CrossDesk",
-      "vi": "Bảng điều khiển CrossDesk không màn hình"
+      "vi": "Console CrossDesk headless"
     },
     "CrossDesk 远程连接": {
       "zh-Hans": "CrossDesk 远程连接",
@@ -440,7 +440,7 @@
       "fr": "Options sans tête Linux :\n--headlessSélectionnez un bureau existant et activez la console.\n--headless-displayDISPLAY Avancé : remplacer la sélection du bureau\n--headless-sizeWIDTHxHEIGHT Nouvel affichage virtuel ; par défaut 1920x1080, même 320..8192\n--headless-sessionEXECUTABLE Démarrer un bureau (startxfce4 ; aucun pour un affichage nu)\n--no-headlessDésactiver le repli automatique\nLe démarrage normal sélectionne automatiquement votre bureau existant. Entrez les paramètres dans la console pour le configurer.\n",
       "es": "Opciones sin cabeza de Linux:\n--headlessSeleccione un escritorio existente y habilite la consola\n--headless-displayDISPLAY Avanzado: anule la selección de escritorio\n--headless-sizeWIDTHxHEIGHT Nueva pantalla virtual; predeterminado 1920x1080, incluso 320..8192\n--headless-sessionEJECUTABLE Iniciar un escritorio (startxfce4; ninguno para una pantalla simple)\n--no-headlessDeshabilitar el respaldo automático\nEl inicio normal selecciona automáticamente su escritorio existente. Ingrese la configuración en la consola para configurarlo.\n",
       "pt-BR": "Opções sem cabeça do Linux:\n--headlessSelecione um desktop existente e ative o console\n--headless-displayDISPLAY Avançado: substitui a seleção do desktop\n--headless-sizeWIDTHxHEIGHT Novo display virtual; padrão 1920x1080, até 320..8192\n--headless-sessionEXECUTABLE Iniciar uma área de trabalho (startxfce4; nenhum para uma tela vazia)\n--no-headlessDesativar fallback automático\nA inicialização normal seleciona sua área de trabalho existente automaticamente. Insira as configurações no console para configurá-lo.\n",
-      "vi": "Tùy chọn chạy không màn hình trên Linux:\n  --headless                  Tự chọn màn hình hiện có và bật bảng điều khiển\n  --headless-display DISPLAY  Nâng cao: chỉ định phiên hiển thị hiện có\n  --headless-size WIDTHxHEIGHT Tạo màn hình ảo; mặc định 1920x1080, kích thước chẵn 320..8192\n  --headless-session EXECUTABLE Khởi chạy môi trường màn hình (startxfce4; none chỉ tạo màn hình trống)\n  --no-headless               Tắt tự động chuyển sang chế độ dự phòng\nKhởi động bình thường sẽ tự chọn màn hình hiện có, không cần nhập số màn hình. Nhập settings trong bảng điều khiển để quản lý cài đặt.\n"
+      "vi": "Tùy chọn chạy headless trên Linux:\n  --headless                  Tự chọn màn hình hiện có và bật console\n  --headless-display DISPLAY  Nâng cao: chỉ định phiên hiển thị hiện có\n  --headless-size WIDTHxHEIGHT Tạo màn hình ảo; mặc định 1920x1080, kích thước chẵn 320..8192\n  --headless-session EXECUTABLE Khởi chạy môi trường desktop (startxfce4; none chỉ tạo màn hình trống)\n  --no-headless               Tắt tự động chuyển sang chế độ dự phòng\nKhởi động bình thường sẽ tự chọn màn hình hiện có, không cần nhập số màn hình. Nhập settings trong console để quản lý cài đặt.\n"
     },
     "OpenFEC 告知": {
       "zh-Hans": "OpenFEC 告知",
@@ -466,7 +466,7 @@
       "es": "OpenFEC proporciona capacidades de corrección de errores hacia adelante y tiene la licencia CeCILL-C1.0. La licencia proporciona una garantía limitada y limitaciones de responsabilidad; lea los detalles del componente.",
       "pt-BR": "OpenFEC fornece recursos de correção direta de erros e é licenciado sob a licença CeCILL-C1.0. A licença fornece uma garantia limitada e limitações de responsabilidade. Leia os detalhes do componente.",
       "ru": "OpenFEC обеспечивает возможности прямого исправления ошибок и лицензируется по лицензии CeCILL-C1.0. Лицензия предусматривает ограниченную гарантию и ограничение ответственности. Пожалуйста, ознакомьтесь с подробностями компонента.",
-      "vi": "OpenFEC cung cấp khả năng sửa lỗi tiến và tuân theo giấy phép CeCILL-C 1.0. Giấy phép quy định bảo hành có giới hạn và giới hạn trách nhiệm; vui lòng đọc chi tiết thành phần."
+      "vi": "OpenFEC cung cấp khả năng Forward Error Correction (FEC) và tuân theo giấy phép CeCILL-C 1.0. Giấy phép quy định bảo hành có giới hạn và giới hạn trách nhiệm; vui lòng đọc chi tiết thành phần."
     },
     "OpenFEC 许可与源码": {
       "zh-Hans": "OpenFEC 许可与源码",
@@ -544,7 +544,7 @@
       "es": "Relé de GIRO",
       "pt-BR": "GIRAR relé",
       "ru": "Реле ПОВОРОТА",
-      "vi": "Chuyển tiếp TURN"
+      "vi": "TURN relay"
     },
     "Wayland 会话提示": {
       "zh-Hans": "Wayland 会话提示",
@@ -739,7 +739,7 @@
       "es": "Envíe textos en chino y otros a través del portapapeles, luego haga clic en pegar",
       "pt-BR": "Envie textos em chinês e outros textos através da área de transferência e clique em colar",
       "ru": "Отправьте текст на китайском и других языках через буфер обмена, затем нажмите «Вставить».",
-      "vi": "Hãy gửi văn bản tiếng Trung và các văn bản khác qua bảng nhớ tạm, rồi nhấn dán"
+      "vi": "Hãy gửi văn bản tiếng Trung và các văn bản khác qua clipboard, rồi nhấn dán"
     },
     "中继": {
       "zh-Hans": "中继",
@@ -752,7 +752,7 @@
       "fr": "Relais",
       "es": "Relé",
       "pt-BR": "Relé",
-      "vi": "Chuyển tiếp"
+      "vi": "Relay"
     },
     "中继模式": {
       "zh-Hans": "中继模式",
@@ -765,7 +765,7 @@
       "fr": "Mode relais TOUR",
       "es": "Modo de relé GIRO",
       "pt-BR": "Modo de relé TURN",
-      "vi": "Chế độ chuyển tiếp TURN"
+      "vi": "Chế độ TURN relay"
     },
     "为便于持续使用远程桌面，建议注销当前桌面会话，在登录界面选择 X11（Xorg）会话后重新登录。": {
       "zh-Hans": "为便于持续使用远程桌面，建议注销当前桌面会话，在登录界面选择 X11（Xorg）会话后重新登录。",
@@ -817,7 +817,7 @@
       "fr": "Supprimer de DeskHub",
       "es": "Eliminar de DeskHub",
       "pt-BR": "Remover de DeskHub",
-      "vi": "Xóa khỏi Bức tường màn hình (DeskHub)"
+      "vi": "Xóa khỏi DeskHub"
     },
     "从桌面墙移除此设备？": {
       "zh-Hans": "从桌面墙移除此设备？",
@@ -830,7 +830,7 @@
       "fr": "Supprimer de DeskHub?",
       "es": "¿Eliminar de DeskHub?",
       "pt-BR": "Remover de DeskHub?",
-      "vi": "Xóa thiết bị này khỏi Bức tường màn hình (DeskHub)?"
+      "vi": "Xóa thiết bị này khỏi DeskHub?"
     },
     "从近期连接添加": {
       "zh-Hans": "从近期连接添加",
@@ -1012,7 +1012,7 @@
       "es": "El servidor de señalización ha cerrado la conexión.",
       "pt-BR": "O servidor de sinalização fechou a conexão",
       "ru": "Сервер сигнализации закрыл соединение.",
-      "vi": "Máy chủ báo hiệu đã đóng kết nối"
+      "vi": "Signaling server đã đóng kết nối"
     },
     "信令服务端口": {
       "zh-Hans": "信令服务端口",
@@ -1025,7 +1025,7 @@
       "fr": "Port de signalisation",
       "es": "Puerto de señalización",
       "pt-BR": "Porta de sinalização",
-      "vi": "Cổng dịch vụ báo hiệu"
+      "vi": "Cổng dịch vụ signaling"
     },
     "信令服务重连中": {
       "zh-Hans": "信令服务重连中",
@@ -1038,7 +1038,7 @@
       "es": "Reconexión del servicio de señalización",
       "pt-BR": "Reconexão do serviço de sinalização",
       "ru": "Повторное подключение услуги сигнализации",
-      "vi": "Đang kết nối lại dịch vụ báo hiệu"
+      "vi": "Đang kết nối lại dịch vụ signaling"
     },
     "信令端口": {
       "zh-Hans": "信令端口",
@@ -1051,7 +1051,7 @@
       "fr": "Port de signalisation",
       "es": "Puerto de señalización",
       "pt-BR": "Porta de sinalização",
-      "vi": "Cổng báo hiệu"
+      "vi": "Cổng signaling"
     },
     "信令连接中断，请重新连接": {
       "zh-Hans": "信令连接中断，请重新连接",
@@ -1064,7 +1064,7 @@
       "es": "La conexión de señalización está interrumpida, vuelva a conectarse.",
       "pt-BR": "A conexão de sinalização foi interrompida, reconecte.",
       "ru": "Сигнальное соединение прервано, пожалуйста, переподключитесь.",
-      "vi": "Kết nối báo hiệu bị gián đoạn, hãy kết nối lại"
+      "vi": "Kết nối signaling bị gián đoạn, hãy kết nối lại"
     },
     "信令连接失败": {
       "zh-Hans": "信令连接失败",
@@ -1077,7 +1077,7 @@
       "es": "Error en la conexión de señalización",
       "pt-BR": "Falha na conexão de sinalização",
       "ru": "Не удалось установить сигнальное соединение.",
-      "vi": "Kết nối báo hiệu thất bại"
+      "vi": "Kết nối signaling thất bại"
     },
     "信令连接已关闭": {
       "zh-Hans": "信令连接已关闭",
@@ -1090,7 +1090,7 @@
       "es": "Conexión de señalización cerrada",
       "pt-BR": "Conexão de sinalização fechada",
       "ru": "Сигнальное соединение закрыто",
-      "vi": "Kết nối báo hiệu đã đóng"
+      "vi": "Kết nối signaling đã đóng"
     },
     "修改分组": {
       "zh-Hans": "修改分组",
@@ -1207,7 +1207,7 @@
       "fr": "Autoriser le déverrouillage de l'écran de confidentialité pendant le contrôle",
       "es": "Permitir el desbloqueo de la pantalla de privacidad mientras está controlado",
       "pt-BR": "Permitir desbloqueio da tela de privacidade enquanto controlado",
-      "vi": "Cho phép mở khóa màn hình riêng tư khi đang được điều khiển"
+      "vi": "Cho phép mở khóa chế độ riêng tư khi đang được điều khiển"
     },
     "允许远程键盘和鼠标控制": {
       "zh-Hans": "允许远程键盘和鼠标控制",
@@ -1467,7 +1467,7 @@
       "fr": "Désactiver l'écran de confidentialité",
       "es": "Desactivar la pantalla de privacidad",
       "pt-BR": "Desativar tela de privacidade",
-      "vi": "Tắt màn hình riêng tư"
+      "vi": "Tắt chế độ riêng tư"
     },
     "兼顾清晰度和流畅度，只在持续压力下逐步降低分辨率。": {
       "zh-Hans": "兼顾清晰度和流畅度，只在持续压力下逐步降低分辨率。",
@@ -1493,7 +1493,7 @@
       "fr": "Envoyer le fichier",
       "es": "Enviar archivo",
       "pt-BR": "Enviar arquivo",
-      "vi": "Phân phối tệp"
+      "vi": "Gửi tệp"
     },
     "分组": {
       "zh-Hans": "分组",
@@ -1792,7 +1792,7 @@
       "es": "Portapapeles",
       "pt-BR": "Área de transferência",
       "ru": "Буфер обмена",
-      "vi": "Bảng nhớ tạm"
+      "vi": "Clipboard"
     },
     "剪贴板中没有文本": {
       "zh-Hans": "剪贴板中没有文本",
@@ -1805,7 +1805,7 @@
       "es": "No hay texto en el portapapeles",
       "pt-BR": "Nenhum texto na área de transferência",
       "ru": "Нет текста в буфере обмена.",
-      "vi": "Không có văn bản trong bảng nhớ tạm"
+      "vi": "Không có văn bản trong clipboard"
     },
     "剪贴板文本超过 128 KiB": {
       "zh-Hans": "剪贴板文本超过 128 KiB",
@@ -1818,7 +1818,7 @@
       "es": "El texto del portapapeles supera los 128 KiB",
       "pt-BR": "O texto da área de transferência excede 128 KiB",
       "ru": "Размер текста в буфере обмена превышает 128 КиБ.",
-      "vi": "Văn bản bảng nhớ tạm vượt quá 128 KiB"
+      "vi": "Văn bản clipboard vượt quá 128 KiB"
     },
     "加入桌面墙": {
       "zh-Hans": "加入桌面墙",
@@ -1831,7 +1831,7 @@
       "fr": "Ajouter à DeskHub",
       "es": "Agregar a DeskHub",
       "pt-BR": "Adicionar a DeskHub",
-      "vi": "Thêm vào Bức tường màn hình (DeskHub)"
+      "vi": "Thêm vào DeskHub"
     },
     "加入桌面墙后，可通过批量选择连接": {
       "zh-Hans": "加入桌面墙后，可通过批量选择连接",
@@ -1844,7 +1844,7 @@
       "fr": "Ajoutez à DeskHub, puis sélectionnez les appareils à connecter.",
       "es": "Agregar a DeskHub, luego seleccione los dispositivos para conectar.",
       "pt-BR": "Adicione a DeskHub e selecione os dispositivos para conectar.",
-      "vi": "Sau khi thêm vào Bức tường màn hình (DeskHub), có thể chọn hàng loạt thiết bị để kết nối"
+      "vi": "Sau khi thêm vào DeskHub, có thể chọn hàng loạt thiết bị để kết nối"
     },
     "加密传输": {
       "zh-Hans": "加密传输",
@@ -1948,7 +1948,7 @@
       "es": "Falló la inicialización de la conexión nativa",
       "pt-BR": "Falha na inicialização da conexão nativa",
       "ru": "Не удалось инициализировать собственное соединение.",
-      "vi": "Khởi tạo kết nối gốc thất bại"
+      "vi": "Khởi tạo kết nối native thất bại"
     },
     "原生通信库不可用，请重新构建并安装": {
       "zh-Hans": "原生通信库不可用，请重新构建并安装",
@@ -1961,7 +1961,7 @@
       "es": "La biblioteca de comunicación nativa no está disponible; reconstrúyala e instálela",
       "pt-BR": "A biblioteca de comunicação nativa não está disponível, reconstrua-a e instale-a",
       "ru": "Собственная коммуникационная библиотека недоступна, пересоберите и установите ее.",
-      "vi": "Thư viện giao tiếp gốc không khả dụng, hãy biên dịch và cài đặt lại"
+      "vi": "Thư viện giao tiếp native không khả dụng, hãy biên dịch và cài đặt lại"
     },
     "原设置已保留。": {
       "zh-Hans": "原设置已保留。",
@@ -2351,7 +2351,7 @@
       "es": "No se pudo iniciar el mantenimiento en segundo plano; mantenga la aplicación en primer plano",
       "pt-BR": "Falha ao iniciar a manutenção de atividade em segundo plano, mantenha o aplicativo em primeiro plano",
       "ru": "Не удалось запустить фоновую поддержку активности, оставьте приложение на переднем плане.",
-      "vi": "Không thể khởi động chế độ duy trì nền, hãy giữ ứng dụng ở phía trước"
+      "vi": "Không thể khởi động chế độ duy trì nền, hãy giữ ứng dụng đang mở trên màn hình"
     },
     "后台保活未能启动，请保持应用在前台后重新连接": {
       "zh-Hans": "后台保活未能启动，请保持应用在前台后重新连接",
@@ -2364,7 +2364,7 @@
       "es": "No se pudo iniciar el mantenimiento en segundo plano. Mantenga la aplicación en primer plano y vuelva a conectarse.",
       "pt-BR": "Falha ao iniciar a manutenção de atividade em segundo plano. Mantenha o aplicativo em primeiro plano e reconecte.",
       "ru": "Не удалось запустить фоновую поддержку активности. Оставьте приложение в активном режиме и переподключитесь.",
-      "vi": "Không thể khởi động chế độ duy trì nền, hãy giữ ứng dụng ở phía trước rồi kết nối lại"
+      "vi": "Không thể khởi động chế độ duy trì nền, hãy giữ ứng dụng đang mở trên màn hình rồi kết nối lại"
     },
     "后台连接已结束，请重新连接": {
       "zh-Hans": "后台连接已结束，请重新连接",
@@ -2442,7 +2442,7 @@
       "fr": "Activer le démon",
       "es": "Habilitar demonio",
       "pt-BR": "Habilitar Daemon",
-      "vi": "Bật tiến trình nền"
+      "vi": "Bật daemon"
     },
     "命令: status 查看 ID/密码/状态；settings 设置；password 修改密码；random 随机密码；help 帮助；quit 退出": {
       "zh-Hans": "命令: status 查看 ID/密码/状态；settings 设置；password 修改密码；random 随机密码；help 帮助；quit 退出",
@@ -2520,7 +2520,7 @@
       "es": "Complete el nombre del host o la dirección IPv4, sin protocolo ni ruta",
       "pt-BR": "Preencha o nome do host ou endereço IPv4, sem protocolo e caminho",
       "ru": "Введите имя хоста или IPv4-адрес без протокола и пути.",
-      "vi": "Nhập tên máy chủ hoặc địa chỉ IPv4, không gồm giao thức và đường dẫn"
+      "vi": "Nhập hostname hoặc địa chỉ IPv4, không gồm giao thức và đường dẫn"
     },
     "填写服务器地址": {
       "zh-Hans": "填写服务器地址",
@@ -2715,7 +2715,7 @@
       "fr": "Démon (inactif dans la console sans tête)",
       "es": "Daemon (inactivo en consola sin cabeza)",
       "pt-BR": "Daemon (inativo no console headless)",
-      "vi": "Tiến trình nền (không hoạt động trong bảng điều khiển không màn hình)"
+      "vi": "Daemon (không hoạt động trong console headless)"
     },
     "安全存储不可用，请解锁设备后重试": {
       "zh-Hans": "安全存储不可用，请解锁设备后重试",
@@ -2728,7 +2728,7 @@
       "es": "El almacenamiento seguro no está disponible. Desbloquee el dispositivo e inténtelo nuevamente.",
       "pt-BR": "O armazenamento seguro não está disponível. Desbloqueie o dispositivo e tente novamente",
       "ru": "Безопасное хранилище недоступно. Разблокируйте устройство и повторите попытку.",
-      "vi": "Bộ nhớ an toàn không khả dụng, hãy mở khóa thiết bị rồi thử lại"
+      "vi": "Kho lưu trữ bảo mật không khả dụng, hãy mở khóa thiết bị rồi thử lại"
     },
     "安全存储或证书初始化失败，请重试或清除应用数据": {
       "zh-Hans": "安全存储或证书初始化失败，请重试或清除应用数据",
@@ -2741,7 +2741,7 @@
       "es": "Error en el almacenamiento seguro o en la inicialización del certificado. Inténtelo de nuevo o borre los datos de la aplicación.",
       "pt-BR": "Falha no armazenamento seguro ou na inicialização do certificado. Tente novamente ou limpe os dados do aplicativo",
       "ru": "Не удалось инициализировать безопасное хранилище или сертификат. Повторите попытку или очистите данные приложения.",
-      "vi": "Khởi tạo bộ nhớ an toàn hoặc chứng chỉ thất bại, hãy thử lại hoặc xóa dữ liệu ứng dụng"
+      "vi": "Khởi tạo kho lưu trữ bảo mật hoặc chứng chỉ thất bại, hãy thử lại hoặc xóa dữ liệu ứng dụng"
     },
     "安装": {
       "zh-Hans": "安装",
@@ -2806,7 +2806,7 @@
       "es": "Puede buscar actualizaciones después de completar la autorización de privacidad",
       "pt-BR": "Você pode verificar se há atualizações após concluir a autorização de privacidade",
       "ru": "Вы можете проверить наличие обновлений после завершения авторизации конфиденциальности.",
-      "vi": "Có thể kiểm tra cập nhật sau khi cấp quyền riêng tư"
+      "vi": "Có thể kiểm tra cập nhật sau khi đồng ý chính sách quyền riêng tư"
     },
     "完成隐私授权后登记本机身份": {
       "zh-Hans": "完成隐私授权后登记本机身份",
@@ -2819,7 +2819,7 @@
       "es": "Registre la identidad local después de completar la autorización de privacidad",
       "pt-BR": "Registre a identidade local após concluir a autorização de privacidade",
       "ru": "Зарегистрируйте локальную личность после завершения авторизации конфиденциальности.",
-      "vi": "Đăng ký danh tính máy này sau khi cấp quyền riêng tư"
+      "vi": "Đăng ký danh tính máy này sau khi đồng ý chính sách quyền riêng tư"
     },
     "密码": {
       "zh-Hans": "密码",
@@ -3417,7 +3417,7 @@
       "fr": "Enregistré pour le prochain démarrage en mode normal ; la console sans tête reste au premier plan.",
       "es": "Guardado para el próximo inicio del modo normal; la consola sin cabeza permanece en primer plano.",
       "pt-BR": "Salvo para a próxima inicialização no modo normal; o console sem cabeça permanece em primeiro plano.",
-      "vi": "Đã lưu, có hiệu lực sau khi khởi động lại ở chế độ thường; bảng điều khiển không màn hình vẫn chạy ở phía trước."
+      "vi": "Đã lưu, có hiệu lực sau khi khởi động lại ở chế độ thường; console headless vẫn chạy foreground."
     },
     "已保存，正在重新连接服务器。": {
       "zh-Hans": "已保存，正在重新连接服务器。",
@@ -3482,7 +3482,7 @@
       "fr": "Presse-papiers local envoyé",
       "es": "Portapapeles local enviado",
       "pt-BR": "Área de transferência local enviada",
-      "vi": "Đã gửi bảng nhớ tạm máy này"
+      "vi": "Đã gửi clipboard máy này"
     },
     "已发送，请在远端粘贴": {
       "zh-Hans": "已发送，请在远端粘贴",
@@ -3560,7 +3560,7 @@
       "fr": "Copié dans le presse-papiers",
       "es": "Copiado al portapapeles",
       "pt-BR": "Copiado para a área de transferência",
-      "vi": "Đã sao chép vào bảng nhớ tạm"
+      "vi": "Đã sao chép vào clipboard"
     },
     "已复制远端文本": {
       "zh-Hans": "已复制远端文本",
@@ -3651,7 +3651,7 @@
       "es": "Portapapeles remoto recibido",
       "pt-BR": "Área de transferência remota recebida",
       "ru": "Получен удаленный буфер обмена.",
-      "vi": "Đã nhận bảng nhớ tạm từ xa"
+      "vi": "Đã nhận clipboard từ xa"
     },
     "已提交密码修改，正在等待服务器确认……": {
       "zh-Hans": "已提交密码修改，正在等待服务器确认……",
@@ -3963,7 +3963,7 @@
       "fr": "Activer l'écran de confidentialité",
       "es": "Habilitar pantalla de privacidad",
       "pt-BR": "Habilitar tela de privacidade",
-      "vi": "Bật màn hình riêng tư"
+      "vi": "Bật chế độ riêng tư"
     },
     "开机自启": {
       "zh-Hans": "开机自启",
@@ -4015,7 +4015,7 @@
       "fr": "Forcer la connexion du relais",
       "es": "Conexión del relé de fuerza",
       "pt-BR": "Forçar conexão do relé",
-      "vi": "Buộc kết nối chuyển tiếp"
+      "vi": "Buộc kết nối qua relay"
     },
     "当前仍需要安全桌面专用采集/输入": {
       "zh-Hans": "当前仍需要安全桌面专用采集/输入",
@@ -4093,7 +4093,7 @@
       "es": "Actualmente, el extremo remoto no admite la entrada directa de este texto. Utilice una versión del extremo controlado que admita la entrada de texto o envíela a través del portapapeles.",
       "pt-BR": "Atualmente, a extremidade remota não suporta a entrada direta deste texto. Use uma versão do final controlado que suporte entrada de texto ou envie-o através da área de transferência.",
       "ru": "В настоящее время удаленный конец не поддерживает прямой ввод этого текста. Пожалуйста, используйте версию управляемого конца, поддерживающую ввод текста, или отправьте его через буфер обмена.",
-      "vi": "Máy từ xa hiện không hỗ trợ nhập trực tiếp văn bản này. Hãy dùng phiên bản máy được điều khiển có hỗ trợ nhập văn bản hoặc gửi qua bảng nhớ tạm."
+      "vi": "Máy từ xa hiện không hỗ trợ nhập trực tiếp văn bản này. Hãy dùng phiên bản máy được điều khiển có hỗ trợ nhập văn bản hoặc gửi qua clipboard."
     },
     "待添加 ": {
       "zh-Hans": "待添加 ",
@@ -4340,7 +4340,7 @@
       "fr": "Pour désactiver l'écran de confidentialité, appuyez sur",
       "es": "Para desactivar la pantalla de privacidad, presione",
       "pt-BR": "Para desligar a tela de privacidade, pressione",
-      "vi": "Nhấn phím tắt để tắt màn hình riêng tư"
+      "vi": "Nhấn phím tắt để tắt chế độ riêng tư"
     },
     "按住并拖动，可滑出按键范围，松开结束拖拽": {
       "zh-Hans": "按住并拖动，可滑出按键范围，松开结束拖拽",
@@ -4574,7 +4574,7 @@
       "es": "Retirar la autorización de privacidad",
       "pt-BR": "Retirar autorização de privacidade",
       "ru": "Отозвать разрешение на конфиденциальность",
-      "vi": "Thu hồi quyền riêng tư"
+      "vi": "Rút lại sự đồng ý"
     },
     "播放声音": {
       "zh-Hans": "播放声音",
@@ -5185,7 +5185,7 @@
       "fr": "Impossible d'enregistrer les paramètres de déverrouillage de la confidentialité. Essayer à nouveau.",
       "es": "No se pudo guardar la configuración de desbloqueo de privacidad. Intentar otra vez.",
       "pt-BR": "Não foi possível salvar as configurações de desbloqueio de privacidade. Tente novamente.",
-      "vi": "Không thể lưu cài đặt mở khóa màn hình riêng tư, hãy thử lại."
+      "vi": "Không thể lưu cài đặt mở khóa chế độ riêng tư, hãy thử lại."
     },
     "无法准备远程会话，请稍后重试。": {
       "zh-Hans": "无法准备远程会话，请稍后重试。",
@@ -5419,7 +5419,7 @@
       "es": "¿Retirar la autorización de privacidad?",
       "pt-BR": "Retirar autorização de privacidade?",
       "ru": "Отозвать разрешение на конфиденциальность?",
-      "vi": "Thu hồi quyền riêng tư?"
+      "vi": "Rút lại sự đồng ý?"
     },
     "显示主界面": {
       "zh-Hans": "显示主界面",
@@ -5900,7 +5900,7 @@
       "fr": "L'installation du service a échoué. Assurez-vous que CrossDesk.exe, crossdesk_service.exe et crossdesk_session_helper.exe se trouvent dans le même dossier portable, puis approuvez l'invite de l'administrateur.",
       "es": "Error en la instalación del servicio. Asegúrese de que CrossDesk.exe, crossdesk_service.exe y crossdesk_session_helper.exe estén en la misma carpeta portátil y luego apruebe el mensaje del administrador.",
       "pt-BR": "Falha na instalação do serviço. Certifique-se de que CrossDesk.exe, crossdesk_service.exe e crossdesk_session_helper.exe estejam na mesma pasta portátil e aprove o prompt do administrador.",
-      "vi": "Cài đặt dịch vụ thất bại. Hãy bảo đảm CrossDesk.exe, crossdesk_service.exe và crossdesk_session_helper.exe nằm trong cùng thư mục bản di động, rồi cho phép quyền quản trị trong hộp thoại hệ thống."
+      "vi": "Cài đặt dịch vụ thất bại. Hãy bảo đảm CrossDesk.exe, crossdesk_service.exe và crossdesk_session_helper.exe nằm trong cùng thư mục bản portable, rồi cho phép quyền quản trị trong hộp thoại hệ thống."
     },
     "服务已安装并启动": {
       "zh-Hans": "服务已安装并启动",
@@ -6043,7 +6043,7 @@
       "es": "Estado de señalización desconocido",
       "pt-BR": "Status de sinalização desconhecido",
       "ru": "Неизвестный статус сигнализации",
-      "vi": "Trạng thái báo hiệu không rõ"
+      "vi": "Trạng thái signaling không rõ"
     },
     "未知命令，输入 help 查看帮助。": {
       "zh-Hans": "未知命令，输入 help 查看帮助。",
@@ -6160,7 +6160,7 @@
       "fr": "Cette application utilise OpenFEC pour la correction d'erreur directe sousCeCILL-C1.0, qui offre des garanties limitées et limite la responsabilité. Consultez la licence complète pour plus de détails.",
       "es": "Esta aplicación utiliza OpenFEC para la corrección de errores directos bajoCeCILL-C1.0, que proporciona garantías limitadas y limita la responsabilidad. Consulte la licencia completa para obtener más detalles.",
       "pt-BR": "Este aplicativo usa OpenFEC para correção direta de erros noCeCILL-C1.0, que fornece garantias limitadas e limita a responsabilidade. Veja a licença completa para detalhes.",
-      "vi": "Ứng dụng này sử dụng OpenFEC để sửa lỗi tiến theo giấy phép CeCILL-C 1.0. Giấy phép quy định bảo hành có giới hạn và giới hạn trách nhiệm; xem toàn văn giấy phép để biết chi tiết."
+      "vi": "Ứng dụng này sử dụng OpenFEC cho cơ chế Forward Error Correction (FEC) theo giấy phép CeCILL-C 1.0. Giấy phép quy định bảo hành có giới hạn và giới hạn trách nhiệm; xem toàn văn giấy phép để biết chi tiết."
     },
     "本机 ID": {
       "zh-Hans": "本机 ID",
@@ -6368,7 +6368,7 @@
       "es": "Crear recetas y parches de proyectos",
       "pt-BR": "Crie receitas e patches de projeto",
       "ru": "Рецепты сборки и исправления проектов.",
-      "vi": "Công thức biên dịch và bản vá dự án"
+      "vi": "Quy trình build và bản vá dự án"
     },
     "查看源码": {
       "zh-Hans": "查看源码",
@@ -6420,7 +6420,7 @@
       "fr": "DeskHub",
       "es": "DeskHub",
       "pt-BR": "DeskHub",
-      "vi": "Bức tường màn hình (DeskHub)"
+      "vi": "DeskHub"
     },
     "检查失败，请稍后重试": {
       "zh-Hans": "检查失败，请稍后重试",
@@ -6485,7 +6485,7 @@
       "es": "Cerrando la pantalla de privacidad...",
       "pt-BR": "Fechando a tela de privacidade…",
       "ru": "Закрытие экрана конфиденциальности…",
-      "vi": "Đang tắt màn hình riêng tư…"
+      "vi": "Đang tắt chế độ riêng tư…"
     },
     "正在准备更新…": {
       "zh-Hans": "正在准备更新…",
@@ -6654,7 +6654,7 @@
       "es": "Activando la pantalla de privacidad...",
       "pt-BR": "Ativando a tela de privacidade...",
       "ru": "Включение экрана конфиденциальности...",
-      "vi": "Đang bật màn hình riêng tư…"
+      "vi": "Đang bật chế độ riêng tư…"
     },
     "正在接收": {
       "zh-Hans": "正在接收",
@@ -6693,7 +6693,7 @@
       "es": "Recopilación de candidatos de ICE",
       "pt-BR": "Coletando candidatos do ICE",
       "ru": "Сбор кандидатов ICE",
-      "vi": "Đang thu thập ứng viên ICE"
+      "vi": "Đang thu thập ICE candidate"
     },
     "正在收集候选地址...": {
       "zh-Hans": "正在收集候选地址...",
@@ -6706,7 +6706,7 @@
       "fr": "Rassembler les candidats...",
       "es": "Reuniendo candidatos...",
       "pt-BR": "Reunindo candidatos...",
-      "vi": "Đang thu thập địa chỉ ứng viên..."
+      "vi": "Đang thu thập địa chỉ ICE candidate..."
     },
     "正在检查…": {
       "zh-Hans": "正在检查…",
@@ -6836,7 +6836,7 @@
       "es": "Conexión al servicio de señalización",
       "pt-BR": "Conectando-se ao serviço de sinalização",
       "ru": "Подключение к службе сигнализации",
-      "vi": "Đang kết nối dịch vụ báo hiệu"
+      "vi": "Đang kết nối dịch vụ signaling"
     },
     "正在连接信令服务器…": {
       "zh-Hans": "正在连接信令服务器…",
@@ -6849,7 +6849,7 @@
       "es": "Conectándose al servidor de señalización...",
       "pt-BR": "Conectando ao servidor de sinalização...",
       "ru": "Подключение к серверу сигнализации...",
-      "vi": "Đang kết nối máy chủ báo hiệu…"
+      "vi": "Đang kết nối signaling server…"
     },
     "正在连接服务器…": {
       "zh-Hans": "正在连接服务器…",
@@ -7044,7 +7044,7 @@
       "fr": "Ajoutez des appareils pour créer votre DeskHub",
       "es": "Agregue dispositivos para construir su DeskHub",
       "pt-BR": "Adicione dispositivos para construir seu DeskHub",
-      "vi": "Thêm thiết bị để tạo Bức tường màn hình (DeskHub) của bạn"
+      "vi": "Thêm thiết bị để tạo DeskHub của bạn"
     },
     "清除": {
       "zh-Hans": "清除",
@@ -7265,7 +7265,7 @@
       "es": "No se pudo abrir la imagen en imagen. Mantenga la aplicación en primer plano e inténtelo nuevamente.",
       "pt-BR": "Falha ao abrir o Picture-in-picture. Mantenha o aplicativo em primeiro plano e tente novamente.",
       "ru": "Не удалось открыть функцию «Картинка в картинке». Оставьте приложение на переднем плане и повторите попытку.",
-      "vi": "Không thể bật hình trong hình, hãy giữ ứng dụng ở phía trước rồi thử lại."
+      "vi": "Không thể bật hình trong hình, hãy giữ ứng dụng đang mở trên màn hình rồi thử lại."
     },
     "画质优先": {
       "zh-Hans": "画质优先",
@@ -7460,7 +7460,7 @@
       "fr": "Pavé tactile",
       "es": "Panel táctil",
       "pt-BR": "Touchpad",
-      "vi": "Vị trí tương đối"
+      "vi": "Bàn di chuột"
     },
     "相对鼠标": {
       "zh-Hans": "相对鼠标",
@@ -7473,7 +7473,7 @@
       "es": "Ratón relativo",
       "pt-BR": "Rato relativo",
       "ru": "Родственная мышь",
-      "vi": "Chuột tương đối"
+      "vi": "Bàn di chuột"
     },
     "知道了": {
       "zh-Hans": "知道了",
@@ -7681,7 +7681,7 @@
       "es": "Espere a que la computadora vuelva al estado de pantalla de privacidad; Es posible que las computadoras más antiguas no lo admitan.",
       "pt-BR": "Aguarde o computador retornar ao estado da tela de privacidade; computadores mais antigos podem não suportá-lo.",
       "ru": "Подождите, пока компьютер вернется в состояние экрана конфиденциальности; старые компьютеры могут его не поддерживать.",
-      "vi": "Đang chờ máy tính trả về trạng thái màn hình riêng tư; phiên bản cũ có thể không hỗ trợ"
+      "vi": "Đang chờ máy tính trả về trạng thái chế độ riêng tư; phiên bản cũ có thể không hỗ trợ"
     },
     "等待画面": {
       "zh-Hans": "等待画面",
@@ -7759,7 +7759,7 @@
       "es": "Esperando autorización de privacidad",
       "pt-BR": "Aguardando autorização de privacidade",
       "ru": "Ожидание разрешения на конфиденциальность.",
-      "vi": "Đang chờ cấp quyền riêng tư"
+      "vi": "Đang chờ đồng ý chính sách quyền riêng tư"
     },
     "粘贴": {
       "zh-Hans": "粘贴",
@@ -7850,7 +7850,7 @@
       "fr": "Toucher direct",
       "es": "Toque directo",
       "pt-BR": "Toque direto",
-      "vi": "Vị trí tuyệt đối"
+      "vi": "Chạm trực tiếp"
     },
     "绝对鼠标": {
       "zh-Hans": "绝对鼠标",
@@ -7863,7 +7863,7 @@
       "es": "Ratón absoluto",
       "pt-BR": "Rato Absoluto",
       "ru": "Абсолютная мышь",
-      "vi": "Chuột tuyệt đối"
+      "vi": "Chạm trực tiếp"
     },
     "编辑": {
       "zh-Hans": "编辑",
@@ -7980,7 +7980,7 @@
       "fr": "Serveur auto-hébergé",
       "es": "Servidor autohospedado",
       "pt-BR": "Servidor auto-hospedado",
-      "vi": "Tự lưu trữ (self-host)"
+      "vi": "Self-host"
     },
     "自托管设置": {
       "zh-Hans": "自托管设置",
@@ -7993,7 +7993,7 @@
       "fr": "Paramètres du serveur auto-hébergé",
       "es": "Configuración del servidor autohospedado",
       "pt-BR": "Configurações do servidor auto-hospedado",
-      "vi": "Cài đặt máy chủ tự lưu trữ (self-host)"
+      "vi": "Cài đặt máy chủ self-host"
     },
     "自托管配置": {
       "zh-Hans": "自托管配置",
@@ -8006,7 +8006,7 @@
       "fr": "Serveur auto-hébergé",
       "es": "Servidor autohospedado",
       "pt-BR": "Servidor auto-hospedado",
-      "vi": "Cấu hình máy chủ tự lưu trữ (self-host)"
+      "vi": "Cấu hình máy chủ self-host"
     },
     "虚拟鼠标": {
       "zh-Hans": "虚拟鼠标",
@@ -8045,7 +8045,7 @@
       "es": "El terminal controlado no admite la entrada directa de chino; actualice el terminal controlado por macOS; También puedes copiar el texto primero, enviarlo a través del portapapeles del menú del control remoto y luego pegarlo.",
       "pt-BR": "O terminal controlado não suporta entrada direta de chinês. Atualize o terminal controlado pelo macOS; você também pode copiar o texto primeiro, enviá-lo pela área de transferência do menu do controle remoto e depois colá-lo",
       "ru": "Управляемый терминал не поддерживает прямой ввод китайского языка, обновите управляемый терминал macOS; вы также можете сначала скопировать текст, отправить его через буфер обмена меню пульта дистанционного управления, а затем вставить",
-      "vi": "Máy được điều khiển không hỗ trợ nhập trực tiếp tiếng Trung, hãy cập nhật máy macOS được điều khiển; hoặc sao chép văn bản, gửi qua bảng nhớ tạm trong menu điều khiển từ xa rồi dán"
+      "vi": "Máy được điều khiển không hỗ trợ nhập trực tiếp tiếng Trung, hãy cập nhật máy macOS được điều khiển; hoặc sao chép văn bản, gửi qua clipboard trong menu điều khiển từ xa rồi dán"
     },
     "被控端已通过组合键解除隐私屏。点击“锁定”将重新开启隐私屏，并禁止本机使用组合键解锁。": {
       "zh-Hans": "被控端已通过组合键解除隐私屏。点击“锁定”将重新开启隐私屏，并禁止本机使用组合键解锁。",
@@ -8058,7 +8058,7 @@
       "fr": "L'écran de confidentialité à distance a été déverrouillé à l'aide du raccourci local. Verrouillez-le à nouveau pour restaurer la confidentialité et désactiver le déverrouillage des raccourcis locaux.",
       "es": "La pantalla de privacidad remota se desbloqueó usando el acceso directo local. Bloquéelo nuevamente para restaurar la privacidad y deshabilitar el desbloqueo de accesos directos locales.",
       "pt-BR": "A tela de privacidade remota foi desbloqueada usando o atalho local. Bloqueie-o novamente para restaurar a privacidade e desativar o desbloqueio de atalhos locais.",
-      "vi": "Máy được điều khiển đã tắt màn hình riêng tư bằng tổ hợp phím. Nhấn “Khóa” để bật lại và cấm mở khóa bằng tổ hợp phím trên máy đó."
+      "vi": "Máy được điều khiển đã tắt chế độ riêng tư bằng tổ hợp phím. Nhấn “Khóa” để bật lại và cấm mở khóa bằng tổ hợp phím trên máy đó."
     },
     "被控端平台：%1$@": {
       "zh-Hans": "被控端平台：%1$@",
@@ -8123,7 +8123,7 @@
       "fr": "Écran de confidentialité sur la connexion entrante",
       "es": "Pantalla de privacidad en la conexión entrante",
       "pt-BR": "Tela de privacidade na conexão de entrada",
-      "vi": "Bật màn hình riêng tư khi có kết nối đến"
+      "vi": "Bật chế độ riêng tư khi có kết nối đến"
     },
     "要发送到远端的文本": {
       "zh-Hans": "要发送到远端的文本",
@@ -8201,7 +8201,7 @@
       "fr": "Codec vidéo",
       "es": "Códec de vídeo",
       "pt-BR": "Codec de vídeo",
-      "vi": "Mã hóa video"
+      "vi": "Codec video"
     },
     "视频编码格式": {
       "zh-Hans": "视频编码格式",
@@ -8214,7 +8214,7 @@
       "fr": "Codec vidéo",
       "es": "Códec de vídeo",
       "pt-BR": "Codec de vídeo",
-      "vi": "Định dạng mã hóa video"
+      "vi": "Codec video"
     },
     "触摸位置直接对应远端屏幕位置，适合快速定位。": {
       "zh-Hans": "触摸位置直接对应远端屏幕位置，适合快速定位。",
@@ -8422,7 +8422,7 @@
       "es": "No se pudo guardar la identidad del dispositivo; verifique el almacenamiento seguro",
       "pt-BR": "Falha ao salvar a identidade do dispositivo. Verifique o armazenamento seguro",
       "ru": "Не удалось сохранить идентификационные данные устройства. Проверьте безопасное хранилище.",
-      "vi": "Lưu danh tính thiết bị thất bại, hãy kiểm tra bộ nhớ an toàn"
+      "vi": "Lưu danh tính thiết bị thất bại, hãy kiểm tra kho lưu trữ bảo mật"
     },
     "设备身份及选择保存的访问密码使用 Android Keystore 加密。连接记录仅保存在本机，不纳入设备备份。剪贴板内容在结束会话时清除。离开应用后通过画中画或连接通知保持会话，可在应用或通知中断开。": {
       "zh-Hans": "设备身份及选择保存的访问密码使用 Android Keystore 加密。连接记录仅保存在本机，不纳入设备备份。剪贴板内容在结束会话时清除。离开应用后通过画中画或连接通知保持会话，可在应用或通知中断开。",
@@ -8435,7 +8435,7 @@
       "es": "La identidad del dispositivo y las contraseñas de acceso guardadas seleccionadas se cifran mediante Android Keystore. Los registros de conexión solo se guardan localmente y no se incluyen en la copia de seguridad del dispositivo. El contenido del portapapeles se borra cuando finaliza la sesión. Manténgase en sesión con imagen en imagen o notificaciones conectadas después de salir de la aplicación y desconéctese dentro de la aplicación o las notificaciones.",
       "pt-BR": "A identidade do dispositivo e as senhas de acesso salvas selecionadas são criptografadas usando o Android Keystore. Os registros de conexão são salvos apenas localmente e não são incluídos no backup do dispositivo. O conteúdo da área de transferência é apagado quando a sessão é encerrada. Mantenha a sessão com notificações picture-in-picture ou conectadas depois de sair do aplicativo e desconecte-se do aplicativo ou das notificações.",
       "ru": "Идентификатор устройства и выбранные сохраненные пароли доступа шифруются с помощью хранилища ключей Android. Записи подключений сохраняются только локально и не включаются в резервную копию устройства. Содержимое буфера обмена очищается после завершения сеанса. Оставайтесь в сеансе с помощью «картинка в картинке» или подключенных уведомлений после выхода из приложения и отключайтесь внутри приложения или уведомлений.",
-      "vi": "Danh tính thiết bị và mật khẩu truy cập được chọn lưu được mã hóa bằng Android Keystore. Lịch sử kết nối chỉ lưu trên máy này, không nằm trong bản sao lưu thiết bị. Nội dung bảng nhớ tạm được xóa khi kết thúc phiên. Khi rời ứng dụng, duy trì phiên bằng hình trong hình hoặc thông báo kết nối; có thể ngắt kết nối trong ứng dụng hoặc thông báo."
+      "vi": "Danh tính thiết bị và mật khẩu truy cập được chọn lưu được mã hóa bằng Android Keystore. Lịch sử kết nối chỉ lưu trên máy này, không nằm trong bản sao lưu thiết bị. Nội dung clipboard được xóa khi kết thúc phiên. Khi rời ứng dụng, duy trì phiên bằng hình trong hình hoặc thông báo kết nối; có thể ngắt kết nối trong ứng dụng hoặc thông báo."
     },
     "设备身份及选择保存的访问密码加密保存在本机。画面预览默认关闭，开启后从下一次连接起保存。剪贴板内容在结束会话时清除。离开应用后通过画中画或后台任务保持会话，可随时返回应用断开。": {
       "zh-Hans": "设备身份及选择保存的访问密码加密保存在本机。画面预览默认关闭，开启后从下一次连接起保存。剪贴板内容在结束会话时清除。离开应用后通过画中画或后台任务保持会话，可随时返回应用断开。",
@@ -8448,7 +8448,7 @@
       "es": "La identidad del dispositivo y la contraseña de acceso seleccionada para guardar se cifran y almacenan localmente. La vista previa de la pantalla está desactivada de forma predeterminada y se guardará en la siguiente conexión después de activarla. El contenido del portapapeles se borra cuando finaliza la sesión. Mantenga la sesión mediante tareas de imagen en imagen o en segundo plano después de salir de la aplicación y regrese a la aplicación en cualquier momento para desconectarse.",
       "pt-BR": "A identidade do dispositivo e a senha de acesso selecionada para ser salva são criptografadas e armazenadas localmente. A visualização da tela está desativada por padrão e será salva na próxima conexão após ser ativada. O conteúdo da área de transferência é apagado quando a sessão é encerrada. Mantenha a sessão por meio de tarefas picture-in-picture ou em segundo plano após sair do aplicativo e retorne ao aplicativo a qualquer momento para desconectar.",
       "ru": "Идентификатор устройства и выбранный для сохранения пароль доступа шифруются и хранятся локально. Предварительный просмотр экрана по умолчанию отключен и будет сохранен при следующем подключении после включения. Содержимое буфера обмена очищается после завершения сеанса. Поддерживайте сеанс с помощью функции «картинка в картинке» или фоновых задач после выхода из приложения и возвращайтесь в приложение в любое время, чтобы отключиться.",
-      "vi": "Danh tính thiết bị và mật khẩu truy cập được chọn lưu được mã hóa và lưu trên máy này. Ảnh xem trước mặc định bị tắt; khi bật, ảnh được lưu từ lần kết nối tiếp theo. Nội dung bảng nhớ tạm được xóa khi kết thúc phiên. Khi rời ứng dụng, duy trì phiên bằng hình trong hình hoặc tác vụ nền; có thể quay lại ứng dụng để ngắt kết nối bất cứ lúc nào."
+      "vi": "Danh tính thiết bị và mật khẩu truy cập được chọn lưu được mã hóa và lưu trên máy này. Ảnh xem trước mặc định bị tắt; khi bật, ảnh được lưu từ lần kết nối tiếp theo. Nội dung clipboard được xóa khi kết thúc phiên. Khi rời ứng dụng, duy trì phiên bằng hình trong hình hoặc tác vụ nền; có thể quay lại ứng dụng để ngắt kết nối bất cứ lúc nào."
     },
     "设备连接密码": {
       "zh-Hans": "设备连接密码",
@@ -8747,7 +8747,7 @@
       "fr": "Définissez un hôte et un port de serveur valides avant d'activer l'auto-hébergement.",
       "es": "Configure un host y un puerto de servidor válidos antes de habilitar el autohospedaje.",
       "pt-BR": "Defina um host e uma porta de servidor válidos antes de ativar a auto-hospedagem.",
-      "vi": "Hãy nhập địa chỉ và cổng máy chủ hợp lệ trước khi bật tự lưu trữ (self-host)."
+      "vi": "Hãy nhập địa chỉ và cổng máy chủ hợp lệ trước khi bật self-host."
     },
     "请在 %d 秒后重试。": {
       "zh-Hans": "请在 %d 秒后重试。",
@@ -8825,7 +8825,7 @@
       "es": "Se agotó el tiempo de espera de la solicitud y no se ha confirmado el estado de la pantalla de privacidad de la computadora.",
       "pt-BR": "A solicitação expirou e o status da tela de privacidade do computador não foi confirmado.",
       "ru": "Время ожидания запроса истекло, а состояние экрана конфиденциальности компьютера не подтверждено.",
-      "vi": "Yêu cầu hết thời gian chờ, chưa xác nhận được trạng thái màn hình riêng tư của máy tính"
+      "vi": "Yêu cầu hết thời gian chờ, chưa xác nhận được trạng thái chế độ riêng tư của máy tính"
     },
     "请点击主界面密码旁的修改按钮设置密码。": {
       "zh-Hans": "请点击主界面密码旁的修改按钮设置密码。",
@@ -8890,7 +8890,7 @@
       "fr": "Entrez un port de signalisation compris entre 1 et 65535.",
       "es": "Ingrese un puerto de señalización entre 1 y 65535.",
       "pt-BR": "Insira uma porta de sinalização entre 1 e 65535.",
-      "vi": "Nhập cổng báo hiệu trong phạm vi 1–65535."
+      "vi": "Nhập cổng signaling trong phạm vi 1–65535."
     },
     "请输入 1–65535 范围内的端口": {
       "zh-Hans": "请输入 1–65535 范围内的端口",
@@ -9007,7 +9007,7 @@
       "fr": "Entrez une URL de signalisation d'hôte, d'adresse IP ou HTTPS/WSS valide. Les chemins sont pris en charge.",
       "es": "Ingrese un host válido, IP o URL de señalización HTTPS/WSS. Se admiten caminos.",
       "pt-BR": "Insira um URL de sinalização de host, IP ou HTTPS/WSS válido. Caminhos são suportados.",
-      "vi": "Nhập tên máy chủ, IP hoặc địa chỉ báo hiệu HTTPS/WSS hợp lệ, có thể gồm đường dẫn."
+      "vi": "Nhập hostname, IP hoặc địa chỉ signaling HTTPS/WSS hợp lệ, có thể gồm đường dẫn."
     },
     "请输入有效的服务器地址和端口": {
       "zh-Hans": "请输入有效的服务器地址和端口",
@@ -9917,7 +9917,7 @@
       "fr": "Écran de confidentialité lors de la connexion",
       "es": "Pantalla de privacidad al conectarse",
       "pt-BR": "Tela de privacidade na conexão",
-      "vi": "Tự bật màn hình riêng tư khi kết nối"
+      "vi": "Tự bật chế độ riêng tư khi kết nối"
     },
     "连接服务器": {
       "zh-Hans": "连接服务器",
@@ -10099,7 +10099,7 @@
       "fr": "Sélectionnez un fichier à envoyer",
       "es": "Seleccione un archivo para enviar",
       "pt-BR": "Selecione um arquivo para enviar",
-      "vi": "Chọn tệp để phân phối"
+      "vi": "Chọn tệp để gửi"
     },
     "选择文件发送": {
       "zh-Hans": "选择文件发送",
@@ -10398,7 +10398,7 @@
       "es": "Leer y autorizar",
       "pt-BR": "Ler e autorizar",
       "ru": "Прочитать и авторизоваться",
-      "vi": "Đọc và cấp quyền"
+      "vi": "Đọc và đồng ý"
     },
     "队列中": {
       "zh-Hans": "队列中",
@@ -10437,7 +10437,7 @@
       "es": "Privacidad y autorización",
       "pt-BR": "Privacidade e Autorização",
       "ru": "Конфиденциальность и авторизация",
-      "vi": "Quyền riêng tư và cấp quyền"
+      "vi": "Quyền riêng tư và sự đồng ý"
     },
     "隐私保护": {
       "zh-Hans": "隐私保护",
@@ -10463,7 +10463,7 @@
       "fr": "Écran de confidentialité",
       "es": "Pantalla de privacidad",
       "pt-BR": "Tela de privacidade",
-      "vi": "Màn hình riêng tư"
+      "vi": "Chế độ riêng tư"
     },
     "隐私屏已关闭": {
       "zh-Hans": "隐私屏已关闭",
@@ -10476,7 +10476,7 @@
       "fr": "Confidentialité inactive",
       "es": "Privacidad desactivada",
       "pt-BR": "Privacidade desativada",
-      "vi": "Đã tắt màn hình riêng tư"
+      "vi": "Đã tắt chế độ riêng tư"
     },
     "隐私屏已开启": {
       "zh-Hans": "隐私屏已开启",
@@ -10489,7 +10489,7 @@
       "fr": "Confidentialité active",
       "es": "Privacidad activada",
       "pt-BR": "Privacidade ativada",
-      "vi": "Đã bật màn hình riêng tư"
+      "vi": "Đã bật chế độ riêng tư"
     },
     "隐私屏已开启，本机解锁已禁用": {
       "zh-Hans": "隐私屏已开启，本机解锁已禁用",
@@ -10502,7 +10502,7 @@
       "fr": "L'écran de confidentialité est activé. Le déverrouillage local est désactivé.",
       "es": "La pantalla de privacidad está activada. El desbloqueo local está deshabilitado.",
       "pt-BR": "A tela de privacidade está ativada. O desbloqueio local está desativado.",
-      "vi": "Đã bật màn hình riêng tư, mở khóa trên máy này đã bị vô hiệu hóa"
+      "vi": "Đã bật chế độ riêng tư, mở khóa trên máy này đã bị vô hiệu hóa"
     },
     "隐私屏已被解锁": {
       "zh-Hans": "隐私屏已被解锁",
@@ -10515,7 +10515,7 @@
       "fr": "Écran de confidentialité déverrouillé",
       "es": "Pantalla de privacidad desbloqueada",
       "pt-BR": "Tela de privacidade desbloqueada",
-      "vi": "Màn hình riêng tư đã được mở khóa"
+      "vi": "Chế độ riêng tư đã được mở khóa"
     },
     "隐私屏异常": {
       "zh-Hans": "隐私屏异常",
@@ -10528,7 +10528,7 @@
       "es": "Anormalidad en la pantalla de privacidad",
       "pt-BR": "Anormalidade na tela de privacidade",
       "ru": "Неисправность экрана конфиденциальности.",
-      "vi": "Lỗi màn hình riêng tư"
+      "vi": "Lỗi chế độ riêng tư"
     },
     "隐私屏暂不可用": {
       "zh-Hans": "隐私屏暂不可用",
@@ -10541,7 +10541,7 @@
       "es": "La pantalla de privacidad no está disponible temporalmente",
       "pt-BR": "A tela de privacidade está temporariamente indisponível",
       "ru": "Экран конфиденциальности временно недоступен.",
-      "vi": "Màn hình riêng tư tạm thời không khả dụng"
+      "vi": "Chế độ riêng tư tạm thời không khả dụng"
     },
     "隐私屏状态已过期，等待电脑确认": {
       "zh-Hans": "隐私屏状态已过期，等待电脑确认",
@@ -10554,7 +10554,7 @@
       "es": "El estado de la pantalla de privacidad ha caducado, esperando confirmación por computadora",
       "pt-BR": "O status da tela de privacidade expirou, aguardando confirmação do computador",
       "ru": "Срок действия статуса экрана конфиденциальности истек, ожидание подтверждения от компьютера.",
-      "vi": "Trạng thái màn hình riêng tư đã hết hạn, đang chờ máy tính xác nhận"
+      "vi": "Trạng thái chế độ riêng tư đã hết hạn, đang chờ máy tính xác nhận"
     },
     "隐私屏状态待确认": {
       "zh-Hans": "隐私屏状态待确认",
@@ -10567,7 +10567,7 @@
       "es": "Estado de la pantalla de privacidad por confirmar",
       "pt-BR": "Status da tela de privacidade a ser confirmado",
       "ru": "Статус экрана конфиденциальности подлежит подтверждению.",
-      "vi": "Trạng thái màn hình riêng tư chờ xác nhận"
+      "vi": "Trạng thái chế độ riêng tư chờ xác nhận"
     },
     "隐私屏：不可用": {
       "zh-Hans": "隐私屏：不可用",
@@ -10580,7 +10580,7 @@
       "fr": "Écran de confidentialité : indisponible",
       "es": "Pantalla de privacidad: no disponible",
       "pt-BR": "Tela de privacidade: indisponível",
-      "vi": "Màn hình riêng tư: không khả dụng"
+      "vi": "Chế độ riêng tư: không khả dụng"
     },
     "隐私屏：已关闭": {
       "zh-Hans": "隐私屏：已关闭",
@@ -10593,7 +10593,7 @@
       "fr": "Écran de confidentialité : désactivé",
       "es": "Pantalla de privacidad: desactivada",
       "pt-BR": "Tela de privacidade: desativada",
-      "vi": "Màn hình riêng tư: đã tắt"
+      "vi": "Chế độ riêng tư: đã tắt"
     },
     "隐私屏：已开启": {
       "zh-Hans": "隐私屏：已开启",
@@ -10606,7 +10606,7 @@
       "fr": "Écran de confidentialité : activé",
       "es": "Pantalla de privacidad: activada",
       "pt-BR": "Tela de privacidade: ativada",
-      "vi": "Màn hình riêng tư: đã bật"
+      "vi": "Chế độ riêng tư: đã bật"
     },
     "隐私政策": {
       "zh-Hans": "隐私政策",
@@ -10957,7 +10957,7 @@
       "fr": "(affiché uniquement dans un terminal interactif)",
       "es": "(se muestra solo en una terminal interactiva)",
       "pt-BR": "(mostrado apenas em um terminal interativo)",
-      "vi": "(chỉ hiển thị trong thiết bị đầu cuối tương tác)"
+      "vi": "(chỉ hiển thị trong terminal tương tác)"
     },
     "，丢包率 ": {
       "zh-Hans": "，丢包率 ",
@@ -11113,7 +11113,7 @@
       "fr": "Toutes les interfaces IP",
       "es": "Todas las interfaces IP",
       "pt-BR": "Todas as interfaces IP",
-      "vi": "Lắng nghe trên tất cả giao diện IP"
+      "vi": "Lắng nghe trên tất cả interface mạng"
     },
     "所有接口共用一个端口，包括 VPN。分享时请选择实际 IP；关闭后恢复各 IP 的独立端口。": {
       "zh-Hans": "所有接口共用一个端口，包括 VPN。分享时请选择实际 IP；关闭后恢复各 IP 的独立端口。",
@@ -11126,7 +11126,7 @@
       "fr": "Un port commun à toutes les interfaces, VPN inclus. Choisissez une IP réelle à partager. Désactivez pour rétablir les ports propres à chaque IP.",
       "es": "Un puerto para todas las interfaces, incluidas las VPN. Seleccione una IP real para compartir. Desactive para restaurar los puertos de cada IP.",
       "pt-BR": "Uma porta para todas as interfaces, incluindo VPNs. Selecione um IP real para compartilhar. Desative para restaurar as portas de cada IP.",
-      "vi": "Dùng chung một cổng cho tất cả giao diện, bao gồm VPN. Khi chia sẻ, hãy chọn IP thực tế; tắt để khôi phục cổng riêng cho từng IP."
+      "vi": "Dùng chung một cổng cho tất cả interface mạng, bao gồm VPN. Khi chia sẻ, hãy chọn IP thực tế; tắt để khôi phục cổng riêng cho từng IP."
     },
     "可信设备": {
       "zh-Hans": "可信设备",
@@ -11269,7 +11269,7 @@
       "fr": "Impossible d’accéder au presse-papiers. Réessayez.",
       "es": "No se puede acceder al portapapeles. Inténtelo de nuevo.",
       "pt-BR": "Não foi possível acessar a área de transferência. Tente novamente.",
-      "vi": "Không thể truy cập bảng nhớ tạm, hãy thử lại."
+      "vi": "Không thể truy cập clipboard, hãy thử lại."
     },
     "配对信息无效，请从控制端重新复制。": {
       "zh-Hans": "配对信息无效，请从控制端重新复制。",
@@ -11373,7 +11373,7 @@
       "fr": "Afficher l’empreinte",
       "es": "Ver huella",
       "pt-BR": "Ver impressão digital",
-      "vi": "Xem dấu vân tay"
+      "vi": "Xem fingerprint"
     },
     "收起指纹": {
       "zh-Hans": "收起指纹",
@@ -11386,7 +11386,7 @@
       "fr": "Masquer l’empreinte",
       "es": "Ocultar huella",
       "pt-BR": "Ocultar impressão digital",
-      "vi": "Ẩn dấu vân tay"
+      "vi": "Ẩn fingerprint"
     },
     "暂无可信设备": {
       "zh-Hans": "暂无可信设备",
@@ -11412,7 +11412,7 @@
       "fr": "Vérifiez l’empreinte sur l’appareil de contrôle.",
       "es": "Verifique la huella en el dispositivo de control.",
       "pt-BR": "Confira a impressão digital no dispositivo controlador.",
-      "vi": "Hãy đối chiếu dấu vân tay trên máy điều khiển."
+      "vi": "Hãy đối chiếu fingerprint trên máy điều khiển."
     },
     "配对信息已复制。": {
       "zh-Hans": "配对信息已复制。",
@@ -11646,7 +11646,7 @@
       "fr": "Après une mise à jour ou un déplacement de CrossDesk, le contrôle de l’écran verrouillé peut être indisponible. La réparation met à jour le chemin du service et le redémarre avec les droits administrateur. Conservez tous les fichiers de la version portable dans le dossier actuel.",
       "es": "Tras actualizar o mover CrossDesk, el control de la pantalla de bloqueo puede no estar disponible. La reparación actualiza la ruta y reinicia el servicio con permisos de administrador. Mantenga todos los archivos de la versión portátil en la carpeta actual.",
       "pt-BR": "Após atualizar ou mover o CrossDesk, o controle da tela de bloqueio pode ficar indisponível. O reparo atualiza o caminho e reinicia o serviço com permissão de administrador. Mantenha todos os arquivos da versão portátil na pasta atual.",
-      "vi": "Sau khi nâng cấp hoặc di chuyển CrossDesk, dịch vụ điều khiển khi khóa màn hình có thể không hoạt động. Sửa chữa sẽ cập nhật đường dẫn và khởi động lại dịch vụ bằng quyền quản trị. Hãy bảo đảm thư mục hiện tại chứa đầy đủ tệp của bản di động."
+      "vi": "Sau khi nâng cấp hoặc di chuyển CrossDesk, dịch vụ điều khiển khi khóa màn hình có thể không hoạt động. Sửa chữa sẽ cập nhật đường dẫn và khởi động lại dịch vụ bằng quyền quản trị. Hãy bảo đảm thư mục hiện tại chứa đầy đủ tệp của bản portable."
     },
     "正在修复 Windows 服务…": {
       "zh-Hans": "正在修复 Windows 服务…",
@@ -11685,7 +11685,7 @@
       "fr": "Échec de la réparation. Vérifiez les droits administrateur et les fichiers de la version portable, puis réessayez.",
       "es": "Error al reparar. Compruebe los permisos de administrador y los archivos de la versión portátil e inténtelo de nuevo.",
       "pt-BR": "Falha no reparo. Verifique a permissão de administrador e os arquivos da versão portátil e tente novamente.",
-      "vi": "Sửa chữa thất bại, hãy kiểm tra quyền quản trị và tệp của bản di động rồi thử lại"
+      "vi": "Sửa chữa thất bại, hãy kiểm tra quyền quản trị và tệp của bản portable rồi thử lại"
     },
     "远端 Windows 服务不可用，锁屏时无法操作。请在远端安装或修复 CrossDesk 服务。": {
       "zh-Hans": "远端 Windows 服务不可用，锁屏时无法操作。请在远端安装或修复 CrossDesk 服务。",
@@ -11711,7 +11711,7 @@
       "fr": "Le démarrage automatique nécessite la version Release installée. Les versions portable et Debug ne prennent pas en charge le service sans surveillance.",
       "es": "El inicio automático requiere la versión Release instalada. Las versiones portátil y Debug no admiten el servicio desatendido.",
       "pt-BR": "A inicialização automática exige a versão Release instalada. As versões portátil e Debug não oferecem suporte ao serviço não assistido.",
-      "vi": "Tự khởi động cùng hệ thống cần bản Release đã cài đặt; bản di động và Debug không hỗ trợ dịch vụ không giám sát."
+      "vi": "Tự khởi động cùng hệ thống cần bản Release đã cài đặt; bản portable và Debug không hỗ trợ dịch vụ không giám sát."
     },
     "无法配置无人值守服务，请检查管理员权限和安装文件。": {
       "zh-Hans": "无法配置无人值守服务，请检查管理员权限和安装文件。",
@@ -11984,7 +11984,7 @@
       "fr": "Ajoutez ces informations à la liste des appareils de confiance de l’appareil contrôlé et vérifiez l’empreinte.",
       "es": "Añada esta información de emparejamiento a la lista de confianza del dispositivo controlado y verifique la huella.",
       "pt-BR": "Adicione estas informações de pareamento à lista de confiança do dispositivo controlado e confira a impressão digital.",
-      "vi": "Thêm thông tin ghép đôi này vào danh sách thiết bị đáng tin cậy trên máy được điều khiển và đối chiếu dấu vân tay."
+      "vi": "Thêm thông tin ghép đôi này vào danh sách thiết bị đáng tin cậy trên máy được điều khiển và đối chiếu fingerprint."
     },
     "上一页": {
       "zh-Hans": "上一页",
@@ -12504,7 +12504,7 @@
       "es": "Usa Opciones de seguridad en los ajustes del sistema",
       "pt-BR": "Use Opções de segurança nas predefinições do sistema",
       "ru": "Используйте параметры безопасности из системных наборов",
-      "vi": "Hãy dùng tùy chọn bảo mật trong các thiết lập sẵn của hệ thống"
+      "vi": "Hãy dùng tùy chọn bảo mật trong các bộ phím tắt có sẵn (preset) của hệ thống"
     },
     "请先选词或取消组词": {
       "zh-Hans": "请先选词或取消组词",
@@ -12595,7 +12595,7 @@
       "es": "Elegir entorno de escritorio",
       "pt-BR": "Escolher ambiente de trabalho",
       "ru": "Выберите окружение рабочего стола",
-      "vi": "Chọn môi trường màn hình"
+      "vi": "Chọn môi trường desktop"
     },
     "选择桌面方案以加载系统预设": {
       "zh-Hans": "选择桌面方案以加载系统预设",
@@ -12608,7 +12608,7 @@
       "es": "Elige un entorno para cargar los ajustes del sistema",
       "pt-BR": "Escolha um ambiente para carregar as predefinições do sistema",
       "ru": "Выберите окружение, чтобы загрузить системные наборы",
-      "vi": "Chọn môi trường màn hình để tải thiết lập sẵn của hệ thống"
+      "vi": "Chọn môi trường desktop để tải bộ phím tắt có sẵn (preset) của hệ thống"
     },
     "键盘上方常用栏": {
       "zh-Hans": "键盘上方常用栏",
@@ -12634,7 +12634,7 @@
       "fr": "Réception des fichiers du presse-papiers",
       "es": "Recibiendo archivos del portapapeles",
       "pt-BR": "Recebendo arquivos da área de transferência",
-      "vi": "Đang nhận tệp từ bảng nhớ tạm"
+      "vi": "Đang nhận tệp từ clipboard"
     },
     "剪贴板文件接收完成": {
       "zh-Hans": "剪贴板文件接收完成",
@@ -12647,7 +12647,7 @@
       "fr": "Fichiers du presse-papiers reçus",
       "es": "Archivos del portapapeles recibidos",
       "pt-BR": "Arquivos da área de transferência recebidos",
-      "vi": "Đã nhận xong tệp từ bảng nhớ tạm"
+      "vi": "Đã nhận xong tệp từ clipboard"
     },
     "剪贴板文件接收失败": {
       "zh-Hans": "剪贴板文件接收失败",
@@ -12660,7 +12660,7 @@
       "fr": "Échec de réception des fichiers",
       "es": "No se pudieron recibir los archivos",
       "pt-BR": "Não foi possível receber os arquivos",
-      "vi": "Nhận tệp từ bảng nhớ tạm thất bại"
+      "vi": "Nhận tệp từ clipboard thất bại"
     },
     "已取消文件接收": {
       "zh-Hans": "已取消文件接收",
@@ -12712,7 +12712,7 @@
       "fr": "Vérifiez FUSE et les autorisations de montage.",
       "es": "Comprueba la instalación de FUSE y los permisos de montaje.",
       "pt-BR": "Verifique a instalação do FUSE e as permissões de montagem.",
-      "vi": "Hãy kiểm tra cài đặt FUSE và quyền gắn kết."
+      "vi": "Hãy kiểm tra cài đặt FUSE và quyền mount."
     },
     "可使用文件传输窗口发送文件。": {
       "zh-Hans": "可使用文件传输窗口发送文件。",
@@ -13401,7 +13401,7 @@
       "fr": "Selection contains a symbolic link. Select the original files or folders.",
       "es": "Selection contains a symbolic link. Select the original files or folders.",
       "pt-BR": "Selection contains a symbolic link. Select the original files or folders.",
-      "vi": "Nội dung đã chọn có liên kết tượng trưng, hãy chọn tệp hoặc thư mục thực."
+      "vi": "Nội dung đã chọn có liên kết mềm (symlink), hãy chọn tệp hoặc thư mục thực."
     },
     "单次最多传输 4096 个文件与目录，请分批选择。": {
       "zh-Hans": "单次最多传输 4096 个文件与目录，请分批选择。",
@@ -13687,7 +13687,7 @@
       "fr": "Échec de la connexion de signalisation de la session distante",
       "es": "Error de conexión de señalización de la sesión remota",
       "pt-BR": "Falha na conexão de sinalização da sessão remota",
-      "vi": "Kết nối báo hiệu phiên từ xa thất bại"
+      "vi": "Kết nối signaling phiên từ xa thất bại"
     },
     "无法发起连接": {
       "zh-Hans": "无法发起连接",

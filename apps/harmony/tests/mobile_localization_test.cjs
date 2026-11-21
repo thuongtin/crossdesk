@@ -45,7 +45,7 @@ controller.stopSignal = () => ++stopped;
 const feed = event => controller.event({ session: 7, connection: 11, ...event });
 const native = fs.readFileSync(path.resolve(root, '../../../../../native/mobile_session.cpp'), 'utf8');
 const reasons = [
-  ['远程会话信令连接失败', 'Kết nối báo hiệu phiên từ xa thất bại'],
+  ['远程会话信令连接失败', 'Kết nối signaling phiên từ xa thất bại'],
   ['无法发起连接', 'Không thể bắt đầu kết nối'],
   ['服务器连接超时，请检查地址和网络', 'Kết nối máy chủ hết thời gian chờ, hãy kiểm tra địa chỉ và mạng'],
   ['连接超时，请确认设备在线', 'Kết nối hết thời gian chờ, hãy xác nhận thiết bị đang trực tuyến'],

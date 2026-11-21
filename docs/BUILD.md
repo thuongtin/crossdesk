@@ -112,7 +112,7 @@ Cấu hình trong **Settings → Secrets and variables → Actions → New repos
 | `APPLE_APP_SPECIFIC_PASSWORD` | Mật khẩu dành riêng cho ứng dụng được tạo để công chứng |
 | `APPLE_TEAM_ID` | ID nhóm gồm 10 ký tự của hai chứng chỉ |
 
-Thực hiện lần lượt các lệnh sau trên máy này, dán nội dung bảng nhớ tạm vào Base64 Secret tương ứng. Lưu mục đầu rồi mới thực hiện lệnh thứ hai:
+Thực hiện lần lượt các lệnh sau trên máy này, dán nội dung clipboard vào Base64 Secret tương ứng. Lưu mục đầu rồi mới thực hiện lệnh thứ hai:
 
 ```bash
 base64 -i "$HOME/Downloads/crossdesk-application.p12" | pbcopy
@@ -190,7 +190,7 @@ Tạo gói cài Debian (bắt buộc hoàn tất biên dịch Release trên ki�
 ./apps/desktop/scripts/linux/pkg_arm64.sh 1.4.3
 ```
 
-Mỗi lần đóng gói tạo bản thường `crossdesk-linux-<arch>-<version>.deb` và bản màn hình ảo `crossdesk-virtual-desktop-xfce-linux-<arch>-<version>.deb` từ cùng sản phẩm biên dịch. Cả hai chứa chương trình đầy đủ, chỉ bản sau bắt buộc phụ thuộc Xvfb, Xfce và công cụ phiên D-Bus; bản thân biên dịch và đóng gói không cần cài các thành phần này. Nếu khi chạy từ nguồn cần tạo màn hình ảo đầy đủ, chuẩn bị phụ thuộc tùy chọn theo [hướng dẫn chạy không màn hình](HEADLESS.md). Ảnh môi trường biên dịch dự án và CI có thể giữ các thành phần này để kiểm thử.
+Mỗi lần đóng gói tạo bản thường `crossdesk-linux-<arch>-<version>.deb` và bản màn hình ảo `crossdesk-virtual-desktop-xfce-linux-<arch>-<version>.deb` từ cùng sản phẩm biên dịch. Cả hai chứa chương trình đầy đủ, chỉ bản sau bắt buộc phụ thuộc Xvfb, Xfce và công cụ phiên D-Bus; bản thân biên dịch và đóng gói không cần cài các thành phần này. Nếu khi chạy từ nguồn cần tạo màn hình ảo đầy đủ, chuẩn bị phụ thuộc tùy chọn theo [hướng dẫn chạy headless](HEADLESS.md). Ảnh môi trường biên dịch dự án và CI có thể giữ các thành phần này để kiểm thử.
 
 Script đóng gói cài thư viện thời gian chạy dùng chung Slint vào thư mục riêng `/usr/lib/crossdesk` của gói, người dùng không cần cài thêm `libslint_cpp.so`. Dấu `package-name` trong cùng thư mục do gói cài quản lý để chọn bản tải cập nhật, không ghi vào cấu hình người dùng.
 PipeWire không phải phụ thuộc thời gian chạy bắt buộc: chương trình phát hiện PipeWire 0.3 của hệ thống chủ khi chạy,
@@ -221,7 +221,7 @@ xmake r crossdesk
 
 ### Khóa công khai cập nhật (tùy chọn)
 
-`CROSSDESK_UPDATE_PUBLIC_KEY` được nhúng vào ứng dụng máy tính khi biên dịch để xác minh chữ ký Ed25519 của bản kê nâng cấp. Khi tự biên dịch có thể bỏ qua: chương trình vẫn biên dịch, chạy và kiểm tra phiên bản mới bình thường, nhưng chỉ cung cấp lối vào tải thủ công, không tự cài trong ứng dụng.
+`CROSSDESK_UPDATE_PUBLIC_KEY` được nhúng vào ứng dụng máy tính khi biên dịch để xác minh chữ ký Ed25519 của manifest cập nhật. Khi tự biên dịch có thể bỏ qua: chương trình vẫn biên dịch, chạy và kiểm tra phiên bản mới bình thường, nhưng chỉ cung cấp liên kết tải thủ công, không tự cài trong ứng dụng.
 
 Nếu cần tự cài bản cập nhật trong ứng dụng, thêm tham số này vào lệnh cấu hình `xmake f` của nền tảng tương ứng rồi biên dịch. Ví dụ, sau khi cấu hình nền tảng, thực hiện (thay chỗ giữ chỗ bằng khóa công khai thực tế):
 
@@ -230,9 +230,9 @@ xmake f --CROSSDESK_UPDATE_PUBLIC_KEY="<khóa-công-khai-64-ký-tự-thập-lụ
 xmake b crossdesk
 ```
 
-Bạn cũng có thể đặt biến môi trường cùng tên trước khi biên dịch; giá trị cấu hình Xmake ưu tiên hơn biến môi trường. Khóa công khai phải là biểu diễn thập lục phân của khóa Ed25519 32 byte, tổng 64 ký tự viết thường; nếu không rỗng nhưng sai định dạng, cấu hình biên dịch báo lỗi. Bản kê phát hành phải được ký bằng khóa riêng tương ứng và đáp ứng điều kiện nâng cấp như vị trí cài; bản portable luôn dùng tải thủ công.
+Bạn cũng có thể đặt biến môi trường cùng tên trước khi biên dịch; giá trị cấu hình Xmake ưu tiên hơn biến môi trường. Khóa công khai phải là biểu diễn thập lục phân của khóa Ed25519 32 byte, tổng 64 ký tự viết thường; nếu không rỗng nhưng sai định dạng, cấu hình biên dịch báo lỗi. Manifest phát hành phải được ký bằng khóa riêng tương ứng và đáp ứng điều kiện nâng cấp như vị trí cài; bản portable luôn dùng tải thủ công.
 
-GitHub Actions đọc khóa công khai từ biến kho mã `CROSSDESK_UPDATE_PUBLIC_KEY`; khóa riêng tương ứng chỉ dùng ký bản kê phát hành. Xem tạo khóa, ký bản kê và điều kiện cài trong [biên dịch và phát hành trình nâng cấp](UPDATER.md#biên-dịch-và-phát-hành-trình-nâng-cấp).
+GitHub Actions đọc khóa công khai từ biến kho mã `CROSSDESK_UPDATE_PUBLIC_KEY`; khóa riêng tương ứng chỉ dùng ký manifest phát hành. Xem tạo khóa, ký manifest và điều kiện cài trong [biên dịch và phát hành trình nâng cấp](UPDATER.md#biên-dịch-và-phát-hành-trình-nâng-cấp).
 
 ## Biên dịch khi không có CUDA
 
@@ -277,7 +277,7 @@ xmake b -vy crossdesk
 
 ### Sự cố kết nối khi chạy
 
-“Chưa kết nối máy chủ” có thể do mạng, cấu hình máy chủ hoặc tin cậy chứng chỉ; không nên chỉ cài ứng dụng khác để kiểm tra. Hãy kiểm tra theo [câu hỏi thường gặp](FAQ.md) và [tài liệu chứng chỉ tự lưu trữ (self-host)](SELF_HOSTING.md).
+“Chưa kết nối máy chủ” có thể do mạng, cấu hình máy chủ hoặc tin cậy chứng chỉ; không nên chỉ cài ứng dụng khác để kiểm tra. Hãy kiểm tra theo [câu hỏi thường gặp](FAQ.md) và [tài liệu chứng chỉ self-host](SELF_HOSTING.md).
 
 ## Về Xmake
 
@@ -327,16 +327,16 @@ Tham khảo thêm cách dùng trong [tài liệu Xmake chính thức](https://xm
 
 ## iOS / iPadOS
 
-Ứng dụng gốc dùng dự án Xcode riêng, cần thiết bị thật arm64 chạy iOS 16+. Xem các bước biên dịch và kiểm chứng âm thanh, video, truyền tệp trong [tài liệu phát triển iOS](../apps/ios/README.md). CI hiện xuất ứng dụng chưa ký, cần tự ký để cài thiết bị thật.
+Ứng dụng native dùng dự án Xcode riêng, cần thiết bị thật arm64 chạy iOS 16+. Xem các bước biên dịch và kiểm chứng âm thanh, video, truyền tệp trong [tài liệu phát triển iOS](../apps/ios/README.md). CI hiện xuất ứng dụng chưa ký, cần tự ký để cài thiết bị thật.
 
 [CI iOS](../.github/workflows/build-ios.yml) có thể chạy thủ công riêng và được quy trình biên dịch chính gọi; Pull Request liên quan cũng kích hoạt. Kiểm tra chuỗi công cụ, giấy phép và quyền riêng tư, xác minh ứng dụng và đóng ZIP dùng quy trình hiện có; phát hành tag tiếp tục thu thập tệp lưu trữ ứng dụng chưa ký cùng tên.
 
 ## Cập nhật ảnh chụp giao diện
 
-Ảnh máy tính trong README được kết xuất trực tiếp từ Slint UI hiện tại; xem lệnh tạo trong [cập nhật hình minh họa tài liệu](images/REGENERATE.md).
+Ảnh máy tính trong README được render trực tiếp từ Slint UI hiện tại; xem lệnh tạo trong [cập nhật hình minh họa tài liệu](images/REGENERATE.md).
 
 ## Android
 
-Ứng dụng điều khiển gốc nằm trong dự án Gradle riêng `apps/android`, cần thiết bị arm64 Android 8.0+, dùng SDK 36, NDK r28c và Xmake 3.1.1 hoặc mới hơn. Xem biên dịch, cài APK và kiểm thử trình giả lập trong [tài liệu phát triển Android](../apps/android/README.md).
+Ứng dụng điều khiển native nằm trong dự án Gradle riêng `apps/android`, cần thiết bị arm64 Android 8.0+, dùng SDK 36, NDK r28c và Xmake 3.1.1 hoặc mới hơn. Xem biên dịch, cài APK và kiểm thử trình giả lập trong [tài liệu phát triển Android](../apps/android/README.md).
 
-[CI Android](../.github/workflows/build-android.yml) có thể chạy thủ công riêng và được quy trình biên dịch chính gọi. CI cung cấp APK Debug / kiểm thử thiết bị, APK Release chưa ký và báo cáo Lint, chạy kiểm thử giao thức gốc, kiểm tra căn chỉnh 16 KB và giấy phép; phát hành tag thu thập APK Release chưa ký, cần tự ký trước khi cài. Kiểm thử thiết bị cần thực hiện riêng trên điện thoại arm64 hoặc trình giả lập.
+[CI Android](../.github/workflows/build-android.yml) có thể chạy thủ công riêng và được quy trình biên dịch chính gọi. CI cung cấp APK Debug / kiểm thử thiết bị, APK Release chưa ký và báo cáo Lint, chạy kiểm thử giao thức native, kiểm tra căn chỉnh 16 KB và giấy phép; phát hành tag thu thập APK Release chưa ký, cần tự ký trước khi cài. Kiểm thử thiết bị cần thực hiện riêng trên điện thoại arm64 hoặc trình giả lập.

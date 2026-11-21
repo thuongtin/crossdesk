@@ -15,7 +15,7 @@
 | --- | --- |
 | Tìm vị trí thao tác trong ứng dụng máy tính | [Hướng dẫn sử dụng máy tính](USER_GUIDE.md) |
 | Điều chỉnh hình ảnh, âm thanh, gửi nhận tệp | [Thao tác phiên](USER_GUIDE.md#session) |
-| Quản lý tập trung nhiều máy tính | [Bức tường màn hình (DeskHub)](deskhub.md) |
+| Quản lý tập trung nhiều máy tính | [DeskHub](deskhub.md) |
 | Giới hạn thiết bị được phép kết nối | [Thiết bị đáng tin cậy và ghép đôi](CONNECTIONS.md#trusted-devices) |
 | Cài đặt lại hoặc di chuyển danh tính máy này | [Sao lưu và di chuyển](CONNECTIONS.md#backup) |
 | Cập nhật ứng dụng | [Cập nhật và xử lý sự cố](UPDATER.md) |
@@ -23,8 +23,8 @@
 | Kết nối bằng terminal | [Hướng dẫn sử dụng CLI](../apps/cli/README.md) |
 | Cho Agent thao tác máy tính và giám sát | [Cài đặt và sử dụng MCP](../apps/mcp/README.md) |
 | Truy cập Windows trước khi đăng nhập | [Truy cập không giám sát](USER_GUIDE.md#windows-service) |
-| Chạy Linux không có màn hình | [Chạy không màn hình](HEADLESS.md) |
-| Sử dụng máy chủ riêng | [Tự lưu trữ (self-host)](SELF_HOSTING.md) |
+| Chạy Linux không có màn hình | [Chạy headless](HEADLESS.md) |
+| Sử dụng máy chủ riêng | [Self-host](SELF_HOSTING.md) |
 | Tự biên dịch ứng dụng | [Hướng dẫn biên dịch](BUILD.md) |
 | Chuyển ngôn ngữ giao diện | [Cài đặt ngôn ngữ](../localization/README.md) |
 
@@ -35,14 +35,14 @@
 | Biên dịch, đóng gói và ký ứng dụng máy tính | [Tiếng Trung](BUILD.md) · [English](BUILD_EN.md) · [Ảnh môi trường biên dịch Linux](../docker/linux-build/README.md) |
 | Phân lớp GUI, trạng thái và phân công mã nguồn | [Kiến trúc GUI](gui-architecture.md) |
 | Định địa chỉ ID / IP, xác thực và vòng đời phiên | [Kiến trúc kết nối](connection-architecture.md) |
-| Giao diện đăng ký và băng thông Bức tường màn hình (DeskHub) | [Giao thức xem trước và truyền tải](deskhub.md#triển-khai-truyền-tải-và-giao-diện) |
-| Kết xuất CLI, nhập liệu và hỗ trợ terminal | [Ứng dụng terminal](../apps/cli/docs/terminal-client.md) · [Biên bản kiểm chứng](../apps/cli/docs/validation.md#biên-bản-kiểm-chứng) |
-| Tích hợp terminal và tự động hóa | [Bridge](../apps/cli/docs/bridge-protocol.md) · [Giao diện tự động hóa gốc](../apps/cli/docs/automation-protocol.md) |
-| Công cụ MCP và tích hợp ứng dụng chủ | [Biên dịch và tích hợp](../apps/mcp/DEVELOPMENT.md) |
+| Giao diện đăng ký và băng thông DeskHub | [Giao thức xem trước và truyền tải](deskhub.md#triển-khai-truyền-tải-và-giao-diện) |
+| Render CLI, nhập liệu và hỗ trợ terminal | [Ứng dụng terminal](../apps/cli/docs/terminal-client.md) · [Biên bản kiểm chứng](../apps/cli/docs/validation.md#biên-bản-kiểm-chứng) |
+| Tích hợp terminal và tự động hóa | [Bridge](../apps/cli/docs/bridge-protocol.md) · [Giao diện tự động hóa native](../apps/cli/docs/automation-protocol.md) |
+| Công cụ MCP và tích hợp MCP host | [Biên dịch và tích hợp](../apps/mcp/DEVELOPMENT.md) |
 | Biên dịch ứng dụng di động và hành vi nền tảng | [Android](../apps/android/README.md#biên-dịch) · [iOS](../apps/ios/README.md#build) · [HarmonyOS](../apps/harmony/README.md#biên-dịch) |
 | Hỗ trợ máy tính HarmonyOS và quyền | [Tài liệu nền tảng PC](../apps/harmony/desktop-port/README.md) |
 | Phiên bản thành phần và phát hành npm | [Quản lý phiên bản](VERSIONING.md) · [Phân phối CLI](../apps/cli/docs/npm-distribution.md#tạo-gói) · [Phát hành MCP](../apps/mcp/DEVELOPMENT.md#phát-hành-lên-npm-qua-github-actions) |
-| Chữ ký cập nhật, bản kê và quy trình nâng cấp | [Biên dịch và phát hành trình nâng cấp](UPDATER.md#biên-dịch-và-phát-hành-trình-nâng-cấp) |
+| Chữ ký cập nhật, manifest và quy trình nâng cấp | [Biên dịch và phát hành trình nâng cấp](UPDATER.md#biên-dịch-và-phát-hành-trình-nâng-cấp) |
 | Tài nguyên dịch và ảnh chụp màn hình | [Bảo trì bản địa hóa](../localization/README.md#bảo-trì-tài-nguyên) · [Tạo ảnh chụp màn hình](images/REGENERATE.md) |
 
 Các tính năng bản phát triển có thể chưa nằm trong gói đã phát hành; hãy căn cứ vào tài liệu và giao diện của phiên bản bạn dùng. Khi báo cáo sự cố, cung cấp hệ điều hành hai bên, phiên bản, phương thức kết nối và các bước tái hiện; trên máy tính, bạn có thể xuất nhật ký chẩn đoán qua **Menu chính → Phản hồi và góp ý**.

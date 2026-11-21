@@ -2,7 +2,7 @@
 
 [Về trang chủ](../README.md) · [Cài đặt và cập nhật](USER_GUIDE.md#settings) · [Biên dịch và phát hành](#biên-dịch-và-phát-hành-trình-nâng-cấp)
 
-Trên máy tính, bạn có thể xem phiên bản mới tại **Menu chính → Giới thiệu → Kiểm tra cập nhật**. Sau khi phát hiện bản mới, đọc ghi chú cập nhật trước, rồi tiếp tục qua “Cài đặt bản cập nhật” hoặc lối vào tải xuống trên giao diện.
+Trên máy tính, bạn có thể xem phiên bản mới tại **Menu chính → Giới thiệu → Kiểm tra cập nhật**. Sau khi phát hiện bản mới, đọc ghi chú cập nhật trước, rồi tiếp tục qua “Cài đặt bản cập nhật” hoặc liên kết tải xuống trên giao diện.
 
 ## Cài đặt bản cập nhật
 
@@ -32,7 +32,7 @@ Tải gói cài đầy đủ khớp hệ thống và kiến trúc của bạn t�
 | macOS | Cài trong ứng dụng hỗ trợ `/Applications/CrossDesk.app`; vị trí khác cài PKG thủ công |
 | Linux | Bản cài DEB cần thành phần cấp quyền hệ thống và trình quản lý gói khả dụng; cập nhật chọn gói thường hoặc màn hình ảo theo loại đã cài |
 | iOS / iPadOS | Cập nhật từ App Store; ứng dụng tự ký cài lại theo cách ký cũ |
-| Android / HarmonyOS | Tải qua lối vào do ứng dụng hoặc trang phát hành cung cấp, cài bằng cách ký tương thích |
+| Android / HarmonyOS | Tải qua liên kết do ứng dụng hoặc trang phát hành cung cấp, cài bằng cách ký tương thích |
 
 Nếu Linux tự cấu hình systemd hoặc trình giám sát tiến trình khác, dừng dịch vụ tương ứng trước rồi cài cập nhật, sau đó khởi động lại. Nếu không, tiến trình cũ có thể ngăn cài đặt.
 
@@ -94,7 +94,7 @@ Cấu hình trong kho GitHub:
 - Actions variable `CROSSDESK_UPDATE_PUBLIC_KEY`: Khóa công khai 64 ký tự thập lục phân viết thường ở trên.
 - Actions secret `CROSSDESK_UPDATE_PRIVATE_KEY`: Toàn bộ nội dung tệp khóa riêng PEM.
 
-Quy trình biên dịch máy tính truyền khóa công khai cho Xmake. Chỉ bước tạo bản kê phát hành đọc khóa riêng.
+Quy trình biên dịch máy tính truyền khóa công khai cho Xmake. Chỉ bước tạo manifest phát hành đọc khóa riêng.
 Lần đầu cần cài thủ công phiên bản chứa trình nâng cấp, khóa công khai và siêu dữ liệu cài đặt mới.
 
 Khi đóng gói thủ công từ nhánh bằng GitHub Actions, trong `Run workflow` của
@@ -111,16 +111,16 @@ Khi biên dịch qua nửa đêm hoặc chạy lại riêng tác vụ phát hàn
 Không dùng tên nhánh như `vauto-update-20261020` làm số phiên bản để kiểm chứng nâng cấp.
 Phiên bản mới phải tăng phiên bản số hoặc patch; chỉ đổi ngày không được coi là nâng cấp. Ví dụ cài thủ công
 `v1.7.2-20261020` trước, rồi kiểm chứng nâng cấp lên `v1.7.3-20261020`.
-Biên dịch nhánh thủ công chỉ tải sản phẩm biên dịch Actions lên, không tự phát hành bản kê phiên bản.
+Biên dịch nhánh thủ công chỉ tải sản phẩm biên dịch Actions lên, không tự phát hành manifest phiên bản.
 
 Script phát hành so sánh phiên bản số và patch, bỏ qua ngày biên dịch. Khi sửa hoặc phát hành lại Release máy tính
-cũ, giữ bản kê hiện có trên máy chủ và nêu lý do bỏ qua trong nhật ký Actions;
+cũ, giữ manifest hiện có trên máy chủ và nêu lý do bỏ qua trong nhật ký Actions;
 cùng phiên bản vẫn có thể cập nhật ghi chú phát hành, bản mới phát hành bình thường. Bản ghi tải xuống từng nền tảng cũng không bị phiên bản thấp hơn
 ghi đè, kể cả phát hành di động riêng và gói di động kèm Release máy tính.
 
 Phiên bản đầy đủ của mọi gói cài máy tính và gói portable trong Release máy tính phải khớp phiên bản tag sau khi bỏ
 tiền tố `v`, gồm cả vị trí ngày và patch; không được chỉ so sánh phiên bản số.
-Nếu bất kỳ gói nào không khớp, script báo tag, nền tảng, tên tệp và phiên bản hai bên, dừng tạo bản kê,
+Nếu bất kỳ gói nào không khớp, script báo tag, nền tảng, tên tệp và phiên bản hai bên, dừng tạo manifest,
 không ghi tệp đầu ra. Khi phát hành thủ công, nên dùng tag phiên bản đầy đủ khớp gói cài, ví dụ
 `v1.7.4-20261021`. Gói cài iOS, Android giữ phiên bản độc lập.
 
@@ -132,10 +132,10 @@ xmake b crossdesk
 ```
 
 Bản biên dịch không có khóa công khai vẫn chạy và kiểm tra phiên bản bình thường nhưng không tự cài.
-Nếu khóa riêng và công khai không khớp, tạo bản kê thất bại. Hiện chỉ hỗ trợ một khóa công khai; trước khi đổi khóa cần
+Nếu khóa riêng và công khai không khớp, tạo manifest thất bại. Hiện chỉ hỗ trợ một khóa công khai; trước khi đổi khóa cần
 thiết kế phiên bản chuyển tiếp, không được thay thẳng khóa riêng phát hành rồi để ứng dụng cũ tiếp tục tự nâng cấp.
 
-## Định dạng bản kê
+## Định dạng manifest
 
 `.github/scripts/update_version_manifest.py` ghi `size`, `sha256` cho gói cài.
 Sau khi cấu hình khóa riêng, gói cài máy tính còn chứa:
@@ -153,7 +153,7 @@ Chữ ký bao phủ byte UTF-8 gốc của chuỗi `payload`; ứng dụng xác 
 Chữ ký gồm phiên bản, nền tảng, tên gói, địa chỉ tải, kích thước và hàm băm để tránh tráo bản ghi tải xuống.
 Chỉ cho phép tên gói dưới `https://downloads.crossdesk.cn/` khớp phiên bản và nền tảng,
 cấm chuyển hướng tải xuống, giới hạn kích thước gói 2 GiB, cấm cài cùng phiên bản và hạ cấp.
-Gói portable và di động không có lối vào tự cài này.
+Gói portable và di động không có tùy chọn tự cài này.
 
 ## Ranh giới nền tảng
 

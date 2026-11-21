@@ -1,6 +1,6 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="Logo CrossDesk: biểu tượng bên trái, chữ hai màu bên phải" />
-  <p>Máy tính từ xa nhẹ, đa nền tảng, hỗ trợ kết nối từ máy tính, trình duyệt, thiết bị di động và terminal; xem và điều khiển tập trung nhiều thiết bị bằng Bức tường màn hình (DeskHub).</p>
+  <p>Ứng dụng điều khiển máy tính từ xa nhẹ, đa nền tảng, hỗ trợ kết nối từ máy tính, trình duyệt, thiết bị di động và terminal; xem và điều khiển tập trung nhiều thiết bị bằng DeskHub.</p>
   <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a></p>
 </div>
 
@@ -22,23 +22,23 @@
 
 </div>
 
-CrossDesk cho phép bạn kết nối đến máy tính từ xa từ máy tính, trình duyệt, điện thoại hoặc terminal (CLI máy tính), đồng thời xem và điều khiển tập trung nhiều thiết bị qua Bức tường màn hình (DeskHub). Dự án dựa trên [MiniRTC](https://github.com/kunkundi/minirtc), hỗ trợ tự lưu trữ (self-host).
+CrossDesk cho phép bạn kết nối đến máy tính từ xa từ máy tính, trình duyệt, điện thoại hoặc terminal (CLI máy tính), đồng thời xem và điều khiển tập trung nhiều thiết bị qua DeskHub. Dự án dựa trên [MiniRTC](https://github.com/kunkundi/minirtc), hỗ trợ self-host.
 
-[Tính năng chính](#features) · [Tải xuống và nền tảng hỗ trợ](#download) · [Hướng dẫn biên dịch](#build) · [Kết nối nhanh](#quick-start) · [CLI terminal](#cli) · [Agent / MCP](#mcp) · [Kết nối IP trực tiếp](#lan-direct) · [Thiết bị đáng tin cậy](#trusted-devices) · [Xem trước giao diện](#preview) · [Hướng dẫn sử dụng](docs/USER_GUIDE.md) · [Danh mục tài liệu](docs/README.md) · [Tự lưu trữ (self-host)](#self-hosting) · [Tài liệu và phản hồi](#development) · [Tài trợ](#sponsor)
+[Tính năng chính](#features) · [Tải xuống và nền tảng hỗ trợ](#download) · [Hướng dẫn biên dịch](#build) · [Kết nối nhanh](#quick-start) · [CLI terminal](#cli) · [Agent / MCP](#mcp) · [Kết nối IP trực tiếp](#lan-direct) · [Thiết bị đáng tin cậy](#trusted-devices) · [Xem trước giao diện](#preview) · [Hướng dẫn sử dụng](docs/USER_GUIDE.md) · [Danh mục tài liệu](docs/README.md) · [Self-host](#self-hosting) · [Tài liệu và phản hồi](#development) · [Tài trợ](#sponsor)
 
 <a id="features"></a>
 
 ## Tính năng chính
 
-- **Điều khiển từ xa đa nền tảng:** Máy tính Windows, macOS, Linux điều khiển lẫn nhau; truy cập máy tính từ trình duyệt và ứng dụng iOS / Android gốc; bản HarmonyOS cho PC và thiết bị di động đang trong giai đoạn phát triển.
-- **Kết nối IP trực tiếp trong mạng LAN:** Ứng dụng máy tính kết nối bằng IP, cổng và mật khẩu sáu ký tự, không cần dịch vụ báo hiệu đám mây; hỗ trợ cổng riêng, nhớ mật khẩu và hiển thị thiết bị gần đây theo chế độ.
+- **Điều khiển từ xa đa nền tảng:** Máy tính Windows, macOS, Linux điều khiển lẫn nhau; truy cập máy tính từ trình duyệt và ứng dụng iOS / Android native; bản HarmonyOS cho PC và thiết bị di động đang trong giai đoạn phát triển.
+- **Kết nối IP trực tiếp trong mạng LAN:** Ứng dụng máy tính kết nối bằng IP, cổng và mật khẩu sáu ký tự, không cần dịch vụ signaling đám mây; hỗ trợ cổng riêng, nhớ mật khẩu và hiển thị thiết bị gần đây theo chế độ.
 - **Điều khiển từ terminal:** Xem và điều khiển máy tính từ xa bằng ID thiết bị trong terminal, hỗ trợ hình ảnh ANSI / Kitty / Sixel, thu phóng và di chuyển từng vùng, chế độ lệnh cục bộ liên tục và phần mở rộng Pi; có thể biên dịch riêng.
-- **Bức tường màn hình (DeskHub):** Xem trước nhiều thiết bị theo thời gian thực, phân nhóm, phóng to để điều khiển, điều khiển nhóm và phân phối tệp hàng loạt.
+- **DeskHub:** Xem trước nhiều thiết bị theo thời gian thực, phân nhóm, phóng to để điều khiển, điều khiển nhóm và gửi tệp hàng loạt.
 - **Hình ảnh và âm thanh:** H.264 / AV1, mã hóa và giải mã phần cứng, âm thanh từ xa; điều chỉnh chất lượng hình ảnh, tốc độ khung hình và độ phân giải màn hình từ xa ngay trong phiên; ghi nhớ lựa chọn độ phân giải đã được xác nhận, khôi phục chế độ hiển thị ban đầu khi máy điều khiển cuối cùng ngắt kết nối. Khả năng sử dụng tùy thuộc nền tảng và thiết bị.
-- **Cộng tác hằng ngày:** Chuyển nhiều màn hình, bàn phím, chuột và tổ hợp phím, bảng nhớ tạm văn bản; trình duyệt tệp hai khung hỗ trợ duyệt thư mục, truyền tệp và thư mục hai chiều, kéo thả và quản lý tác vụ.
-- **Agent / MCP:** Cấp quyền cho Agent quan sát và thao tác máy tính từ xa qua dịch vụ MCP trên máy này, cung cấp giám sát thời gian thực, tiếp quản thủ công, nhiều phiên, công cụ bảng nhớ tạm và tệp; có thể cài gói MCP tương ứng với nền tảng.
+- **Cộng tác hằng ngày:** Chuyển nhiều màn hình, bàn phím, chuột và tổ hợp phím, clipboard văn bản; trình duyệt tệp hai khung hỗ trợ duyệt thư mục, truyền tệp và thư mục hai chiều, kéo thả và quản lý tác vụ.
+- **Agent / MCP:** Cấp quyền cho Agent quan sát và thao tác máy tính từ xa qua dịch vụ MCP trên máy này, cung cấp giám sát thời gian thực, tiếp quản thủ công, nhiều phiên, công cụ clipboard và tệp; có thể cài gói MCP tương ứng với nền tảng.
 - **Thiết bị đáng tin cậy:** Ứng dụng máy tính có thể bật giới hạn thiết bị đáng tin cậy để xác minh danh tính thiết bị ngoài mật khẩu kết nối; hỗ trợ sao chép và dán thông tin ghép đôi, thêm trước các thiết bị được phép truy cập máy này.
-- **Triển khai và vận hành:** Kết nối trực tiếp P2P, chuyển tiếp TURN, mã hóa nội dung đa phương tiện SRTP, tự lưu trữ (self-host), điều khiển Windows từ xa trước khi đăng nhập và chạy Linux không màn hình.
+- **Triển khai và vận hành:** Kết nối trực tiếp P2P, TURN relay, mã hóa nội dung đa phương tiện SRTP, self-host, điều khiển Windows từ xa trước khi đăng nhập và chạy Linux headless.
 
 <a id="download"></a>
 
@@ -48,7 +48,7 @@ Tải gói cài đặt phù hợp với hệ điều hành và kiến trúc CPU 
 
 | Nền tảng | Phạm vi hỗ trợ và yêu cầu cài đặt |
 | --- | --- |
-| Windows | **Điều khiển / được điều khiển**; Windows 10+, x64; gói cài đặt `.exe`, cũng hỗ trợ bản di động không cần cài đặt |
+| Windows | **Điều khiển / được điều khiển**; Windows 10+, x64; gói cài đặt `.exe`, cũng hỗ trợ bản portable không cần cài đặt |
 | macOS | **Điều khiển / được điều khiển**; macOS 14.0+; chọn `.pkg` x64 / arm64 theo Intel / Apple Silicon |
 | Linux | **Điều khiển / được điều khiển**; Ubuntu 20.04+, mức cơ sở glibc 2.31; `.deb` amd64 / arm64 |
 | iOS / iPadOS | **Chỉ điều khiển**; cài từ [App Store](https://apps.apple.com/app/id6828859211), xem yêu cầu hệ thống của bản trên cửa hàng tại trang ứng dụng; mã nguồn hiện nhắm tới iOS 16.0+, bạn cũng có thể tự biên dịch và ký |
@@ -61,7 +61,7 @@ Tải gói cài đặt phù hợp với hệ điều hành và kiến trúc CPU 
 
 Bạn hãy chọn gói cài đặt khớp hệ điều hành và chip của mình theo trang tải xuống. Các tính năng bản phát triển có thể chưa nằm trong gói đã phát hành; xem ghi chú của Release tương ứng để biết chi tiết.
 
-- **Linux:** Máy đã có môi trường màn hình chọn bản thường `crossdesk-linux-…deb`; máy chủ cần màn hình Xfce độc lập chọn `crossdesk-virtual-desktop-xfce-…deb`. Chọn một trong hai; xem cách cài đặt và khởi động trong [hướng dẫn sử dụng](docs/USER_GUIDE.md#installation) và [chạy không màn hình](docs/HEADLESS.md).
+- **Linux:** Máy đã có môi trường desktop chọn bản thường `crossdesk-linux-…deb`; máy chủ cần màn hình Xfce độc lập chọn `crossdesk-virtual-desktop-xfce-…deb`. Chọn một trong hai; xem cách cài đặt và khởi động trong [hướng dẫn sử dụng](docs/USER_GUIDE.md#installation) và [chạy headless](docs/HEADLESS.md).
 - **macOS:** Lần chạy đầu, cấp quyền ghi màn hình và trợ năng theo lời nhắc; quyền thứ nhất dùng để ghi hình màn hình, quyền thứ hai dùng cho nhập liệu bàn phím và chuột từ xa. [Giải thích về quyền](docs/USER_GUIDE.md#installation)
 - **iOS:** Ưu tiên cài từ [App Store](https://apps.apple.com/app/id6828859211); sản phẩm biên dịch chưa ký trên GitHub vẫn cần bạn tự ký, xem các bước trong [hướng dẫn biên dịch iOS](apps/ios/README.md). HarmonyOS cần biên dịch và ký bằng DevEco, xem [tài liệu HarmonyOS](apps/harmony/README.md).
 
@@ -87,7 +87,7 @@ cd crossdesk
 ### Kết nối bằng ID thiết bị
 
 1. **Chuẩn bị máy tính được điều khiển.** Cài đặt và chạy CrossDesk, chuyển sang chế độ kết nối ID, chờ hiển thị “Đã kết nối máy chủ”, xem ID máy này và mật khẩu trong “Màn hình máy này”.
-2. **Bắt đầu kết nối.** Nhập ID gồm 9 chữ số của máy được điều khiển trong CrossDesk trên máy tính khác, nhấn “Kết nối”; bạn cũng có thể dùng ứng dụng di động gốc hoặc [ứng dụng Web](https://web.crossdesk.cn/).
+2. **Bắt đầu kết nối.** Nhập ID gồm 9 chữ số của máy được điều khiển trong CrossDesk trên máy tính khác, nhấn “Kết nối”; bạn cũng có thể dùng ứng dụng di động native hoặc [ứng dụng Web](https://web.crossdesk.cn/).
 3. **Xác minh mật khẩu.** Nhập mật khẩu kết nối hiện tại của máy được điều khiển, chờ hình ảnh từ xa xuất hiện. Trên máy tính, bạn có thể chọn “Nhớ mật khẩu”, sau đó kết nối lại từ “Kết nối gần đây”.
 
 Khi dùng máy chủ tự triển khai, hai bên cần kết nối cùng dịch vụ; hãy cập nhật máy chủ trước khi nâng cấp ứng dụng. Xem thêm thao tác kết nối và mật khẩu trong [hướng dẫn sử dụng](docs/USER_GUIDE.md#quick-start); khi kết nối thất bại, màn hình đen hoặc không thao tác được bàn phím và chuột, xem [câu hỏi thường gặp](docs/FAQ.md).
@@ -100,7 +100,7 @@ Khi dùng máy chủ tự triển khai, hai bên cần kết nối cùng dịch 
 2. **Nhập địa chỉ.** Trên máy điều khiển, nhập `IP:cổng` hiển thị trên máy được điều khiển, ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888`, rồi nhấn “Kết nối”. Khi chỉ nhập IP, cổng mặc định là **52888**; hãy căn cứ vào cổng thực tế hiển thị trên giao diện bên kia.
 3. **Nhập mật khẩu.** Nhập **mật khẩu gồm 6 chữ cái tiếng Anh hoặc chữ số** hiển thị trên máy được điều khiển ở chế độ kết nối IP trực tiếp; bạn có thể chọn “Nhớ mật khẩu”. Khi chuyển chế độ, “Kết nối gần đây” cũng chuyển sang lịch sử thiết bị của chế độ tương ứng.
 
-Hai máy tính cần truy cập được nhau trong mạng LAN; mạng có thể có hoặc không có Internet, phiên kết nối trực tiếp không phụ thuộc dịch vụ báo hiệu đám mây. Trong cửa sổ chính, bạn có thể trực tiếp đổi IP máy này, cổng và mật khẩu. Mặc định bật lắng nghe trên tất cả giao diện IP, hỗ trợ IPv4 và IPv6, cho phép kết nối qua giao diện như VPN; có thể điều chỉnh trong “Kết nối mạng” của cài đặt. Tắt “Bật kết nối IP” trong cài đặt sẽ dừng lắng nghe, ngắt các phiên IP trực tiếp và ẩn nút chế độ. Xem [hướng dẫn kết nối IP trực tiếp](docs/USER_GUIDE.md#lan-direct).
+Hai máy tính cần truy cập được nhau trong mạng LAN; mạng có thể có hoặc không có Internet, phiên kết nối trực tiếp không phụ thuộc dịch vụ signaling đám mây. Trong cửa sổ chính, bạn có thể trực tiếp đổi IP máy này, cổng và mật khẩu. Mặc định bật lắng nghe trên tất cả interface mạng, hỗ trợ IPv4 và IPv6, cho phép kết nối qua giao diện như VPN; có thể điều chỉnh trong “Kết nối mạng” của cài đặt. Tắt “Bật kết nối IP” trong cài đặt sẽ dừng lắng nghe, ngắt các phiên IP trực tiếp và ẩn nút chế độ. Xem [hướng dẫn kết nối IP trực tiếp](docs/USER_GUIDE.md#lan-direct).
 
 <a id="trusted-devices"></a>
 
@@ -112,7 +112,7 @@ Giới hạn thiết bị đáng tin cậy trên ứng dụng máy tính **mặc
 2. **Thêm máy điều khiển trên máy được điều khiển.** Mở cùng giao diện quản lý, dán thông tin nhận được vào ô **Thêm thiết bị đáng tin cậy**, nhấn **Thêm** để thêm vào danh sách; không cần xác nhận lại hay thiết lập kết nối từ xa trước.
 3. **Bật giới hạn trên máy được điều khiển.** Quay lại cài đặt, chọn **Chỉ cho phép thiết bị đáng tin cậy điều khiển** rồi lưu. Sau đó bắt đầu kết nối bằng ID hoặc IP và xác minh mật khẩu như bình thường.
 
-Thông tin ghép đôi chỉ gồm khóa công khai, tên thiết bị và ID, không có khóa riêng hay mật khẩu; nên truyền qua kênh đáng tin cậy. Sau khi thêm, bạn có thể nhấn **Xem dấu vân tay** để đối chiếu với máy điều khiển; cũng có thể thêm chính máy này, cùng một khóa công khai sẽ không được thêm trùng. Tin cậy là một chiều; nếu cần điều khiển lẫn nhau, bạn nên thêm bên kia trên cả hai máy.
+Thông tin ghép đôi chỉ gồm khóa công khai, tên thiết bị và ID, không có khóa riêng hay mật khẩu; nên truyền qua kênh đáng tin cậy. Sau khi thêm, bạn có thể nhấn **Xem fingerprint** để đối chiếu với máy điều khiển; cũng có thể thêm chính máy này, cùng một khóa công khai sẽ không được thêm trùng. Tin cậy là một chiều; nếu cần điều khiển lẫn nhau, bạn nên thêm bên kia trên cả hai máy.
 
 Việc thêm và xóa được lưu ngay; khi giới hạn đang bật, **Xóa tin cậy** sẽ ngắt phiên của thiết bị tương ứng, danh sách rỗng sẽ từ chối tất cả máy điều khiển. Bạn cũng có thể thêm máy điều khiển đã hoàn tất xác minh danh tính từ các thiết bị đã kết nối trong giao diện quản lý.
 
@@ -126,10 +126,10 @@ Trước khi cài đặt lại, xóa dữ liệu ứng dụng hoặc chuyển m�
 
 ### Ứng dụng máy tính
 
-Thông tin xác thực máy này, kết nối từ xa và thiết bị gần đây tập trung trong cửa sổ chính; góc trên bên trái có nút chuyển chế độ kết nối và lối vào Bức tường màn hình (DeskHub).
+Thông tin xác thực máy này, kết nối từ xa và thiết bị gần đây tập trung trong cửa sổ chính; góc trên bên trái có nút chuyển chế độ kết nối và nút mở DeskHub.
 
 <p align="center">
-  <img src="docs/images/desktop-main-zh.png" width="800" alt="Chế độ kết nối ID của CrossDesk: chuyển chế độ, ID máy này, lối vào kết nối từ xa và thiết bị gần đây" />
+  <img src="docs/images/desktop-main-zh.png" width="800" alt="Chế độ kết nối ID của CrossDesk: chuyển chế độ, ID máy này, mục kết nối từ xa và thiết bị gần đây" />
 </p>
 
 ### Chế độ kết nối IP trực tiếp
@@ -137,20 +137,20 @@ Thông tin xác thực máy này, kết nối từ xa và thiết bị gần đ�
 Đổi IP máy này, cổng và mật khẩu, kết nối bằng địa chỉ bên kia; bên dưới hiển thị riêng các thiết bị LAN gần đây.
 
 <p align="center">
-  <img src="docs/images/desktop-lan-zh.png" width="800" alt="Chế độ kết nối IP trực tiếp của CrossDesk: lối vào sửa IP và cổng máy này, mật khẩu sáu ký tự, ô địa chỉ từ xa và thiết bị LAN gần đây" />
+  <img src="docs/images/desktop-lan-zh.png" width="800" alt="Chế độ kết nối IP trực tiếp của CrossDesk: nút sửa IP và cổng máy này, mật khẩu sáu ký tự, ô địa chỉ từ xa và thiết bị LAN gần đây" />
 </p>
 
 <a id="deskhub"></a>
 
-### Bức tường màn hình (DeskHub)
+### DeskHub
 
-Xem nhiều thiết bị theo nhóm, nhấn hình ảnh để phóng to rồi chọn tiếp quản điều khiển; hỗ trợ kết nối hàng loạt, tắt tiếng và phân phối tệp.
+Xem nhiều thiết bị theo nhóm, nhấn hình ảnh để phóng to rồi chọn tiếp quản điều khiển; hỗ trợ kết nối hàng loạt, tắt tiếng và gửi tệp.
 
 <p align="center">
-  <img src="docs/images/desktop-deskhub-zh.png" width="960" alt="Bức tường màn hình DeskHub: hình ảnh từ xa của sáu thiết bị và thanh công cụ quản lý" />
+  <img src="docs/images/desktop-deskhub-zh.png" width="960" alt="DeskHub DeskHub: hình ảnh từ xa của sáu thiết bị và thanh công cụ quản lý" />
 </p>
 
-Điều khiển nhóm gửi thao tác nhập đến tất cả thiết bị đã kết nối; đóng Bức tường màn hình (DeskHub) sẽ ngắt toàn bộ kết nối từ xa. Xem phạm vi thao tác và cách dùng chi tiết trong [hướng dẫn Bức tường màn hình (DeskHub)](docs/USER_GUIDE.md#deskhub).
+Điều khiển nhóm gửi thao tác nhập đến tất cả thiết bị đã kết nối; đóng DeskHub sẽ ngắt toàn bộ kết nối từ xa. Xem phạm vi thao tác và cách dùng chi tiết trong [hướng dẫn DeskHub](docs/USER_GUIDE.md#deskhub).
 
 ### Truyền tệp hai khung
 
@@ -165,23 +165,23 @@ Mở truyền tệp trên thanh công cụ phiên để duyệt đồng thời t
 
 ## Thao tác phiên và cài đặt
 
-Phiên từ xa hỗ trợ chuyển màn hình, điều chỉnh chất lượng hình ảnh và tốc độ khung hình, âm thanh, đồng bộ bảng nhớ tạm văn bản và truyền tệp hai chiều. Thanh công cụ cũng cho phép xem trạng thái mạng và điều khiển màn hình riêng tư; trong cài đặt máy tính có thể cấu hình bật/tắt IP trực tiếp, giới hạn thiết bị đáng tin cậy, mã hóa, chuyển tiếp, tự lưu trữ (self-host), tạm dừng video khi thu nhỏ và ngân sách hình ảnh của Bức tường màn hình (DeskHub).
+Phiên từ xa hỗ trợ chuyển màn hình, điều chỉnh chất lượng hình ảnh và tốc độ khung hình, âm thanh, đồng bộ clipboard văn bản và truyền tệp hai chiều. Thanh công cụ cũng cho phép xem trạng thái mạng và điều khiển chế độ riêng tư; trong cài đặt máy tính có thể cấu hình bật/tắt IP trực tiếp, giới hạn thiết bị đáng tin cậy, mã hóa, relay, self-host, tạm dừng video khi thu nhỏ và ngân sách hình ảnh của DeskHub.
 
-Khi máy được điều khiển dùng Windows, macOS hoặc Linux X11, bạn có thể chọn chế độ mà màn hình hiện tại hỗ trợ trong **Cài đặt hình ảnh → Độ phân giải**, không cần kết nối lại. Ứng dụng máy tính và di động gốc ghi nhớ lựa chọn đã được máy từ xa xác nhận thành công, rồi áp dụng lại khi kết nối lại nếu vẫn được hỗ trợ; khi máy điều khiển cuối cùng ngắt kết nối, máy được điều khiển khôi phục chế độ hiển thị trước lần điều chỉnh đầu tiên của đợt kết nối này. Linux cần ghi hình X11 và RandR; Wayland / XWayland hiện chưa hỗ trợ điều chỉnh này.
+Khi máy được điều khiển dùng Windows, macOS hoặc Linux X11, bạn có thể chọn chế độ mà màn hình hiện tại hỗ trợ trong **Cài đặt hình ảnh → Độ phân giải**, không cần kết nối lại. Ứng dụng máy tính và di động native ghi nhớ lựa chọn đã được máy từ xa xác nhận thành công, rồi áp dụng lại khi kết nối lại nếu vẫn được hỗ trợ; khi máy điều khiển cuối cùng ngắt kết nối, máy được điều khiển khôi phục chế độ hiển thị trước lần điều chỉnh đầu tiên của đợt kết nối này. Linux cần ghi hình X11 và RandR; Wayland / XWayland hiện chưa hỗ trợ điều chỉnh này.
 
 <p align="center">
   <img src="docs/images/desktop-stream-video-settings-zh.png" width="960" alt="Cài đặt hình ảnh trong phiên: chất lượng, tốc độ khung hình, độ phân giải màn hình từ xa và tùy chọn hình ảnh" />
 </p>
 
-- [Thao tác phiên](docs/USER_GUIDE.md#session): thanh công cụ, bảng nhớ tạm văn bản, lưu tệp và màn hình riêng tư.
-- [Cài đặt và cập nhật ứng dụng](docs/USER_GUIDE.md#settings): cài đặt chung, truyền hình ảnh Bức tường màn hình (DeskHub) và kiểm tra phiên bản.
-- [Hướng dẫn Bức tường màn hình (DeskHub)](docs/deskhub.md): sắp xếp thiết bị, điều khiển nhóm, truyền tệp hàng loạt và giảm băng thông sử dụng.
+- [Thao tác phiên](docs/USER_GUIDE.md#session): thanh công cụ, clipboard văn bản, lưu tệp và chế độ riêng tư.
+- [Cài đặt và cập nhật ứng dụng](docs/USER_GUIDE.md#settings): cài đặt chung, truyền hình ảnh DeskHub và kiểm tra phiên bản.
+- [Hướng dẫn DeskHub](docs/deskhub.md): sắp xếp thiết bị, điều khiển nhóm, truyền tệp hàng loạt và giảm băng thông sử dụng.
 
 <a id="cli"></a>
 
 ## Ứng dụng CLI terminal
 
-`crossdesk-cli` kết nối đến máy tính được điều khiển bằng ID thiết bị gồm 9 chữ số trong terminal; mặc định chỉ xem và tắt tiếng. Terminal thông thường dùng hình ảnh ký tự ANSI; terminal hỗ trợ giao thức đồ họa Kitty hoặc Sixel có thể hiển thị hình ảnh điểm ảnh. Bạn có thể chuyển màn hình, điều chỉnh chất lượng hình ảnh, phóng to chi tiết và di chuyển khung nhìn, hoặc chủ động bật điều khiển bàn phím và chuột. CLI có thể biên dịch độc lập với GUI máy tính; máy tính được điều khiển vẫn cần chạy CrossDesk và cung cấp phiên đồ họa có thể ghi hình, dịch vụ báo hiệu cần hỗ trợ đăng ký danh tính tạm thời `cli`.
+`crossdesk-cli` kết nối đến máy tính được điều khiển bằng ID thiết bị gồm 9 chữ số trong terminal; mặc định chỉ xem và tắt tiếng. Terminal thông thường dùng hình ảnh ký tự ANSI; terminal hỗ trợ giao thức đồ họa Kitty hoặc Sixel có thể hiển thị hình ảnh điểm ảnh. Bạn có thể chuyển màn hình, điều chỉnh chất lượng hình ảnh, phóng to chi tiết và di chuyển khung nhìn, hoặc chủ động bật điều khiển bàn phím và chuột. CLI có thể biên dịch độc lập với GUI máy tính; máy tính được điều khiển vẫn cần chạy CrossDesk và cung cấp phiên đồ họa có thể ghi hình, dịch vụ signaling cần hỗ trợ đăng ký danh tính tạm thời `cli`.
 
 ### Xem trước hình ảnh
 
@@ -196,7 +196,7 @@ ANSI hiển thị hình ảnh bằng ký tự, Kitty có thể hiển thị hìn
 
 ### Cài đặt qua npm và kết nối
 
-Chuẩn bị **Node.js 22 trở lên** và npm, cài từ [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli). npm tự chọn chương trình gốc theo hệ điều hành và kiến trúc CPU, không cần cài Xmake hay chuỗi công cụ biên dịch C++.
+Chuẩn bị **Node.js 22 trở lên** và npm, cài từ [@chunkdash/crossdesk-cli](https://www.npmjs.com/package/@chunkdash/crossdesk-cli). npm tự chọn chương trình native theo hệ điều hành và kiến trúc CPU, không cần cài Xmake hay chuỗi công cụ biên dịch C++.
 
 ```sh
 npm install -g @chunkdash/crossdesk-cli@latest
@@ -227,7 +227,7 @@ crossdesk-cli 123456789 --renderer ansi
 crossdesk-cli 123456789 --renderer kitty
 ```
 
-CLI kết nối bằng ID thiết bị, hiện chưa cung cấp kết nối IP trực tiếp, phát âm thanh, truyền tệp hay đồng bộ bảng nhớ tạm; cũng không hỗ trợ kết nối đến máy tính đang bật giới hạn thiết bị đáng tin cậy. Máy tính được điều khiển cần chạy CrossDesk và có màn hình nền khả dụng. Người dùng tự lưu trữ (self-host) cần dùng máy chủ hỗ trợ kết nối CLI.
+CLI kết nối bằng ID thiết bị, hiện chưa cung cấp kết nối IP trực tiếp, phát âm thanh, truyền tệp hay đồng bộ clipboard; cũng không hỗ trợ kết nối đến máy tính đang bật giới hạn thiết bị đáng tin cậy. Máy tính được điều khiển cần chạy CrossDesk và có màn hình nền khả dụng. Người dùng self-host cần dùng máy chủ hỗ trợ kết nối CLI.
 
 [Hướng dẫn CLI đầy đủ](apps/cli/README.md) · [Tham số, phần mở rộng Pi và tự biên dịch](apps/cli/docs/terminal-client.md) · [Khắc phục sự cố cài đặt](apps/cli/docs/npm-distribution.md)
 
@@ -246,7 +246,7 @@ CLI kết nối bằng ID thiết bị, hiện chưa cung cấp kết nối IP t
 2. Yêu cầu Agent mở CrossDesk, chọn thiết bị trong bảng giám sát, nhập mật khẩu kết nối và chọn chỉ xem hoặc cho phép điều khiển. Mật khẩu được nhập trong bảng điều khiển cục bộ; việc lưu mật khẩu và cho phép tự động kết nối sau này được thiết lập riêng.
 3. Agent thực hiện tác vụ qua ảnh chụp màn hình, bàn phím, chuột và các công cụ màn hình có cấu trúc; người dùng có thể giám sát theo thời gian thực, tạm dừng Agent, tiếp quản thủ công hoặc ngắt kết nối.
 
-Hỗ trợ tối đa 8 phiên thiết bị song song, quan sát nhiều màn hình, bảng nhớ tạm văn bản từ xa, duyệt và truyền tệp, âm thanh, khóa màn hình hệ thống và quy trình mở khóa bằng mật khẩu nhập tại máy này. Thao tác cửa sổ và trợ năng chịu giới hạn của nền tảng từ xa và quyền hệ thống; một số công cụ cần phiên bản máy được điều khiển mới. Khả năng bảng điều khiển trên trình duyệt, terminal và MCP Apps tùy thuộc ứng dụng chủ; xem cấu hình và phạm vi tương thích trong [tài liệu MCP](apps/mcp/README.md).
+Hỗ trợ tối đa 8 phiên thiết bị song song, quan sát nhiều màn hình, clipboard văn bản từ xa, duyệt và truyền tệp, âm thanh, khóa màn hình hệ thống và quy trình mở khóa bằng mật khẩu nhập tại máy này. Thao tác cửa sổ và trợ năng chịu giới hạn của nền tảng từ xa và quyền hệ thống; một số công cụ cần phiên bản máy được điều khiển mới. Khả năng bảng điều khiển trên trình duyệt, terminal và MCP Apps tùy thuộc MCP host; xem cấu hình và phạm vi tương thích trong [tài liệu MCP](apps/mcp/README.md).
 
 <a id="mobile"></a>
 
@@ -256,7 +256,7 @@ Hỗ trợ tối đa 8 phiên thiết bị song song, quan sát nhiều màn hì
 
 ### iOS / iPadOS
 
-Bạn có thể cài ứng dụng điều khiển gốc từ [App Store](https://apps.apple.com/app/id6828859211), hỗ trợ cảm ứng và chuột ảo, nhiều màn hình, âm thanh từ xa, gửi nhận tệp và bảng nhớ tạm văn bản. Nút “Bảng nhớ tạm” trong menu nổi cho phép chủ động gửi văn bản máy này, giới hạn mỗi lần là 128 KiB; cài đặt hình ảnh cho phép điều chỉnh độ phân giải màn hình từ xa được hỗ trợ và ghi nhớ lựa chọn đã xác nhận. iPhone / iPad hiện không thể làm máy tính được điều khiển; kiểm tra cập nhật trong ứng dụng dẫn đến App Store.
+Bạn có thể cài ứng dụng điều khiển native từ [App Store](https://apps.apple.com/app/id6828859211), hỗ trợ cảm ứng và chuột ảo, nhiều màn hình, âm thanh từ xa, gửi nhận tệp và clipboard văn bản. Nút “Clipboard” trong menu nổi cho phép chủ động gửi văn bản máy này, giới hạn mỗi lần là 128 KiB; cài đặt hình ảnh cho phép điều chỉnh độ phân giải màn hình từ xa được hỗ trợ và ghi nhớ lựa chọn đã xác nhận. iPhone / iPad hiện không thể làm máy tính được điều khiển; kiểm tra cập nhật trong ứng dụng dẫn đến App Store.
 
 [Hướng dẫn sử dụng](docs/USER_GUIDE.md#ios) · [Biên dịch và ký](apps/ios/README.md)
 
@@ -264,7 +264,7 @@ Bạn có thể cài ứng dụng điều khiển gốc từ [App Store](https:/
 
 ### Android
 
-Ứng dụng điều khiển gốc hỗ trợ cảm ứng và bàn phím, chuột ngoài, chuyển nhiều màn hình, gửi nhận tệp, bảng nhớ tạm văn bản và cài đặt hình ảnh. Khi chuyển ứng dụng, ưu tiên duy trì phiên bằng hình trong hình; nếu không hỗ trợ hình trong hình, thử giữ kết nối bằng thông báo nền. Menu nổi cho phép bật/tắt màn hình riêng tư của máy tính. Điện thoại và máy tính bảng Android hiện không thể làm máy được điều khiển.
+Ứng dụng điều khiển native hỗ trợ cảm ứng và bàn phím, chuột ngoài, chuyển nhiều màn hình, gửi nhận tệp, clipboard văn bản và cài đặt hình ảnh. Khi chuyển ứng dụng, ưu tiên duy trì phiên bằng hình trong hình; nếu không hỗ trợ hình trong hình, thử giữ kết nối bằng thông báo nền. Menu nổi cho phép bật/tắt chế độ riêng tư của máy tính. Điện thoại và máy tính bảng Android hiện không thể làm máy được điều khiển.
 
 [Hướng dẫn sử dụng](docs/USER_GUIDE.md#android) · [Biên dịch từ mã nguồn](apps/android/README.md)
 
@@ -272,22 +272,22 @@ Bạn có thể cài ứng dụng điều khiển gốc từ [App Store](https:/
 
 ### HarmonyOS (bản phát triển)
 
-Bản PC có thể điều khiển và được điều khiển, tái sử dụng giao diện máy tính và Bức tường màn hình (DeskHub); điện thoại và máy tính bảng dùng ứng dụng điều khiển ArkUI gốc, hỗ trợ cảm ứng, bàn phím và chuột ngoài, nhiều màn hình, bảng nhớ tạm văn bản và gửi nhận tệp. Ghi màn hình và điều khiển nhập liệu trên PC cần quyền hệ thống; việc nghiệm thu trên thiết bị thật và phiên dài hạn vẫn đang tiến hành.
+Bản PC có thể điều khiển và được điều khiển, tái sử dụng giao diện máy tính và DeskHub; điện thoại và máy tính bảng dùng ứng dụng điều khiển ArkUI native, hỗ trợ cảm ứng, bàn phím và chuột ngoài, nhiều màn hình, clipboard văn bản và gửi nhận tệp. Ghi màn hình và điều khiển nhập liệu trên PC cần quyền hệ thống; việc nghiệm thu trên thiết bị thật và phiên dài hạn vẫn đang tiến hành.
 
 [Sử dụng và giới hạn](docs/USER_GUIDE.md#harmonyos) · [Biên dịch và ký](apps/harmony/README.md) · [Tài liệu PC](apps/harmony/desktop-port/README.md) · [Tính năng di động](apps/harmony/MOBILE_PARITY.md)
 
 <a id="windows-service"></a>
 
-## Truy cập không giám sát và chạy không màn hình
+## Truy cập không giám sát và chạy headless
 
-- **Windows:** CrossDesk Service hỗ trợ điều khiển màn hình khóa, đăng nhập và màn hình bảo mật. Sau khi bật “Tự khởi động cùng hệ thống” trong bản Release đã cài đặt, máy dùng cùng ID và mật khẩu trước và sau đăng nhập; giao diện tự mở sau khi người dùng đăng nhập, các kết nối từ xa hiện có vẫn được giữ. Bản di động không cần cài đặt và Debug không cung cấp công tắc này. Khi không có màn hình, ứng dụng sẽ thử chuẩn bị màn hình ảo và ưu tiên khôi phục độ phân giải đã ghi nhận. Xem giới hạn tính năng và lệnh bật/tắt trong [hướng dẫn Windows không giám sát](docs/USER_GUIDE.md#windows-service).
-- **Linux:** Bạn có thể tái sử dụng màn hình hiện có hoặc tạo phiên Xvfb / Xfce độc lập; xem cách thực hiện trong [chạy Linux không màn hình](docs/HEADLESS.md).
+- **Windows:** CrossDesk Service hỗ trợ điều khiển màn hình khóa, đăng nhập và màn hình bảo mật. Sau khi bật “Tự khởi động cùng hệ thống” trong bản Release đã cài đặt, máy dùng cùng ID và mật khẩu trước và sau đăng nhập; giao diện tự mở sau khi người dùng đăng nhập, các kết nối từ xa hiện có vẫn được giữ. Bản portable và Debug không cung cấp công tắc này. Khi không có màn hình, ứng dụng sẽ thử chuẩn bị màn hình ảo và ưu tiên khôi phục độ phân giải đã ghi nhận. Xem giới hạn tính năng và lệnh bật/tắt trong [hướng dẫn Windows không giám sát](docs/USER_GUIDE.md#windows-service).
+- **Linux:** Bạn có thể tái sử dụng màn hình hiện có hoặc tạo phiên Xvfb / Xfce độc lập; xem cách thực hiện trong [chạy Linux headless](docs/HEADLESS.md).
 
 <a id="self-hosting"></a>
 
-## Tự lưu trữ (self-host)
+## Self-host
 
-Bạn có thể tự triển khai dịch vụ báo hiệu và chuyển tiếp TURN, rồi bật trong “Cài đặt → Chung → Cấu hình máy chủ tự lưu trữ (self-host)” của ứng dụng. Máy điều khiển và máy được điều khiển cần kết nối cùng dịch vụ.
+Bạn có thể tự triển khai dịch vụ signaling và TURN relay, rồi bật trong “Cài đặt → Chung → Cấu hình máy chủ self-host” của ứng dụng. Máy điều khiển và máy được điều khiển cần kết nối cùng dịch vụ.
 
 [Hướng dẫn triển khai](docs/SELF_HOSTING.md) · [Cấu hình ứng dụng](docs/USER_GUIDE.md#self-hosting) · [Mã nguồn máy chủ](https://github.com/kunkundi/crossdesk-server) · [Triển khai ứng dụng Web](https://github.com/kunkundi/crossdesk-web-client)
 
@@ -301,7 +301,7 @@ Bạn có thể tự triển khai dịch vụ báo hiệu và chuyển tiếp TU
 - [Cập nhật ứng dụng](docs/UPDATER.md): kiểm tra cập nhật, cài đặt và xử lý khi thất bại.
 - [Biên dịch từ mã nguồn](docs/BUILD.md): phụ thuộc, biên dịch, đóng gói và ký.
 - [Kiến trúc và tích hợp](docs/README.md#biên-dịch-và-tích-hợp): kiến trúc GUI và kết nối, giao diện CLI / MCP, hỗ trợ từng nền tảng.
-- [Phiên bản và phát hành](docs/VERSIONING.md): đồng bộ phiên bản thành phần, số bản phát hành và bản kê cập nhật.
+- [Phiên bản và phát hành](docs/VERSIONING.md): đồng bộ phiên bản thành phần, số bản phát hành và manifest cập nhật.
 
 Khi gặp sự cố, bạn có thể mở **Phản hồi và góp ý** trong menu chính của ứng dụng máy tính, xuất nhật ký chẩn đoán rồi [báo cáo sự cố](https://github.com/kunkundi/crossdesk/issues). Hãy đính kèm hệ điều hành hai bên, phiên bản ứng dụng, phương thức kết nối, thông báo lỗi và các bước tái hiện; kiểm tra thông tin riêng tư trong nhật ký và ảnh chụp trước khi chia sẻ. Xem [phản hồi và nhật ký chẩn đoán](docs/USER_GUIDE.md#feedback).
 

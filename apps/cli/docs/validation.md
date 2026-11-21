@@ -22,13 +22,13 @@ CLI hiện là bản phát triển. Dưới đây giúp xác định phù hợp 
 
 ## Giới hạn tính năng
 
-CLI điều khiển máy qua ID, mặc định chỉ đọc, tắt tiếng. Không có IP trực tiếp, phát âm thanh, truyền tệp, đồng bộ bảng nhớ tạm hay xác thực thiết bị đáng tin cậy. Máy được điều khiển vẫn cần phiên đồ họa ghi được.
+CLI điều khiển máy qua ID, mặc định chỉ đọc, tắt tiếng. Không có IP trực tiếp, phát âm thanh, truyền tệp, đồng bộ clipboard hay xác thực thiết bị đáng tin cậy. Máy được điều khiển vẫn cần phiên đồ họa ghi được.
 
 Chỉ đọc là công tắc nhập cục bộ CLI, không phải quyền chỉ đọc máy chủ riêng. Terminal thường gửi phím kiểu nhấn rồi nhả, không đảm bảo giữ phím, mọi tổ hợp, bố cục đầy đủ giống ứng dụng máy tính.
 
 `doctor --json` chỉ kiểm tra môi trường cục bộ, không kết nối từ xa, cũng không chứng minh hiển thị pixel/báo cáo chuột khả dụng. FPS trạng thái là số đầu ra thực; hình ANSI tĩnh có thể 0 FPS, không nhất thiết mất kết nối.
 
-Nếu lỗi, ghi tên/phiên bản terminal, hệ thống, chế độ kết xuất và bước tái hiện, phản hồi kèm [khắc phục sự cố](terminal-client.md#khắc-phục-sự-cố-và-giới-hạn).
+Nếu lỗi, ghi tên/phiên bản terminal, hệ thống, chế độ render và bước tái hiện, phản hồi kèm [khắc phục sự cố](terminal-client.md#khắc-phục-sự-cố-và-giới-hạn).
 
 ## Biên bản kiểm chứng
 
@@ -43,13 +43,13 @@ Môi trường macOS arm64, Xcode SDK 27.0, Xmake 3.1.1, C++17, tắt CUDA. Mã 
 - Kiểm thử cấu trúc kho, wire, trạng thái bàn phím hiện có đạt, không sửa nguồn kiểm thử.
 - Kiểm tra cầu nối ngoài dự án đạt: JSON, xác minh phiên bản, phân mảnh, EOF, trần thông điệp, bên đọc chậm, tín hiệu cục bộ lỗi, mô tả xác thực, từ chối không TTY.
 - POSIX PTY ngoài dự án đạt: mật khẩu ẩn, không DISPLAY/WAYLAND_DISPLAY, khôi phục chế độ thô, quá hạn dò Kitty, từ chối Kitty rõ trong tmux.
-- Tạo được gói npm gốc macOS arm64 và khởi chạy chung; cài ngoại tuyến, `doctor` trình khởi chạy, phân giải đường chương trình gốc đạt. Sản phẩm cục bộ này cần tối thiểu macOS 27.0.
-- Giải nguồn từ gói gốc rồi cấu hình lại/biên dịch CLI, chạy `doctor` thành công trong thư mục không siêu dữ liệu Git, không nguồn ứng dụng máy tính.
+- Tạo được gói npm native macOS arm64 và khởi chạy chung; cài ngoại tuyến, `doctor` trình khởi chạy, phân giải đường chương trình native đạt. Sản phẩm cục bộ này cần tối thiểu macOS 27.0.
+- Giải nguồn từ gói native rồi cấu hình lại/biên dịch CLI, chạy `doctor` thành công trong thư mục không siêu dữ liệu Git, không nguồn ứng dụng máy tính.
 - Sau kiểm chứng khôi phục cấu hình máy tính debug trước tích hợp, CLI mặc định tắt; nhị phân dòng lệnh mới giữ tại `build/macosx/arm64/release/crossdesk-cli`.
 
 ## Hồi quy tối ưu (2026-10-30)
 
-- Biên dịch Release, hồi quy bridge/PTY nhị phân thực đạt. ASan/UBSan bao phủ phiên/kết xuất cũ, giữ khung hợp lệ khi khung sai, tái dùng đệm NV12, loại tham số xem trước trùng, trạng thái ACK, ngắt lặp, đặt lại thống kê mạng khi kết nối lại.
+- Biên dịch Release, hồi quy bridge/PTY nhị phân thực đạt. ASan/UBSan bao phủ phiên/render cũ, giữ khung hợp lệ khi khung sai, tái dùng đệm NV12, loại tham số xem trước trùng, trạng thái ACK, ngắt lặp, đặt lại thống kê mạng khi kết nối lại.
 - Bridge sản xuất với truyền tải giả ngoài dự án kiểm chứng vẽ lại tĩnh, chi tiết, đổi chất lượng, cửa sổ đổi, tính nguyên tử cấu hình sai và áp lực ngược ACK khung: đạt.
 - So ANSI trước/sau gồm 8/24/256 màu, UTF-8/ASCII, half/quadrant, toàn cảnh/chi tiết, checksum đầu ra khớp. Lưới 240×100 cục bộ, 200 lần sinh sai phân liên tục: lưới tĩnh khoảng 447.4 ms → 3.6 ms, đổi một dòng khoảng 422.8 ms → 9.5 ms. Chỉ đo sinh văn bản sai phân, không gồm giải mã video, co giãn ảnh, hiển thị terminal.
 - Đóng gói npm thật, cài ngoại tuyến, biên dịch lại nguồn gói đạt; chèn lỗi ngoài dự án xác nhận giữ sản phẩm cũ, không xuất nửa bộ khi tạo gói thứ hai thất bại.
@@ -66,7 +66,7 @@ Mã hồi quy, benchmark, truyền tải giả và sản phẩm kiểm chứng m
 ## Điều chỉnh phím điều khiển (2026-10-30, lịch sử)
 
 - Cấu hình debug hiện bật cả máy tính và CLI: `xmake build crossdesk-cli`, `xmake run crossdesk-cli doctor --json`, kiểm tra trợ giúp đều đạt.
-- ASan/UBSan ngoài dự án bao phủ tiền tố lệnh, phím chỉ đọc, Ctrl+T/Ctrl+C/Ctrl+] từ xa, nhả chuột, hủy lệnh, cách ly dán, phân mảnh UTF-8/CSI, mất tiêu điểm/thoát; kiểm tra phiên／kết xuất cũ đạt.
+- ASan/UBSan ngoài dự án bao phủ tiền tố lệnh, phím chỉ đọc, Ctrl+T/Ctrl+C/Ctrl+] từ xa, nhả chuột, hủy lệnh, cách ly dán, phân mảnh UTF-8/CSI, mất tiêu điểm/thoát; kiểm tra phiên／render cũ đạt.
 - Phím di chuyển dùng `i` lên, `j` trái, `k` xuống, `l` phải; ASan/UBSan ngoài dự án xác nhận bốn hướng khớp phím mũi tên chế độ thường／ứng dụng; chữ thường ở điều khiển vẫn gửi từ xa.
 - Lúc đó chi tiết／toàn cảnh dùng `d`／`f` kề nhau (`d` đã bỏ 2026-11-02); ASan/UBSan ngoài dự án xác nhận chi tiết giữ tâm, toàn cảnh đặt lại thu phóng/tâm, tiền tố và nhấn chuột đúng; điều khiển vẫn gửi chữ thường từ xa.
 - Bridge nhị phân thực kiểm chứng trạng thái lệnh, phục hồi lỗi, phản hồi thoát; view sản xuất với PTY truyền tải giả kiểm chứng phím, gợi ý chế độ, mật khẩu ẩn, khôi phục terminal. Hồi quy bridge và PTY nhị phân thực cũng đạt.
@@ -86,7 +86,7 @@ Mã hồi quy, benchmark, truyền tải giả và sản phẩm kiểm chứng m
 Dưới đây tóm tắt biên bản trước chuyển vào, không nghĩa đợt này kết nối lại thiết bị từ xa:
 
 - Đã kiểm chứng debug/release macOS arm64, NDJSON CLI bridge, mật khẩu ẩn và khôi phục terminal POSIX PTY.
-- ASan/UBSan ngoài dự án bao phủ trạng thái phiên, chỉ đọc, nhả nhập, sở hữu bộ nhớ khung, kết xuất, thu phóng/di chuyển, áp lực ngược đầu ra và ACK khung.
+- ASan/UBSan ngoài dự án bao phủ trạng thái phiên, chỉ đọc, nhả nhập, sở hữu bộ nhớ khung, render, thu phóng/di chuyển, áp lực ngược đầu ra và ACK khung.
 - Đã kiểm chứng kiểu SDK Pi 1.4.0 và vòng đời thành phần mô phỏng; chưa nghiệm thu hình ảnh Pi TUI thật.
 - Giao thức danh tính ban đầu từng kết nối thiết bị thật để xem ANSI chỉ đọc và kiểm chứng dữ liệu Kitty; giải nén dữ liệu Kitty không bằng nghiệm thu ứng dụng Kitty/hiển thị SSH thật.
 - Sau đổi sang danh tính tạm `cli-`, CLI chính thức và máy chủ WSS cục bộ kiểm chứng đăng ký tạm, Join, không tái dùng danh tính, dọn khi thoát; dịch vụ trực tuyến chưa triển khai đợt đó, kiểm chứng ảnh cũ không thay tích hợp trực tuyến giao thức danh tính mới.
@@ -155,11 +155,11 @@ Dưới đây tóm tắt biên bản trước chuyển vào, không nghĩa đợ
 
 ## Mặc định 30 FPS và thích ứng cấp khung (2026-10-30)
 
-- CLI tương tác thống nhất mục tiêu cục bộ 30 FPS, quay về Kitty bộ nhớ chung không sửa mục tiêu nữa; yêu cầu từ xa thích ứng riêng giữa 8／15／30 FPS, 15 cần khả năng đối tác. `--fps` tường minh giữ yêu cầu cố định, bridge mặc định vẫn 8.
+- CLI tương tác thống nhất mục tiêu cục bộ 30 FPS, quay về Kitty bộ nhớ chung không sửa mục tiêu nữa; yêu cầu từ xa thích ứng riêng giữa 8／15／30 FPS, 15 cần khả năng máy từ xa. `--fps` tường minh giữ yêu cầu cố định, bridge mặc định vẫn 8.
 - Biên dịch debug／release macOS arm64, release `doctor --json`, kiểm tra trợ giúp đạt. ASan/UBSan ngoài dự án kiểm chứng ngưỡng tăng/giảm, trễ chuyển mức, phục hồi, thiếu 15 FPS, FPS tường minh, nguồn thưa, từ chối yêu cầu, đặt lại ước lượng.
 - PTY với object release CLI thật, truyền tải giả hỗ trợ xác nhận xem trước/cấp khung động, NV12 tổng hợp 1920×1080, viewport pixel 1568×1088. Nguồn cố định 30 FPS qua bộ nhớ chung nhận đủ khoảng 30 FPS, không tự giảm mức; không còn dùng khe làm mới sớm khi chưa có khung mới.
 - Nội tuyến entropy cao thực khoảng 4 FPS thì tự hạ yêu cầu 30 xuống 8, mục tiêu cục bộ giữ 30; `--fps 30` cùng điều kiện vẫn khoảng 4 FPS, yêu cầu từ xa không đổi. Lỗi tải／quá hạn/dò im lặng đều giữ mục tiêu cục bộ 30, rồi chỉnh cấp khung theo thời gian đầy đủ.
-- Xác nhận tải trễ 90ms khiến nhận khoảng 9 FPS, yêu cầu tự chỉnh 15; thiếu khả năng 15 thì không gửi mức đó. Sau trễ 200ms trở lại xác nhận bình thường, xác minh yêu cầu phục hồi 30 → 8 → 30. Nguồn chỉ 2 FPS, đối tác từ chối xem trước đều không tự giảm sai.
+- Xác nhận tải trễ 90ms khiến nhận khoảng 9 FPS, yêu cầu tự chỉnh 15; thiếu khả năng 15 thì không gửi mức đó. Sau trễ 200ms trở lại xác nhận bình thường, xác minh yêu cầu phục hồi 30 → 8 → 30. Nguồn chỉ 2 FPS, máy từ xa từ chối xem trước đều không tự giảm sai.
 - SSH giữ ngân sách 1MiB/s, không dò bộ nhớ chung; xuất chậm giảm yêu cầu từ xa nhưng giữ mục tiêu cục bộ. ANSI mặc định 30／tường minh 15, bridge mặc định 8／ACK đạt. Mọi cảnh Kitty tiếp tục xác minh không hiện chưa xác nhận, tối đa hai ảnh terminal, giải phóng đối tượng chung, khôi phục terminal sau thoát.
 - Số trên là tốc độ nhận đầu ra đầy đủ từ nguồn tổng hợp/PTY, không giải mã thật/mạng/GPU Ghostty. Mọi mã kiểm thử, dữ liệu, script biên dịch, sản phẩm thêm ở thư mục tạm hệ thống ngoài dự án; không thêm kiểm thử dự án lần này, chưa nghiệm thu cửa sổ Ghostty thật bản mới.
 

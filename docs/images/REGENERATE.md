@@ -12,7 +12,7 @@ Khi cập nhật trang chủ Web, dùng hồ sơ trình duyệt trống mở ứ
 
 ## Ứng dụng máy tính
 
-Hàng thứ hai Bức tường màn hình lần lượt hiện video Kitty của Studio Mac, terminal biên dịch Build Server và tải CPU Test Device. Có thể chụp tư liệu terminal `fixtures/build-terminal.png` sau khi chạy `xmake build crossdesk_wire`. Đường CPU từ “Window → CPU History” của Activity Monitor macOS; lưu toàn bộ cửa sổ riêng thành `fixtures/cpu-history.png` và `fixtures/cpu-history-en.png`. Sau khi cập nhật tư liệu, tạo lại `gallery` và `gallery-focus`.
+Hàng thứ hai DeskHub lần lượt hiện video Kitty của Studio Mac, terminal biên dịch Build Server và tải CPU Test Device. Có thể chụp tư liệu terminal `fixtures/build-terminal.png` sau khi chạy `xmake build crossdesk_wire`. Đường CPU từ “Window → CPU History” của Activity Monitor macOS; lưu toàn bộ cửa sổ riêng thành `fixtures/cpu-history.png` và `fixtures/cpu-history-en.png`. Sau khi cập nhật tư liệu, tạo lại `gallery` và `gallery-focus`.
 
 Thực hiện các lệnh sau ở thư mục gốc dự án macOS đã cấu hình phụ thuộc biên dịch và Python Pillow. Khi chụp dùng màn hình 2× và cho terminal quyền ghi màn hình. Nguồn chương trình chụp, tệp thực thi và ảnh cửa sổ gốc đều lưu trong thư mục tạm ngoài dự án.
 
@@ -311,7 +311,7 @@ Sau khi kiểm tra tiêu đề cửa sổ tiếng Trung và tiếng Anh, hình t
 
 ## CLI
 
-Chạy riêng các lệnh sau trong terminal hỗ trợ chế độ kết xuất tương ứng, thay ID ví dụ `123456789` bằng ID máy được điều khiển. Nhập mật khẩu theo lời nhắc. Chờ thanh trên hiện `Displaying` rồi chụp toàn bộ khung nhìn gồm thanh trạng thái và phím tắt phía dưới.
+Chạy riêng các lệnh sau trong terminal hỗ trợ chế độ render tương ứng, thay ID ví dụ `123456789` bằng ID máy được điều khiển. Nhập mật khẩu theo lời nhắc. Chờ thanh trên hiện `Displaying` rồi chụp toàn bộ khung nhìn gồm thanh trạng thái và phím tắt phía dưới.
 
 ```sh
 crossdesk-cli 123456789 --renderer ansi --quality high

@@ -61,7 +61,7 @@ const network = new NetworkStatistics();
 const traffic = {inbound:8000000,outbound:10000,loss:.02};
 network.receive({rtt:40,mode:0,srtp:true,video:traffic,audio:traffic,data:traffic,total:traffic}, 100);
 network.receive({rtt:80,mode:1,srtp:false,video:traffic,audio:traffic,data:traffic,total:traffic}, 200);
-assert.equal(network.rtt,50); assert.equal(network.mode(201),'Chuyển tiếp TURN'); assert.equal(network.mode(3200),'—');
+assert.equal(network.rtt,50); assert.equal(network.mode(201),'TURN relay'); assert.equal(network.mode(3200),'—');
 network.frame(6,7000,1920,1080,200); network.frame(6,1,1920,1080,250); assert.equal(network.fps(250),6); assert.equal(network.latency(250),7000);
 assert.equal(network.fps(1200),0); network.reset(); assert.equal(network.width,0);
 const subscriptions = []; const presence = new RecentPresence(ids => subscriptions.push([...ids]));

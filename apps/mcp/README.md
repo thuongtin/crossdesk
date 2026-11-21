@@ -27,7 +27,7 @@ Thanh bên hiện đã được kiểm chứng trên Codex macOS và DSH 0.2.2-r
 
 ## Tải gói cài đặt
 
-DSH và Codex đều dùng **gói cài đặt nền tảng** trong bảng sau, đã chứa chương trình gốc cần thiết.
+DSH và Codex đều dùng **gói cài đặt nền tảng** trong bảng sau, đã chứa chương trình native cần thiết.
 
 1. Đăng nhập GitHub, mở [trang biên dịch CrossDesk](https://github.com/kunkundi/crossdesk/actions/workflows/build-cli.yml).
 2. Chọn một lần chạy thành công, tải tệp đúng máy của bạn trong vùng **Artifacts** trên trang.
@@ -61,7 +61,7 @@ Chọn gói `.tgz` cục bộ trên trang plugin Harness, hoặc chạy trong te
 dsh plugin --profile desktop add "/absolute/path/chunkdash-crossdesk-mcp-0.2.0.tgz"
 ```
 
-Gói plugin này tự cung cấp công cụ MCP và hình ảnh thanh bên, không cần cài riêng Node.js, CLI gốc hay điền cấu hình khởi động MCP.
+Gói plugin này tự cung cấp công cụ MCP và hình ảnh thanh bên, không cần cài riêng Node.js, CLI native hay điền cấu hình khởi động MCP.
 
 Nếu terminal macOS báo không tìm thấy `dsh`, bạn có thể dùng lệnh kèm ứng dụng:
 
@@ -222,7 +222,7 @@ Gỡ cài đặt không xóa cấu hình thiết bị và thông tin xác thực
 | --- | --- |
 | Không tìm thấy tệp tải hoặc nút tải | Đăng nhập GitHub, xác nhận Artifacts của lần chạy đã chọn có tệp `crossdesk-mcp-...` đúng nền tảng; nếu sản phẩm hết hạn, chọn lần chạy khác khả dụng |
 | DSH báo không tìm thấy `dsh` | Cài qua trang plugin; macOS cũng có thể dùng lệnh đầy đủ trong ứng dụng ở trên |
-| Không có công cụ CrossDesk sau khi cài DSH | Xác nhận plugin đã bật và khởi động lại Harness; xem lỗi trên trang plugin. Nếu báo thiếu chương trình gốc, cài lại gói đúng nền tảng |
+| Không có công cụ CrossDesk sau khi cài DSH | Xác nhận plugin đã bật và khởi động lại Harness; xem lỗi trên trang plugin. Nếu báo thiếu chương trình native, cài lại gói đúng nền tảng |
 | Codex không có công cụ CrossDesk | Kiểm tra phiên bản Node và hai đường dẫn đầy đủ trong cấu hình, chạy `--help` trước rồi khởi động lại Codex. Nếu có Codex CLI, có thể xem bằng `codex mcp list` |
 | Có công cụ nhưng không có hình bên phải | Xác nhận dùng bản máy tính; Codex giữ hai tham số hiển thị ở trên. Nhờ Agent “mở lại hình ảnh kết nối CrossDesk hiện tại” |
 | Trang mở nhưng không kết nối được thiết bị | Xác nhận máy từ xa trực tuyến, ID và mật khẩu truy cập đúng; nếu tự triển khai máy chủ, kiểm tra “Cài đặt nâng cao” trong bảng |
@@ -235,7 +235,7 @@ Gỡ cài đặt không xóa cấu hình thiết bị và thông tin xác thực
 | Báo kết nối hoặc điểm vào trang hết hạn | Nhờ Agent mở lại hình ảnh kết nối hiện tại, không cần tạo lại kết nối từ xa |
 | Báo `DEVICE_BUSY` | Ngắt kết nối của Agent hoặc tiến trình MCP khác với cùng thiết bị trước |
 | Báo `serverName ... already in use` | Kiểm tra cài đặt/cấu hình dịch vụ CrossDesk trùng, chỉ bật một phiên bản |
-| Báo `NATIVE_PACKAGE_MISSING` hoặc `NATIVE_PROTOCOL_MISMATCH` | Cài lại gói đầy đủ đúng nền tảng trong bảng; chạy nguồn thì kiểm tra [cấu hình chương trình gốc](DEVELOPMENT.md#chạy-từ-mã-nguồn) |
+| Báo `NATIVE_PACKAGE_MISSING` hoặc `NATIVE_PROTOCOL_MISMATCH` | Cài lại gói đầy đủ đúng nền tảng trong bảng; chạy nguồn thì kiểm tra [cấu hình chương trình native](DEVELOPMENT.md#chạy-từ-mã-nguồn) |
 | Vì sao không tự kết nối lại | Bật “Tự khôi phục khi mất kết nối” theo nhu cầu trong **Chi tiết phiên**; cần quyền tự kết nối đã lưu và thông tin xác thực khả dụng, chủ động ngắt không kích hoạt khôi phục |
 
 Nếu vẫn lỗi, bạn có thể [gửi phản hồi](https://github.com/kunkundi/crossdesk/issues), nêu hệ thống cục bộ và từ xa, phiên bản Codex / DSH, nguồn gói cài, lỗi và bước tái hiện. Không đính kèm mật khẩu thiết bị hoặc địa chỉ trang có thông tin ghép nối.
@@ -245,5 +245,5 @@ Nếu vẫn lỗi, bạn có thể [gửi phản hồi](https://github.com/kunku
 ## Tài liệu khác
 
 - [Biên dịch nguồn và cấu hình](DEVELOPMENT.md#chạy-từ-mã-nguồn)
-- [Tích hợp ứng dụng chủ, giao diện công cụ và đóng gói phát hành](DEVELOPMENT.md)
+- [Tích hợp MCP host, giao diện công cụ và đóng gói phát hành](DEVELOPMENT.md)
 - [Hướng dẫn cài DSH ngắn gọn](integrations/deepseek-harness/README.md)
