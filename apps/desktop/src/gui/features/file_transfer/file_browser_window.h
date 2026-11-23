@@ -77,11 +77,13 @@ class FileBrowserWindow {
   void Transfer(bool download);
   void Notice(const std::string& message, bool error);
   std::string Error(const std::string& code) const;
-  std::string Tr(const char* chinese, const char* english) const;
+  std::string Tr(const char* key) const;
   FileTransferManager& transfers_;
   std::string remote_;
   uint64_t connection_generation_;
-  bool chinese_;
+  bool controller_;
+  int language_;
+  std::string peer_name_;
   bool disconnected_ = false;
   bool show_pending_ = false;
   slint::ComponentHandle<ui::FileBrowserWindow> window_ = ui::FileBrowserWindow::create();

@@ -23,11 +23,11 @@ final class L10n {
         matcher.appendTail(result);
         return result.toString();
     }
-    static boolean isChinese() {
+    static String language() {
         Context context = application;
-        Locale locale = context == null ? Locale.getDefault()
+        Locale locale = context == null || context.getResources().getConfiguration().getLocales().isEmpty() ? Locale.getDefault()
                 : context.getResources().getConfiguration().getLocales().get(0);
-        return locale.getLanguage().equals("zh");
+        return locale == null ? "vi" : locale.getLanguage();
     }
     private L10n() {}
 }

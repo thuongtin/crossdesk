@@ -236,10 +236,10 @@ def main():
     write_json(PROJECT / 'oh-package.json5', {'modelVersion': '6.0.0', 'name': 'crossdesk-slint-desktop',
         'version': '0.1.0', 'dependencies': {}})
     write_json(PROJECT / 'entry/src/main/resources/base/element/string.json',
-               {'string': [{'name': 'keyboard_permission_reason', 'value': '控制远程桌面时将系统快捷键发送到远端'},
-                           {'name': 'screen_recording_permission_reason', 'value': '用于向已通过连接密码验证的远程设备共享本机屏幕'},
-                           {'name': 'control_device_permission_reason', 'value': '用于接收已通过连接密码验证的远程设备的键盘和鼠标操作'},
-                           {'name': 'clipboard_permission_reason', 'value': '在远程会话中同步本机和远端的剪贴板文本'}]})
+               {'string': [{'name': 'keyboard_permission_reason', 'value': 'Gửi phím tắt hệ thống tới máy từ xa khi điều khiển desktop từ xa'},
+                           {'name': 'screen_recording_permission_reason', 'value': 'Dùng để chia sẻ màn hình máy này với thiết bị từ xa đã xác minh bằng mật khẩu kết nối'},
+                           {'name': 'control_device_permission_reason', 'value': 'Dùng để nhận thao tác bàn phím và chuột từ thiết bị từ xa đã xác minh bằng mật khẩu kết nối'},
+                           {'name': 'clipboard_permission_reason', 'value': 'Đồng bộ văn bản bảng nhớ tạm giữa máy này và máy từ xa trong phiên từ xa'}]})
     module = json.loads((APP / 'entry/src/main/module.json5').read_text())
     module['module']['deviceTypes'] = ['2in1']
     module['module']['requestPermissions'] = [

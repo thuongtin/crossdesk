@@ -1,5 +1,5 @@
 export global GalleryStrings {
-    in-out property <int> language: 0;
+    in-out property <int> language: 11;
     in-out property <[string]> texts;
     in-out property <string> retry-prefix;
     in-out property <string> retry-suffix;
@@ -11,6 +11,7 @@ export global GalleryStrings {
         return self.language == 0 ? zh : self.language == 2 ? ru : en;
     }
     public pure function device-count(count: int) -> string {
+        if self.language == 11 { return count + " thiết bị"; }
         if self.language == 0 { return count + " 台设备"; }
         if self.language == 3 { return count + " 臺裝置"; }
         if self.language == 4 { return count + " 台"; }

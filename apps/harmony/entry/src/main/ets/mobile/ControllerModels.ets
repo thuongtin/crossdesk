@@ -1,4 +1,10 @@
 import { tr } from './Localization';
+
+export function fileTransferStatus(sending: boolean, name: string, progress: number): string {
+  if (progress < 0) return tr('{0} 传输失败', [name]);
+  return `${sending ? tr('发送') : tr('接收')} ${name} · ${progress >= 1 ? tr('已完成') : Math.floor(progress * 100) + '%'}`;
+}
+
 // Platform-independent controller rules ported from the Android client.
 // Keep gesture geometry, acknowledgement ordering and expiry behavior identical.
 export function clamp(value: number, low: number, high: number): number {

@@ -1,42 +1,42 @@
-# 在 DeepSeek Harness 中使用 CrossDesk
+# Dùng CrossDesk trong DeepSeek Harness
 
-安装 CrossDesk 插件后，你可以让 Agent 操作远程电脑，并在当前对话的右侧浏览器监看画面。
+Sau khi cài plugin CrossDesk, bạn có thể để Agent thao tác máy từ xa và theo dõi hình ảnh trong trình duyệt bên phải cuộc trò chuyện hiện tại.
 
-## 安装
+## Cài đặt
 
-1. 按 [下载安装包](../../README.md#install-package) 选择与你的本机系统和芯片匹配的平台包，解压 ZIP 并取出 `.tgz` 文件。
-2. 在 Harness 桌面版的插件页面安装该文件，或执行以下命令。将示例中的路径和版本号替换为实际文件：
+1. Theo [tải gói cài đặt](../../README.md#install-package), chọn gói nền tảng khớp hệ thống và chip máy của bạn, giải nén ZIP và lấy tệp `.tgz`.
+2. Cài tệp này trên trang plugin của Harness bản máy tính, hoặc chạy lệnh sau. Thay đường dẫn và số phiên bản ví dụ bằng tệp thực tế:
 
    ```sh
    dsh plugin --profile desktop add "/absolute/path/chunkdash-crossdesk-mcp-0.2.0.tgz"
    ```
 
-3. 重启 Harness，确认 CrossDesk 插件已启用。
+3. Khởi động lại Harness, xác nhận plugin CrossDesk đã bật.
 
-平台包已经包含所需的原生程序，并自动提供 MCP 工具和侧栏画面。安装时需要联网下载依赖。终端找不到 `dsh` 时，可直接使用插件页面，或按 [完整安装指南](../../README.md#install-dsh) 使用应用自带的命令。
+Gói nền tảng đã chứa chương trình gốc cần thiết, tự cung cấp công cụ MCP và hình ảnh ở thanh bên. Cài đặt cần mạng để tải phụ thuộc. Nếu terminal không tìm thấy `dsh`, bạn có thể dùng trực tiếp trang plugin, hoặc dùng lệnh đi kèm ứng dụng theo [hướng dẫn cài đặt đầy đủ](../../README.md#install-dsh).
 
-## 连接并使用
+## Kết nối và sử dụng
 
-在对话中发送：
+Gửi trong cuộc trò chuyện:
 
-> 打开 CrossDesk，让我选择远程电脑。
+> Mở CrossDesk để tôi chọn máy từ xa.
 
-在右侧面板输入远端设备 ID 和访问密码。需要 Agent 操作远端时选择 **允许 Agent 操作**，然后点击 **授权并连接**。看到远端桌面后，即可下达任务，例如：
+Nhập ID thiết bị từ xa và mật khẩu truy cập trong bảng bên phải. Khi cần Agent thao tác máy từ xa, chọn **Cho phép Agent thao tác**, rồi nhấn **Cấp quyền và kết nối**. Sau khi thấy màn hình từ xa, bạn có thể giao nhiệm vụ, ví dụ:
 
-> 在远程电脑的浏览器中搜索天气。
+> Tìm thông tin thời tiết trong trình duyệt trên máy từ xa.
 
-密码只在面板中输入。需要停止操作时点击 **暂停 Agent**；结束使用时，在 **会话选项** 中选择 **断开连接**。关闭侧栏本身不会断开远端连接。
+Chỉ nhập mật khẩu trong bảng. Khi cần dừng thao tác, nhấn **Tạm dừng Agent**; khi dùng xong, chọn **Ngắt kết nối** trong **Tùy chọn phiên**. Chỉ đóng thanh bên không ngắt kết nối từ xa.
 
-保存设备、自动连接、人工接管和声音的用法见 [用户指南](../../README.md#用户连接流程)。如果没有工具或画面，请查看 [常见问题](../../README.md#install-troubleshooting)。
+Xem cách lưu thiết bị, tự kết nối, tiếp quản thủ công và dùng âm thanh trong [hướng dẫn sử dụng](../../README.md#quy-trình-kết-nối-của-người-dùng). Nếu không có công cụ hoặc hình ảnh, xem [câu hỏi thường gặp](../../README.md#install-troubleshooting).
 
-## 更新与卸载
+## Cập nhật và gỡ cài đặt
 
-通过插件页面安装新版平台包后重启 Harness。卸载也可在插件页面完成，或执行：
+Cài gói nền tảng mới qua trang plugin rồi khởi động lại Harness. Bạn cũng có thể gỡ trên trang plugin hoặc chạy:
 
 ```sh
 dsh plugin --profile desktop remove @chunkdash/crossdesk-mcp
 ```
 
-卸载后，保存在本机的设备配置和系统凭据仍会保留。
+Sau khi gỡ, cấu hình thiết bị và thông tin xác thực hệ thống đã lưu trên máy vẫn được giữ.
 
-源码构建、原生程序配置及插件集成见 [DSH 配置](../../DEVELOPMENT.md#harness-development)。
+Xem biên dịch nguồn, cấu hình chương trình gốc và tích hợp plugin trong [cấu hình DSH](../../DEVELOPMENT.md#harness-development).

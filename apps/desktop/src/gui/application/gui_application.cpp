@@ -104,6 +104,7 @@
 #include "ui/release_notes_text.h"
 #include "ui/ui_localization.h"
 #include "update_checker.h"
+#include "updater/update_source.h"
 #if CROSSDESK_HAS_UPDATER
 #include "updater/update_controller.h"
 #endif
@@ -2128,7 +2129,7 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
   main->on_open_manual_download([this] {
     const auto& latest = update_checker_->latest();
     OpenUrl(latest && !latest->download_url.empty() ? latest->download_url
-                                                   : "https://crossdesk.cn");
+                                                   : updater::kReleasePage);
   });
   main->on_open_download([this, main] {
 #if CROSSDESK_HAS_UPDATER
@@ -2166,7 +2167,7 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
     const std::string link(url);
     if (link.starts_with("https://")) OpenUrl(link);
   });
-  main->on_open_website([this] { OpenUrl("https://crossdesk.cn"); });
+  main->on_open_update_channel([this] { OpenUrl(updater::kReleasePage); });
   main->on_open_feedback_github([this, main] {
     if (!OpenUrl("https://github.com/kunkundi/crossdesk/issues/new/choose")) {
       main->set_feedback_succeeded(false);
@@ -2175,15 +2176,6 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
     }
   });
   main->on_export_diagnostic_logs([this] { ExportDiagnosticLogs(); });
-  main->on_open_afdian_sponsor([this] {
-    OpenUrl("https://afdian.com/a/kunkundi");
-  });
-  main->on_open_github_sponsor([this] {
-    OpenUrl("https://github.com/sponsors/kunkundi");
-  });
-  main->on_open_kofi_sponsor([this] {
-    OpenUrl("https://ko-fi.com/kunkundi");
-  });
   main->on_dismiss_release_welcome([this] {
     ui_->main->set_release_welcome_open(false);
     // Retry if the initial write failed while the dialog was on screen.
@@ -5083,7 +5075,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
     return false;
   }
   language_button_value_ =
-      std::clamp(main->get_language_index(), 0, localization::kSystemLanguage);
+      std::clamp(main->get_language_index(), 0, localization::kVietnameseLanguage);
   video_encode_format_button_value_ = std::clamp(main->get_codec_index(), 0, 1);
   enable_self_hosted_ = main->get_self_hosted_enabled();
 #if !defined(__OHOS__)

@@ -1,43 +1,43 @@
-# 终端桥接接口（Bridge v1）
+# Giao diện cầu nối terminal (Bridge v1)
 
-本页描述将 CLI 画面嵌入终端界面所需的请求、响应和帧事件。日常连接请看 [终端指南](terminal-client.md)，通过 Agent 使用请看 [MCP 指南](../../mcp/README.md)。此接口是 CrossDesk 私有协议，不是 MCP。
+Trang này mô tả yêu cầu, phản hồi và sự kiện khung cần để nhúng hình ảnh CLI vào giao diện terminal. Kết nối thông thường xem [hướng dẫn terminal](terminal-client.md), dùng qua Agent xem [hướng dẫn MCP](../../mcp/README.md). Đây là giao thức riêng của CrossDesk, không phải MCP.
 
-启动：`crossdesk-cli bridge --stdio [--password-fd 3] [--server host] [--port 9099] [--quality low|balanced|high|ultra]`。
-通过参数数组启动，不经 shell。stdin/stdout 为 UTF-8 NDJSON，每行一个完整 JSON。stdout 使用保留的描述符，底层 stdout 重定向到 stderr。宿主应消费/隔离 stderr，不能展示为视频行或模型消息。bridge 不要求 TTY。
+Khởi động: `crossdesk-cli bridge --stdio [--password-fd 3] [--server host] [--port 9099] [--quality low|balanced|high|ultra]`.
+Khởi động qua mảng tham số, không qua shell. stdin/stdout là UTF-8 NDJSON, mỗi dòng một JSON hoàn chỉnh. stdout dùng mô tả dành riêng, stdout tầng dưới chuyển sang stderr. Ứng dụng tích hợp nên đọc/cách ly stderr, không được hiển thị thành dòng video hay thông điệp mô hình. bridge không yêu cầu TTY.
 
-每条请求含整数 `id` 和字符串 `method`。响应含同一 `id`、布尔 `ok`，成功时还含 `version:1`、完整 `status`；失败含固定 `error`（无效请求、版本或操作不可用等），不回显原输入/凭据。无有效 id 的错误为 null。事件没有 id。先 hello，再发送其他操作。
+Mỗi yêu cầu có số nguyên `id` và chuỗi `method`. Phản hồi có cùng `id`, boolean `ok`; thành công còn có `version:1`, `status` đầy đủ; thất bại có `error` cố định (yêu cầu, phiên bản không hợp lệ hoặc thao tác không khả dụng...), không trả lại đầu vào/thông tin xác thực gốc. Lỗi không có id hợp lệ dùng null. Sự kiện không có id. Gửi hello trước rồi thao tác khác.
 
-| method | 字段 | 行为 |
+| method | Trường | Hành vi |
 |---|---|---|
-| hello | version:1 | 协议版本握手 |
-| viewport | columns:1..240, rows:1..100, colors:8/24/256, utf8:boolean, fps:1..30；可选 cell_aspect:0.2..2, detail:quadrant/half, quality:low/balanced/high/ultra, zoom:1..32, native:boolean | 设置画面行数（不含状态栏）、字符宽高比、本地目标与预览档位；默认 cell_aspect=0.5、quadrant/high/1、native=false，保留未显式指定的 cell_aspect/detail/quality/zoom/native；不探测宿主 TTY |
-| connect | device:9位数字字符串, display:0..63（默认0） | 从专用 password fd 读取至换行/EOF（最多256字节、等待5秒），开始异步注册/连接；ok不是远端已连接 |
-| status | 无 | 返回当前状态 |
-| control | enabled:boolean | 显式启停控制；关闭时释放输入 |
-| input | data:string，最多16KiB | 终端原始按键/UTF-8/bracketed paste/SGR鼠标；只读时 c 开启控制、q/Ctrl+C 退出，鼠标点击进入细节，+/-/滚轮以鼠标位置缩放，方向键或 i 上、j 左、k 下、l 右平移，f 恢复全景并重置倍率与平移；Ctrl+] 打开本地命令，随后 c 选择返回后的控制状态、q 退出或视图键连续调整画面，Esc/Ctrl+C 手动返回；控制模式中 Ctrl+T/Ctrl+C 传给远端，本地模式中再按 Ctrl+] 手动返回，并在返回控制模式时传递远端 Ctrl+] |
-| display | index:0..63 | 选择已广告的零起始显示器，提升 generation |
-| ack | frame_id、generation：非负整数 | 确认宿主消费帧；匹配当前等待帧才开放下一帧 |
-| disconnect | 无 | 释放输入、结束当前媒体会话 |
-| exit | 无 | 断开并结束进程 |
+| hello | version:1 | Bắt tay phiên bản giao thức |
+| viewport | columns:1..240, rows:1..100, colors:8/24/256, utf8:boolean, fps:1..30; tùy chọn cell_aspect:0.2..2, detail:quadrant/half, quality:low/balanced/high/ultra, zoom:1..32, native:boolean | Đặt số dòng hình ảnh (không gồm thanh trạng thái), tỷ lệ rộng/cao ký tự, mục tiêu cục bộ và mức xem trước; mặc định cell_aspect=0.5, quadrant/high/1, native=false, giữ cell_aspect/detail/quality/zoom/native không chỉ định tường minh; không dò TTY ứng dụng tích hợp |
+| connect | device:chuỗi 9 chữ số, display:0..63 (mặc định 0) | Đọc từ password fd riêng đến xuống dòng/EOF (tối đa 256 byte, chờ 5 giây), bắt đầu đăng ký/kết nối bất đồng bộ; ok không có nghĩa đã kết nối máy từ xa |
+| status | Không | Trả trạng thái hiện tại |
+| control | enabled:boolean | Bật/tắt điều khiển tường minh; tắt thì nhả nhập liệu |
+| input | data:string, tối đa 16KiB | Phím thô terminal/UTF-8/bracketed paste/chuột SGR; chỉ đọc thì c bật điều khiển, q/Ctrl+C thoát, nhấn chuột vào chi tiết, +/-/con lăn thu phóng tại chuột, mũi tên hoặc i lên, j trái, k xuống, l phải di chuyển, f khôi phục toàn cảnh và đặt lại tỷ lệ/vị trí; Ctrl+] mở lệnh cục bộ, sau đó c chọn trạng thái điều khiển khi quay lại, q thoát hoặc phím khung nhìn chỉnh liên tục, Esc/Ctrl+C quay lại thủ công; trong điều khiển Ctrl+T/Ctrl+C gửi đến máy từ xa, ở chế độ cục bộ nhấn lại Ctrl+] để quay lại thủ công, và gửi Ctrl+] từ xa khi quay về điều khiển |
+| display | index:0..63 | Chọn màn hình đã công bố, chỉ số bắt đầu từ không, tăng generation |
+| ack | frame_id, generation: số nguyên không âm | Xác nhận ứng dụng tích hợp đã dùng khung; chỉ khớp khung đang chờ mới mở khung tiếp |
+| disconnect | Không | Nhả nhập liệu, kết thúc phiên đa phương tiện hiện tại |
+| exit | Không | Ngắt kết nối và kết thúc tiến trình |
 
-凭据不能放在 connect JSON 中。专用描述符可以由 Node `spawn` 的第四条 pipe 提供。成功读取后会话不会保留用户密码供上层访问；MiniRTC 内部为现有 Join/重连流程持有必要凭据直到销毁 Peer。下一次 connect 必须有可读的凭据来源；Pi 关闭视图后直接结束进程。
+Không được đặt thông tin xác thực trong JSON connect. Mô tả riêng có thể do pipe thứ tư của Node `spawn` cung cấp. Sau khi đọc thành công, phiên không giữ mật khẩu người dùng cho tầng trên truy cập; MiniRTC giữ thông tin cần cho Join/kết nối lại hiện có đến khi hủy Peer. Lần connect tiếp bắt buộc có nguồn xác thực đọc được; Pi kết thúc thẳng tiến trình sau khi đóng khung nhìn.
 
-`viewport.fps` 是本地输出目标。对端支持预览订阅时，超过 15 的目标使用已有交互模式（协议 `fps=60`、编码 `frame_rate=30`），不再折算成 15 FPS；低目标仍按能力选择 1/8/15。bridge 始终输出字符行并要求宿主 ACK，不使用交互 Kitty 的共享内存传图。
+`viewport.fps` là mục tiêu đầu ra cục bộ. Nếu máy từ xa hỗ trợ đăng ký xem trước, mục tiêu trên 15 dùng chế độ tương tác hiện có (giao thức `fps=60`, mã hóa `frame_rate=30`), không quy đổi thành 15 FPS nữa; mục tiêu thấp vẫn chọn 1/8/15 theo khả năng. bridge luôn xuất dòng ký tự và yêu cầu ACK từ ứng dụng tích hợp, không dùng truyền ảnh bộ nhớ chung của Kitty tương tác.
 
-帧事件：
+Sự kiện khung:
 
 ```json
 {"event":"frame","frame_id":42,"decoded_frame_id":38,"generation":4,"source_width":1280,"source_height":720,"zoom":2,"native":false,"source_rect":[320,180,640,360],"detail":"quadrant","columns":80,"rows":23,"cell_aspect":0.45,"lines":["..."],"queue_ms":3.2}
 ```
 
-实际 lines 数为 rows，仅包含本地生成的 SGR 颜色序列、空格和 U+2580～U+259F 块字符，不含远端名称或任意终端指令。`frame_id` 是进程递增的输出序号，静止画面重绘仍产生新序号；`decoded_frame_id` 标识源解码帧，同源重绘可以相同。`source_width/height` 为实际解码尺寸，source_rect 为实际源裁剪矩形 [x,y,width,height]。native=true 表示原始细节模式，zoom 为当前模式下的倍率；generation 在关闭、重新连接和显示器切换时变化。viewport 变化可能与已写出的旧尺寸帧交错，宿主应丢弃不匹配行列数／cell_aspect 或旧 generation 的帧并释放对应 ACK。宿主返回的 ACK 表示消费/布局，不表示屏幕物理显示完成。
+Số lines thực bằng rows, chỉ chứa chuỗi màu SGR sinh cục bộ, dấu cách và ký tự khối U+2580～U+259F, không có tên từ xa hay lệnh terminal tùy ý. `frame_id` là số thứ tự đầu ra tăng trong tiến trình, vẽ lại hình tĩnh vẫn sinh số mới; `decoded_frame_id` định danh khung nguồn đã giải mã, vẽ lại cùng nguồn có thể giống nhau. `source_width/height` là kích thước giải mã thực, source_rect là hình chữ nhật cắt nguồn thực [x,y,width,height]. native=true chỉ chế độ chi tiết nguyên bản, zoom là tỷ lệ chế độ hiện tại; generation đổi khi đóng, kết nối lại và chuyển màn hình. Đổi viewport có thể xen khung kích thước cũ đã ghi; ứng dụng tích hợp nên bỏ khung sai số hàng/cột／cell_aspect hoặc generation cũ và gửi ACK tương ứng. ACK ứng dụng tích hợp trả chỉ việc dùng/bố trí, không chỉ hiển thị vật lý xong.
 
-`cell_aspect` 为单个字符的宽／高，必须是 0.2～2 范围内的有限 JSON 数值；例如 9×20 像素字符应传 0.45。宿主负责测量或提供手动设置，bridge 根据该比例计算图像布局与鼠标映射，响应及状态事件中的 `status.cell_aspect` 返回当前值。该字段为 v1 的可选扩展；省略时保留上次值，首次默认 0.5。旧版 bridge 的帧可能不含此字段。修改比例也会触发静止画面重绘，新的鼠标映射仍在帧 ACK 后生效。
+`cell_aspect` là rộng／cao một ký tự, bắt buộc là số JSON hữu hạn trong 0.2～2; ví dụ ký tự 9×20 pixel nên truyền 0.45. Ứng dụng tích hợp chịu trách nhiệm đo hoặc cung cấp cài thủ công; bridge tính bố trí ảnh và ánh xạ chuột theo tỷ lệ này, `status.cell_aspect` trong phản hồi và sự kiện trạng thái trả giá trị hiện tại. Đây là mở rộng tùy chọn v1; bỏ qua thì giữ giá trị trước, lần đầu mặc định 0.5. Khung bridge cũ có thể thiếu trường này. Đổi tỷ lệ cũng kích hoạt vẽ lại hình tĩnh; ánh xạ chuột mới vẫn có hiệu lực sau ACK khung.
 
-状态事件每秒最多一次：`{"event":"state","status":{...},"output_bytes":123,"submitted_frames":3,"elapsed_seconds":1.5}`。status 含 registering/connecting/connected/failed/closed/idle、client_id（当前或刚结束会话的 `cli-xxxxxxxxx`，注册前为空）、error、control、generation、显示器、文本/预览能力、预览确认状态、请求的 preview_width/height/quality/bitrate_bps、帧计数与网络统计。接收/提交 FPS 由相应计数的增量除以时间增量计算。
+Sự kiện trạng thái tối đa một lần mỗi giây: `{"event":"state","status":{...},"output_bytes":123,"submitted_frames":3,"elapsed_seconds":1.5}`. status có registering/connecting/connected/failed/closed/idle, client_id (`cli-xxxxxxxxx` của phiên hiện tại hoặc vừa kết thúc, rỗng trước đăng ký), error, control, generation, màn hình, khả năng văn bản/xem trước, trạng thái xác nhận xem trước, preview_width/height/quality/bitrate_bps yêu cầu, số khung và thống kê mạng. FPS nhận/gửi tính bằng chênh lệch bộ đếm tương ứng chia chênh lệch thời gian.
 
-状态和成功响应中的 `status.command_mode` 表示处于持续本地命令模式，此时 `control=false`，远端输入暂停；`status.resume_control` 表示手动返回后是否启用控制。执行命令、未知按键或粘贴不会退出此模式，失焦或输入溢出只会将返回模式设为只读。`Esc` / `Ctrl+C` 或再次 `Ctrl+]` 手动返回；`status.exit_requested` 表示用户按键请求退出，宿主可据此关闭组件。宿主应从 `input` 响应立即更新命令提示，不必等待下一次状态事件；不要自行截获 `Ctrl+]` 退出。显式 `control` 请求只更新所选控制状态，在本地模式中仍暂停远端输入。新建连接或断开会重置本地模式。具体快捷键见 [终端客户端](terminal-client.md)。
+`status.command_mode` trong trạng thái và phản hồi thành công chỉ chế độ lệnh cục bộ liên tục; khi đó `control=false`, nhập từ xa tạm dừng; `status.resume_control` chỉ có bật điều khiển sau quay lại thủ công hay không. Thực thi lệnh, phím không rõ hoặc dán không thoát chế độ này; mất tiêu điểm hay tràn đầu vào chỉ đặt chế độ quay lại thành chỉ đọc. `Esc` / `Ctrl+C` hoặc nhấn lại `Ctrl+]` để quay lại thủ công; `status.exit_requested` chỉ người dùng yêu cầu thoát qua phím, ứng dụng tích hợp có thể đóng thành phần theo đó. Ứng dụng tích hợp nên cập nhật gợi ý lệnh ngay từ phản hồi `input`, không cần chờ sự kiện trạng thái tiếp; không tự chặn `Ctrl+]` để thoát. Yêu cầu `control` tường minh chỉ cập nhật trạng thái điều khiển chọn, vẫn dừng nhập từ xa trong chế độ cục bộ. Tạo kết nối hoặc ngắt đặt lại chế độ cục bộ. Xem phím tắt trong [ứng dụng terminal](terminal-client.md).
 
-边界：输入每条及当前解析缓冲上限64KiB、嵌套32层；响应队列64条；输出一条在途消息上限2MiB；1MiB/s；最多一条待 ACK 帧；一个最新待渲染 NV12 加一个最近画面的重绘缓存。协议错误明确响应；超限缓冲后结束。EOF 清理会话，完整的已收请求按序处理，不完整末尾报错；最多两秒排空输出后退出。宿主应持续消费响应，不能无限发送而不读取。失去连接后的释放只能尽力发送。
+Giới hạn: mỗi đầu vào và bộ đệm phân tích hiện tại tối đa 64KiB, lồng 32 tầng; hàng đợi phản hồi 64 mục; một thông điệp đầu ra đang gửi tối đa 2MiB; 1MiB/s; tối đa một khung chờ ACK; một NV12 mới nhất chờ render cộng một bộ đệm vẽ lại hình gần nhất. Lỗi giao thức trả rõ ràng; kết thúc sau khi bộ đệm vượt giới hạn. EOF dọn phiên, xử lý yêu cầu nhận đủ theo thứ tự, báo lỗi phần cuối chưa đủ; thoát sau tối đa hai giây xả đầu ra. Ứng dụng tích hợp nên đọc phản hồi liên tục, không được gửi vô hạn mà không đọc. Sau mất kết nối, gửi lệnh nhả chỉ có thể cố gắng hết sức.
 
-没有 `screenshot`、`audio`、文件、剪贴板、任意远端动作或 shell 命令方法；未知方法报错。模型接入者必须另行取得截图/自动操作授权，不能把持续帧事件附加到聊天记录。
+Không có phương thức `screenshot`, `audio`, tệp, clipboard, hành động từ xa tùy ý hay lệnh shell; phương thức không rõ báo lỗi. Bên tích hợp mô hình bắt buộc xin quyền chụp màn hình/thao tác tự động riêng, không được đính kèm sự kiện khung liên tục vào lịch sử trò chuyện.

@@ -74,7 +74,7 @@ function feed(c,event){events.push({session:c.session,...event});c.poll();}
   assert.equal(c.state.modal,'connecting'); // Encrypted remembered password, no prompt.
   const second=commands.filter(c=>c.op==='connect').at(-1);
   feed(c,{type:'connection',connection:connect.connection,status:1});assert(!c.state.ready); // Superseded session.
-  feed(c,{type:'connection',connection:second.connection,status:6});assert.equal(c.state.modal,'password');assert.match(c.state.notice,/密码错误/);
+  feed(c,{type:'connection',connection:second.connection,status:6});assert.equal(c.state.modal,'password');assert.match(c.state.notice,/Sai mật khẩu/);
   const previousSession=c.session;c.saveSettings('private.example','9443');await flush();
   assert.equal(c.scope(),'private.example:9443');assert.equal(c.state.recent.length,0);
   feed(c,{session:previousSession,type:'identity',identity:'000000000@stale'});assert.notEqual(c.state.identity,'000000000');

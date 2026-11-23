@@ -16,26 +16,26 @@ async function connect(client: TerminalClient) {
   try {
     const { devices, defaults } = await client.call("devices");
     const status = await client.call("status");
-    process.stdout.write("CrossDesk MCP · 终端画面\n");
+    process.stdout.write("CrossDesk MCP · Hình ảnh terminal\n");
     for (const d of devices)
       process.stdout.write(`${d.device_alias} (${d.device_id})\n`);
-    const selected = (await ask(`设备别名或 9 位 ID${status.device_alias ? ` [${status.device_alias}]` : ""}：`)) || status.device_alias;
+    const selected = (await ask(`Bí danh thiết bị hoặc ID 9 chữ số${status.device_alias ? ` [${status.device_alias}]` : ""}: `)) || status.device_alias;
     const device = devices.find((d: Data) => d.device_alias === selected);
     const args: Data = device ? { device_alias: selected } : {
       device_id: selected,
-      server: (await ask(`服务器 [${defaults.server}]：`)) || defaults.server,
-      port: Number((await ask(`端口 [${defaults.port}]：`)) || defaults.port),
+      server: (await ask(`Máy chủ [${defaults.server}]: `)) || defaults.server,
+      port: Number((await ask(`Cổng [${defaults.port}]: `)) || defaults.port),
     };
-    args.mode = (await ask("允许 Agent 操作？[y/N]：")).toLowerCase() === "y" ? "control" : "observe";
-    args.display_index = Number((await ask("显示器索引 [0]：")) || "0");
+    args.mode = (await ask("Cho phép Agent thao tác? [y/N]:")).toLowerCase() === "y" ? "control" : "observe";
+    args.display_index = Number((await ask("Chỉ số màn hình [0]:")) || "0");
     const saved = device?.credential_provider !== "none" && !!device;
-    if (!saved || (await ask("使用已保存凭据？[Y/n]：")).toLowerCase() === "n") {
-      process.stdout.write("访问密码（隐藏输入，可为空）：");
+    if (!saved || (await ask("Dùng thông tin xác thực đã lưu? [Y/n]:")).toLowerCase() === "n") {
+      process.stdout.write("Mật khẩu truy cập (nhập ẩn, có thể để trống):");
       hidden = true;
       try { args.password = await rl.question(""); }
       finally { hidden = false; process.stdout.write("\n"); }
     }
-    process.stdout.write("正在连接…\n");
+    process.stdout.write("Đang kết nối…\n");
     try { await client.call("connect", args); }
     finally { args.password = undefined; }
   } finally { rl.close(); }
@@ -52,7 +52,7 @@ async function unlock(client: TerminalClient, requestId: string, device: string)
   rl.once("SIGINT", () => controller.abort());
   const args: Data = { request_id: requestId };
   try {
-    process.stdout.write("Agent 请求解锁远程系统。请确认远端系统密码框已聚焦。\n系统锁屏密码（隐藏输入，留空取消）：");
+    process.stdout.write("Agent yêu cầu mở khóa hệ thống từ xa. Hãy xác nhận ô mật khẩu hệ thống từ xa đã có tiêu điểm.\nMật khẩu khóa màn hình hệ thống (nhập ẩn, để trống để hủy):");
     hidden = true;
     try { args.password = await rl.question("", { signal: controller.signal }); }
     finally { hidden = false; process.stdout.write("\n"); }
@@ -60,7 +60,7 @@ async function unlock(client: TerminalClient, requestId: string, device: string)
     else {
       const { devices } = await client.call("devices");
       if (devices.some((entry: Data) => entry.device_alias === device))
-        args.remember_password = (await rl.question("保存到系统凭据库并允许以后自动解锁？[y/N]：", { signal: controller.signal })).trim().toLowerCase() === "y";
+        args.remember_password = (await rl.question("Lưu vào kho xác thực hệ thống và cho phép tự mở khóa sau? [y/N]:", { signal: controller.signal })).trim().toLowerCase() === "y";
     }
     return await client.call("unlock", args);
   } catch (error) {

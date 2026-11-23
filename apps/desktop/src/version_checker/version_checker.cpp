@@ -10,7 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "rd_log.h"
-#include "linux_update_download.h"
+#include "updater/update_source.h"
 #ifndef __OHOS__
 #include "updater/update_core.h"
 #include "updater/update_platform.h"
@@ -106,75 +106,81 @@ void ConfigureLinuxCaCerts(httplib::Client* cli) {
 
 }  // namespace
 
-std::optional<VersionInfo> CheckUpdate() {
-  httplib::Client cli("https://version.crossdesk.cn");
+#ifndef __OHOS__
+std::optional<VersionInfo> ParseSignedUpdateManifest(
+    const nlohmann::json& manifest, const std::string& platform,
+    const std::string& public_key) {
+  try {
+    const auto& download = manifest.at("downloads").at(platform);
+    const auto envelope = download.at("update").dump();
+    const auto artifact = updater::VerifyReleaseEnvelope(envelope, public_key, platform);
+    // Order by the signed version, never by unsigned top-level patch metadata.
+    auto info = ParseVersionInfo(download);
+    if (!info || info->version != artifact.version) return std::nullopt;
+    const auto notes = ParseVersionInfo(manifest);
+    if (notes && notes->version == artifact.version) {
+      info->release_name = notes->release_name;
+      info->release_notes = notes->release_notes;
+    }
+    info->patch = -1;
+    info->download_url = artifact.url;
+    info->update_envelope = envelope;
+    return info;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+#endif
 
+std::optional<VersionInfo> CheckUpdate() {
+  httplib::Client cli(updater::kManifestOrigin);
   cli.set_connection_timeout(5);
   cli.set_read_timeout(5);
   cli.set_write_timeout(5);
   cli.set_max_timeout(15000);
-  cli.set_follow_location(true);
+  cli.set_follow_location(false);
 
 #if defined(CPPHTTPLIB_OPENSSL_SUPPORT) && defined(__linux__)
   ConfigureLinuxCaCerts(&cli);
 #endif
 
-  auto res = cli.Get("/version.json");
-  if (res) {
-    if (res->status == 200) {
-      try {
-        const auto manifest = nlohmann::json::parse(res->body);
-        auto info = ParseVersionInfo(manifest);
-        if (info) {
-#if defined(__OHOS__)
-          // A Linux package cannot be installed by Harmony's package manager.
-          // Until the manifest has a Harmony artifact, use the release website.
-          info->download_url = "https://crossdesk.cn";
-#elif defined(__linux__)
-          std::string architecture;
-#if defined(__x86_64__)
-          architecture = "amd64";
-#elif defined(__aarch64__)
-          architecture = "arm64";
-#endif
-          std::error_code error;
-          const auto executable = std::filesystem::read_symlink("/proc/self/exe", error);
-          info->download_url = LinuxUpdateDownloadUrl(
-              manifest, *info, architecture,
-              error ? std::filesystem::path{} : executable.parent_path());
-#endif
-#ifndef __OHOS__
-          const auto platform = updater::PlatformKey(updater::ExecutablePath(),
-#if CROSSDESK_PORTABLE
-                                                     true
+  constexpr std::size_t kMaxManifestSize = 256 * 1024;
+  std::string body;
+  int status = 0;
+  const auto res = cli.Get(updater::kManifestPath,
+      [&](const httplib::Response& headers) {
+        status = headers.status;
+        return status == 200;
+      },
+      [&](const char* data, std::size_t length) {
+        if (length > kMaxManifestSize - body.size()) return false;
+        body.append(data, length);
+        return true;
+      });
+  if (!res || status != 200) {
+    if (status != 0 && status != 200)
+      LOG_WARN("Fork update manifest HTTP status={}", status);
+    else
+      LogHttpError(res);
+    return std::nullopt;
+  }
+  try {
+    const auto manifest = nlohmann::json::parse(body);
+#if defined(__OHOS__) || CROSSDESK_PORTABLE
+    auto info = ParseVersionInfo(manifest);
+    if (info) info->download_url = updater::kReleasePage;
 #else
-                                                     false
+    const auto platform = updater::PlatformKey(updater::ExecutablePath());
+    auto info = ParseSignedUpdateManifest(manifest, platform, updater::PublicKey());
 #endif
-          );
-#if !defined(__linux__)
-          info->download_url = updater::DownloadUrl(manifest.dump(), platform, info->version);
-#endif
-#if !CROSSDESK_PORTABLE
-          if (updater::DownloadUrl(manifest.dump(), platform, info->version) != "https://crossdesk.cn")
-            info->update_envelope = updater::SignedDownload(manifest.dump(), platform);
-#endif
-#endif
-          LOG_INFO("Fetched version.json: latest_version={}, releaseDate={}, patch={}",
-                   info->version, info->release_date, info->patch);
-        } else {
-          LOG_WARN("version.json does not contain a valid version");
-        }
-        return info;
-      } catch (const std::exception& e) {
-        LOG_WARN("Failed to parse version.json: {}", e.what());
-        return std::nullopt;
-      }
+    if (info) {
+      LOG_INFO("Fetched fork update manifest: latest_version={}", info->version);
     } else {
-      LOG_WARN("Failed to fetch version.json: HTTP status={}", res->status);
-      return std::nullopt;
+      LOG_WARN("Fork update manifest contains no valid release for this installation");
     }
-  } else {
-    LogHttpError(res);
+    return info;
+  } catch (const std::exception& e) {
+    LOG_WARN("Failed to parse fork update manifest: {}", e.what());
     return std::nullopt;
   }
 }

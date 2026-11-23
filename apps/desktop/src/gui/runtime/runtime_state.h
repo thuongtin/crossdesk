@@ -43,7 +43,7 @@ struct InfrastructureState {
   std::mutex audio_delivery_mutex_;
   std::unique_ptr<ConfigCenter> config_center_;
   ConfigCenter::LANGUAGE localization_language_ =
-      ConfigCenter::LANGUAGE::CHINESE;
+      ConfigCenter::LANGUAGE::ENGLISH;
   std::unique_ptr<PathManager> path_manager_;
   std::string exec_log_path_;
   std::string dll_log_path_;
@@ -151,12 +151,10 @@ struct UserSettingsState {
   char self_hosted_id_[17] = "";
   char self_hosted_user_id_[17] = "";
   char connection_login_identity_[17] = "";
-  int language_button_value_ = 0;
+  int language_button_value_ = static_cast<int>(ConfigCenter::LANGUAGE::ENGLISH);
   int video_encode_format_button_value_ = 0;
-  char signal_server_ip_[256] = "api.crossdesk.cn";
-  char signal_server_port_[6] = "9099";
   bool enable_self_hosted_ = false;
-  int language_button_value_last_ = 0;
+  int language_button_value_last_ = 11;
   int video_encode_format_button_value_last_ = 0;
   bool enable_self_hosted_last_ = false;
   bool enable_autostart_ = false;

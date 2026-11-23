@@ -1,4 +1,5 @@
 #include "crossdesk_ui.h"
+#include "../src/gui/assets/fonts/fa_solid_900.h"
 #include "slint_render_test_platform.h"
 #include "ui/model_update.h"
 #include "ui/ui_localization.h"
@@ -7,6 +8,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <filesystem>
+#include <cmath>
 #include <string>
 
 using namespace std::chrono_literals;
@@ -17,8 +20,18 @@ bool Check(bool value, const char* message) {
   return value;
 }
 
+template<typename Component>
+void RegisterFixtureIcons(const Component& component) {
+  if (component->window().window_handle().register_font_from_data(
+          fa_solid_900_ttf, fa_solid_900_ttf_len).has_value()) {
+    std::cerr << "Fixture FontAwesome registration failed\n";
+    std::exit(8);
+  }
+}
+
 auto CreateMainWindow() {
   auto main = crossdesk::ui::MainWindow::create();
+  RegisterFixtureIcons(main);
   // Text and language options now come from the application. Load them before
   // measuring or clicking layouts whose geometry depends on their labels.
   crossdesk::ui_localization::ApplyMainWindowStrings(main, 0);
@@ -28,6 +41,7 @@ auto CreateMainWindow() {
 
 bool VerifyStreamPopups(RenderTestPlatform& platform) {
   auto stream = crossdesk::ui::StreamWindow::create();
+  RegisterFixtureIcons(stream);
   auto& screen = *platform.adapter;
   stream->window().set_size(slint::LogicalSize({1280, 720}));
   stream->set_video_settings_enabled(true);
@@ -137,8 +151,164 @@ bool VerifyStreamPopups(RenderTestPlatform& platform) {
                "Closing local menus must restore remote input");
 }
 
+// Export the retained framebuffer, not take_snapshot(), so evidence cannot
+// conceal a missing redraw. A caller-owned directory keeps artifacts disposable.
+bool WritePopupEvidence(const RenderTestWindow& screen, const std::string& name) {
+  const char* directory = std::getenv("CROSSDESK_POPUP_EVIDENCE_DIR");
+  if (!directory || !*directory) return true;
+  const auto path = std::filesystem::path(directory) / (name + ".ppm");
+  std::filesystem::create_directories(path.parent_path());
+  std::ofstream output(path, std::ios::binary);
+  output << "P6\n" << screen.extent.width << ' ' << screen.extent.height << "\n255\n";
+  for (const auto& pixel : screen.pixels) {
+    output.put(static_cast<char>(pixel.r));
+    output.put(static_cast<char>(pixel.g));
+    output.put(static_cast<char>(pixel.b));
+  }
+  return Check(output.good(), "Retained popup framebuffer must be saved completely");
+}
+
+bool WriteEnglishEvidence(RenderTestWindow& screen,
+                          const slint::ComponentHandle<crossdesk::ui::MainWindow>& main,
+                          const std::string& name) {
+  if (!std::getenv("CROSSDESK_POPUP_EVIDENCE_DIR")) return true;
+  const int previous_language = main->get_language_index();
+  crossdesk::ui_localization::ApplyMainWindowStrings(main, 1);
+  main->set_language_index(1);
+  screen.Settle();
+  const bool written = WritePopupEvidence(screen, name);
+  // Existing interaction fixtures deliberately exercise Chinese geometry.
+  crossdesk::ui_localization::ApplyMainWindowStrings(main, 0);
+  main->set_language_index(previous_language);
+  screen.Settle();
+  return written;
+}
+
+void ConfigureEvidenceData(const slint::ComponentHandle<crossdesk::ui::MainWindow>& main) {
+  main->set_local_id("123 456 789");
+  main->set_local_password("A1b2C3");
+  main->set_password_visible(false);
+  main->set_signal_connected(true);
+  std::vector<crossdesk::ui::RecentConnection> recent;
+  for (const auto& [id, name] : std::vector<std::pair<const char*, const char*>>{
+           {"987654321", "Studio fixture"}, {"246813579", "Office fixture"}}) {
+    crossdesk::ui::RecentConnection row{};
+    row.remote_id = id; row.display_name = name; row.host_name = name;
+    row.online = id[0] == '9';
+    recent.push_back(row);
+  }
+  main->set_recent_connections(
+      std::make_shared<slint::VectorModel<crossdesk::ui::RecentConnection>>(recent));
+}
+
+bool VerifyPasswordDialog(RenderTestPlatform& platform) {
+  for (int language : {0, 1, crossdesk::localization::kVietnameseLanguage}) {
+    auto main = CreateMainWindow();
+    ConfigureEvidenceData(main);
+    crossdesk::ui_localization::ApplyMainWindowStrings(main, language);
+    main->set_language_index(language);
+    auto& screen = *platform.adapter;
+    const float width = main->get_minimum_window_width();
+    const float height = main->get_minimum_window_height();
+    main->window().set_size(slint::LogicalSize({width, height}));
+    main->show();
+    screen.Settle();
+    if (!WritePopupEvidence(screen, "main-" + std::to_string(language))) return false;
+    int saves = 0;
+    bool accept = false;
+    slint::SharedString submitted;
+    main->on_reset_password([&](slint::SharedString text) {
+      ++saves;
+      submitted = text;
+      return accept;
+    });
+    main->set_reset_password_open(true);
+    screen.Settle();
+    const auto geometry = [&] {
+      const float x = main->get_reset_password_dialog_x();
+      const float y = main->get_reset_password_dialog_y();
+      const float w = main->get_reset_password_dialog_width();
+      const float h = main->get_reset_password_dialog_height();
+      const float input_x = main->get_reset_password_input_x();
+      const float input_y = main->get_reset_password_input_y();
+      const float input_w = main->get_reset_password_input_width();
+      const float input_h = main->get_reset_password_input_height();
+      return Check(x >= 0 && y >= 0 && x + w <= width && y + h <= height &&
+                       std::abs(input_x - x - 24) < 1 &&
+                       std::abs(input_w - w + 48) < 1 && input_h >= 38 &&
+                       input_y > y && input_y + input_h < y + h &&
+                       main->get_reset_password_save_y() >= input_y + input_h &&
+                       main->get_reset_password_cancel_y() >= input_y + input_h,
+                   "Password field and actions must fit the dialog with full padding");
+    };
+    if (!geometry()) return false;
+    const std::string prefix = "password-" + std::to_string(language);
+    if (!WritePopupEvidence(screen, prefix + "-empty")) return false;
+    const auto input_pixels = [&] {
+      return screen.Region(int(main->get_reset_password_input_x()) + 4,
+                           int(main->get_reset_password_input_y()) + 4,
+                           int(main->get_reset_password_input_width()) - 8,
+                           int(main->get_reset_password_input_height()) - 8);
+    };
+    const auto empty_input_pixels = input_pixels();
+    // Real key delivery reaches the focused editor, not a test-only property write.
+    for (const char* character : {"A", "1", "b", "2", "C", "3"}) screen.Key(character);
+    if (!Check(main->get_new_password_input() == "A1b2C3",
+               "Password editor must receive all six fixture characters")) return false;
+    screen.Key("7");
+    if (!Check(main->get_new_password_input() == "A1b2C3",
+               "Password editor must reject a seventh character")) return false;
+    if (!Check(input_pixels() != empty_input_pixels,
+               "All six password characters must repaint the retained input buffer")) return false;
+    if (!WritePopupEvidence(screen, prefix + "-full")) return false;
+    auto save = [&] {
+      screen.Click(main->get_reset_password_save_x() + 56,
+                   main->get_reset_password_save_y() + 18, 4);
+    };
+    save();
+    if (!Check(saves == 1 && submitted == "A1b2C3" &&
+                   main->get_reset_password_open() && main->get_reset_password_invalid(),
+               "Rejected password save must preserve the draft and show validation")) return false;
+    if (!geometry() || !WritePopupEvidence(screen, prefix + "-invalid")) return false;
+    int error_pixels = 0;
+    const int error_top = int(main->get_reset_password_input_y() + main->get_reset_password_input_height()) + 2;
+    for (int y = error_top; y < int(main->get_reset_password_save_y()) - 8; ++y) {
+      for (int x = int(main->get_reset_password_input_x());
+           x < int(main->get_reset_password_input_x() + main->get_reset_password_input_width()); ++x) {
+        const auto pixel = screen.pixels.at(y * screen.extent.width + x);
+        if (pixel.r > 100 && pixel.r > 2 * pixel.g && pixel.r > 1.5f * pixel.b) ++error_pixels;
+      }
+    }
+    if (!Check(error_pixels > 10,
+               "Rejected password must visibly paint validation text below the input")) return false;
+    main->set_password_change_pending(true);
+    save();
+    if (!Check(saves == 1 && main->get_reset_password_open(),
+               "Pending password change must block repeated saves")) return false;
+    main->set_password_change_pending(false);
+    accept = true;
+    save();
+    if (!Check(saves == 2 && submitted == "A1b2C3" &&
+                   !main->get_reset_password_open() &&
+                   main->get_new_password_input() == "" && !main->get_reset_password_invalid(),
+               "Accepted password save must close and clear the draft and validation")) return false;
+    main->set_reset_password_open(true);
+    screen.Settle();
+    screen.Key("9");
+    screen.Click(main->get_reset_password_cancel_x() + 56,
+                 main->get_reset_password_cancel_y() + 18, 4);
+    if (!Check(saves == 2 && !main->get_reset_password_open() &&
+                   main->get_new_password_input() == "" && !main->get_reset_password_invalid(),
+               "Password Cancel must clear its draft without calling save")) return false;
+    if (!WritePopupEvidence(screen, prefix + "-closed")) return false;
+  }
+  std::cout << "Password popup EN/ZH/VI geometry, editing, validation, pending, Save and Cancel passed.\n";
+  return true;
+}
+
 bool VerifyWorkbenchPopups(RenderTestPlatform& platform) {
   auto main = CreateMainWindow();
+  ConfigureEvidenceData(main);
   auto& screen = *platform.adapter;
   const float width = main->get_minimum_window_width();
   const float height = main->get_minimum_window_height();
@@ -147,22 +317,45 @@ bool VerifyWorkbenchPopups(RenderTestPlatform& platform) {
   auto groups = std::make_shared<slint::VectorModel<slint::SharedString>>(
       std::vector<slint::SharedString>{"All", "Ungrouped", "Lab"});
   main->set_recent_groups(groups);
+  int deskhub_requests = 0, release_requests = 0, message_refreshes = 0;
+  main->on_open_gallery([&] { ++deskhub_requests; });
+  main->on_gallery_action([&](slint::SharedString action, slint::SharedString) {
+    if (action == "release") ++release_requests;
+  });
+  main->on_refresh_announcements([&] { ++message_refreshes; });
   int selected_group = -1;
   main->on_recent_group_selected([&](int index) { selected_group = index; });
   screen.Settle();
-  const auto filter_closed = screen.Region(width - 170, 302, 140, 70);
-  screen.Click(width - 90, 276);
-  if (!Check(screen.Region(width - 170, 302, 140, 70) != filter_closed,
+  if (!WriteEnglishEvidence(screen, main, "main-postcard")) return false;
+  // DeskHub is a separate-window callback, not an in-place gallery-mode toggle.
+  screen.Click(main->get_ip_direct_enabled() ? 262 : 70, 28, 4);
+  if (!Check(deskhub_requests == 1 && !main->get_gallery_mode(),
+             "DeskHub entry must dispatch exactly once without replacing the main window")) return false;
+  // Match recent-panel (x=8, width=window-380), its 155px filter,
+  // and the shared picker (38px trigger, 4px gap, 36px rows, 6px divider).
+  const float filter_x = 8 + (width - 380) - 155 - 20;
+  constexpr float filter_y = 322, filter_height = 38;
+  const float popup_y_filter = filter_y + filter_height + 4;
+  const auto filter_pixels = [&] { return screen.Region(int(filter_x) + 4, int(popup_y_filter) + 4, 140, 70); };
+  const auto filter_closed = filter_pixels();
+  screen.Click(filter_x + 77, filter_y + filter_height / 2);
+  if (!Check(filter_pixels() != filter_closed,
              "Group filter must reveal its contents while the pointer stays on the trigger")) return false;
   screen.Key(slint::platform::key_codes::Escape);
-  if (!Check(screen.Region(width - 170, 302, 140, 70) == filter_closed,
+  if (!Check(filter_pixels() == filter_closed,
              "Escape must dismiss the group filter")) return false;
-  screen.Click(width - 90, 276);
-  screen.Click(width - 90, 371, 4);
+  screen.Click(filter_x + 77, filter_y + filter_height / 2);
+  screen.Click(filter_x + 77, popup_y_filter + 4 + 2 * 36 + 6 + 18, 4);
   if (!Check(selected_group == 2 && main->get_recent_group_index() == 2,
              "Group selection must survive a held click")) return false;
-  screen.Click(width - 38, 20);
-  screen.Click(width - 78, 56, 4);
+  const auto open_menu = [&] {
+    const int before = release_requests;
+    screen.Click(width - 46, 28);
+    return Check(release_requests > before,
+                 "Every application menu opening must release remote input");
+  };
+  if (!open_menu() || !WriteEnglishEvidence(screen, main, "main-menu")) return false;
+  screen.Click(width - 100, 87, 4);
   if (!Check(main->get_settings_open(), "Application menu must open settings on click")) return false;
   const float settings_y = (height - 446) / 2;
   screen.Click(width / 2 + 87, settings_y + 76, 4);
@@ -193,18 +386,186 @@ bool VerifyWorkbenchPopups(RenderTestPlatform& platform) {
   if (!Check(main->get_codec_index() == 0,
              "A disabled codec dropdown must close and reject its stale options")) return false;
   main->set_settings_session_active(false);
+  if (!WriteEnglishEvidence(screen, main, "settings")) return false;
   screen.Click(width / 2 + 32, settings_y + 412);
   if (!Check(!main->get_settings_open(), "Settings Cancel must close the dialog immediately")) return false;
-  screen.Click(width - 38, 20);
-  screen.Click(width - 78, 86, 4);
-  if (!Check(main->get_messages_open(), "Messages must open directly from the application menu")) return false;
+  if (!open_menu()) return false;
+  screen.Click(width - 100, 144, 4);
+  if (!Check(main->get_messages_open() && message_refreshes == 1, "Messages must open directly from the application menu")) return false;
+  if (!WriteEnglishEvidence(screen, main, "messages")) return false;
   screen.Key(slint::platform::key_codes::Escape);
   if (!Check(!main->get_messages_open(), "Escape must dismiss Messages")) return false;
-  screen.Click(width - 38, 20);
-  screen.Click(width - 78, 132, 4);
+  if (!open_menu()) return false;
+  screen.Click(width - 100, 201, 4);
   if (!Check(main->get_about_open(), "About must open directly from the application menu")) return false;
+  if (!WriteEnglishEvidence(screen, main, "about-no-sponsor")) return false;
   screen.Key(slint::platform::key_codes::Escape);
-  return Check(!main->get_about_open(), "Escape must dismiss About");
+  if (!Check(!main->get_about_open(), "Escape must dismiss About")) return false;
+  if (!open_menu()) return false;
+  screen.Click(width - 100, 258, 4);
+  if (!Check(main->get_feedback_open(), "Feedback must open directly from the application menu")) return false;
+  screen.Key(slint::platform::key_codes::Escape);
+  if (!Check(!main->get_feedback_open(), "Escape must dismiss Feedback")) return false;
+  if (!open_menu()) return false;
+  screen.Key(slint::platform::key_codes::DownArrow);
+  screen.Key(slint::platform::key_codes::Return);
+  if (!Check(main->get_messages_open() && message_refreshes == 2,
+             "Menu Down and Return must activate Messages and refresh once")) return false;
+  screen.Key(slint::platform::key_codes::Escape);
+  if (!open_menu()) return false;
+  screen.Key(slint::platform::key_codes::Escape);
+  screen.Key(slint::platform::key_codes::Return);
+  return Check(!main->get_settings_open() && !main->get_messages_open() &&
+                   !main->get_about_open() && !main->get_feedback_open() && message_refreshes == 2,
+               "Menu Escape must close it and prevent Return from activating a stale row");
+}
+
+bool VerifyPostcardIpControls(RenderTestPlatform& platform) {
+  auto main = CreateMainWindow();
+  ConfigureEvidenceData(main);
+  crossdesk::ui_localization::ApplyMainWindowStrings(main, 1);
+  main->set_language_index(1);
+  main->set_ip_direct_enabled(true);
+  main->set_lan_mode(true);
+  main->set_lan_listening(true);
+  main->set_lan_listener_ip("192.0.2.24");
+  main->set_lan_listener_port("52888");
+  const std::vector<slint::SharedString> addresses{
+      "192.0.2.24", "198.51.100.6", "[2001:db8:abcd:1234:9876:1234:1234:9abc]",
+      "[2001:db8:1::1]", "[2001:db8:2::1]", "[2001:db8:3::1]",
+      "[2001:db8:4::1]", "[2001:db8:5::1]"};
+  main->set_lan_interfaces(
+      std::make_shared<slint::VectorModel<slint::SharedString>>(addresses));
+  auto& screen = *platform.adapter;
+  const float width = main->get_minimum_window_width();
+  main->window().set_size(slint::LogicalSize({width, main->get_minimum_window_height()}));
+  main->show();
+  screen.Settle();
+  if (!WritePopupEvidence(screen, "postcard-ip")) return false;
+  // The IP picker aligns with the right edge of the address field and opens
+  // upward, with six visible 36px rows before scrolling.
+  const int popup_x = int(width) - 44 - 450;
+  constexpr int popup_y = 322 + 101 + 2 - 224 - 44;
+  const auto popup_pixels = [&] { return screen.Region(popup_x + 2, popup_y + 2, 442, 216); };
+  const auto closed = popup_pixels();
+  int configured = 0, selected = 0, connects = 0;
+  std::string picked;
+  std::string port;
+  main->on_lan_configure([&](slint::SharedString ip, slint::SharedString value) {
+    ++configured;
+    port = std::string(value);
+    return ip == "192.0.2.24";
+  });
+  main->on_lan_select_address([&](slint::SharedString address) {
+    ++selected;
+    picked = std::string(address);
+    return true;
+  });
+  main->on_lan_prepare_connect([&](slint::SharedString address) {
+    if (address == "203.0.113.8:53210") ++connects;
+    return slint::SharedString();
+  });
+  screen.Click(width - 176, 402);
+  if (!Check(popup_pixels() != closed, "Switch IP must open a visible upward popup")) return false;
+  const auto swatch = screen.pixels.at((popup_y + 19) * screen.extent.width + popup_x + 350);
+  if (!Check(swatch.r > swatch.b && swatch.r >= 210,
+             "Selected IP must have a warm Postcard fill")) return false;
+  if (!WritePopupEvidence(screen, "postcard-ip-dropdown")) return false;
+  screen.Key(slint::platform::key_codes::Escape);
+  if (!Check(selected == 0 && popup_pixels() == closed, "Dismiss must not select or leave popup pixels")) return false;
+  screen.Click(width - 176, 402);
+  screen.Click(popup_x + 124, popup_y + 4 + 2 * 36 + 18);
+  if (!Check(picked == std::string(addresses[2]) && selected == 1 && configured == 0 &&
+                 main->get_lan_interface_index() == 2,
+             "Selecting IPv6 must preserve the full address without reconfiguring the listener")) return false;
+  screen.Click(width - 82, 402);
+  const std::string new_port = "53210";
+  for (char key : new_port) screen.Key(slint::SharedString(std::string(1, key)));
+  screen.Key(slint::platform::key_codes::Return);
+  if (!Check(configured == 1 && port == new_port, "Larger edit-port button must focus, replace and save once")) return false;
+  screen.Click(380, 226);
+  const std::string endpoint = "203.0.113.8:53210";
+  for (char key : endpoint) screen.Key(slint::SharedString(std::string(1, key)));
+  screen.Click(width - 100, 226);
+  if (!Check(connects == 1 && main->get_lan_open(),
+             "Expanded remote editor and Connect must submit the exact endpoint once")) return false;
+  std::cout << "Postcard IP picker, Escape, IPv6 selection, local port edit and remote endpoint passed.\n";
+  return true;
+}
+
+bool VerifySquareRecentPreview(RenderTestPlatform& platform) {
+  auto main = CreateMainWindow();
+  ConfigureEvidenceData(main);
+  crossdesk::ui_localization::ApplyMainWindowStrings(main, 1);
+  main->set_language_index(1);
+  main->set_ip_direct_enabled(true);
+  auto& screen = *platform.adapter;
+  main->window().set_size(slint::LogicalSize(
+      {main->get_minimum_window_width(), main->get_minimum_window_height()}));
+  std::vector<crossdesk::ui::RecentConnection> fixtures;
+  const auto make_preview = [](int width, int height) {
+    slint::SharedPixelBuffer<slint::Rgb8Pixel> buffer(width, height);
+    for (int y = 0; y < height; ++y)
+      for (int x = 0; x < width; ++x)
+        buffer.begin()[y * width + x] =
+            y < height / 5 ? slint::Rgb8Pixel{32, 163, 186} :
+            y >= height * 4 / 5 ? slint::Rgb8Pixel{231, 168, 43} :
+            x < width / 2 ? slint::Rgb8Pixel{46, 65, 96} :
+                            slint::Rgb8Pixel{73, 99, 137};
+    return slint::Image(std::move(buffer));
+  };
+  for (int i = 0; i < 4; ++i) {
+    crossdesk::ui::RecentConnection connection{};
+    connection.remote_id = slint::SharedString(std::to_string(123456780 + i));
+    connection.display_name = i == 0 ? "Studio fixture / 16:9" :
+                              i == 1 ? "Office fixture / 4:3" : "Scroll fixture";
+    connection.online = true;
+    connection.has_thumbnail = true;
+    connection.thumbnail = i == 1 ? make_preview(160, 120) : make_preview(160, 90);
+    fixtures.push_back(std::move(connection));
+  }
+  main->set_recent_connections(
+      std::make_shared<slint::VectorModel<crossdesk::ui::RecentConnection>>(fixtures));
+  main->show();
+  screen.Settle();
+  const float width = main->get_recent_preview_width();
+  const float height = main->get_recent_preview_height();
+  if (!Check(std::abs(width * 9 - height * 16) < 0.02f && height > 120,
+             "Recent viewport must be 16:9, not a fixed-height strip")) return false;
+  const auto pixel = [&](int x, int y) { return screen.pixels.at(y * screen.extent.width + x); };
+  const auto color_near = [&](int x, int y, int r, int g, int b) {
+    const auto p = pixel(x, y);
+    return std::abs(int(p.r) - r) <= 4 && std::abs(int(p.g) - g) <= 4 &&
+           std::abs(int(p.b) - b) <= 4;
+  };
+  constexpr int card_x = 34, card_y = 377;
+  const int second_x = card_x + int(std::round(width)) + 12;
+  if (!Check(color_near(30, 11, 189, 65, 24),
+             "Active ID mode must fill its square inset corner")) return false;
+  if (!Check(color_near(card_x + 100, card_y + 8, 32, 163, 186) &&
+                 color_near(card_x + 100, card_y + int(height) - 8, 231, 168, 43),
+             "16:9 preview must show both source edges within its square card")) return false;
+  if (!Check(color_near(second_x + 10, card_y + 72, 36, 34, 30) &&
+                 color_near(second_x + int(width / 2), card_y + 8, 32, 163, 186) &&
+                 color_near(second_x + int(width / 2), card_y + int(height) - 8, 231, 168, 43),
+             "4:3 preview must show both source edges with a neutral side matte")) return false;
+  if (!WritePopupEvidence(screen, "postcard-recent-16x9")) return false;
+  int connects = 0;
+  main->on_recent_connect([&](slint::SharedString id) {
+    if (id == "123456780") ++connects;
+  });
+  const int footer_y = card_y + int(height) + 22;
+  screen.Click(card_x + int(width) - 26, footer_y);
+  if (!Check(connects == 1, "Reconnect button must follow the preview without clipping")) return false;
+  screen.Click(card_x + int(width) - 26, card_y + 26);
+  screen.Key(slint::platform::key_codes::Return);
+  if (!Check(main->get_alias_open() && connects == 1,
+             "Recent overflow must open Rename without reconnecting")) return false;
+  main->set_alias_open(false);
+  screen.Click(157, 29);
+  if (!Check(main->get_lan_mode() && color_near(114, 11, 189, 65, 24),
+             "Active IP mode must also fill its square inset corner")) return false;
+  return WritePopupEvidence(screen, "postcard-ip-square-selected");
 }
 
 bool VerifyAutostartSettings(RenderTestPlatform& platform) {
@@ -295,6 +656,23 @@ bool VerifyGalleryPopups(RenderTestPlatform& platform) {
   wall->window().set_size(slint::LogicalSize({900, 600}));
   wall->set_gallery_count(8);
   wall->set_gallery_connected(8);
+  // A deterministic CPU image gives DeskHub real tiles without remote sessions.
+  slint::SharedPixelBuffer<slint::Rgb8Pixel> preview(160, 90);
+  for (unsigned y = 0; y < 90; ++y) for (unsigned x = 0; x < 160; ++x)
+    preview.begin()[y * 160 + x] = slint::Rgb8Pixel{
+        static_cast<uint8_t>(30 + x), static_cast<uint8_t>(50 + y), 110};
+  const slint::Image frame(std::move(preview));
+  std::vector<crossdesk::ui::GalleryTile> tiles;
+  for (int n = 0; n < 8; ++n) {
+    crossdesk::ui::GalleryTile tile{};
+    tile.id = slint::SharedString(std::to_string(123456780 + n));
+    tile.name = slint::SharedString("Fixture workstation " + std::to_string(n + 1));
+    tile.online = tile.presence_known = tile.connected = tile.has_frame = true;
+    tile.frame = frame;
+    tiles.push_back(tile);
+  }
+  wall->set_gallery_tiles(std::make_shared<slint::VectorModel<crossdesk::ui::GalleryTile>>(tiles));
+
   wall->set_gallery_groups(std::make_shared<slint::VectorModel<slint::SharedString>>(
       std::vector<slint::SharedString>{"All", "Lab"}));
   auto network = std::make_shared<slint::VectorModel<crossdesk::ui::GalleryNetworkDevice>>();
@@ -309,6 +687,7 @@ bool VerifyGalleryPopups(RenderTestPlatform& platform) {
     crossdesk::ui::UpdateModelRows(*network, std::vector(8, row));
   });
   screen.Settle();
+  if (!WriteEnglishEvidence(screen, wall, "deskhub")) return false;
   const auto baseline = screen.Region(75, 100, 740, 400);
   for (int repeat = 0; repeat < 2; ++repeat) {
     screen.Click(160, 578);
@@ -340,7 +719,18 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   main->set_update_available(true);
   main->set_update_install_available(true);
   main->set_latest_version("v2.0.0");
-  int install_requests = 0, manual_downloads = 0;
+  main->set_current_version("1.7.6");
+  main->set_installed_release_notes(
+      std::make_shared<slint::VectorModel<slint::SharedString>>(
+          std::vector<slint::SharedString>{"Release highlights fixture"}));
+  main->set_release_welcome_pending(true);
+  int release_dismissals = 0;
+  main->on_dismiss_release_welcome([&] {
+    ++release_dismissals;
+    main->set_release_welcome_open(false);
+  });
+  int install_requests = 0, manual_downloads = 0, release_channel_requests = 0;
+  main->on_open_update_channel([&] { ++release_channel_requests; });
   main->on_open_download([&] { ++install_requests; main->set_update_confirm_open(true); });
   main->on_open_manual_download([&] { ++manual_downloads; });
   main->show();
@@ -351,6 +741,23 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   const auto action_pixels = [&] {
     return screen.Region(int(action_x - 40), int(button_y - 12), 80, 24);
   };
+  if (!Check(main->get_can_show_release_welcome(),
+             "An available update must defer to pending installed release notes")) return false;
+  main->set_release_welcome_open(true);
+  main->set_release_welcome_pending(false);
+  screen.Settle();
+  screen.Click(action_x, button_y);
+  if (!Check(install_requests == 0 && main->get_release_welcome_open(),
+             "Update installation must not be clickable behind release notes")) return false;
+  if (!WriteEnglishEvidence(screen, main, "release-notes-no-sponsor")) return false;
+  screen.Key(slint::platform::key_codes::Escape);
+  if (!Check(release_dismissals == 1 && !main->get_release_welcome_open(),
+             "Escape must close release notes without suppressing the update")) return false;
+  if (!WriteEnglishEvidence(screen, main, "update-no-sponsor")) return false;
+  const float channel_y = height / 2 - std::min(488.f, height - 32) / 2 + 64;
+  screen.Click(width / 2 + 163, channel_y);
+  if (!Check(release_channel_requests == 1 && install_requests == 0 && manual_downloads == 0,
+             "Update header must open the release channel without starting a download")) return false;
   const auto install_label = action_pixels();
   main->set_update_install_failed(true);
   main->set_update_install_status(crossdesk::ui_localization::Text(
@@ -387,6 +794,8 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
 
 bool VerifyServerPanel(RenderTestPlatform& platform) {
   auto panel = crossdesk::ui::ServerWindow::create();
+  RegisterFixtureIcons(panel);
+  crossdesk::ui_localization::ApplyServerStrings(panel, 0);
   auto& screen = *platform.adapter;
   panel->set_controllers(std::make_shared<slint::VectorModel<crossdesk::ui::ControllerEntry>>(
       std::vector<crossdesk::ui::ControllerEntry>{{"1", "First"}, {"2", "Second"}}));
@@ -427,11 +836,33 @@ int main() {
   auto platform = std::make_unique<RenderTestPlatform>();
   auto* backend = platform.get();
   slint::platform::set_platform(std::move(platform));
+  // A bounded headless invocation can isolate this regression while the full
+  // suite remains the default and retains every existing assertion.
+  if (const char* test = std::getenv("CROSSDESK_POPUP_TEST");
+      test && std::string(test) == "password") {
+    return VerifyPasswordDialog(*backend) ? 0 : 7;
+  }
+  if (const char* test = std::getenv("CROSSDESK_POPUP_TEST");
+      test && std::string(test) == "workbench") {
+    return VerifyWorkbenchPopups(*backend) ? 0 : 2;
+  }
+  if (const char* test = std::getenv("CROSSDESK_POPUP_TEST");
+      test && std::string(test) == "postcard-ip") {
+    return VerifyPostcardIpControls(*backend) ? 0 : 8;
+  }
+  if (const char* test = std::getenv("CROSSDESK_POPUP_TEST");
+      test && std::string(test) == "recent-16x9") {
+    return VerifySquareRecentPreview(*backend) ? 0 : 9;
+  }
   if (!VerifyStreamPopups(*backend)) return 1;
   if (!VerifyWorkbenchPopups(*backend)) return 2;
   if (!VerifyGalleryPopups(*backend)) return 3;
   if (!VerifyServerPanel(*backend)) return 4;
   if (!VerifyAutostartSettings(*backend)) return 5;
   if (!VerifyUpdateRecovery(*backend)) return 6;
+  if (!VerifyPasswordDialog(*backend)) return 7;
+  if (!VerifyPostcardIpControls(*backend)) return 8;
+  if (!VerifySquareRecentPreview(*backend)) return 9;
+  std::cout << "Square mode controls and uncropped 16:9 recent preview passed.\n";
   std::cout << "Slint popup rendering and local input passed.\n";
 }

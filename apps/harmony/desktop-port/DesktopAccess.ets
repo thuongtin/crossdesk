@@ -80,10 +80,10 @@ export class DesktopAccess {
       if (switches.length === 0) return;
       const prompt = ui.getPromptAction();
       const result = await prompt.showDialog({
-        title: '设置远程访问权限',
-        message: '请在接下来打开的应用设置页开启：\n\n' + switches.join('\n') +
-          '\n\n仅用于已通过连接密码验证的远程会话。你可以随时在该页面关闭权限。',
-        buttons: [{ text: '暂不开启', color: '#666666' }, { text: '前往设置', color: '#007DFF' }]
+        title: 'Cài đặt quyền truy cập từ xa',
+        message: 'Trong trang cài đặt ứng dụng sắp mở, hãy bật:\n\n' + switches.join('\n') +
+          '\n\nChỉ dùng cho các phiên từ xa đã xác minh bằng mật khẩu kết nối. Bạn có thể tắt quyền bất cứ lúc nào tại trang này.',
+        buttons: [{ text: 'Chưa bật', color: '#666666' }, { text: 'Đi tới cài đặt', color: '#007DFF' }]
       });
       if (result.index !== 1 || !DesktopAccess.running || generation !== DesktopAccess.generation ||
         DesktopAccess.missingHostSwitches().length === 0) return;
@@ -100,10 +100,10 @@ export class DesktopAccess {
         if (!DesktopAccess.running || generation !== DesktopAccess.generation) return;
         console.warn(`Slint host permission settings: ${error.message}`);
         await prompt.showDialog({
-          title: '未能打开应用设置',
-          message: '请在系统设置的应用列表中找到本应用，再开启：\n\n' +
+          title: 'Không thể mở cài đặt ứng dụng',
+          message: 'Hãy tìm ứng dụng này trong danh sách ứng dụng của cài đặt hệ thống, rồi bật:\n\n' +
             DesktopAccess.missingHostSwitches().join('\n'),
-          buttons: [{ text: '知道了', color: '#007DFF' }]
+          buttons: [{ text: 'Đã hiểu', color: '#007DFF' }]
         });
       }
     }).catch((error: Error) => console.warn(`Slint host permission guide: ${error.message}`))
@@ -113,9 +113,9 @@ export class DesktopAccess {
   private static missingHostSwitches(): string[] {
     const switches: string[] = [];
     if (!DesktopAccess.granted('ohos.permission.CUSTOM_SCREEN_RECORDING'))
-      switches.push('“屏幕共享”：允许远程设备查看本机屏幕。');
+      switches.push('“Chia sẻ màn hình”: Cho phép thiết bị từ xa xem màn hình máy này.');
     if (!DesktopAccess.granted('ohos.permission.CONTROL_DEVICE'))
-      switches.push('“辅助操作”：允许远程设备使用本机键盘和鼠标。');
+      switches.push('“Thao tác hỗ trợ”: Cho phép thiết bị từ xa dùng bàn phím và chuột của máy này.');
     return switches;
   }
 

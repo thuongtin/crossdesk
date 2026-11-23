@@ -213,7 +213,7 @@ async function verifyDesktopAccess() {
   access.requestHost(ui); access.requestHost(ui); access.requestKeyboard(); access.requestClipboard();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls, ['guide']);
-  assert.match(dialogs.at(-1).message, /屏幕共享/); assert.match(dialogs.at(-1).message, /辅助操作/);
+  assert.match(dialogs.at(-1).message, /Chia sẻ màn hình/); assert.match(dialogs.at(-1).message, /Thao tác hỗ trợ/);
   releasePrompt({ index: 1 }); await access.requests;
   assert.deepEqual(calls, ['guide', 'settings']);
   assert.deepEqual(routes[0], {
@@ -238,7 +238,7 @@ async function verifyDesktopAccess() {
   access.requestHost(ui); await access.requests;
   access.requestHost(ui); await access.requests;
   assert.deepEqual(calls, ['guide']);
-  assert.match(dialogs.at(-1).message, /辅助操作/); assert.doesNotMatch(dialogs.at(-1).message, /屏幕共享/);
+  assert.match(dialogs.at(-1).message, /Thao tác hỗ trợ/); assert.doesNotMatch(dialogs.at(-1).message, /Chia sẻ màn hình/);
   assert.equal(latest().controlDevice, false); assert.equal(latest().screenRecording, true);
   grants.delete(screen); change({}); assert.equal(latest().screenRecording, false);
   access.stop();
@@ -259,8 +259,8 @@ async function verifyDesktopAccess() {
   access.start(context, false, e => notifications.push(e), true);
   access.requestHost(ui); await access.requests;
   assert.deepEqual(calls, ['guide', 'settings', 'guide']);
-  assert.equal(dialogs.at(-1).title, '未能打开应用设置');
-  assert.match(dialogs.at(-1).message, /屏幕共享/); assert.match(dialogs.at(-1).message, /辅助操作/);
+  assert.equal(dialogs.at(-1).title, 'Không thể mở cài đặt ứng dụng');
+  assert.match(dialogs.at(-1).message, /Chia sẻ màn hình/); assert.match(dialogs.at(-1).message, /Thao tác hỗ trợ/);
   assert.equal(latest().controlDevice, false); assert.equal(latest().screenRecording, false);
   access.stop();
 }

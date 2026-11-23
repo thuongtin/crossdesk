@@ -1,5 +1,5 @@
-name: 需求建议 / Feature request
-description: 提出 CrossDesk 的新功能或改进建议。Suggest a new feature or improvement for CrossDesk.
+name: Đề xuất tính năng / Feature request
+description: Đề xuất tính năng mới hoặc cải tiến CrossDesk. Suggest a new feature or improvement for CrossDesk.
 title: "[Feature] "
 labels: [enhancement]
 assignees: [kunkundi]
@@ -7,21 +7,21 @@ body:
   - type: markdown
     attributes:
       value: |
-        只需描述你的建议，其余选填。中文或英文均可。
-        Only a description of your idea is required. Chinese or English is welcome.
+        Chỉ cần mô tả đề xuất của bạn, các mục khác tùy chọn. Bạn có thể dùng tiếng Việt hoặc tiếng Anh.
+        Only a description of your idea is required. Vietnamese or English is welcome.
 
   - type: textarea
     id: proposal
     attributes:
-      label: 你的建议 / Your idea
-      description: 希望新增或改进什么？如方便，也请说明使用场景。What would you like to add or improve? If possible, describe when you would use it.
+      label: Đề xuất của bạn / Your idea
+      description: Bạn muốn thêm hoặc cải tiến gì? Nếu tiện, mô tả tình huống sử dụng. What would you like to add or improve? If possible, describe when you would use it.
     validations:
       required: true
 
   - type: textarea
     id: references
     attributes:
-      label: 补充说明（选填） / Additional context (optional)
-      description: 可附截图、参考链接或其他说明。Add screenshots, links, or any other details.
+      label: Thông tin bổ sung (tùy chọn) / Additional context (optional)
+      description: Có thể thêm ảnh chụp, liên kết tham khảo hoặc giải thích khác. Add screenshots, links, or any other details.
     validations:
       required: false
