@@ -1,0 +1,37 @@
+import { WorkbenchButton as BaseWorkbenchButton } from "workbench_controls.slint";
+// Postcard shell colors remain separate from DeskHub's functional device view.
+export global PostcardStyle {
+    out property <length> corner-radius: 0px;
+    out property <color> preview-matte: #24221e;
+    out property <color> canvas: #faf6ec;
+    out property <color> surface: #faf6ec;
+    out property <color> field-surface: #f5efe2;
+    out property <color> hover-surface: #eee5d7;
+    out property <color> pressed-surface: #e5dac8;
+    out property <color> separator: #8f9088;
+    out property <color> text: #191a17;
+    out property <color> muted: #66685f;
+    out property <color> accent: #bd4118;
+    out property <color> success: #62954a;
+}
+export component PostcardCard inherits Rectangle {
+    background: transparent;
+    border-radius: PostcardStyle.corner-radius;
+    @children
+}
+
+export component PostcardButton inherits BaseWorkbenchButton {
+    normal-background: PostcardStyle.canvas;
+    normal-outline-color: PostcardStyle.separator;
+    focus-outline-color: PostcardStyle.accent;
+    hover-outline-color: PostcardStyle.muted;
+    pressed-outline-color: PostcardStyle.accent;
+    text-color: root.primary || root.destructive ? white : PostcardStyle.text;
+    icon-color: root.primary || root.destructive ? white : PostcardStyle.muted;
+    background: root.destructive ? (root.pressed ? #92251b : #b73428)
+        : root.primary ? (root.pressed ? #963313 : root.hovered ? #ad3814 : PostcardStyle.accent)
+        : root.pressed ? PostcardStyle.pressed-surface
+        : root.hovered ? PostcardStyle.hover-surface
+        : root.quiet ? transparent : root.normal-background;
+    border-radius: PostcardStyle.corner-radius;
+}
