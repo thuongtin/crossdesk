@@ -111,7 +111,7 @@ int ConfigCenter::Load() {
   const long language_value =
       ini_->GetLongValue(section_, "language", static_cast<long>(language_));
   if (language_value < static_cast<long>(LANGUAGE::CHINESE) ||
-      language_value > static_cast<long>(LANGUAGE::SYSTEM)) {
+      language_value > static_cast<long>(LANGUAGE::VIETNAMESE)) {
     language_ = LANGUAGE::ENGLISH;
   } else {
     language_ = static_cast<LANGUAGE>(language_value);
@@ -432,7 +432,7 @@ int ConfigCenter::ApplySharedHostConfig(const std::string& contents) {
 
 int ConfigCenter::SetLanguage(LANGUAGE language) {
   const int value = static_cast<int>(language);
-  if (value < 0 || value > static_cast<int>(LANGUAGE::SYSTEM) || StoreValues({{"language", std::to_string(value)}}) != 0) return -1;
+  if (value < 0 || value > static_cast<int>(LANGUAGE::VIETNAMESE) || StoreValues({{"language", std::to_string(value)}}) != 0) return -1;
   language_ = language;
   return 0;
 }

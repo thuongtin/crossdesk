@@ -1,4 +1,5 @@
 #include "linux_update_download.h"
+#include "../updater/update_source.h"
 
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -9,7 +10,7 @@ std::string LinuxUpdateDownloadUrl(const nlohmann::json& manifest,
                                    const VersionInfo& latest,
                                    const std::string& architecture,
                                    const std::filesystem::path& executable_dir) {
-  const std::string fallback = "https://github.com/kunkundi/crossdesk/releases";
+  const std::string fallback = updater::kReleasePage;
   if ((architecture != "amd64" && architecture != "arm64") ||
       executable_dir.empty()) {
     return fallback;
@@ -42,7 +43,7 @@ std::string LinuxUpdateDownloadUrl(const nlohmann::json& manifest,
     }
     const std::string filename = package_name + "-linux-" + architecture +
                                  "-v" + latest.version + ".deb";
-    const std::string url = "https://downloads.crossdesk.cn/" + filename;
+    const std::string url = updater::ReleaseAssetUrl(latest.version, filename);
     // Verify the variant in the asset name too, not just the manifest key.
     if (download.at("filename") == filename && download.at("url") == url) {
       return url;

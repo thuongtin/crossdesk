@@ -23,6 +23,13 @@ namespace localization {
 
 inline constexpr int kSystemLanguage = 10;
 inline constexpr int kEnglishLanguage = 1;
+// Value 10 remains the persisted system choice; Vietnamese uses column 10.
+inline constexpr int kVietnameseLanguage = 11;
+inline constexpr int kVietnameseColumn = 10;
+
+inline int TranslationColumn(int language) {
+  return language == kVietnameseLanguage ? kVietnameseColumn : language;
+}
 
 // Keep 0/1/2 compatible with existing Chinese/English/Russian config files.
 inline int MatchLanguage(std::string tag) {
@@ -32,6 +39,7 @@ inline int MatchLanguage(std::string tag) {
   }
   tag = tag.substr(0, tag.find_first_of(".@"));
   const auto base = tag.substr(0, tag.find('-'));
+  if (base == "vi") return kVietnameseLanguage;
   if (base == "zh") {
     const auto parts = "-" + tag + "-";
     if (parts.find("-hans-") != std::string::npos) return 0;
@@ -43,7 +51,6 @@ inline int MatchLanguage(std::string tag) {
   const char* codes[] = {"zh", "en", "ru", "zh", "ja", "ko", "de", "fr", "es", "pt"};
   for (int i = 1; i < kSystemLanguage; ++i)
     if (i != 3 && base == codes[i]) return i;
-  if (base == "c" || base == "posix") return kEnglishLanguage;
   return -1;
 }
 
@@ -52,7 +59,7 @@ inline int MatchPreferredLanguages(const std::vector<std::string>& tags) {
     const int match = MatchLanguage(tag);
     if (match >= 0) return match;
   }
-  return kEnglishLanguage;
+  return kVietnameseLanguage;
 }
 
 inline int DetectSystemLanguage() {
@@ -82,7 +89,7 @@ inline int DetectSystemLanguage() {
   const char* locale = std::getenv("LC_ALL");
   if (!locale || !*locale) locale = std::getenv("LC_MESSAGES");
   if (!locale || !*locale) locale = std::getenv("LANG");
-  if (locale && (std::string(locale) == "C" || std::string(locale) == "POSIX")) return kEnglishLanguage;
+  if (locale && (std::string(locale) == "C" || std::string(locale) == "POSIX")) return kVietnameseLanguage;
   if (const char* preferred = std::getenv("LANGUAGE")) {
     std::string list(preferred);
     size_t start = 0;

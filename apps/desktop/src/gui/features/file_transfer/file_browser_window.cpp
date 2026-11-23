@@ -9,6 +9,7 @@ extern unsigned char fa_solid_900_ttf[];
 extern unsigned int fa_solid_900_ttf_len;
 #include "ui/model_update.h"
 #include "localization.h"
+#include "ui/ui_localization.h"
 #include "application/window_geometry.h"
 #include "application/window_presentation.h"
 #if defined(__APPLE__)
@@ -46,23 +47,20 @@ bool Matches(const std::string& text, const std::string& filter) {
       [](unsigned char a, unsigned char b) { return std::tolower(a) == std::tolower(b); }) != text.end();
 }
 }
-std::string FileBrowserWindow::Tr(const char* chinese, const char* english) const { return chinese_ ? chinese : english; }
+std::string FileBrowserWindow::Tr(const char* key) const { return localization::Literal(key, language_); }
 FileBrowserWindow::FileBrowserWindow(FileTransferManager& transfers, std::string remote,
     bool controller, int language)
     : transfers_(transfers), remote_(std::move(remote)),
       connection_generation_(transfers_.browser().Generation(remote_)),
-      chinese_(language == 0 || language == 3) {
+      controller_(controller),
+      language_(language) {
   transfers_.browser().TakeEvents(remote_);
   window_->window().window_handle().register_font_from_data(
       fa_solid_900_ttf, fa_solid_900_ttf_len);
   // Resolve the native frame at its final size while it is still hidden.
   // Otherwise show() applies the preferred size after we have centered it.
   window_->window().set_size(slint::LogicalSize({900, 620}));
-  window_->set_chinese(chinese_);
   UpdateActionLabels(language);
-  SetPeerName("");
-  window_->set_local_role(S(controller ? Tr("控制端", "Controller") : Tr("被控端", "Host")));
-  window_->set_remote_role(S(controller ? Tr("被控端", "Host") : Tr("控制端", "Controller")));
   window_->set_local_entries(panes_[0].rows); window_->set_local_tree(panes_[0].tree);
   window_->set_remote_entries(panes_[1].rows); window_->set_remote_tree(panes_[1].tree);
   window_->set_tasks(tasks_);
@@ -188,10 +186,17 @@ FileBrowserWindow::FileBrowserWindow(FileTransferManager& transfers, std::string
   Navigate(false, ""); Navigate(true, "");
 }
 void FileBrowserWindow::SetPeerName(const std::string& name) {
-  const auto text = S(name.empty() ? Tr("远端设备", "Remote device") : name);
+  peer_name_ = name;
+  const auto text = S(name.empty() ? Tr("远端设备") : name);
   if (window_->get_peer_name() != text) window_->set_peer_name(text);
 }
 void FileBrowserWindow::UpdateActionLabels(int language) {
+  language_ = language;
+  window_->set_chinese(language == 0 || language == 3);
+  ui_localization::ApplySlintLiterals(window_, language);
+  SetPeerName(peer_name_);
+  window_->set_local_role(S(controller_ ? Tr("控制端") : Tr("被控端")));
+  window_->set_remote_role(S(controller_ ? Tr("被控端") : Tr("控制端")));
   window_->set_send_local_text(S(localization::Literal("发送到本机", language)));
   window_->set_send_remote_text(S(localization::Literal("发送到远端", language)));
   window_->set_clear_completed_text(S(localization::Literal("清除已完成", language)));
@@ -332,8 +337,8 @@ void FileBrowserWindow::UpdatePane(bool remote) {
   }
   ui::UpdateModelRows(*pane.rows, std::move(rows));
   const auto summary = pane.busy
-      ? pane.loading.empty() ? Tr("正在读取目录…", "Loading folder…") : pane.loading
-      : std::to_string(pane.rows->row_count()) + Tr(" 项", " items");
+      ? pane.loading.empty() ? Tr("正在读取目录…") : pane.loading
+      : std::to_string(pane.rows->row_count()) + Tr(" 项");
   const bool up = pane.loaded && !pane.parent.empty() && pane.path != pane.parent;
   const bool all = selectable > 0 && pane.selected.size() == selectable;
   if (remote) {
@@ -373,8 +378,8 @@ void FileBrowserWindow::UpdateTree(bool remote) {
             self(self, std::string(entry.path), std::string(entry.name), depth + 1);
     }
   };
-  if (!pane.home.empty()) append(append, pane.home, Tr("主目录", "Home"), 0);
-  append(append, "@roots", Tr("磁盘", "Drives"), 0);
+  if (!pane.home.empty()) append(append, pane.home, Tr("主目录"), 0);
+  append(append, "@roots", Tr("磁盘"), 0);
   if (pane.loaded && pane.path != "@roots" && pane.path != pane.home &&
       std::none_of(rows.begin(), rows.end(), [&](const auto& row) { return std::string(row.path) == pane.path; }))
     append(append, pane.path, Name(pane.path), 0);
@@ -455,7 +460,7 @@ bool FileBrowserWindow::QueueTransfer(bool download, const std::vector<std::stri
                                       const std::string& destination) {
   if (paths.empty() || !TransferReady() || !SessionConnected()) return false;
   transfers_.browser().Copy(remote_, paths, destination, download);
-  Notice(Tr("正在准备传输 → ", "Preparing transfer → ") + destination, false);
+  Notice(Tr("正在准备传输 → ") + destination, false);
   panes_[download].selected.clear(); UpdatePane(download);
   return true;
 }
@@ -469,19 +474,19 @@ void FileBrowserWindow::Notice(const std::string& message, bool error) {
   window_->set_notice(S(message)); window_->set_notice_error(error);
 }
 std::string FileBrowserWindow::Error(const std::string& code) const {
-  if (code == "timeout") return Tr("远端未响应，请确认两端已更新至支持文件浏览的版本后重试。", "Peer did not respond. Update both ends to a version that supports file browsing, then retry.");
-  if (code == "disconnected") return Tr("连接已断开，请重新连接后打开文件管理器。", "Disconnected. Reconnect and reopen the file manager.");
-  if (code == "browser_not_open") return Tr("请先在控制端打开本连接的文件管理器，再浏览控制端目录。", "Open this connection's file manager on the controller to enable browsing its folders.");
-  if (code == "directory_unavailable") return Tr("无法打开目录，请检查路径和访问权限后刷新。", "Cannot open folder. Check the path and access permissions, then refresh.");
-  if (code == "pagination_unsupported") return Tr("远端版本无法完整读取此目录，请更新远端后重试。", "Update the remote app to load every item in this folder.");
-  if (code == "invalid_listing" || code == "listing_expired") return Tr("目录列表未能完整加载，请刷新重试。", "The folder listing could not be fully loaded. Refresh to retry.");
-  if (code == "directory_not_writable") return Tr("目标目录不可写，请选择其他目录。", "Cannot write to the destination. Choose another folder.");
-  if (code == "symbolic_link") return Tr("所选内容包含符号链接，请选择实际文件或目录。", "Selection contains a symbolic link. Select the original files or folders.");
-  if (code == "too_many_files") return Tr("单次最多传输 4096 个文件与目录，请分批选择。", "Select at most 4096 files and folders per transfer.");
-  if (code == "file_unreadable") return Tr("文件无法读取，可能已移动或无访问权限。", "Cannot read a file. It may have moved or access was denied.");
-  if (code == "busy") return Tr("请求较多，请稍后重试。", "Too many pending requests. Try again shortly.");
-  if (code == "already_finished") return Tr("任务已结束，无需取消。", "This transfer has already finished.");
-  return Tr("操作失败，请检查所选路径与文件权限后重试。", "Operation failed. Check the paths and file permissions, then retry.");
+  if (code == "timeout") return Tr("远端未响应，请确认两端已更新至支持文件浏览的版本后重试。");
+  if (code == "disconnected") return Tr("连接已断开，请重新连接后打开文件管理器。");
+  if (code == "browser_not_open") return Tr("请先在控制端打开本连接的文件管理器，再浏览控制端目录。");
+  if (code == "directory_unavailable") return Tr("无法打开目录，请检查路径和访问权限后刷新。");
+  if (code == "pagination_unsupported") return Tr("远端版本无法完整读取此目录，请更新远端后重试。");
+  if (code == "invalid_listing" || code == "listing_expired") return Tr("目录列表未能完整加载，请刷新重试。");
+  if (code == "directory_not_writable") return Tr("目标目录不可写，请选择其他目录。");
+  if (code == "symbolic_link") return Tr("所选内容包含符号链接，请选择实际文件或目录。");
+  if (code == "too_many_files") return Tr("单次最多传输 4096 个文件与目录，请分批选择。");
+  if (code == "file_unreadable") return Tr("文件无法读取，可能已移动或无访问权限。");
+  if (code == "busy") return Tr("请求较多，请稍后重试。");
+  if (code == "already_finished") return Tr("任务已结束，无需取消。");
+  return Tr("操作失败，请检查所选路径与文件权限后重试。");
 }
 bool FileBrowserWindow::Tick() {
   using Status = FileTransferManager::FileTransferState::FileTransferStatus;
@@ -505,8 +510,8 @@ bool FileBrowserWindow::Tick() {
       const bool ok = event.result.value("ok", false);
       if (!ok || !window_->get_notice_error())
         Notice(ok ? event.result.value("message", "") == "cancelling"
-                    ? Tr("正在取消传输…", "Cancelling transfer…")
-                    : Tr("已加入传输队列", "Added to transfer queue")
+                    ? Tr("正在取消传输…")
+                    : Tr("已加入传输队列")
                   : Error(event.result.value("error", "unknown")), !ok);
       if (ok) refresh_at_ = now + std::chrono::seconds(1);
       continue;
@@ -518,8 +523,8 @@ bool FileBrowserWindow::Tick() {
     if (!request.tree && pane.request != event.id) continue;
     if (event.result.value("loading", false)) {
       if (!request.tree) {
-        pane.loading = Tr("正在加载 ", "Loading ") + std::to_string(event.result.value("loaded", size_t{})) +
-            " / " + std::to_string(event.result.value("total", size_t{})) + Tr(" 项…", " items…");
+        pane.loading = Tr("正在加载 ") + std::to_string(event.result.value("loaded", size_t{})) +
+            " / " + std::to_string(event.result.value("total", size_t{})) + Tr(" 项…");
         if (request.remote) window_->set_remote_status(S(pane.loading));
         else window_->set_local_status(S(pane.loading));
       }
@@ -601,25 +606,25 @@ bool FileBrowserWindow::Tick() {
     row.failed = task.status == Status::Failed;
     row.can_cancel = task.status == Status::Queued || task.status == Status::Sending || task.status == Status::Receiving;
     row.progress = task.status == Status::Completed ? 1.f : task.file_size ? std::clamp(float(task.sent_bytes) / task.file_size, 0.f, 1.f) : 0.f;
-    const auto detail = Tr("已传输 ", "Transferred ") + Size(task.sent_bytes) +
+    const auto detail = Tr("已传输 ") + Size(task.sent_bytes) +
         (task.rate_bps ? "  ·  " + Size(task.rate_bps / 8) + "/s" : "");
     row.detail = S(detail);
     switch (task.status) {
-      case Status::Queued: row.status = S(Tr("排队中", "Queued")); break;
-      case Status::Sending: row.status = S(Tr("发送中 ", "Sending ") + std::to_string(int(row.progress * 100)) + "%"); break;
-      case Status::Receiving: row.status = S(Tr("接收中 ", "Receiving ") + std::to_string(int(row.progress * 100)) + "%"); break;
-      case Status::Completed: row.status = S(Tr("已完成", "Completed")); break;
-      case Status::Failed: row.status = S(Tr("失败 · 请重试", "Failed · Retry")); break;
-      case Status::Cancelling: row.status = S(Tr("正在取消", "Cancelling")); break;
-      case Status::Cancelled: row.status = S(Tr("已取消", "Cancelled")); break;
+      case Status::Queued: row.status = S(Tr("排队中")); break;
+      case Status::Sending: row.status = S(Tr("发送中 ") + std::to_string(int(row.progress * 100)) + "%"); break;
+      case Status::Receiving: row.status = S(Tr("接收中 ") + std::to_string(int(row.progress * 100)) + "%"); break;
+      case Status::Completed: row.status = S(Tr("已完成")); break;
+      case Status::Failed: row.status = S(Tr("失败 · 请重试")); break;
+      case Status::Cancelling: row.status = S(Tr("正在取消")); break;
+      case Status::Cancelled: row.status = S(Tr("已取消")); break;
     }
     rows.push_back(row);
   }
   const auto active = std::count_if(rows.begin(), rows.end(), [](const auto& task) { return task.active; });
   const auto failed = std::count_if(rows.begin(), rows.end(), [](const auto& task) { return task.failed; });
-  const auto summary = std::to_string(rows.size()) + Tr(" 项", " items") +
-      (active ? " · " + std::to_string(active) + Tr(" 项进行中", " active") : "") +
-      (failed ? " · " + std::to_string(failed) + Tr(" 项失败", " failed") : "");
+  const auto summary = std::to_string(rows.size()) + Tr(" 项") +
+      (active ? " · " + std::to_string(active) + Tr(" 项进行中") : "") +
+      (failed ? " · " + std::to_string(failed) + Tr(" 项失败") : "");
   window_->set_task_summary(S(summary));
   ui::UpdateModelRows(*tasks_, std::move(rows));
   if (!window_->get_drag_active() && refresh_at_ != std::chrono::steady_clock::time_point{} && now >= refresh_at_) {
