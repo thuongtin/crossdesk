@@ -1,20 +1,20 @@
 {
-  "latest_version": "1.7.6-7-20261123",
-  "version": "1.7.6-7-20261123",
-  "releaseDate": "2026-11-23",
-  "patch": 7,
-  "releaseName": "CrossDesk v1.7.6-7-20261123",
-  "releaseNotes": "## Downloads\n\n| Platform | Installer |\n| --- | --- |\n| macOS, Apple Silicon (ARM64) | Developer ID signed, notarized and stapled `.pkg` |\n| Windows 10/11, x64 (AMD64) | NSIS `.exe`, not Authenticode-signed, built without CUDA |\n\nIntel macOS and Windows ARM64 installers are not included. Use `SHA256SUMS.txt` to verify the downloads.\n\n## What changed\n\n- CrossDesk Postcard now checks the `thuongtin/crossdesk` release channel instead of upstream. The macOS ARM64 installer is the bootstrap for future signed updates from this channel. This Windows build is distributed for manual installation.\n- Retains Postcard, DeskHub, English as the default UI language, and uncropped 16:9 Recent Devices previews.\n- The default signaling endpoint remains `crossdesk.ecom.io.vn:9099`. Existing settings and device identity are unchanged.\n- Fixes the Windows build of localized Settings tray labels.\n",
-  "tagName": "v1.7.6-7-20261123",
+  "latest_version": "1.7.7-1-20261124",
+  "version": "1.7.7-1-20261124",
+  "releaseDate": "2026-11-24",
+  "patch": 1,
+  "releaseName": "CrossDesk v1.7.7-1-20261124",
+  "releaseNotes": "## Downloads\n\n- macOS 14 or later, Apple Silicon: Developer ID signed, notarized and stapled `.pkg`.\n- Windows 10/11, x64: unsigned NSIS installer with optional NVIDIA CUDA support; installation is manual.\n- Verify the installers with `SHA256SUMS.txt`. No Intel Mac or Windows ARM64 installer is included.\n\n## Changes\n\n- Updated to upstream CrossDesk 1.7.7, including signaling reconnect fixes, smoother macOS fullscreen transitions, Windows capture fixes and video pipeline improvements.\n- Desktop update notifications and the release link use the `thuongtin/crossdesk` channel. macOS ARM64 verifies the signed update metadata and package checksum.\n- Retains the Postcard interface, DeskHub, English as the default language and uncropped 16:9 Recent Devices previews. The default signaling endpoint remains `crossdesk.ecom.io.vn:9099`.\n",
+  "tagName": "v1.7.7-1-20261124",
   "downloads": {
     "macos-arm64": {
-      "version": "1.7.6-7-20261123",
-      "releaseDate": "2026-11-23",
-      "filename": "crossdesk-macos-arm64-v1.7.6-7-20261123.pkg",
-      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.6-7-20261123/crossdesk-macos-arm64-v1.7.6-7-20261123.pkg",
+      "version": "1.7.7-1-20261124",
+      "releaseDate": "2026-11-24",
+      "filename": "crossdesk-macos-arm64-v1.7.7-1-20261124.pkg",
+      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-1-20261124/crossdesk-macos-arm64-v1.7.7-1-20261124.pkg",
       "update": {
-        "payload": "{\"filename\":\"crossdesk-macos-arm64-v1.7.6-7-20261123.pkg\",\"platform\":\"macos-arm64\",\"schema\":1,\"sha256\":\"21971e4e266e4ec44ca4f7032c0f0fcb39abada03313dc9c899c1121aa570804\",\"size\":29532434,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.6-7-20261123/crossdesk-macos-arm64-v1.7.6-7-20261123.pkg\",\"version\":\"1.7.6-7-20261123\"}",
-        "signature": "fb17e040bf3d0acf7fb9c5e4da86f9e0738b02f51611e557418133e8f04edc44322e01c72ba856ac70096171b0c0ca69cafa3a1b71a268138a0f2f8d756f2007"
+        "payload": "{\"filename\":\"crossdesk-macos-arm64-v1.7.7-1-20261124.pkg\",\"platform\":\"macos-arm64\",\"schema\":1,\"sha256\":\"9c268eddd6edaca7038fd37efb6e200f799433f2c6d0ef7d1d752b2d75cdcfaa\",\"size\":28322102,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-1-20261124/crossdesk-macos-arm64-v1.7.7-1-20261124.pkg\",\"version\":\"1.7.7-1-20261124\"}",
+        "signature": "587d52151c3487af1fcd8ec41bf2cae8a2f9c1fcc261dfbc3e9b2e7eaf27942c53c192a9de39f2a78e293e1c40a5ec0e3fd1793ca8c77d422524c4b546f58c0a"
       }
     }
   }
