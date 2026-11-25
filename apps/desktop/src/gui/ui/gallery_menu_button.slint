@@ -1,5 +1,6 @@
 import { SurfaceSeparator, FlatSurface, UiSurface } from "ui_surface.slint";
 import { UiRadius } from "ui_radius.slint";
+import { PostcardStyle } from "postcard_controls.slint";
 import { CompactButton, FontAwesomeIcons, ControlStyle } from "common.slint";
 
 export struct GalleryMenuItem { label: string, enabled: bool }
@@ -11,6 +12,7 @@ export component GalleryMenuButton inherits Rectangle {
     in property <bool> opens-up: false;
     in property <bool> compact-trigger: false;
     in property <bool> compact-menu: false;
+    in property <bool> postcard: false;
     in property <length> menu-width: 200px;
     in property <length> horizontal-padding: 12px;
     out property <length> preferred-button-width: ceil(button-label.preferred-width / 1px) * 1px + root.horizontal-padding * 2 + 18px;
@@ -22,6 +24,11 @@ export component GalleryMenuButton inherits Rectangle {
     private property <length> menu-padding: root.compact-menu ? 3px : 4px;
     private property <length> divider-spacing: root.compact-menu ? 5px : 7px;
     private property <int> current-index: 0;
+    private property <color> idle-fill: root.postcard ? PostcardStyle.surface : white;
+    private property <color> hover-fill: root.postcard ? PostcardStyle.hover-surface : ControlStyle.hover;
+    private property <color> pressed-fill: root.postcard ? PostcardStyle.pressed-surface : ControlStyle.pressed;
+    private property <color> border-ink: root.postcard ? PostcardStyle.separator : UiSurface.edge;
+    private property <length> menu-radius: root.postcard ? PostcardStyle.corner-radius : UiRadius.menu;
     callback opened;
     callback selected(int);
 
@@ -71,7 +78,7 @@ export component GalleryMenuButton inherits Rectangle {
         key-pressed(event) => { return root.handle-key(event); }
         if !root.compact-trigger: CompactButton {
             width: parent.width; height: parent.height;
-            border-radius: UiRadius.control;
+            border-radius: root.postcard ? PostcardStyle.corner-radius : UiRadius.control;
             enabled: root.enabled; primary: root.primary;
             clicked => { trigger-focus.focus(); root.open-menu(); }
         }
@@ -90,9 +97,12 @@ export component GalleryMenuButton inherits Rectangle {
             horizontal-alignment: center; vertical-alignment: center;
         }
         if root.compact-trigger: FlatSurface {
-            background: more-touch.pressed || popup.is-open ? ControlStyle.selected : more-touch.has-hover ? ControlStyle.hover : white;
-            border-radius: UiRadius.menu;
-            outline-color: trigger-focus.has-focus ? UiSurface.focus : UiSurface.edge;
+            background: more-touch.pressed || popup.is-open
+                ? (root.postcard ? root.pressed-fill : ControlStyle.selected)
+                : more-touch.has-hover ? root.hover-fill : root.idle-fill;
+            border-radius: root.menu-radius;
+            outline-color: trigger-focus.has-focus
+                ? (root.postcard ? PostcardStyle.accent : UiSurface.focus) : root.border-ink;
             animate background, outline-color { duration: 120ms; }
             for dot in 3: Rectangle {
                 x: parent.width / 2 - 6px + dot * 5px;
@@ -118,7 +128,7 @@ export component GalleryMenuButton inherits Rectangle {
         popup-focus := FocusScope {
             key-pressed(event) => { return root.handle-key(event); }
             FlatSurface {
-                background: white; outline-color: UiSurface.edge; border-radius: UiRadius.menu;
+                background: root.idle-fill; outline-color: root.border-ink; border-radius: root.menu-radius;
                 clip: true;
                 if root.destructive-index > 0: SurfaceSeparator {
                     x: 10px; y: root.menu-padding + root.destructive-index * root.row-height + (root.divider-spacing - 1px) / 2;
@@ -132,10 +142,10 @@ export component GalleryMenuButton inherits Rectangle {
                     y: root.menu-padding + index * root.row-height
                         + (root.destructive-index > 0 && index >= root.destructive-index ? root.divider-spacing : 0px);
                     width: parent.width - root.menu-padding * 2; height: root.row-height;
-                    border-radius: UiRadius.control;
+                    border-radius: root.postcard ? PostcardStyle.corner-radius : UiRadius.control;
                     background: item.enabled && index == root.current-index
                         ? (self.destructive ? (item-touch.pressed ? #f6babb : #fbe0e0)
-                            : item-touch.pressed ? ControlStyle.pressed : ControlStyle.hover) : transparent;
+                            : item-touch.pressed ? root.pressed-fill : root.hover-fill) : transparent;
                     accessible-role: button; accessible-label: item.label; accessible-enabled: item.enabled;
                     accessible-action-default => { root.choose(index); }
                     if self.has-icon: Text {

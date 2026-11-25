@@ -21,6 +21,17 @@ inline slint::SharedString Text(const std::string& value) {
 }
 
 template <typename Component>
+void ApplySlintLiterals(const Component& component, int language_index) {
+  const int language = localization::detail::ClampLanguageIndex(language_index);
+  auto& gallery = component->template global<ui::GalleryStrings>();
+  gallery.set_language(language);
+  std::vector<slint::SharedString> literals;
+  for (const auto* key : localization::detail::kSlintLiterals)
+    literals.push_back(Text(localization::Literal(key, language)));
+  gallery.set_texts(std::make_shared<slint::VectorModel<slint::SharedString>>(literals));
+}
+
+template <typename Component>
 void ApplyServerStrings(const Component& component, int language_index) {
   const int language = localization::detail::ClampLanguageIndex(language_index);
   auto& strings = component->template global<ui::ServerStrings>();
@@ -43,20 +54,18 @@ inline int ApplyMainWindowStrings(
     int language_index) {
   const int language =
       localization::detail::ClampLanguageIndex(language_index);
+  ApplySlintLiterals(window, language);
   auto& gallery = window->global<ui::GalleryStrings>();
-  gallery.set_language(language);
   const auto& retry = localization::Literal("请在 {0} 秒后重试", language);
   const auto split = retry.find("{0}");
   gallery.set_retry_prefix(Text(retry.substr(0, split)));
   gallery.set_retry_suffix(Text(split == std::string::npos ? "" : retry.substr(split + 3)));
-  std::vector<slint::SharedString> literals;
-  for (const auto* key : localization::detail::kSlintLiterals)
-    literals.push_back(Text(localization::Literal(key, language)));
-  gallery.set_texts(std::make_shared<slint::VectorModel<slint::SharedString>>(literals));
   std::vector<slint::SharedString> languages;
-  for (const auto& option : localization::GetSupportedLanguages())
+  for (const auto& option : localization::GetSupportedLanguages()) {
+    if (option.code == "vi")
+      languages.push_back(Text(localization::Literal("跟随系统", language)));
     languages.push_back(Text(option.display_name));
-  languages.push_back(Text(localization::Literal("跟随系统", language)));
+  }
   window->set_language_options(std::make_shared<slint::VectorModel<slint::SharedString>>(languages));
   auto& trust = window->global<ui::TrustStrings>();
   trust.set_title(Text(localization::Literal("可信设备", language)));
@@ -113,6 +122,7 @@ inline int ApplyMainWindowStrings(
   messages.set_delete_error(Text(localization::message_delete_error[language]));
   messages.set_cancel(Text(localization::cancel[language]));
 
+  strings.set_connect_heading(Text(localization::Literal("连接到设备", language)));
   strings.set_local_desktop(Text(localization::local_desktop[language]));
   strings.set_remote_desktop(Text(localization::remote_desktop[language]));
   strings.set_recent_connections(
@@ -129,8 +139,6 @@ inline int ApplyMainWindowStrings(
   strings.set_connect(Text(localization::connect[language]));
   strings.set_settings(Text(localization::settings[language]));
   strings.set_about(Text(localization::about[language]));
-  strings.set_sponsorship_title(Text(localization::sponsorship_title[language]));
-  strings.set_sponsor_via_afdian(Text(localization::sponsor_via_afdian[language]));
   strings.set_ok(Text(localization::ok[language]));
   strings.set_cancel(Text(localization::cancel[language]));
   strings.set_new_password(Text(localization::new_password[language]));

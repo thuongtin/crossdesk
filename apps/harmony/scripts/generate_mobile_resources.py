@@ -61,10 +61,10 @@ def main(output=OUTPUT):
     (output / 'ThirdPartyLicenses.json').write_text(json.dumps({'schemaVersion': 1, 'components': components}, ensure_ascii=False, indent=2)+'\n')
     documents = []
     for i, (title, path) in enumerate([
-        ('鸿蒙构建说明', APP / 'README.md'), ('移动端功能对照', APP / 'MOBILE_PARITY.md'),
-        ('原生构建配方', APP / 'native/xmake.lua'), ('构建脚本', APP / 'scripts/build.py'),
-        ('MiniRTC 构建配方', ROOT / 'deps/submodules/minirtc/xmake.lua'),
-        ('OpenSSL 构建配方', ROOT / 'deps/submodules/minirtc/thirdparty/openssl/xmake.lua')]):
+        ('Hướng dẫn biên dịch HarmonyOS', APP / 'README.md'), ('Đối chiếu tính năng di động', APP / 'MOBILE_PARITY.md'),
+        ('Công thức biên dịch mã gốc', APP / 'native/xmake.lua'), ('Script biên dịch', APP / 'scripts/build.py'),
+        ('Công thức biên dịch MiniRTC', ROOT / 'deps/submodules/minirtc/xmake.lua'),
+        ('Công thức biên dịch OpenSSL', ROOT / 'deps/submodules/minirtc/thirdparty/openssl/xmake.lua')]):
         if not path.exists(): continue
         asset = f'about/build/{i}.txt'; target = output / asset; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(path.read_text())
         documents.append({'title': title, 'asset': asset})

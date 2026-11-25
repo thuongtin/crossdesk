@@ -25,16 +25,16 @@ std::optional<bool> Boolean(const std::string& value) {
   return std::nullopt;
 }
 const char* OnOff(bool value) { return value ? "on" : "off"; }
-const char* languages[] = {"zh-CN", "en-US", "ru-RU", "zh-Hant", "ja", "ko", "de", "fr", "es", "pt-BR", "system"};
+const char* languages[] = {"zh-CN", "en-US", "ru-RU", "zh-Hant", "ja", "ko", "de", "fr", "es", "pt-BR", "system", "vi"};
 const char* codecs[] = {"h264", "av1", "h265"};
 const char* turn_modes[] = {"off", "auto", "udp", "tcp"};
 }  // namespace
 
 std::vector<ConsoleSetting> GetConsoleSettings(const ConfigCenter& config) {
-  const auto language = std::clamp(static_cast<int>(config.GetLanguage()), 0, 10);
+  const auto language = std::clamp(static_cast<int>(config.GetLanguage()), 0, 11);
   const auto turn = std::clamp(static_cast<int>(config.GetTurnMode()), 0, 3);
   return {
-      {"language", "console_setting_language", languages[language], "system / zh-CN / en-US / ru-RU / zh-Hant / ja / ko / de / fr / es / pt-BR"},
+      {"language", "console_setting_language", languages[language], "system / zh-CN / en-US / ru-RU / zh-Hant / ja / ko / de / fr / es / pt-BR / vi"},
       {"codec", "console_setting_codec", codecs[static_cast<int>(config.GetVideoEncodeFormat())], "h264 / av1 / h265"},
       {"turn", "console_setting_turn", turn_modes[turn], "off / auto / udp / tcp"},
       {"self_hosted", "console_setting_self_hosted", OnOff(config.IsSelfHosted()), "on / off"},
@@ -72,7 +72,7 @@ SettingResult ApplyConsoleSetting(ConfigCenter& config, const std::string& key,
                   : value == "en-us" || value == "en" || value == "1" ? 1
                   : value == "ru-ru" || value == "ru" || value == "2" ? 2 : -1;
     if (language < 0) {
-      for (int i = 0; i <= 10; ++i)
+      for (int i = 0; i <= 11; ++i)
         if (value == Lower(languages[i]) || value == std::to_string(i)) language = i;
     }
     if (language < 0) return result;

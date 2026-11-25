@@ -110,7 +110,7 @@ export class BrowserPanel {
         grant.directory = await mkdtemp(join(tmpdir(), "crossdesk-mcp-launch-"));
         const path = join(grant.directory, "open.html");
         await writeFile(path,
-          `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'"><meta http-equiv="refresh" content="0;url=${url}"><title>CrossDesk MCP</title></head><body><p>正在打开 CrossDesk…</p><a href="${url}" rel="noreferrer">打开画面</a></body></html>`,
+          `<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'"><meta http-equiv="refresh" content="0;url=${url}"><title>CrossDesk MCP</title></head><body><p>Đang mở CrossDesk…</p><a href="${url}" rel="noreferrer">Mở hình ảnh</a></body></html>`,
           { mode: 0o600, flag: "wx" });
         if (this.closed || this.grants.get(key) !== grant) throw new Failure("PANEL_CLOSED");
         launcher = pathToFileURL(path).href;

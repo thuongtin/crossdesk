@@ -1,26 +1,26 @@
-# 更新文档配图
+# Cập nhật hình minh họa tài liệu
 
-## 官网首页
+## Trang chủ trang web chính thức
 
-用空白浏览器配置分别打开中英文官网，将窗口设为 1280 × 720 个逻辑像素。等首屏设备图加载完成，收起浏览器浮层，再截取带标签页和地址栏的完整窗口。中文版保存为 `fixtures/website.png`，英文版保存为 `fixtures/website-en.png`。[中文官网](https://www.crossdesk.cn/) · [English website](https://www.crossdesk.cn/en/)
+Dùng hồ sơ trình duyệt trống để mở riêng trang web tiếng Trung và tiếng Anh, đặt cửa sổ 1280 × 720 pixel logic. Chờ ảnh thiết bị đầu trang tải xong, đóng lớp nổi trình duyệt rồi chụp toàn bộ cửa sổ gồm thẻ và thanh địa chỉ. Lưu bản tiếng Trung thành `fixtures/website.png`, bản tiếng Anh thành `fixtures/website-en.png`. [Trang web tiếng Trung](https://www.crossdesk.cn/) · [English website](https://www.crossdesk.cn/en/)
 
-Office PC 在近期设备和 DeskHub 中使用官网首页，会话画面设置也使用它作为背景。更新素材后，重新生成下方的桌面截图以同步这些画面。
+Office PC dùng trang chủ trang web trong thiết bị gần đây và DeskHub; cài đặt hình ảnh phiên cũng dùng nó làm nền. Sau khi cập nhật tư liệu, tạo lại ảnh chụp máy tính bên dưới để đồng bộ các hình này.
 
-## Web 客户端
+## Ứng dụng Web
 
-更新 Web 首页时，使用空白浏览器配置打开线上客户端，将窗口设为 1280 × 720 个逻辑像素。等待表单和版本号显示，并确认设备 ID 与密码为空、连接状态提示已消失。截取包含标签页和地址栏的整个窗口，导出为 `web-client.png`。先更新捕获程序读取的这张图，再重新生成含近期设备或 DeskHub 磁贴的桌面截图。
+Khi cập nhật trang chủ Web, dùng hồ sơ trình duyệt trống mở ứng dụng trực tuyến, đặt cửa sổ 1280 × 720 pixel logic. Chờ biểu mẫu và số phiên bản hiện, xác nhận ID thiết bị và mật khẩu trống, lời nhắc trạng thái kết nối đã biến mất. Chụp toàn bộ cửa sổ gồm thẻ và thanh địa chỉ, xuất thành `web-client.png`. Cập nhật ảnh mà chương trình chụp đọc trước, rồi tạo lại ảnh chụp máy tính có thiết bị gần đây hoặc ô DeskHub.
 
-## 桌面客户端
+## Ứng dụng máy tính
 
-桌面墙的第二排依次展示 Studio Mac 的 Kitty 视频画面、Build Server 的构建终端和 Test Device 的 CPU 负载。构建终端素材 `fixtures/build-terminal.png` 可在运行 `xmake build crossdesk_wire` 后截取。CPU 曲线来自 macOS 活动监视器的「窗口 → CPU 历史记录」，将完整窗口分别保存为 `fixtures/cpu-history.png` 和 `fixtures/cpu-history-en.png`。更新素材后重新生成 `gallery` 和 `gallery-focus`。
+Hàng thứ hai DeskHub lần lượt hiện video Kitty của Studio Mac, terminal biên dịch Build Server và tải CPU Test Device. Có thể chụp tư liệu terminal `fixtures/build-terminal.png` sau khi chạy `xmake build crossdesk_wire`. Đường CPU từ “Window → CPU History” của Activity Monitor macOS; lưu toàn bộ cửa sổ riêng thành `fixtures/cpu-history.png` và `fixtures/cpu-history-en.png`. Sau khi cập nhật tư liệu, tạo lại `gallery` và `gallery-focus`.
 
-以下命令在已配置构建依赖与 Python Pillow 的 macOS 工程根目录执行。采集时使用 2× 显示器，并允许终端录制屏幕。捕获源码、可执行文件和原始窗口图均保存在工程外临时目录。
+Thực hiện các lệnh sau ở thư mục gốc dự án macOS đã cấu hình phụ thuộc biên dịch và Python Pillow. Khi chụp dùng màn hình 2× và cho terminal quyền ghi màn hình. Nguồn chương trình chụp, tệp thực thi và ảnh cửa sổ gốc đều lưu trong thư mục tạm ngoài dự án.
 
-先检查 `/tmp/crossdesk-ui-capture-page` 和 `/tmp/crossdesk-ui-capture-language`：旧覆盖文件存在且非空时会优先于环境变量，需确认并移开后再捕获。`CROSSDESK_UI_CAPTURE_DEMO_ASSETS` 指向本目录，供近期设备缩略图使用。
+Kiểm tra `/tmp/crossdesk-ui-capture-page` và `/tmp/crossdesk-ui-capture-language` trước: tệp ghi đè cũ tồn tại và không rỗng ưu tiên hơn biến môi trường, cần xác nhận và chuyển đi rồi mới chụp. `CROSSDESK_UI_CAPTURE_DEMO_ASSETS` trỏ đến thư mục này để dùng cho hình thu nhỏ thiết bị gần đây.
 
-### 生成捕获程序
+### Tạo chương trình chụp
 
-复用现有源文件的捕获辅助函数，截去测试入口，在临时目录加入演示状态及独立入口；保持工程内测试文件不变。源码结构变化时需复核替换位置。
+Tái dùng hàm trợ giúp chụp trong tệp nguồn hiện có, cắt bỏ điểm vào kiểm thử, thêm trạng thái trình diễn và điểm vào riêng trong thư mục tạm; giữ nguyên tệp kiểm thử trong dự án. Khi cấu trúc nguồn đổi, cần rà soát lại vị trí thay thế.
 
 ```bash
 set -e
@@ -240,9 +240,9 @@ bool CaptureTitledWindow(const char *path) {
 OBJC
 ```
 
-### 编译与捕获
+### Biên dịch và chụp
 
-使用 AppKit 获取当前窗口编号，将完整窗口保存为 PNG。以下路径对应 `macosx / arm64 / debug` 配置；其他配置先用 `xmake show -t slint_ui_smoke_test` 查看生成头文件与库路径，再调整。捕获按顺序执行，避免窗口互相抢占焦点。
+Dùng AppKit lấy số cửa sổ hiện tại và lưu toàn bộ cửa sổ thành PNG. Các đường dẫn sau tương ứng cấu hình `macosx / arm64 / debug`; cấu hình khác dùng `xmake show -t slint_ui_smoke_test` xem đường dẫn header sinh và thư viện trước rồi điều chỉnh. Chụp tuần tự để tránh các cửa sổ tranh tiêu điểm.
 
 ```bash
 slint_prefix=$(xmake lua -c 'import("core.project.config"); config.load(); import("core.project.project"); print(project.target("slint_ui_smoke_test"):pkg("slint"):installdir())')
@@ -307,11 +307,11 @@ for raw in (out / 'raw').glob('desktop-*.png'):
 PY
 ```
 
-核对中英文窗口标题、缩略图和文字边缘后，将生成的 PNG 复制到 `docs/images`。
+Sau khi kiểm tra tiêu đề cửa sổ tiếng Trung và tiếng Anh, hình thu nhỏ và viền chữ, sao chép PNG đã tạo vào `docs/images`.
 
 ## CLI
 
-在支持相应渲染模式的终端中分别运行以下命令，将示例 ID `123456789` 替换为被控电脑的 ID。按提示输入密码。等待顶栏显示 `Displaying` 后截取含状态栏和底部快捷键的完整视口。
+Chạy riêng các lệnh sau trong terminal hỗ trợ chế độ render tương ứng, thay ID ví dụ `123456789` bằng ID máy được điều khiển. Nhập mật khẩu theo lời nhắc. Chờ thanh trên hiện `Displaying` rồi chụp toàn bộ khung nhìn gồm thanh trạng thái và phím tắt phía dưới.
 
 ```sh
 crossdesk-cli 123456789 --renderer ansi --quality high

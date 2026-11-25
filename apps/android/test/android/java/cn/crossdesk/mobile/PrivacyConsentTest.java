@@ -119,14 +119,40 @@ public class PrivacyConsentTest {
             scenario.onActivity(activity->{notice(activity);assertNull(field(activity,"signaling"));});
         }
     }
-    @Test public void bundledPolicyUsesAppLanguageAndMissingPolicyCannotAuthorize(){
+    @Test public void existingLocalRecordsDoNotImplyConsent(){
+        Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+        SharedPreferences identities=context.getSharedPreferences("identities",Context.MODE_PRIVATE);
+        String key="privacy-upgrade.invalid:1";
+        try{
+            identities.edit().putString(key,"existing-device-identity").commit();
+            try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
+                scenario.onActivity(activity->{notice(activity);assertNull(field(activity,"signaling"));});
+            }
+        }finally{identities.edit().remove(key).commit();}
+    }
+    @Test public void policySectionsFollowEditionLocalesAndHandleLegacyDocuments(){
+        String policy="## Tiếng Việt\nVietnamese\n## English\nEnglish";
+        for(String locale:new String[]{"vi","vi-VN","VI_vn.UTF-8","","id-ID"})
+            assertEquals("Vietnamese",new PrivacyPolicyDocument(policy,locale).text);
+        assertEquals("Vietnamese",new PrivacyPolicyDocument(policy,(String)null).text);
+        for(String locale:new String[]{"en","zh-CN","zh-Hant","ru","ja","ko","de","fr","es","pt-BR"})
+            assertEquals("English",new PrivacyPolicyDocument(policy,locale).text);
+        assertEquals("Legacy",new PrivacyPolicyDocument("## 中文\r\nLegacy\r\n## English\r\nEnglish","vi").text);
+        assertEquals("English",new PrivacyPolicyDocument("## 中文\nLegacy\n## English\nEnglish","zh").text);
+        assertEquals("English",new PrivacyPolicyDocument("## English\nEnglish","en").text);
+        assertEquals("English",new PrivacyPolicyDocument("## English\nEnglish","vi").text);
+        assertEquals("Vietnamese",new PrivacyPolicyDocument("## Tiếng Việt\nVietnamese","en").text);
+        assertEquals("English",new PrivacyPolicyDocument("## Tiếng Việt\n## English\nEnglish","vi").text);
+        assertEquals("Plain text",new PrivacyPolicyDocument("Plain text","vi").text);
+        assertFalse(new PrivacyPolicyDocument((String)null).available);
+        assertEquals("",PrivacyPolicyDocument.selectText(null,null));
+    }
+    @Test public void bundledPolicyIsOfflineAndMissingPolicyCannotAuthorize(){
         Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
         PrivacyPolicyDocument policy=new PrivacyPolicyDocument(context);
-        boolean chinese=context.getResources().getConfiguration().getLocales().get(0).getLanguage().equals("zh");
-        assertTrue("Bundled policy must be available offline",policy.available);
-        assertTrue("Missing policy date in the app language",policy.text.contains(chinese?"更新日期：":"Updated:"));
-        assertTrue("Missing deletion section in the app language",policy.text.contains(chinese?"查询与删除请求":"Access and deletion requests"));
-        assertFalse("Policy includes another language",policy.text.contains(chinese?"Access and deletion requests":"查询与删除请求"));
+        assertTrue(policy.available);
+        assertTrue(policy.text.contains("Cập nhật ngày:")||policy.text.contains("Updated:"));
+        assertFalse(policy.text.contains("## English"));assertFalse(policy.text.contains("## Tiếng Việt"));
         assertFalse(new PrivacyPolicyDocument(" \n").available);
         try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
             scenario.onActivity(activity->{

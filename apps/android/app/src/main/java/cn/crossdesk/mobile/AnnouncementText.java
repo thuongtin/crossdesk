@@ -64,7 +64,7 @@ final class AnnouncementText {
             @Override public void onClick(View widget){
                 if(!isWebURL(getURL()))return;
                 try{widget.getContext().startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(getURL())).addCategory(Intent.CATEGORY_BROWSABLE));}
-                catch(android.content.ActivityNotFoundException error){Toast.makeText(widget.getContext(),"没有可打开网页的浏览器",Toast.LENGTH_SHORT).show();}
+                catch(android.content.ActivityNotFoundException error){Toast.makeText(widget.getContext(),L10n.tr("未找到可打开链接的浏览器"),Toast.LENGTH_SHORT).show();}
             }
         },start,result.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return true;

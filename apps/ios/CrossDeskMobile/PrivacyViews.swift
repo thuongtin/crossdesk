@@ -177,19 +177,31 @@ private struct PrivacyAuthorizationView: View {
 }
 
 /// Bundled policy is readable before any network consent or external request.
+enum PrivacyPolicyText {
+    static func select(_ document: String, language: String? = nil) -> String {
+        let text = document.replacingOccurrences(of: "\r\n", with: "\n")
+        func section(_ heading: String) -> String {
+            let pattern = "(?m)^## " + NSRegularExpression.escapedPattern(for: heading) + "[ \\t]*$"
+            guard let start = text.range(of: pattern, options: .regularExpression) else { return "" }
+            let end = text.range(of: "\n## ", range: start.upperBound..<text.endIndex)?.lowerBound ?? text.endIndex
+            return String(text[start.upperBound..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let vietnamese = section("Tiếng Việt").isEmpty ? section("中文") : section("Tiếng Việt")
+        let english = section("English")
+        let base = (language ?? "").lowercased().components(separatedBy: CharacterSet(charactersIn: "-_.@")).first ?? ""
+        let useEnglish = ["en", "zh", "ru", "ja", "ko", "de", "fr", "es", "pt"].contains(base)
+        let preferred = useEnglish ? english : vietnamese
+        let fallback = useEnglish ? vietnamese : english
+        return !preferred.isEmpty ? preferred : !fallback.isEmpty ? fallback : text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 private struct PrivacyPolicyDocument: View {
     private static let text: String? = {
         guard let url = Bundle.main.url(forResource: "PRIVACY", withExtension: "md"),
               let text = try? String(contentsOf: url, encoding: .utf8),
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        // Keep the published policy intact; use its English version outside Chinese locales.
-        if let start = text.range(of: "## 中文\n"),
-           let end = text.range(of: "## English", range: start.upperBound..<text.endIndex) {
-            let chinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") == true
-            return chinese ? String(text[start.upperBound..<end.lowerBound])
-                : String(text[end.upperBound...])
-        }
-        return text
+        return PrivacyPolicyText.select(text, language: Bundle.main.preferredLocalizations.first)
     }()
     static var isAvailable: Bool { text != nil }
     private static let paragraphs = (text ?? NSLocalizedString("隐私政策暂时无法读取，请拒绝联网并重新安装应用。", comment: ""))

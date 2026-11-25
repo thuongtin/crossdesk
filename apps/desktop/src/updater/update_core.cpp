@@ -1,4 +1,5 @@
 #include "updater/update_core.h"
+#include "updater/update_source.h"
 
 #include <app_version.h>
 #include <httplib.h>
@@ -22,7 +23,6 @@
 namespace crossdesk::updater {
 namespace {
 constexpr std::uint64_t kMaxPackageSize = 2ULL * 1024 * 1024 * 1024;
-constexpr const char* kDownloadOrigin = "https://downloads.crossdesk.cn";
 
 std::string Hex(const unsigned char* data, std::size_t length) {
   constexpr char digits[] = "0123456789abcdef";
@@ -69,8 +69,8 @@ std::string PublicKey() { return CROSSDESK_UPDATE_PUBLIC_KEY; }
 std::string BuildVersion() { return CROSSDESK_VERSION; }
 std::string PathUtf8(const fs::path& path) { return path.u8string(); }
 
-Artifact VerifyEnvelope(const std::string& envelope, const std::string& public_key,
-                        const std::string& platform, const std::string& current_version) {
+Artifact VerifyReleaseEnvelope(const std::string& envelope, const std::string& public_key,
+                               const std::string& platform) {
   if (envelope.size() > 65536) throw std::runtime_error("Update envelope is too large");
   const auto wrapper = nlohmann::json::parse(envelope);
   const auto payload = wrapper.at("payload").get<std::string>();
@@ -95,14 +95,21 @@ Artifact VerifyEnvelope(const std::string& envelope, const std::string& public_k
   if (!value.at("size").is_number_unsigned()) throw std::runtime_error("Invalid package size");
   artifact.size = value.at("size").get<std::uint64_t>();
   if (artifact.platform != platform || platform.find("portable") != std::string::npos ||
-      !IsValidAppVersion(current_version) || !IsValidAppVersion(artifact.version) ||
-      !IsNewerVersion(current_version, artifact.version))
+      !IsValidAppVersion(artifact.version))
     throw std::runtime_error("Update platform/version does not match this installation");
   if (!artifact.size || artifact.size > kMaxPackageSize ||
       artifact.filename != ExpectedFilename(platform, artifact.version) ||
-      artifact.url != std::string(kDownloadOrigin) + "/" + artifact.filename)
+      artifact.url != ReleaseAssetUrl(artifact.version, artifact.filename))
     throw std::runtime_error("Invalid update package metadata");
   Unhex(artifact.sha256, 32);
+  return artifact;
+}
+
+Artifact VerifyEnvelope(const std::string& envelope, const std::string& public_key,
+                        const std::string& platform, const std::string& current_version) {
+  auto artifact = VerifyReleaseEnvelope(envelope, public_key, platform);
+  if (!IsValidAppVersion(current_version) || !IsNewerVersion(current_version, artifact.version))
+    throw std::runtime_error("Update version must be newer than this installation");
   return artifact;
 }
 
@@ -143,11 +150,11 @@ std::string DownloadUrl(const std::string& manifest, const std::string& platform
   try {
     const auto download = nlohmann::json::parse(manifest).at("downloads").at(platform);
     const auto filename = ExpectedFilename(platform, version);
-    const auto url = std::string(kDownloadOrigin) + "/" + filename;
+    const auto url = ReleaseAssetUrl(version, filename);
     if (download.at("version") == version && download.at("filename") == filename &&
         download.at("url") == url) return url;
   } catch (const std::exception&) {}
-  return "https://crossdesk.cn";
+  return kReleasePage;
 }
 
 std::string SignedDownload(const std::string& manifest, const std::string& platform) {
@@ -186,33 +193,61 @@ void VerifyPackage(const fs::path& file, const Artifact& artifact) {
 
 void DownloadPackage(const Artifact& artifact, const fs::path& destination,
                      std::atomic<int>& progress, const std::atomic<bool>& cancel) {
-  httplib::Client client(kDownloadOrigin);
-  client.set_connection_timeout(10);
-  client.set_read_timeout(30);
-  client.set_write_timeout(10);
-  client.set_max_timeout(30 * 60 * 1000);
-  client.set_follow_location(false);
-#if defined(__linux__)
-  for (const char* bundle : {"/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt"}) {
-    if (fs::exists(bundle)) { client.set_ca_cert_path(bundle); break; }
-  }
-#endif
+  if (artifact.filename != ExpectedFilename(artifact.platform, artifact.version) ||
+      artifact.url != ReleaseAssetUrl(artifact.version, artifact.filename))
+    throw std::runtime_error("Invalid release asset URL");
   std::ofstream file(destination, std::ios::binary | std::ios::trunc);
   if (!file) throw std::runtime_error("Cannot create update download");
   std::uint64_t received = 0;
-  const auto response = client.Get(("/" + artifact.filename).c_str(),
-      [&](const httplib::Response& headers) {
-        return headers.status == 200 && !cancel.load();
-      },
-      [&](const char* data, std::size_t length) {
-        if (cancel.load() || length > artifact.size - received) return false;
-        file.write(data, static_cast<std::streamsize>(length));
-        received += length;
-        progress.store(static_cast<int>(received * 100 / artifact.size));
-        return static_cast<bool>(file);
-      });
+  std::string origin = kReleaseOrigin;
+  auto path = ReleaseAssetPath(artifact.version, artifact.filename);
+  bool downloaded = false;
+  for (int hop = 0; hop <= 2 && !cancel.load(); ++hop) {
+    httplib::Client client(origin);
+    client.set_connection_timeout(10);
+    client.set_read_timeout(30);
+    client.set_write_timeout(10);
+    client.set_max_timeout(10 * 60 * 1000);
+    client.set_follow_location(false);
+#if defined(__linux__)
+    for (const char* bundle : {"/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt"}) {
+      if (fs::exists(bundle)) { client.set_ca_cert_path(bundle); break; }
+    }
+#endif
+    bool redirect = false;
+    std::size_t redirect_bytes = 0;
+    const auto response = client.Get(path.c_str(),
+        [&](const httplib::Response& headers) {
+          redirect = headers.status == 301 || headers.status == 302 ||
+                     headers.status == 303 || headers.status == 307 ||
+                     headers.status == 308;
+          return !cancel.load() && (redirect || headers.status == 200);
+        },
+        [&](const char* data, std::size_t length) {
+          if (cancel.load()) return false;
+          if (redirect) {
+            if (length > 65536 - redirect_bytes) return false;
+            redirect_bytes += length;
+            return true;
+          }
+          if (length > artifact.size - received) return false;
+          file.write(data, static_cast<std::streamsize>(length));
+          received += length;
+          progress.store(static_cast<int>(received * 100 / artifact.size));
+          return static_cast<bool>(file);
+        });
+    if (!response) break;
+    if (response->status == 200) {
+      downloaded = received == artifact.size;
+      break;
+    }
+    const auto next = ReleaseAssetRedirect(response->get_header_value("Location"));
+    if (!redirect || !next) break;
+    origin = next->first;
+    path = next->second;
+  }
   file.close();
-  if (!response || response->status != 200 || !file || received != artifact.size || cancel.load())
+  if (!downloaded || !file || cancel.load())
     throw std::runtime_error(cancel.load() ? "Update cancelled" : "Update download failed");
   VerifyPackage(destination, artifact);
 }

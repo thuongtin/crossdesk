@@ -26,7 +26,7 @@ class ConfigCenter {
   enum class LANGUAGE {
     CHINESE = 0, ENGLISH = 1, RUSSIAN = 2, TRADITIONAL_CHINESE = 3,
     JAPANESE = 4, KOREAN = 5, GERMAN = 6, FRENCH = 7, SPANISH = 8,
-    BRAZILIAN_PORTUGUESE = 9, SYSTEM = 10
+    BRAZILIAN_PORTUGUESE = 9, SYSTEM = 10, VIETNAMESE = 11
   };
   enum class CONNECTION_MODE { DEVICE_ID = 0, DIRECT_IP = 1 };
   using VIDEO_ENCODE_FORMAT = MiniRtcVideoCodec;
@@ -129,7 +129,7 @@ class ConfigCenter {
   std::unique_ptr<IniStorage> ini_;
   const char* section_ = "Settings";
 
-  LANGUAGE language_ = LANGUAGE::SYSTEM;
+  LANGUAGE language_ = LANGUAGE::ENGLISH;
   CONNECTION_MODE connection_mode_ = CONNECTION_MODE::DEVICE_ID;
   bool enable_ip_direct_ = true;
   std::atomic<bool> desktop_realtime_rate_control_{true};
@@ -142,7 +142,7 @@ class ConfigCenter {
   static constexpr bool kDefaultDisableReceiverPaddingProbing = true;
   bool disable_receiver_padding_probing_ = kDefaultDisableReceiverPaddingProbing;
   std::string signal_server_host_ = "";
-  std::string signal_server_host_default_ = "api.crossdesk.cn";
+  std::string signal_server_host_default_ = "crossdesk.ecom.io.vn";
   int signal_server_port_ = 0;
   int server_port_default_ = 9099;
   bool enable_self_hosted_ = false;

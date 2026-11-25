@@ -46,12 +46,12 @@ def write_pages(output, catalog, additional, revision, minirtc):
     # Ship the actual build instructions and recipes used by this local build. The Android
     # directory may not exist at the public base commit of an unpublished checkout.
     bundled = [
-        ('构建说明', ANDROID / 'README.md'),
-        ('原生构建配方', ANDROID / 'native/xmake.lua'),
-        ('OpenSSL 构建配方', ROOT / 'deps/submodules/minirtc/thirdparty/openssl/xmake.lua'),
-        ('MiniRTC 构建配方', ROOT / 'deps/submodules/minirtc/xmake.lua'),
-        ('原生构建脚本', ANDROID / 'scripts/build_native.py'),
-        ('SVT-AV1 构建配方', ROOT / 'deps/submodules/minirtc/thirdparty/svt-av1/xmake.lua'),
+        ('Hướng dẫn biên dịch', ANDROID / 'README.md'),
+        ('Công thức biên dịch mã gốc', ANDROID / 'native/xmake.lua'),
+        ('Công thức biên dịch OpenSSL', ROOT / 'deps/submodules/minirtc/thirdparty/openssl/xmake.lua'),
+        ('Công thức biên dịch MiniRTC', ROOT / 'deps/submodules/minirtc/xmake.lua'),
+        ('Script biên dịch mã gốc', ANDROID / 'scripts/build_native.py'),
+        ('Công thức biên dịch SVT-AV1', ROOT / 'deps/submodules/minirtc/thirdparty/svt-av1/xmake.lua'),
     ]
     build_documents = []
     for index, (title, path) in enumerate(bundled):

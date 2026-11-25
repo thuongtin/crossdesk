@@ -9,7 +9,7 @@ import { pasteboard, systemDateTime } from '@kit.BasicServicesKit';
 import { MobileStore, RecentDevice } from './MobileStore';
 import { MobilePlatform, MobileLifecycle } from './MobilePlatform';
 import { AnnouncementInbox, AnnouncementItem, AnnouncementRequest, AnnouncementResponse } from './AnnouncementInbox';
-import { VideoSettings, VideoValues, NetworkStatistics, NetworkReport, RecentPresence, PresenceMessage, asciiKey } from './ControllerModels';
+import { VideoSettings, VideoValues, NetworkStatistics, NetworkReport, RecentPresence, PresenceMessage, asciiKey, fileTransferStatus } from './ControllerModels';
 
 interface Command {
   modifiers?: number[];
@@ -546,7 +546,7 @@ export class MobileController {
         if (e.status === 4 && this.connectingId.includes(':')) this.end(tr("IP 直连失败，请检查电脑的直连地址和网络。"));
         else this.end(reasons[e.status ?? 0] ?? tr("连接已结束"));
       }
-    } else if (e.type === 'ended') this.end(e.reason ?? '');
+    } else if (e.type === 'ended') this.end(tr(e.reason ?? ''));
     else if (e.type === 'data' && e.message) this.data(e.message as ControlData);
     else if (e.type === 'frame') {
       this.state.hasFrame = true;
@@ -559,10 +559,10 @@ export class MobileController {
     } else if (e.type === 'network' && e.report) this.network.receive(e.report, this.now());
     else if (e.type === 'clipboard') this.state.remoteClipboard = e.text ?? '';
     else if (e.type === 'clipboardSent') this.toast(e.ok ? tr("已发送，请在远端粘贴") : tr("指令发送失败，请重试"));
-    else if (e.type === 'feedback') this.toast(e.text ?? '');
+    else if (e.type === 'feedback') this.toast(tr(e.text ?? ''));
     else if (e.type === 'file') {
       if (e.sending && ((e.progress ?? 0) < 0 || (e.progress ?? 0) >= 1)) this.sendingFile = false;
-      this.state.transfer = (e.progress ?? 0) < 0 ? tr("{0} 传输失败", [String(e.name)]) : `${e.sending ? '发送' : '接收'} ${e.name} · ${(e.progress ?? 0) >= 1 ? '已完成' : Math.floor((e.progress ?? 0) * 100) + '%'}`;
+      this.state.transfer = fileTransferStatus(e.sending === true, String(e.name), e.progress ?? 0);
       if (e.path) { this.state.receivedPath = e.path; this.state.receivedName = e.name ?? 'received-file'; }
     } else if (e.type === 'privacyFailed') { this.privacyScreen.failed(Number(e.request)); this.syncPrivacy(); }
     else if (e.type === 'resolutionFailed') { this.resolutions.expire(Number(e.request)); this.syncResolutions(); }
@@ -580,8 +580,8 @@ export class MobileController {
         this.state.notice = tr("被控端版本过低，请升级到最新版本。"); this.state.modal = 'upgrade';
       }
     } else if (e.type === 'error') {
-      this.state.signalText = e.text ?? tr("连接失败"); if (this.state.connecting) { this.end(e.text ?? tr("连接失败")); this.stopSignal(); }
-      else if (!this.state.ready) { const text = e.text ?? tr("操作失败"); this.stopSignal(); this.state.signalText = text; } else this.toast(e.text ?? tr("操作失败"));
+      this.state.signalText = tr(e.text ?? "连接失败"); if (this.state.connecting) { this.end(this.state.signalText); this.stopSignal(); }
+      else if (!this.state.ready) { const text = tr(e.text ?? "操作失败"); this.stopSignal(); this.state.signalText = text; } else this.toast(tr(e.text ?? "操作失败"));
     }
   }
   private configureInbox(): void {

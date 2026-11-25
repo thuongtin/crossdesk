@@ -65,7 +65,7 @@ class HeadlessConsole {
   std::string displayed_password_;
   bool displayed_connected_ = false;
   bool displayed_ = false;
-  int language_ = 0;
+  int language_ = 11;
   ConfigCenter* config_ = nullptr;
   std::function<bool()> connection_busy_;
   std::function<void(SettingEffect)> settings_applied_;

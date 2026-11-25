@@ -31,10 +31,10 @@ async function setup(store: DeviceStore, view?: string) {
   if (view) {
     const url = await pairBrowser(store.directory, view);
     if (!url) throw new Failure("PANEL_NOT_FOUND");
-    if (await openURL(url)) process.stdout.write("浏览器配对入口已打开。\n");
+    if (await openURL(url)) process.stdout.write("Đã mở trang ghép đôi trình duyệt.\n");
     else
       process.stdout.write(
-        `请在本机浏览器打开下方一次性链接（60 秒有效，不要发送到聊天）：\n${url}\n`,
+        `Hãy mở liên kết dùng một lần dưới đây trong trình duyệt trên máy này (hiệu lực 60 giây, không gửi vào chat):\n${url}\n`,
       );
     return;
   }
@@ -55,27 +55,27 @@ async function setup(store: DeviceStore, view?: string) {
   try {
     const config = await store.config();
     process.stdout.write(
-      "CrossDesk MCP · 本地设备配置\n密码只保存到系统凭据库，不写入设备配置。\n",
+      "CrossDesk MCP · Cấu hình thiết bị cục bộ\nMật khẩu chỉ lưu trong kho thông tin xác thực hệ thống, không ghi vào cấu hình thiết bị.\n",
     );
-    const name = await question("设备别名：");
+    const name = await question("Bí danh thiết bị:");
     const previous = config.devices.find((d) => d.alias === name);
-    const device = previous?.device_id ?? (await question("9 位设备 ID："));
+    const device = previous?.device_id ?? (await question("ID thiết bị 9 chữ số:"));
     const server =
       previous?.server ??
-      ((await question(`服务器 [${config.server}]：`)) || config.server);
+      ((await question(`Máy chủ [${config.server}]: `)) || config.server);
     const port =
       previous?.port ??
-      Number((await question(`端口 [${config.port}]：`)) || config.port);
+      Number((await question(`Cổng [${config.port}]: `)) || config.port);
     const permission = await question(
-      "允许未来自动连接？[n / observe / control]：",
+      "Cho phép tự kết nối sau? [n / observe / control]:",
     );
     const environment = await question(
-      "使用现有密码环境变量（留空使用系统凭据库）：",
+      "Dùng biến môi trường mật khẩu hiện có (để trống để dùng kho xác thực hệ thống):",
     );
     let password: string | undefined;
     if (!environment) {
       hidden = true;
-      process.stdout.write("访问密码（隐藏输入，可为空）：");
+      process.stdout.write("Mật khẩu truy cập (nhập ẩn, có thể để trống):");
       try {
         password = await rl.question("");
       } finally {
@@ -107,14 +107,14 @@ async function setup(store: DeviceStore, view?: string) {
       } : {}),
     };
     let unlockSecret: string | undefined;
-    if ((await question("配置锁屏密码，供 Agent 后续自动解锁？[y/N]：")).toLowerCase() === "y") {
-      const variable = await question("锁屏密码环境变量名称（留空使用系统凭据库）：");
+    if ((await question("Cấu hình mật khẩu khóa màn hình để Agent tự mở khóa sau này? [y/N]:")).toLowerCase() === "y") {
+      const variable = await question("Tên biến môi trường mật khẩu khóa màn hình (để trống để dùng kho xác thực hệ thống):");
       if (variable) {
         d.unlock_credential = "environment";
         d.unlock_environment_variable = variable;
       } else {
         hidden = true;
-        process.stdout.write("系统锁屏密码（隐藏输入）：");
+        process.stdout.write("Mật khẩu khóa màn hình hệ thống (nhập ẩn):");
         try { unlockSecret = parse(unlockPassword, await rl.question("")); }
         finally { hidden = false; process.stdout.write("\n"); }
       }
@@ -123,7 +123,7 @@ async function setup(store: DeviceStore, view?: string) {
     password = undefined;
     unlockSecret = undefined;
     process.stdout.write(
-      "已保存。Agent 可调用 crossdesk_list_devices；自动连接仍需有效授权和凭据。\n",
+      "Đã lưu. Agent có thể gọi crossdesk_list_devices; tự kết nối vẫn cần quyền và thông tin xác thực hợp lệ.\n",
     );
   } finally {
     hidden = false;

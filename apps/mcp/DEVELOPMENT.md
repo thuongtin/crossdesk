@@ -1,18 +1,18 @@
-# CrossDesk MCP 构建与集成
+# Biên dịch và tích hợp CrossDesk MCP
 
-本文介绍源码构建、宿主接入、工具接口、媒体传输和打包发布。安装与日常操作见 [MCP 使用指南](README.md)。
+Tài liệu này giới thiệu biên dịch từ nguồn, tích hợp MCP host, giao diện công cụ, truyền media và đóng gói/phát hành. Cài đặt và thao tác thường ngày xem [hướng dẫn MCP](README.md).
 
-导航：[源码构建](#从源码运行) · [DSH 开发配置](#harness-development) · [工具接口](#模型工具) · [远程操作](#远程操作) · [实时视频](#实时视频与按需截图) · [打包](#打包)
+Điều hướng: [biên dịch nguồn](#chạy-từ-mã-nguồn) · [cấu hình phát triển DSH](#harness-development) · [API công cụ](#công-cụ-mô-hình) · [thao tác từ xa](#thao-tác-từ-xa) · [video trực tiếp](#video-trực-tiếp-và-ảnh-theo-nhu-cầu) · [đóng gói](#đóng-gói)
 
-## 版本与依赖
+## Phiên bản và phụ thuộc
 
-CLI、MCP 包 `@chunkdash/crossdesk-mcp` 和内置 DSH 插件共用版本，当前均为 0.2.0，MCP 原生依赖也固定为 0.2.0。使用[版本脚本](../../docs/VERSIONING.md)修改任一工具版本会同步整个分组。源码版本和本地打包不代表版本已经发布到 npm；内含原生程序的平台安装包可独立分发。
+CLI, gói MCP `@chunkdash/crossdesk-mcp` và plugin DSH tích hợp dùng chung phiên bản, hiện đều là 0.2.0; phụ thuộc native của MCP cũng cố định ở 0.2.0. Dùng [script phiên bản](../../docs/VERSIONING.md) sửa phiên bản một công cụ sẽ đồng bộ cả nhóm. Phiên bản nguồn và gói tạo cục bộ không có nghĩa phiên bản đã phát hành trên npm; gói nền tảng chứa chương trình native có thể phân phối độc lập.
 
-当前提供 31 个模型工具和 11 个 MCP Apps 面板专用接口。本机 MCP 接入使用 stdio，不提供 MCP Streamable HTTP 或通用远程 shell 工具。控制端原生 CLI、被控端和信令服务器需要支持对应自动化协议。
+Hiện có 31 công cụ dành cho mô hình và 11 API riêng cho bảng MCP Apps. MCP cục bộ dùng stdio, không cung cấp MCP Streamable HTTP hoặc công cụ shell từ xa dùng chung. CLI native bên điều khiển, máy được điều khiển và signaling server cần hỗ trợ giao thức tự động hóa tương ứng.
 
-## 从源码运行
+## Chạy từ mã nguồn
 
-先克隆包含子模块的源码，在仓库根目录构建原生程序（已有工作区可保留原有桌面构建选项）：
+Trước tiên clone nguồn có submodule, rồi biên dịch chương trình native tại gốc kho; workspace hiện có có thể giữ tùy chọn biên dịch máy tính trước đó:
 
 ```sh
 git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
@@ -28,29 +28,29 @@ npm ci
 npm run build
 ```
 
-完整编译环境见 [源码构建指南](../../docs/BUILD.md)。`npm run build` 同时构建 MCP、页面和 DSH 配套插件。源码目录的 `npm ci` 只安装开发依赖，**源码运行必须显式指定原生程序路径**；生成的发布包才声明固定版本的平台依赖。
+Môi trường biên dịch đầy đủ xem [hướng dẫn biên dịch nguồn](../../docs/BUILD.md). `npm run build` biên dịch đồng thời MCP, trang giao diện và plugin DSH đi kèm. `npm ci` trong thư mục nguồn chỉ cài phụ thuộc phát triển; **chạy từ nguồn bắt buộc chỉ rõ đường dẫn chương trình native**. Chỉ gói phát hành được sinh ra mới khai phụ thuộc nền tảng cố định.
 
-例如，macOS arm64 Release 构建后可先检查：
+Ví dụ, sau khi biên dịch Release macOS arm64, bạn có thể kiểm trước:
 
 ```sh
 /absolute/path/crossdesk/build/macosx/arm64/release/crossdesk-cli doctor --json
 ```
 
-Windows、Linux、x64 或 Debug 构建使用自己的实际产物路径。`--native-binary` 必须指向可执行文件，不接受 shell 命令；也可用 `CROSSDESK_NATIVE_BINARY` 指定。原生程序需要提供 MCP 所需的 automation、terminal、video 协议；仅能运行交互式 CLI 不代表版本兼容。
+Windows, Linux, x64 hoặc bản Debug dùng đường dẫn sản phẩm thực tế tương ứng. `--native-binary` bắt buộc trỏ tới tệp thực thi, không nhận lệnh shell; bạn cũng có thể dùng `CROSSDESK_NATIVE_BINARY`. Chương trình native cần cung cấp các giao thức automation, terminal và video mà MCP yêu cầu. Chỉ chạy được CLI tương tác không có nghĩa phiên bản tương thích.
 
-两种安装方式在下文使用的路径不同：
+Hai cách cài đặt dùng đường dẫn khác nhau trong các phần dưới:
 
-| 项目 | 本地安装包 | 源码构建 |
+| Mục | Gói cài cục bộ | Biên dịch nguồn |
 | --- | --- | --- |
-| MCP 入口 | `<安装目录>/node_modules/@chunkdash/crossdesk-mcp/dist/main.js` | `<工程目录>/apps/mcp/dist/main.js` |
-| DSH 插件目录 | `<安装目录>/node_modules/@chunkdash/crossdesk-mcp`（也可直接安装 `.tgz`） | `<工程目录>/apps/mcp` |
-| 原生程序 | 平台包内置，通用包使用固定版本平台依赖，或显式指定路径 | 显式指定构建产物路径 |
+| Điểm vào MCP | `<thu-muc-cai-dat>/node_modules/@chunkdash/crossdesk-mcp/dist/main.js` | `<thu-muc-du-an>/apps/mcp/dist/main.js` |
+| Thư mục plugin DSH | `<thu-muc-cai-dat>/node_modules/@chunkdash/crossdesk-mcp` (hoặc cài `.tgz` trực tiếp) | `<thu-muc-du-an>/apps/mcp` |
+| Chương trình native | Tích hợp trong gói nền tảng, gói chung dùng phụ thuộc cố định hoặc chỉ đường rõ | Chỉ đường sản phẩm rõ |
 
-服务启动不连接远端、不打开浏览器；Agent 调用打开或连接工具后才进入授权与连接流程。
+Dịch vụ không kết nối từ xa hay mở trình duyệt khi khởi động; chỉ bắt đầu quy trình cấp quyền/kết nối sau khi Agent gọi công cụ mở hoặc kết nối.
 
-### Codex 源码配置
+### Cấu hình mã nguồn Codex
 
-按 [Codex 安装指南](README.md#install-codex) 配置服务时，源码用户将 `args` 替换为以下内容；原生路径示例对应 macOS arm64 Release，其他构建替换为自己的产物路径：
+Khi cấu hình dịch vụ theo [hướng dẫn cài Codex](README.md#install-codex), người dùng nguồn thay `args` bằng nội dung sau. Đường dẫn trong ví dụ ứng với Release macOS arm64; các bản biên dịch khác thay bằng đường dẫn sản phẩm của mình:
 
 ```toml
 args = [
@@ -63,15 +63,15 @@ args = [
 
 <a id="harness-development"></a>
 
-## DSH 插件开发与配置
+## Phát triển và cấu hình plugin DSH
 
-源码用户先完成上方 [源码构建](#从源码运行)，再安装 **MCP 根目录**：
+Người dùng nguồn cần hoàn tất [biên dịch từ nguồn](#chạy-từ-mã-nguồn) ở trên, rồi cài **thư mục gốc MCP**:
 
 ```sh
 dsh plugin --profile desktop add /absolute/path/crossdesk/apps/mcp
 ```
 
-源码目录不内含原生程序，需要在 `~/.dsh/profiles/desktop/cordis.patch.yml` 中为 `crossdesk` 添加配置；使用自定义 `DSH_HOME` 或 profile 时改为对应路径。将条目合并到现有列表，原生路径替换为本机实际构建产物：
+Thư mục nguồn không chứa chương trình native. Bạn cần thêm cấu hình cho `crossdesk` trong `~/.dsh/profiles/desktop/cordis.patch.yml`; nếu dùng `DSH_HOME` hoặc profile riêng, đổi sang đường dẫn tương ứng. Hợp mục vào danh sách hiện có và thay đường dẫn trong ví dụ bằng sản phẩm thực tế trên máy:
 
 ```yaml
 - id: crossdesk
@@ -79,21 +79,21 @@ dsh plugin --profile desktop add /absolute/path/crossdesk/apps/mcp
     nativeBinary: /absolute/path/crossdesk/build/macosx/arm64/release/crossdesk-cli
 ```
 
-插件配置只需在修改默认值时填写：
+Bạn chỉ cần điền cấu hình plugin khi thay đổi mặc định:
 
-| 字段 | 默认值 | 用途 |
+| Trường | Mặc định | Mục đích |
 | --- | --- | --- |
-| `nativeBinary` | 包内原生程序，或固定版本的平台依赖 | 源码开发或显式使用兼容 CLI，必须为绝对路径 |
-| `configDir` | `~/.config/crossdesk/mcp/` | 指定设备配置目录，必须为绝对路径 |
-| `serverName` | `crossdesk` | MCP 工具命名空间；侧栏会同步使用该名称 |
+| `nativeBinary` | Gốc trong gói hoặc phụ thuộc nền tảng cố định | Phát triển nguồn/dùng CLI tương thích rõ, bắt buộc tuyệt đối |
+| `configDir` | `~/.config/crossdesk/mcp/` | Chỉ thư mục cấu hình thiết bị, bắt buộc tuyệt đối |
+| `serverName` | `crossdesk` | Namespace công cụ MCP; thanh bên dùng cùng tên |
 
-用户配置覆盖整个 `config` 时需保留仍然需要的字段。Windows 路径可用 `C:/.../crossdesk-cli.exe`。集成机制参考 [Harness bundle](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/boot/app-boot#profiles) 与 [MCP Client](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/mcp/mcp-client)。
+Khi cấu hình người dùng ghi đè toàn bộ `config`, cần giữ các trường vẫn còn dùng. Windows có thể dùng đường dẫn `C:/.../crossdesk-cli.exe`. Cơ chế tích hợp tham khảo [Harness bundle](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/boot/app-boot#profiles) và [MCP Client](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/mcp/mcp-client).
 
-DSH 源码位于 `integrations/deepseek-harness/src/`：`plugin.js` 管理原生检查和 MCP 生命周期，`host.js` 交接工具结果，`client.js` 打开对应对话的侧栏。构建入口生成 `dist/harness.js` 和 `dist/harness-client.js`，包根目录的 `cordis.patch.yml` 注册 `crossdesk` 组件。宿主提供 MCP Client，复用其工具权限、命名空间保留、图像处理和连接清理行为。
+Nguồn DSH ở `integrations/deepseek-harness/src/`: `plugin.js` quản lý kiểm tra chương trình native và vòng đời MCP, `host.js` bàn giao kết quả công cụ, `client.js` mở thanh bên của hội thoại tương ứng. Điểm vào biên dịch sinh `dist/harness.js` và `dist/harness-client.js`; `cordis.patch.yml` ở gốc gói đăng ký thành phần `crossdesk`. Host cung cấp MCP Client, dùng lại quyền công cụ, giữ chỗ namespace, xử lý ảnh và dọn kết nối của nó.
 
-## 通用包与原生依赖
+## Gói chung và phụ thuộc native
 
-平台包下载与安装见 [安装指南](README.md#install-package)。如果使用不内含原生程序的通用包，例如 `chunkdash-crossdesk-mcp-0.2.0.tgz`，在固定目录安装。可在 [Build MCP 工作流](https://github.com/kunkundi/crossdesk/actions/workflows/build-mcp.yml) 的成功运行中查找 `mcp-package` 产物；Actions 下载件是外层 ZIP，先解压，再将其中的 `.tgz` 交给 npm；不要把 ZIP 直接交给 npm。没有可用安装包时，使用 [源码构建](#从源码运行)。
+Tải/cài gói nền tảng xem [hướng dẫn cài đặt](README.md#install-package). Nếu dùng gói chung không chứa chương trình native, như `chunkdash-crossdesk-mcp-0.2.0.tgz`, hãy cài ở thư mục cố định. Bạn có thể tìm sản phẩm `mcp-package` trong lần chạy [Build MCP](https://github.com/kunkundi/crossdesk/actions/workflows/build-mcp.yml) thành công. Tệp tải từ Actions là ZIP bọc ngoài; giải nén trước rồi đưa `.tgz` bên trong cho npm, không đưa ZIP trực tiếp. Nếu chưa có gói cài phù hợp, dùng [biên dịch từ nguồn](#chạy-từ-mã-nguồn).
 
 macOS / Linux：
 
@@ -115,134 +115,134 @@ npm install "C:/Downloads/chunkdash-crossdesk-mcp-0.2.0.tgz"
 node node_modules/@chunkdash/crossdesk-mcp/dist/main.js --help
 ```
 
-安装包已经包含页面和 DSH 插件构建产物，无需再执行 `npm run build`。从 CLI 构建工作流取得的 `crossdesk-mcp-<平台>` 产物还内含对应平台的原生 CLI，安装这类包无需另装 CLI；以下补充步骤只针对不带原生程序的通用 `mcp-package`。安装通用包时保留 optional dependencies：包会尝试安装固定版本的平台原生依赖，支持 macOS arm64/x64、glibc Linux arm64/x64 和 Windows x64。MCP 和原生包使用相同版本，以下示例为 0.2.0；如果对应原生包尚未发布或下载失败，需要在**同一安装目录**安装维护者提供的对应平台包，例如 macOS arm64：
+Gói cài đã chứa trang giao diện và plugin DSH đã biên dịch, không cần chạy lại `npm run build`. Sản phẩm `crossdesk-mcp-<nen-tang>` từ quy trình CLI còn chứa CLI native tương ứng, nên không cần cài riêng CLI. Các bước bổ sung dưới chỉ dành cho gói chung `mcp-package` không có chương trình native. Khi cài gói chung, hãy giữ optional dependencies: gói sẽ thử cài phụ thuộc nền tảng cố định, hỗ trợ macOS arm64/x64, glibc Linux arm64/x64 và Windows x64. MCP và gói native dùng cùng phiên bản, ví dụ dưới là 0.2.0. Nếu gói native tương ứng chưa phát hành hoặc tải thất bại, bạn cần cài gói nền tảng do nhà duy trì cung cấp vào **cùng thư mục cài đặt**, ví dụ macOS arm64:
 
 ```sh
 npm install /absolute/path/chunkdash-crossdesk-cli-darwin-arm64-0.2.0.tgz
 ```
 
-也可在下文宿主配置中添加 `--native-binary`，指向已经构建好的兼容 `crossdesk-cli` 可执行文件（Windows 为 `.exe`）。全局安装 CLI 不会被 MCP 自动发现：未指定路径时先使用包内对应平台的原生程序，否则解析固定版本的平台依赖，不搜索 PATH。`--help` 仅验证 Node 入口；普通 stdio 服务在连接时检查原生协议，DSH 合并插件则在启动时提前检查。
+Bạn cũng có thể thêm `--native-binary` vào cấu hình host bên dưới, trỏ tới tệp `crossdesk-cli` tương thích đã biên dịch, trên Windows là `.exe`. MCP không tự tìm CLI cài toàn cục: khi không chỉ đường dẫn, nó ưu tiên chương trình native đúng nền tảng trong gói, nếu không thì phân giải phụ thuộc nền tảng cố định, không tìm PATH. `--help` chỉ kiểm điểm vào Node; dịch vụ stdio thông thường kiểm giao thức native khi kết nối, còn plugin DSH hợp nhất kiểm trước lúc khởi động.
 
-如果使用 npm 仓库，先确认所需版本已发布，再将上述安装命令替换为 `npm install @chunkdash/crossdesk-mcp@<已发布版本>`；仓库里的版本号不代表 npm 上已有该包。
+Nếu dùng npm registry, trước hết xác nhận phiên bản cần dùng đã phát hành, rồi thay lệnh cài trên bằng `npm install @chunkdash/crossdesk-mcp@<ban-da-phat-hanh>`. Số phiên bản trong kho không có nghĩa npm đã có gói đó.
 
-## 用户连接流程
+## Quy trình kết nối người dùng
 
-1. 对 Agent 说“打开 CrossDesk”。`crossdesk_open` 创建 `view_id`，返回面板选择和等待用户状态。
-2. 在面板选择已保存设备，或输入 9 位设备 ID；密码填写在面板里。可选择仅查看或允许 Agent 控制。
-3. “保存设备”“记住密码”“允许以后自动连接”分别控制设备簿、系统凭据库、持久权限。后两项要求保存设备，默认均关闭。保存密码不自动授予控制权限。
-4. 有待执行的远程任务时，Agent 在打开面板后立即调用 `crossdesk_get_session({view_id, wait_ms: 25000})` 等待连接。连接就绪后，工具直接返回会话 ID 和权限状态，Agent 继续任务；用户无需回到对话发送连接确认，也无需点击继续按钮。浏览器和 Apps 面板使用同一流程。
-5. Agent 获取独立截图，用截图的 `observation_id` 和图像坐标提交动作。面板预览不消耗模型截图序列。
+1. Nói với Agent “Mở CrossDesk”. `crossdesk_open` tạo `view_id`, trả về lựa chọn bảng và trạng thái chờ người dùng.
+2. Chọn thiết bị đã lưu hoặc nhập ID thiết bị 9 chữ số trong bảng; mật khẩu nhập ở bảng. Bạn có thể chọn chỉ xem hoặc cho phép Agent điều khiển.
+3. “Lưu thiết bị”, “Nhớ mật khẩu” và “Cho phép tự kết nối sau” lần lượt điều khiển sổ thiết bị, kho xác thực hệ thống và quyền bền vững. Hai mục sau cần lưu thiết bị và mặc định đều tắt. Lưu mật khẩu không tự cấp quyền điều khiển.
+4. Khi còn tác vụ từ xa chờ thực hiện, Agent gọi ngay `crossdesk_get_session({view_id, wait_ms: 25000})` sau khi mở bảng để đợi kết nối. Khi sẵn sàng, công cụ trả trực tiếp ID phiên và quyền để Agent tiếp tục. Bạn không cần trở về hội thoại gửi xác nhận kết nối hoặc nhấn nút tiếp tục. Bảng trình duyệt và Apps dùng cùng quy trình.
+5. Agent lấy ảnh chụp riêng, dùng `observation_id` và tọa độ ảnh để gửi thao tác. Xem trước trong bảng không tiêu thụ chuỗi ảnh của mô hình.
 
-`crossdesk_open` 立即返回，让 Apps 宿主有机会渲染面板；等待连接在后续 `crossdesk_get_session` 调用中完成。按 `view_id` 查询默认最多等待 25 秒，`wait_ms: 0` 则立即查询；未就绪时返回 `wait_timed_out: true`，Agent 在原任务仍待执行时继续等待。按 `session_id` 查询默认立即返回，传入正数 `wait_ms` 可等待正在进行的连接恢复；带 `unlock_request_id` 时等待对应解锁请求。取消等待只取消本次查询，不断开用户正在建立或使用的连接。用户主动断开后返回 `closed`，Agent 停止等待，不自动重连。
+`crossdesk_open` trả ngay để host Apps có cơ hội render bảng; chờ kết nối được thực hiện trong lần gọi `crossdesk_get_session` tiếp theo. Truy vấn theo `view_id` mặc định đợi tối đa 25 giây, còn `wait_ms: 0` trả ngay. Nếu chưa sẵn sàng, công cụ trả `wait_timed_out: true`; Agent tiếp tục đợi nếu tác vụ ban đầu vẫn còn. Theo `session_id`, mặc định trả ngay; `wait_ms` dương cho đợi quá trình khôi phục đang chạy, có `unlock_request_id` thì đợi yêu cầu mở khóa tương ứng. Hủy chờ chỉ hủy truy vấn hiện tại, không ngắt kết nối người dùng đang tạo hoặc sử dụng. Sau khi người dùng chủ động ngắt, kết quả là `closed`, Agent dừng đợi và không tự kết nối lại.
 
-面板发起的连接失败后，按 `view_id` 等待也会返回 `failed` 和错误码，避免 Agent 一直停留在等待用户状态。断开正在建立的连接会取消整个连接尝试。多个面板和 Agent 同时查询状态时共用一次原生查询，单次查询取消或暂时繁忙不会断开会话。`crossdesk_connect` 在连接成功但面板初始化失败时仍返回有效的 `session_id`，并附加 `panel_error`。
+Nếu kết nối từ bảng thất bại, chờ theo `view_id` cũng trả `failed` và mã lỗi, tránh để Agent mãi chờ người dùng. Ngắt kết nối đang tạo sẽ hủy toàn bộ lần thử. Nhiều bảng và Agent hỏi trạng thái dùng chung một truy vấn native; hủy một truy vấn hoặc bận tạm thời không ngắt phiên. Nếu kết nối thành công nhưng khởi tạo bảng thất bại, `crossdesk_connect` vẫn trả `session_id` hợp lệ kèm `panel_error`.
 
-初次信令注册使用原生连接的整体 30 秒期限，期间允许 MiniRTC 按退避策略恢复临时传输异常。期限覆盖所有初始重试。证书校验失败、登录被拒绝，以及设备连接请求发出后的信令中断会结束当前尝试。连接失败结果使用 `error.code` 表示错误类别，并以 `error.reason` 提供已识别的原生原因，例如 `signaling_timeout`、`signaling_disconnected` 或 `device_offline_or_unavailable`。面板显示对应说明，终端错误包含原因标识。`logs/<session_id>/transport.log` 记录连接阶段、受控的传输错误分类与数字码、连接关闭码和重试退避信息。
+Đăng ký tín hiệu lần đầu dùng thời hạn tổng 30 giây của kết nối native; trong đó MiniRTC được phép phục hồi lỗi truyền tạm theo backoff. Thời hạn bao phủ mọi lần thử ban đầu. Xác minh chứng chỉ thất bại, đăng nhập bị từ chối hoặc mất tín hiệu sau khi gửi yêu cầu kết nối thiết bị đều kết thúc lần thử hiện tại. `error.code` chỉ loại lỗi; `error.reason` cung cấp nguyên nhân gốc đã nhận diện, như `signaling_timeout`, `signaling_disconnected` hoặc `device_offline_or_unavailable`. Bảng hiển thị giải thích tương ứng, lỗi terminal chứa mã nguyên nhân. `logs/<session_id>/transport.log` ghi giai đoạn kết nối, phân loại/mã số lỗi truyền tải được kiểm soát, mã đóng và thông tin backoff.
 
-自动继续依赖宿主保持当前 Agent 任务及工具调用流程。它不通过网页伪造用户消息，也不承诺从已经结束的对话中主动唤醒 Agent；此类唤醒由宿主负责。
+Tự tiếp tục phụ thuộc host giữ tác vụ Agent và luồng gọi công cụ hiện tại. Cơ chế này không giả tin nhắn người dùng qua trang web, cũng không hứa chủ động đánh thức Agent từ hội thoại đã kết thúc; host chịu trách nhiệm cho kiểu đánh thức đó.
 
-人工暂停由原生层锁定，模型不能通过 `crossdesk_set_control({session_id, enabled: true})` 恢复；只有当前授权面板的恢复按钮可以恢复。浏览器和 Apps 面板还支持人工接管键鼠，并由用户交还 Agent。仅查看连接不能升级为控制连接，需重新连接并授权。关闭/隐藏面板会停止预览并释放面板持有的按键，远程会话保留；断开按钮或 `crossdesk_disconnect` 才结束会话。
+Tạm dừng thủ công được khóa ở lớp native; mô hình không thể khôi phục qua `crossdesk_set_control({session_id, enabled: true})`, chỉ nút tiếp tục của bảng được cấp quyền hiện tại mới làm được. Bảng trình duyệt và Apps cũng cho người dùng tiếp quản chuột/phím rồi trả lại Agent. Kết nối chỉ xem không thể nâng thành điều khiển; cần kết nối lại và cấp quyền. Đóng/ẩn bảng sẽ dừng xem trước, nhả phím do bảng giữ nhưng giữ phiên từ xa. Chỉ nút ngắt hoặc `crossdesk_disconnect` mới kết thúc phiên.
 
-同一 MCP 进程支持最多八个并行设备连接，面板按设备绑定会话。相同配置目录中的进程用设备锁避免同时连接同一目标；它不协调另一个系统用户、另一份配置目录或独立桌面客户端。
+Một tiến trình MCP hỗ trợ tối đa tám kết nối thiết bị song song; bảng gắn phiên theo thiết bị. Các tiến trình cùng thư mục cấu hình dùng khóa thiết bị để tránh cùng nối một đích. Khóa không phối hợp với người dùng hệ thống khác, thư mục cấu hình khác hoặc ứng dụng máy tính độc lập.
 
-## 面板策略
+## Chính sách bảng điều khiển
 
-`--panel` 优先于设备配置中的 `panel`，默认 `auto`；`--browser-launch` 同样默认 `auto`。MCP 根据客户端标识内置 Codex 和 DeepSeek Harness 的默认策略，不依赖个人 Codex 配置或 `AGENTS.md`。已有配置中显式指定的面板模式和启动方式仍然有效。
+`--panel` ưu tiên hơn `panel` trong cấu hình thiết bị, mặc định `auto`; `--browser-launch` cũng mặc định `auto`. MCP tích hợp chính sách mặc định cho Codex và DeepSeek Harness theo nhận diện client, không phụ thuộc cấu hình Codex cá nhân hay `AGENTS.md`. Chế độ bảng và cách khởi động được chỉ rõ trong cấu hình cũ vẫn hiệu lực.
 
-| 模式 | 行为 |
+| Chế độ | Hành vi |
 | --- | --- |
-| `auto` | Codex 和 DeepSeek Harness 默认选择宿主侧栏浏览器；其他客户端有本机 GUI 时使用系统浏览器，无 GUI 且有终端环境时提供 CLI 画面入口，两者均无则使用 `off` |
-| `apps` | 只使用 MCP Apps；能力不匹配返回 `PANEL_UNSUPPORTED` |
-| `browser` | 使用本地浏览器页面；启动方式为 `auto` 时 Codex 和 DeepSeek Harness 使用宿主侧栏，其他客户端使用系统浏览器；可显式选择 `--browser-launch=host` 或 `--browser-launch=system`，不附加 Apps 工具资源元数据 |
-| `terminal` | 提供独立终端 `view` 命令，共用当前 MCP 会话，不启动网页服务 |
-| `off` | 不启动网页服务，保留截图和操作工具，凭据通过独立 `setup` 配置 |
+| `auto` | Codex/DeepSeek Harness mặc định thanh bên host; khác có GUI dùng hệ thống, không GUI có terminal cho điểm CLI, thiếu cả hai `off` |
+| `apps` | Chỉ MCP Apps; khả năng lệch `PANEL_UNSUPPORTED` |
+| `browser` | Trang cục bộ; khởi `auto` Codex/Harness dùng host, khác hệ thống; chọn rõ `--browser-launch=host`/`--browser-launch=system`, không thêm siêu dữ liệu tài nguyên Apps |
+| `terminal` | Lệnh `view` terminal riêng chung phiên hiện tại, không web service |
+| `off` | Không web service, giữ ảnh/thao tác, xác thực cấu hình `setup` riêng |
 
-`auto` 不选择 MCP Apps；需要宿主内嵌面板时显式使用 `--panel=apps`。Apps 使用 `extensions["io.modelcontextprotocol/ui"].mimeTypes` 中的 `text/html;profile=mcp-app` 判断能力。旧协议读取 initialize 能力；2026-07-28 协议读取当前请求的能力，不按宿主产品名猜测支持情况。Apps 的卡片、侧栏或窗口形式由宿主决定。
+`auto` không chọn MCP Apps. Nếu cần bảng nhúng trong host, chỉ rõ `--panel=apps`. Apps dò khả năng qua `text/html;profile=mcp-app` trong `extensions["io.modelcontextprotocol/ui"].mimeTypes`. Giao thức cũ đọc khả năng initialize, giao thức 2026-07-28 đọc khả năng yêu cầu hiện tại, không đoán theo tên sản phẩm host. Host quyết định Apps xuất hiện dạng thẻ, thanh bên hay cửa sổ.
 
-除 Codex 和 DeepSeek Harness 外，客户端使用 `auto` 时，Linux 根据 `DISPLAY` / `WAYLAND_DISPLAY` 判断 GUI；macOS 检查当前用户的桌面登录会话，SSH 会话不自动打开远端 Mac 的浏览器；Windows 排除 SSH 和 Services 会话。终端判断包含 TTY、`SSH_TTY` 和非 `dumb` 的 `TERM`，因为 MCP 的 stdin/stdout 通常是管道。需要终端或无面板运行时，显式设置 `--panel=terminal` 或 `--panel=off`。
+Ngoài Codex và DeepSeek Harness, khi client dùng `auto`, Linux dò GUI qua `DISPLAY` / `WAYLAND_DISPLAY`; macOS kiểm phiên đăng nhập desktop của người dùng hiện tại, không tự mở trình duyệt Mac từ xa trong phiên SSH; Windows loại phiên SSH và Services. Dò terminal bao gồm TTY, `SSH_TTY` và `TERM` không phải `dumb`, vì stdin/stdout MCP thường là pipe. Cần chạy terminal hoặc không bảng thì chỉ rõ `--panel=terminal` hoặc `--panel=off`.
 
-终端模式的 `crossdesk_open` / `crossdesk_connect` 返回 `terminal_command`。用户在同一主机的另一个交互终端执行（源码运行时将 `crossdesk-mcp` 替换为 `node /absolute/path/apps/mcp/dist/main.js`）：
-
-```sh
-crossdesk-mcp view --view <view_id> --config-dir <相同的配置目录>
-```
-
-该命令提供设备选择、隐藏密码输入和本次控制授权；已建立会话则直接显示画面。终端通过受限配置目录中的运行描述符和认证本地 IPC 复用 MCP 的原生连接，不启动第二个远程连接，也不占用 Agent 的终端或 MCP stdio。Agent 应展示命令供用户执行，再通过 `crossdesk_get_session` 等待；不能在工具输出捕获通道中运行 `view`。无交互终端时 `view` 返回 `VIEW_REQUIRES_TERMINAL`。
-
-终端画面采用原生 CLI 的 ANSI 四分块渲染器，目标 8 FPS，最多 160 列 × 60 行，根据终端环境使用 8/256/真彩色。默认字符宽高比 0.5，可用 `--cell-aspect`（0.2–2）调整。此入口暂不使用 Kitty/Sixel。`p` 暂停 Agent、`r` 恢复已授权控制、`d` 断开、`q` / Ctrl+C 仅关闭画面并恢复终端；关闭画面后会话保留。暂停仍由原生层锁定，Agent 不能自行恢复。
-
-浏览器/Apps 与终端均绘制 Agent 最后成功发送的鼠标位置，支持移动、点击、滚动和拖拽；坐标来自原生层对截图缩放及裁剪的映射。暂停或关闭控制时隐藏，切换显示器或图像尺寸变化时清除。该指针是 Agent 的操作位置提示，不代表远端输入执行 ACK，也不跟踪远端用户自己的鼠标。它不写入模型截图或源视频。
-
-浏览器及 Apps 的实时视频光标会以 60–140 毫秒的短缓动追踪最新坐标，动画独立于视频帧刷新；连续位置更新从当前显示位置接续，不排队回放旧轨迹。首次显示、连接代际或显示几何变化时直接定位，隐藏或停止播放时取消动画，并遵守系统的“减少动态效果”设置。平滑效果只作用于页面提示光标，原生鼠标输入及点击坐标不受影响，因此不表示远端鼠标实际经过了补间路径。
-
-实时视频光标采用 CrossDesk 主色（`#3564e3`）的圆角箭头、白色描边和同色柔光，与客户端及页面配色一致。移动时尖端朝向页面上实际移动的方向，以尖端为旋转锚点；方向按画面像素计算，适配宽屏与竖屏。停止后保留最后朝向，忽略小于半个 CSS 像素的位移对朝向的影响；首次显示及连接、显示几何变化时恢复默认朝向。
-
-Apps 资源为 `ui://crossdesk/viewer.html`，工具只在允许使用 Apps 且当前请求支持时暴露 UI 元数据和面板专用接口。页面回报 `crossdesk_ui_ready` 后才标记就绪；10 秒未回报显示 `not_confirmed`，不自动弹第二个浏览器。用户明确要求回退时调用 `crossdesk_open_browser`；该工具不附带 Apps 元数据，`apps`/`off` 策略拒绝覆盖。
-
-浏览器面板只监听随机端口的 `127.0.0.1`，与 MCP 服务同一进程。它不是 MCP Streamable HTTP，也不向局域网提供 MCP 接入。MCP、CLI、用户浏览器应在同一控制端电脑上运行；SSH 容器/远程宿主的浏览器转发不属于此本地接入模式。
-
-页面以 Agent 会话监看为中心：首次连接显示授权卡片，连接后远程画面占满可用区域，设备、权限和恢复设置收进「会话详情」抽屉。工具栏显示设备与实际控制状态，仅在具有控制授权时保留「暂停 Agent / 恢复 Agent」；本面板人工接管时改为「交还 Agent」。画面放大、人工接管、声音与音量、断开连接收进「会话选项」，仅查看会话不显示人工接管入口。等待系统解锁时显示独立提示及密码入口，关闭解锁弹窗后仍可再次打开。状态区分仅查看、控制已启用、已暂停、人工接管和恢复连接，不将控制权限解释为 Agent 正在执行任务。
-
-页面标题为 CrossDesk MCP，页内使用 CrossDesk 正式标志和名称。配色与桌面客户端的 WorkbenchStyle / ButtonStyle 一致，采用浅蓝灰底色、蓝色主操作、6 像素控件圆角及 12 像素卡片圆角；工具栏按钮统一为 32 像素高，图标按钮保留可访问名称与悬停提示。布局填满浏览器或宿主面板的可用宽高，远程画面保持原比例缩放，底部集中显示视频状态、分辨率和帧率；授权卡片在高度不足时独立滚动，窄侧栏沿用相同的监看布局。「放大画面」隐藏页眉并缩小外边距；退出菜单、详情和非人工接管状态下的放大模式支持 Esc。界面资源均可离线使用，保存设备与持久授权仍由用户分别选择。
-
-首次打开使用 URL fragment 中的短期一次性 bootstrap，页面立即清除 fragment，并换取 HttpOnly/SameSite cookie 和 CSRF 令牌。原始 bootstrap 不进入工具结果；`browser_url` 不含配对凭据，`browser_launch_url` 则是短期配对入口，只用于交给宿主导航，不应读取或发布。复制无凭据地址到另一浏览器不能获得会话控制权。
-
-无法自动打开浏览器时，在自己的终端运行工具结果 `pairing_command` 中的命令和参数。例如：
+Ở chế độ terminal, `crossdesk_open` / `crossdesk_connect` trả `terminal_command`. Bạn chạy lệnh trong terminal tương tác khác trên cùng máy; nếu chạy nguồn, thay `crossdesk-mcp` bằng `node /absolute/path/apps/mcp/dist/main.js`:
 
 ```sh
-crossdesk-mcp setup --open-panel --view <view_id> --config-dir <相同的配置目录>
+crossdesk-mcp view --view <view_id> --config-dir <cung-thu-muc-cau-hinh>
 ```
 
-通过源码运行时用 `node /absolute/path/apps/mcp/dist/main.js` 替换 `crossdesk-mcp`。配对通过本用户配置目录中的受限运行描述符和本地 IPC 完成，不允许匿名 HTTP 请求签发控制凭证。`setup` 使用用户终端的桌面环境打开浏览器；仍无法打开时，只在该交互终端显示 60 秒有效的一次性地址，不将它返回 MCP 或发送到聊天。面板最多保留 32 个视图；再次打开时会清理超过 30 分钟未使用的视图。浏览器会话最长 12 小时，失效后重新打开。
+Lệnh cho chọn thiết bị, nhập mật khẩu ẩn và cấp quyền điều khiển lần này; nếu phiên đã có thì hiển thị ảnh ngay. Terminal dùng descriptor chạy trong thư mục cấu hình hạn chế và IPC cục bộ xác thực để tái dùng kết nối native của MCP, không tạo kết nối từ xa thứ hai, không chiếm terminal Agent hay stdio MCP. Agent nên hiển thị lệnh để người dùng thực hiện rồi đợi qua `crossdesk_get_session`; không được chạy `view` trong kênh bắt đầu ra công cụ. Nếu không có terminal tương tác, `view` trả `VIEW_REQUIRES_TERMINAL`.
 
-### Codex 默认侧栏浏览器
+Hình terminal dùng bộ render ANSI phần tư của CLI native, mục tiêu 8 FPS, tối đa 160 cột × 60 dòng, dùng màu 8/256/truecolor tùy môi trường. Tỷ lệ rộng/cao ký tự mặc định 0.5, chỉnh bằng `--cell-aspect` (0.2–2). Điểm vào này chưa dùng Kitty/Sixel. `p` dừng Agent, `r` tiếp tục điều khiển đã cấp, `d` ngắt, `q` / Ctrl+C chỉ đóng hình và khôi phục terminal, giữ phiên. Tạm dừng vẫn khóa ở lớp native, Agent không tự tiếp tục được.
 
-安装、配置示例及首次使用见 [Codex 用户安装与使用](README.md#install-codex)。任何用户在 Codex 中直接启动 MCP，默认都会返回侧栏浏览器入口；以下说明宿主识别和配对机制。
+Trình duyệt/Apps và terminal đều vẽ vị trí chuột cuối Agent gửi thành công, hỗ trợ di chuyển, nhấn, cuộn và kéo; tọa độ từ ánh xạ tỷ lệ/cắt ảnh của lớp native. Tạm dừng hoặc tắt điều khiển sẽ ẩn, đổi màn hình hoặc cỡ ảnh sẽ xóa. Con trỏ chỉ gợi ý vị trí thao tác Agent, không phải ACK thực thi nhập từ xa và không theo chuột của người dùng từ xa. Nó không được ghi vào ảnh mô hình hay video nguồn.
 
-MCP 识别 Codex 的客户端名称 `codex-mcp-client` 和 DeepSeek Harness 的 `dsh-mcp-client`：旧协议读取 initialize 中的 `clientInfo`，2026-07-28 协议读取当前请求的 `io.modelcontextprotocol/clientInfo`。该标识仅选择显示方式，不授予任何设备权限。`--panel=auto` 在这两个宿主中选择 `browser`，`--browser-launch=auto` 选择 `host`；其他客户端仍沿用环境检测和系统浏览器。
+Con trỏ video trực tiếp trong trình duyệt/Apps theo tọa độ mới bằng easing ngắn 60–140 mili giây, độc lập với tốc độ khung video. Cập nhật liên tiếp nối từ vị trí đang hiển thị, không xếp hàng phát lại đường cũ. Lần đầu hiện hoặc đổi thế hệ kết nối/hình học sẽ đặt thẳng vị trí; ẩn hoặc dừng phát sẽ hủy hoạt ảnh, đồng thời tuân “Giảm chuyển động” hệ thống. Hiệu ứng mượt chỉ áp cho con trỏ gợi ý trên trang, không ảnh hưởng nhập chuột native hoặc tọa độ nhấp, nên không có nghĩa chuột từ xa thực đi qua đường nội suy.
 
-`host` 不启动系统浏览器，也不生成 MCP App 卡片；它要求宿主浏览器与 MCP 运行在同一台电脑。Codex 使用本机 `file://` 启动页；DeepSeek Harness 使用下述 HTTP 启动入口。显式使用 `--panel=browser --browser-launch=host` 可以强制宿主浏览器，使用 `--panel=browser --browser-launch=system` 则强制系统浏览器。显式将 `--browser-launch=host` 与 `apps`、`terminal` 或 `off` 组合会报错，这些模式单独使用不受浏览器默认值影响。
+Con trỏ video là mũi tên bo góc màu chính CrossDesk (`#3564e3`), viền trắng và quầng sáng mềm cùng màu, đồng nhất với ứng dụng và trang. Khi di chuyển, đầu mũi tên hướng theo chiều thực trên trang và làm tâm quay; hướng tính theo pixel ảnh để thích ứng màn rộng/dọc. Dừng thì giữ hướng cuối, bỏ ảnh hưởng của dịch chuyển dưới nửa CSS pixel. Lần đầu hiện hoặc đổi kết nối/hình học sẽ về hướng mặc định.
 
-服务指令、工具说明和返回值均内置 Codex 的打开流程：Agent 拿到 `browser_launch_url` 后立即打开宿主浏览器，即使连接已就绪也不省略此步骤。无需用户再次要求打开侧栏，也无需添加个人 `AGENTS.md`。实际打开仍由宿主浏览器工具执行，MCP 协议本身不能强制所有客户端展示侧栏；缺少该工具时（例如没有侧栏浏览器的 Codex CLI）应明确说明限制并展示本地配对命令。
+Tài nguyên Apps là `ui://crossdesk/viewer.html`; công cụ chỉ lộ siêu dữ liệu UI và API riêng khi Apps được cho phép và yêu cầu hiện tại hỗ trợ. Chỉ đánh dấu sẵn sàng sau khi trang báo `crossdesk_ui_ready`; quá 10 giây không báo thì hiện `not_confirmed`, không tự mở trình duyệt thứ hai. Khi người dùng yêu cầu rõ phương án dự phòng, gọi `crossdesk_open_browser`. Công cụ này không kèm siêu dữ liệu Apps; chính sách `apps`/`off` từ chối ghi đè.
+
+Bảng trình duyệt chỉ nghe cổng ngẫu nhiên trên `127.0.0.1`, cùng tiến trình MCP. Đây không phải MCP Streamable HTTP và không cung cấp MCP trong LAN. MCP, CLI và trình duyệt người dùng nên chạy trên cùng máy điều khiển; chuyển tiếp trình duyệt từ container SSH hoặc host xa không thuộc chế độ truy cập cục bộ này.
+
+Trang tập trung giám sát phiên Agent: lần đầu nối hiện thẻ cấp quyền, sau đó ảnh từ xa chiếm vùng khả dụng, còn thiết bị, quyền và khôi phục nằm trong ngăn “Chi tiết phiên”. Thanh công cụ hiện thiết bị và quyền thực, chỉ giữ “Tạm dừng Agent / Tiếp tục Agent” khi đã cấp điều khiển; khi bảng này tiếp quản thì đổi thành “Trả quyền cho Agent”. Phóng ảnh, tiếp quản, âm thanh/âm lượng và ngắt nằm trong “Tùy chọn phiên”; phiên chỉ xem không hiện tiếp quản. Đợi mở khóa hệ thống có thông báo và mục nhập mật khẩu riêng; đóng hộp mở khóa vẫn mở lại được. Trạng thái phân biệt chỉ xem, điều khiển bật, tạm dừng, tiếp quản và khôi phục, không diễn giải có quyền điều khiển là Agent đang thực hiện tác vụ.
+
+Trang có tiêu đề CrossDesk MCP và dùng logo/tên chính thức. Màu theo WorkbenchStyle / ButtonStyle desktop: nền xanh xám nhạt, thao tác chính màu xanh, điều khiển bo 6 pixel và thẻ bo 12 pixel. Nút thanh công cụ cao thống nhất 32 pixel; nút biểu tượng giữ tên trợ năng và tooltip. Bố trí lấp đầy vùng rộng/cao host hoặc trình duyệt, ảnh giữ tỷ lệ, phía dưới tập trung trạng thái video, độ phân giải và FPS. Thiếu chiều cao thì thẻ cấp quyền cuộn riêng; thanh bên hẹp giữ cùng bố trí giám sát. “Phóng to hình ảnh” ẩn header và giảm lề. Thoát menu, chi tiết hoặc chế độ phóng khi không tiếp quản đều hỗ trợ Esc. Tài nguyên dùng ngoại tuyến được; lưu thiết bị và quyền bền vững vẫn do người dùng chọn riêng.
+
+Lần đầu mở dùng bootstrap ngắn hạn, một lần trong URL fragment; trang xóa fragment ngay rồi đổi cookie HttpOnly/SameSite và token CSRF. Bootstrap thô không vào kết quả công cụ. `browser_url` không có xác thực ghép, còn `browser_launch_url` là điểm ghép ngắn hạn chỉ giao host điều hướng, không nên đọc hay công bố. Sao địa chỉ không xác thực sang trình duyệt khác không cấp quyền điều khiển phiên.
+
+Nếu không tự mở được trình duyệt, hãy chạy lệnh và tham số `pairing_command` từ kết quả công cụ trong terminal riêng. Ví dụ:
+
+```sh
+crossdesk-mcp setup --open-panel --view <view_id> --config-dir <cung-thu-muc-cau-hinh>
+```
+
+Khi chạy từ nguồn, thay `crossdesk-mcp` bằng `node /absolute/path/apps/mcp/dist/main.js`. Ghép qua descriptor chạy giới hạn trong thư mục cấu hình người dùng và IPC cục bộ; không cho yêu cầu HTTP ẩn danh cấp xác thực điều khiển. `setup` dùng môi trường desktop của terminal người dùng để mở trình duyệt. Nếu vẫn không mở được, chỉ terminal tương tác đó hiển thị địa chỉ một lần hạn 60 giây, không trả cho MCP hay gửi vào chat. Bảng giữ tối đa 32 view; mở lại sẽ dọn view không dùng quá 30 phút. Phiên trình duyệt tối đa 12 giờ, hết hạn cần mở lại.
+
+### Trình duyệt thanh bên mặc định Codex
+
+Cài đặt, ví dụ cấu hình và lần đầu sử dụng xem [cài và dùng Codex](README.md#install-codex). Bất kỳ ai khởi MCP trực tiếp trong Codex đều mặc định nhận điểm vào trình duyệt thanh bên; dưới đây giải thích nhận diện host và cơ chế ghép.
+
+MCP nhận tên client Codex `codex-mcp-client` và DeepSeek Harness `dsh-mcp-client`: giao thức cũ đọc `clientInfo` trong initialize, giao thức 2026-07-28 đọc `io.modelcontextprotocol/clientInfo` của yêu cầu hiện tại. Dấu nhận diện chỉ chọn cách hiển thị, không cấp bất kỳ quyền thiết bị nào. `--panel=auto` chọn `browser` và `--browser-launch=auto` chọn `host` trong hai host này; client khác vẫn dò môi trường và dùng trình duyệt hệ thống như trước.
+
+`host` không khởi trình duyệt hệ thống hay tạo thẻ MCP App, đồng thời yêu cầu trình duyệt host và MCP cùng máy. Codex dùng trang khởi `file://` cục bộ; DeepSeek Harness dùng điểm khởi HTTP bên dưới. Chỉ rõ `--panel=browser --browser-launch=host` để ép trình duyệt host hoặc `--panel=browser --browser-launch=system` để ép trình duyệt hệ thống. Kết hợp tường minh `--browser-launch=host` với `apps`, `terminal` hoặc `off` sẽ báo lỗi; dùng riêng các chế độ này không bị ảnh hưởng bởi mặc định trình duyệt.
+
+Chỉ dẫn dịch vụ, mô tả và kết quả công cụ đều tích hợp quy trình mở của Codex: nhận `browser_launch_url` thì Agent mở trình duyệt host ngay, kể cả khi kết nối đã sẵn sàng. Người dùng không cần yêu cầu mở thanh bên lần nữa hoặc thêm `AGENTS.md` cá nhân. Mở thực vẫn do công cụ trình duyệt host; giao thức MCP không thể ép mọi client hiển thị thanh bên. Nếu thiếu công cụ đó, như Codex CLI không có trình duyệt thanh bên, Agent nên nói rõ giới hạn và hiện lệnh ghép cục bộ.
 
 
-`crossdesk_open`、`crossdesk_connect` 和 `crossdesk_open_browser` 在此模式返回 `browser_launch_url`、`browser_url`、`browser_host`、剩余有效时间及绝对到期时间。Agent 应将 `browser_launch_url` 直接交给宿主的浏览器打开工具；在 Codex 中调用 `open_in_codex`，设置 `target.type` 为 `browser`、`target.url` 为该地址、`placement` 为 `right`。不要读取、粘贴或上传启动页内容。
+Trong chế độ này, `crossdesk_open`, `crossdesk_connect` và `crossdesk_open_browser` trả `browser_launch_url`, `browser_url`, `browser_host`, thời gian còn hiệu lực và thời điểm hết hạn tuyệt đối. Agent nên giao trực tiếp `browser_launch_url` cho công cụ mở trình duyệt host. Trong Codex, gọi `open_in_codex`, đặt `target.type` là `browser`, `target.url` là địa chỉ đó và `placement` là `right`. Không đọc, dán hoặc tải lên nội dung trang khởi.
 
-Codex 启动页位于系统临时目录的独立目录中，POSIX 权限为目录 `0700`、文件 `0600`，内含 60 秒有效的一次性配对地址。浏览器在本机跳转到播放器并换取自己的 HttpOnly/SameSite cookie 和 CSRF 令牌；工具结果不包含原始 bootstrap 票据。票据绑定视图及代际，消费、到期或正常关闭服务时清理启动页。启动地址过期时，对已有 `view_id` 调用 `crossdesk_open_browser` 重新签发，不要重新连接远端。
+Trang khởi Codex nằm trong thư mục riêng dưới thư mục tạm hệ thống, quyền POSIX là `0700` cho thư mục và `0600` cho tệp, chứa địa chỉ ghép dùng một lần trong 60 giây. Trình duyệt chuyển cục bộ tới player để đổi cookie HttpOnly/SameSite và token CSRF riêng; kết quả công cụ không chứa vé bootstrap thô. Vé gắn view/thế hệ; khi dùng, hết hạn hoặc đóng dịch vụ bình thường, trang khởi được dọn. Nếu địa chỉ khởi hết hạn, gọi `crossdesk_open_browser` với `view_id` hiện có để cấp lại, không kết nối từ xa lại.
 
-`browser_url` 是不带配对凭据的本机 HTTP 地址，用于已配对浏览器重新打开；直接复制到另一浏览器不能获得当前会话权限。没有内置浏览器的宿主可由用户执行原有 `pairing_command`，在系统浏览器完成配对。
+`browser_url` là địa chỉ HTTP cục bộ không có xác thực ghép, dùng mở lại trình duyệt đã ghép; sao trực tiếp sang trình duyệt khác không có quyền phiên hiện tại. Với host không có trình duyệt tích hợp, người dùng có thể chạy `pairing_command` cũ để ghép bằng trình duyệt hệ thống.
 
-侧栏中的网页沿用本机 WebSocket → WebCodecs/VideoFrame 播放路径，媒体数据不经过 MCP 工具结果，也不需要新增公网中转。它与 MCP Apps iframe 是不同的运行环境；是否能播放及实际帧率需要在目标宿主验证。
+Trang trong thanh bên vẫn dùng WebSocket cục bộ → WebCodecs/VideoFrame; media không qua kết quả công cụ MCP và không cần relay công cộng mới. Đây là môi trường khác iframe MCP Apps; khả năng phát và FPS thực cần kiểm trên host đích.
 
-2026-11-11 在本机 Codex 侧栏浏览器完成实测：通过上述启动页连接 macOS 远端，页面显示“实时”、1920 × 1080、约 26 FPS，画布帧计数持续递增。原生端确认 `h264-annexb/1` 经 `loopback-websocket/1` 传输，1 个活动观看者、发送队列无积压；验证期间仅查看画面，未发送远端输入。此结果验证当前环境下的侧栏实时播放，实际帧率仍取决于远端、网络和解码性能。
+Ngày 2026-11-11 đã đo thực trong trình duyệt thanh bên Codex cục bộ: trang khởi trên kết nối máy macOS từ xa, trang hiện “Trực tiếp”, 1920 × 1080, khoảng 26 FPS và số khung canvas tăng liên tục. Phía native xác nhận `h264-annexb/1` qua `loopback-websocket/1`, 1 người xem hoạt động, hàng gửi không tồn đọng. Trong kiểm chứng chỉ xem, không gửi nhập từ xa. Kết quả xác minh phát trực tiếp trong môi trường hiện tại; FPS thực vẫn tùy máy từ xa, mạng và giải mã.
 
-2026-11-12 使用工程外的全新临时配置完成 16 项 stdio 协议检查：Codex 新旧协议均在不设置面板参数时返回宿主浏览器启动页，其他客户端保留原有行为，显式面板及启动方式覆盖有效，重新签发及退出清理正常；另以模拟会话验证已就绪连接和解锁面板的 Codex 路由。此检查不读取个人 Codex 配置，不连接真实远端。
+Ngày 2026-11-12, cấu hình tạm mới hoàn toàn ngoài dự án đã qua 16 kiểm tra stdio: giao thức Codex cũ/mới đều trả trang khởi host khi không đặt tham số bảng; client khác giữ hành vi cũ; ghi đè bảng/cách khởi tường minh có hiệu lực; cấp lại và dọn khi thoát bình thường. Phiên mô phỏng còn kiểm định tuyến Codex cho kết nối đã sẵn sàng và bảng mở khóa. Các kiểm tra không đọc cấu hình Codex cá nhân hay nối máy từ xa thật.
 
-### DeepSeek Harness 桌面侧栏
+### Thanh bên DeepSeek Harness desktop
 
-Harness 桌面版的 Sidebar Browser 只接受 HTTP(S) 地址，不能打开 Codex 的 `file://` 启动页；其内置侧栏也未提供供 Agent 调用的打开工具。安装合并的 CrossDesk MCP 插件后，工具调用会自动打开当前 Harness 会话的浏览器侧栏，不需要手动点击链接。代码结构见 [DSH 集成说明](integrations/deepseek-harness/README.md)。
+Sidebar Browser của Harness desktop chỉ nhận HTTP(S), không mở trang khởi `file://` của Codex; thanh bên tích hợp cũng không có công cụ mở cho Agent gọi. Sau khi cài plugin CrossDesk MCP hợp nhất, gọi công cụ sẽ tự mở thanh bên trình duyệt của phiên Harness hiện tại, không cần nhấn liên kết thủ công. Cấu trúc mã xem [tích hợp DSH](integrations/deepseek-harness/README.md).
 
-完整安装与配置见 [DeepSeek Harness 用户安装与使用](README.md#install-dsh)。合并插件管理 MCP 进程和页面显示，不增加设备权限，也不会发起第二次远端连接。
+Cài đặt và cấu hình đầy đủ xem [cài và dùng DeepSeek Harness](README.md#install-dsh). Plugin hợp nhất quản lý tiến trình MCP và hiển thị trang, không thêm quyền thiết bị hay tạo kết nối từ xa thứ hai.
 
-Harness 的 `browser_launch_url` 为本机 `/launch/<随机标识>`，在 60 秒内仅可导航一次，再跳转到原有配对流程；原始 bootstrap 令牌不进入工具结果。启动地址本身是短期配对入口，不应发布、抓取或记录其内容。消费、过期、视图代际变化或服务关闭后均不可重用；过期时为已有 `view_id` 重新签发。现有 Host/Origin 校验、HttpOnly/SameSite Cookie、CSRF 和禁止 iframe 嵌入的策略保持有效。
+`browser_launch_url` của Harness là `/launch/<ma-ngau-nhien>` cục bộ, chỉ cho điều hướng một lần trong 60 giây rồi chuyển sang luồng ghép cũ; token bootstrap thô không vào kết quả công cụ. Bản thân địa chỉ là điểm ghép ngắn hạn, không nên công bố, lấy hoặc ghi nội dung. Nó không tái dùng được sau khi tiêu thụ, hết hạn, đổi thế hệ view hoặc đóng dịch vụ; hết hạn thì cấp lại cho `view_id` hiện có. Kiểm Host/Origin, cookie HttpOnly/SameSite, CSRF và cấm nhúng iframe vẫn giữ hiệu lực.
 
-侧栏适配只在 Harness 桌面版启用；Harness 网页版的 iframe 不支持此路径，不会为此开放任意跨域嵌入或公网转发。未安装插件时，Agent 应说明安装方式，或提供入口链接供用户选择“在侧栏打开”，不能声称已自动打开。侧栏导航成功与配对/视频就绪分别确认，Agent 仍须等待 `crossdesk_get_session`。
+Thích ứng thanh bên chỉ bật ở Harness desktop; iframe Harness web không hỗ trợ đường này. Không mở nhúng tùy miền hoặc chuyển tiếp công cộng để khắc phục. Khi chưa cài plugin, Agent nên chỉ cách cài hoặc đưa liên kết để người dùng chọn “Mở trong thanh bên”, không được tuyên bố đã tự mở. Thành công điều hướng thanh bên và ghép/video sẵn sàng cần xác nhận riêng; Agent vẫn phải đợi `crossdesk_get_session`.
 
-2026-11-12 在 macOS 的 DeepSeek Harness 0.2.2-rc.1 完成实测：安装配套插件后，`crossdesk_connect` 以仅查看模式连接已保存的 Mac mini，插件自动打开当前会话右侧浏览器并完成配对；页面显示实时画面、1920 × 1080、约 27–29 FPS。验证过程中未发送远端键鼠输入。另在工程外临时目录通过 23 项协议/配对/宿主桥接检查及 6 项客户端生命周期检查，覆盖 Codex 与 Harness 新旧协议、单次消费、过期、代际失效、会话隔离、多窗口领取和标签复用。
+Ngày 2026-11-12 đã đo trên DeepSeek Harness 0.2.2-rc.1 macOS: sau khi cài plugin đi kèm, `crossdesk_connect` nối Mac mini đã lưu ở chế độ chỉ xem; plugin tự mở trình duyệt bên phải của phiên hiện tại và ghép xong. Trang hiển thị hình trực tiếp, 1920 × 1080, khoảng 27–29 FPS. Không gửi phím/chuột từ xa trong kiểm chứng. Ngoài ra, thư mục tạm ngoài dự án đã qua 23 kiểm giao thức/ghép/cầu host và 6 kiểm vòng đời client, gồm giao thức Codex/Harness cũ/mới, dùng một lần, hết hạn, vô hiệu theo thế hệ, cách ly phiên, nhiều cửa sổ nhận và tái dùng thẻ.
 
-同日完成合并包验证：使用 Harness 自带 CLI 在工程外全新 profile 中仅安装一个 macOS arm64 平台包，确认 bundle 和配置 schema 可加载；使用真实 Harness 运行时、Cordis 和 MCP Client 验证自动注册 31 个工具、侧栏请求交接、重复命名空间冲突、停用清理、重新启用及自定义名称。验证安装与卸载、无效原生程序拒绝、打包协议校验，以及构建后的侧栏客户端生命周期；Codex 路由回归通过。本次合并验证未连接远端，其他平台仍需 CI 与实机验收。
+Cùng ngày đã kiểm gói hợp nhất: dùng CLI kèm Harness trong profile mới hoàn toàn ngoài dự án, chỉ cài một gói nền tảng macOS arm64 và xác nhận bundle/schema cấu hình nạp được. Runtime Harness thật, Cordis và MCP Client kiểm tự đăng ký 31 công cụ, bàn giao yêu cầu thanh bên, xung đột namespace trùng, dọn khi tắt, bật lại và tên tùy chỉnh. Cũng đã kiểm cài/gỡ, từ chối chương trình native không hợp lệ, giao thức đóng gói và vòng đời client thanh bên sau biên dịch; hồi quy định tuyến Codex đạt. Lần kiểm gói hợp nhất này không nối máy từ xa, nền tảng khác vẫn cần CI và máy thật nghiệm thu.
 
-## 无面板配置与凭据
+## Cấu hình không bảng và thông tin xác thực
 
-在用户自己的交互终端执行（不能在宿主 stdio 通道中交互输入密码）：
+Chạy trong terminal tương tác của chính bạn, không nhập mật khẩu tương tác qua kênh stdio của host:
 
 ```sh
 crossdesk-mcp setup
 ```
 
-配置默认存放于 `~/.config/crossdesk/mcp/`，可用 `--config-dir` 或 `CROSSDESK_MCP_CONFIG_DIR` 覆盖。`devices.json` 包含设备、面板/视频选项及凭据引用；密码保存到 macOS Keychain、Windows 凭据库或 Linux Secret Service。凭据库不可用就返回明确错误，没有明文文件降级。面板的临时连接仍可使用用户现场输入的密码。持久保存失败会保留已建立连接，并在面板显示错误。
+Cấu hình mặc định ở `~/.config/crossdesk/mcp/`, ghi đè được bằng `--config-dir` hoặc `CROSSDESK_MCP_CONFIG_DIR`. `devices.json` chứa thiết bị, tùy chọn bảng/video và tham chiếu xác thực; mật khẩu lưu trong macOS Keychain, Windows Credential Manager hoặc Linux Secret Service. Kho xác thực không khả dụng sẽ báo lỗi rõ, không chuyển về tệp văn bản rõ. Kết nối tạm trên bảng vẫn dùng mật khẩu người dùng nhập tại chỗ. Lưu bền vững thất bại sẽ giữ kết nối đã tạo và hiện lỗi trong bảng.
 
-也可在 `setup` 中指定外部密码环境变量名称，服务读取该变量作为凭据提供器。示例配置（没有密码值）：
+Bạn cũng có thể chỉ tên biến môi trường mật khẩu bên ngoài trong `setup`; dịch vụ đọc biến đó làm provider xác thực. Ví dụ cấu hình không có giá trị mật khẩu:
 
 ```json
 {
@@ -262,85 +262,85 @@ crossdesk-mcp setup
 }
 ```
 
-授权范围和可用凭据缺一不可。模型不能提供任意 `device_id` 绕过面板确认；模型侧 `crossdesk_connect` 仅接受已授权设备别名。不要把密码发给 Agent，也不要把包含密码的命令行写进宿主配置。
+Cần có cả phạm vi cấp quyền và xác thực khả dụng. Mô hình không thể đưa `device_id` tùy ý để bỏ xác nhận bảng; `crossdesk_connect` phía mô hình chỉ nhận bí danh thiết bị đã cấp quyền. Không gửi mật khẩu cho Agent hay ghi lệnh chứa mật khẩu vào cấu hình host.
 
-Apps 依赖宿主遵守 app-only 工具可见性和 `_meta` 的模型不可见约定；服务另检查每个视图的随机 UI 能力令牌和 generation。app-only 标记本身不是可信身份凭据。能够读取同用户进程/文件或执行任意本机代码的 Agent 不受此边界隔离。
+Apps phụ thuộc host tuân quy ước hiển thị app-only và `_meta` không thấy bởi mô hình. Dịch vụ kiểm thêm token năng lực UI ngẫu nhiên và generation của từng view; riêng dấu app-only không phải thông tin xác thực đáng tin cậy. Agent có thể đọc tiến trình/tệp cùng người dùng hoặc chạy mã cục bộ tùy ý thì không được cách ly bởi ranh giới này.
 
-## 模型工具
+## Công cụ mô hình
 
-以下 31 个工具面向 Agent，定义见 [src/server.ts](src/server.ts)。远端能力可通过会话状态中的 `capabilities` 查询，窗口与元素操作的具体平台能力通过 `crossdesk_desktop({session_id, operation: "capabilities"})` 查询。
+31 công cụ sau dành cho Agent, định nghĩa trong [src/server.ts](src/server.ts). Khả năng từ xa hỏi qua `capabilities` trong trạng thái phiên; khả năng nền tảng cụ thể cho cửa sổ/phần tử hỏi qua `crossdesk_desktop({session_id, operation: "capabilities"})`.
 
-| 工具 | 作用 |
+| Công cụ | Chức năng |
 | --- | --- |
-| `crossdesk_open` | 打开设备选择/连接面板，返回 `view_id` |
-| `crossdesk_open_browser` | 用户显式请求的浏览器入口/回退 |
-| `crossdesk_list_devices` | 本机设备簿和授权摘要，不提供云发现 |
-| `crossdesk_connect` | 通过别名连接已经授权且有凭据的设备 |
-| `crossdesk_get_session` | `session_id`、`view_id` 严格二选一；查询状态或等待连接、恢复、指定解锁请求，`wait_ms` 范围 0–25000 |
-| `crossdesk_list_sessions` | 列出活动会话及设备、显示器和控制状态，最多八个并行连接 |
-| `crossdesk_set_recovery` | 开关有界断线恢复，尝试次数可设为 1–5，默认 3；需要持久授权和可用凭据 |
-| `crossdesk_disconnect` | 断开并释放输入状态、子进程和设备锁 |
-| `crossdesk_screenshot` | 返回 PNG image content 和观测元数据 |
-| `crossdesk_wait` | 根据已有观测等待画面区域变化或稳定，满足条件后返回新截图 |
-| `crossdesk_action` | 结构化输入，可附带动作之后的截图 |
-| `crossdesk_release_inputs` | 释放当前会话持有的所有按键和鼠标按钮，并取消当前输入动作 |
-| `crossdesk_set_control` | 在已授权范围内启停 Agent 输入 |
-| `crossdesk_select_display` | 切换显示器，使旧观测失效 |
-| `crossdesk_capture_displays` | 顺序截取最多八个显示器，返回多屏图像及 `capture_id`，随后恢复原显示器 |
-| `crossdesk_drag_across` | 使用多屏截图坐标跨显示器拖拽 |
-| `crossdesk_video_settings` | 运行时调整预览帧率、分辨率、质量和码率 |
-| `crossdesk_desktop` | 查询平台能力、窗口清单或可访问性树，支持按进程和元素读取子树 |
-| `crossdesk_desktop_action` | 激活窗口、按下/聚焦元素、设置值、启动应用或打开 HTTP(S) 地址 |
-| `crossdesk_wait_ui` | 按文本和角色等待窗口或可访问性元素出现、消失 |
-| `crossdesk_audio` | 开关远端桌面音频接收，默认关闭 |
-| `crossdesk_audio_capture` | 采集 100–10000 毫秒远端音频，返回单声道 48 kHz WAV 音频内容块 |
-| `crossdesk_clipboard_get` | 读取远端文本剪贴板，需要已授权控制会话 |
-| `crossdesk_clipboard_set` | 写入或清空远端文本剪贴板 |
-| `crossdesk_files_list` | 分页浏览远端目录或文件系统根目录 |
-| `crossdesk_files_transfer` | 上传或下载文件、文件夹，返回可查询的传输任务 |
-| `crossdesk_files_status` | 查询传输进度、逐文件结果及完成/失败/取消状态 |
-| `crossdesk_files_cancel` | 取消传输并清理未完成的暂存文件，保留已完成文件 |
-| `crossdesk_system_status` | 查询远端系统锁定状态及安全桌面服务信息 |
-| `crossdesk_system_command` | 锁定远端系统，或通过 Windows 服务发送安全注意序列 `send_sas` |
-| `crossdesk_unlock` | 使用独立的系统锁屏凭据解锁，或在本地面板请求输入密码 |
+| `crossdesk_open` | Mở chọn thiết bị/kết nối, trả `view_id` |
+| `crossdesk_open_browser` | Điểm vào/dự phòng trình duyệt người dùng yêu cầu rõ |
+| `crossdesk_list_devices` | Sổ cục bộ/tóm tắt quyền, không tìm đám mây |
+| `crossdesk_connect` | Bí danh nối thiết bị đã cấp/có xác thực |
+| `crossdesk_get_session` | Chọn đúng một `session_id`, `view_id`; hỏi/đợi kết nối, khôi phục, mở khóa cụ thể, `wait_ms` 0–25000 |
+| `crossdesk_list_sessions` | Phiên hoạt động, thiết bị/màn hình/điều khiển, tối đa tám nối song song |
+| `crossdesk_set_recovery` | Bật/tắt khôi phục giới hạn, 1–5 lần, mặc định 3; cần quyền bền/xác thực |
+| `crossdesk_disconnect` | Ngắt/nhả nhập/tiến trình con/khóa thiết bị |
+| `crossdesk_screenshot` | PNG image content/siêu dữ liệu quan sát |
+| `crossdesk_wait` | Theo quan sát cũ đợi vùng đổi/ổn định, đủ trả ảnh mới |
+| `crossdesk_action` | Nhập cấu trúc, tùy chọn ảnh sau thao tác |
+| `crossdesk_release_inputs` | Nhả mọi phím/nút phiên giữ, hủy nhập hiện tại |
+| `crossdesk_set_control` | Bật/tắt nhập Agent trong quyền đã cấp |
+| `crossdesk_select_display` | Đổi màn, vô hiệu quan sát cũ |
+| `crossdesk_capture_displays` | Chụp tuần tự tối đa tám màn, trả ảnh/`capture_id`, về màn gốc |
+| `crossdesk_drag_across` | Tọa độ ảnh nhiều màn kéo xuyên màn |
+| `crossdesk_video_settings` | Chỉnh FPS/phân giải/chất lượng/bitrate xem trước khi chạy |
+| `crossdesk_desktop` | Hỏi khả năng/cửa sổ/cây trợ năng, đọc cây con theo tiến trình/phần tử |
+| `crossdesk_desktop_action` | Kích cửa sổ, nhấn/tiêu điểm phần tử, đặt giá trị, khởi ứng dụng/mở HTTP(S) |
+| `crossdesk_wait_ui` | Theo chữ/vai trò đợi cửa sổ/phần tử trợ năng xuất hiện/mất |
+| `crossdesk_audio` | Bật/tắt nhận tiếng desktop, mặc định tắt |
+| `crossdesk_audio_capture` | Ghi 100–10000 mili giây, trả khối WAV đơn kênh 48 kHz |
+| `crossdesk_clipboard_get` | Đọc bảng nhớ chữ từ xa, cần phiên cấp điều khiển |
+| `crossdesk_clipboard_set` | Ghi/xóa bảng nhớ chữ từ xa |
+| `crossdesk_files_list` | Phân trang thư mục/gốc hệ thống tệp |
+| `crossdesk_files_transfer` | Tải lên/xuống tệp/thư mục, trả tác vụ hỏi được |
+| `crossdesk_files_status` | Hỏi tiến độ/kết quả từng tệp/trạng thái xong-lỗi-hủy |
+| `crossdesk_files_cancel` | Hủy/dọn tệp tạm chưa xong, giữ đã xong |
+| `crossdesk_system_status` | Hỏi trạng thái khóa hệ thống/dịch vụ desktop an toàn từ xa |
+| `crossdesk_system_command` | Khóa hệ thống hoặc gửi chuỗi chú ý an toàn `send_sas` qua dịch vụ Windows |
+| `crossdesk_unlock` | Mở khóa bằng xác thực khóa riêng, hoặc yêu cầu mật khẩu qua bảng cục bộ |
 
-## MCP Apps 面板专用接口
+## Giao diện riêng bảng MCP Apps
 
-以下 11 个接口仅在 `--panel=apps` 且当前请求支持 MCP Apps 时暴露为 app-only 工具，由经过视图令牌验证的面板调用。浏览器和终端面板通过各自经过认证的本地通道使用会话功能。
+11 API sau chỉ được công bố dưới dạng công cụ app-only khi `--panel=apps` và yêu cầu hiện tại hỗ trợ MCP Apps, do bảng đã xác minh token view gọi. Bảng trình duyệt và terminal dùng chức năng phiên qua kênh cục bộ xác thực riêng của mình.
 
-| 接口 | 作用 |
+| API | Chức năng |
 | --- | --- |
-| `crossdesk_ui_ready` | 回报面板已初始化 |
-| `crossdesk_ui_list_devices` | 获取设备簿及默认服务器配置 |
-| `crossdesk_ui_get_session` | 查询当前面板绑定的会话 |
-| `crossdesk_ui_connect` | 提交用户选择的设备、连接凭据及授权选项 |
-| `crossdesk_video_open` | 获取当前视图的实时视频连接票据 |
-| `crossdesk_ui_preview` | 实时视频受限时获取当前视图的有界 PNG 预览，仅通过面板元数据返回 |
-| `crossdesk_viewer_control` | 人工暂停、恢复、接管或断开 |
-| `crossdesk_ui_input` | 人工接管期间发送面板键鼠输入 |
-| `crossdesk_ui_unlock` | 提交或取消锁屏密码输入，可选择保存凭据 |
-| `crossdesk_ui_recovery` | 设置断线恢复开关和尝试次数 |
-| `crossdesk_ui_audio` | 开关面板会话的音频接收 |
+| `crossdesk_ui_ready` | Báo bảng khởi tạo xong |
+| `crossdesk_ui_list_devices` | Lấy sổ thiết bị/cấu hình máy chủ mặc định |
+| `crossdesk_ui_get_session` | Hỏi phiên gắn bảng hiện tại |
+| `crossdesk_ui_connect` | Gửi thiết bị/xác thực kết nối/tùy chọn quyền người dùng chọn |
+| `crossdesk_video_open` | Lấy vé nối video trực tiếp view hiện tại |
+| `crossdesk_ui_preview` | PNG giới hạn view hiện tại khi video hạn chế, chỉ trả qua siêu dữ liệu bảng |
+| `crossdesk_viewer_control` | Người dùng dừng/tiếp tục/tiếp quản/ngắt |
+| `crossdesk_ui_input` | Gửi chuột/phím bảng khi người dùng tiếp quản |
+| `crossdesk_ui_unlock` | Gửi/hủy nhập mật khẩu khóa, tùy chọn lưu xác thực |
+| `crossdesk_ui_recovery` | Đặt bật/tắt khôi phục/số lần thử |
+| `crossdesk_ui_audio` | Bật/tắt nhận âm thanh phiên bảng |
 
-## 远程操作
+## Thao tác từ xa
 
-### 键鼠输入
+### Nhập bàn phím và chuột
 
-`crossdesk_action` 支持 `move`、`click`、`double_click`、`scroll`、`drag`、`key_press`、`hotkey`、`type_text`，以及可跨动作保持的 `key_down`、`key_up`、`mouse_down`、`mouse_up`。按键使用 Windows VK 对应的标准名称，覆盖 `A`–`Z`、`0`–`9`、`F1`–`F24`、数字键盘、`CTRL`、`ALT`、`SHIFT`、`META`、`ENTER`、`ESC`、方向键、菜单、锁定键和媒体键等；应用快捷键及实际效果仍需根据远端系统选择。
+`crossdesk_action` hỗ trợ `move`, `click`, `double_click`, `scroll`, `drag`, `key_press`, `hotkey`, `type_text`, cùng `key_down`, `key_up`, `mouse_down`, `mouse_up` có thể giữ trạng thái qua nhiều thao tác. Phím dùng tên chuẩn tương ứng Windows VK, gồm `A`–`Z`, `0`–`9`, `F1`–`F24`, bàn phím số, `CTRL`, `ALT`, `SHIFT`, `META`, `ENTER`, `ESC`, mũi tên, menu, phím khóa và media. Phím tắt ứng dụng và hiệu quả thực tế vẫn cần chọn theo hệ thống từ xa.
 
-`move`、`click`、`double_click`、`scroll`、`drag` 和 `key_press` 支持可选的 `modifiers: ["CTRL", "ALT", "SHIFT", "META"]`（选择需要的键，不能重复），用于组合点击、选择、拖拽和快捷键。修饰键仅在本次动作期间保持，结束、取消或人工暂停时释放。`drag` 可指定 `button: "left" | "right" | "middle"`，默认左键。标点键支持 `SEMICOLON`、`EQUAL`、`COMMA`、`MINUS`、`PERIOD`、`SLASH`、`BACKQUOTE`、`BRACKET_LEFT`、`BACKSLASH`、`BRACKET_RIGHT`、`QUOTE`；这些是 VK 键位名称，实际字符取决于远端键盘布局，输入文字应使用 `type_text`。例如：
+`move`, `click`, `double_click`, `scroll`, `drag` và `key_press` hỗ trợ tùy chọn `modifiers: ["CTRL", "ALT", "SHIFT", "META"]`, chỉ chọn phím cần và không được trùng, để thực hiện nhấn kết hợp, chọn, kéo và phím tắt. Phím bổ trợ chỉ giữ trong thao tác hiện tại, nhả khi kết thúc, hủy hoặc người dùng tạm dừng. `drag` có thể chỉ `button: "left" | "right" | "middle"`, mặc định trái. Phím dấu câu hỗ trợ `SEMICOLON`, `EQUAL`, `COMMA`, `MINUS`, `PERIOD`, `SLASH`, `BACKQUOTE`, `BRACKET_LEFT`, `BACKSLASH`, `BRACKET_RIGHT`, `QUOTE`. Đây là tên vị trí VK; ký tự thực tùy bố cục bàn phím từ xa, nên dùng `type_text` để nhập văn bản. Ví dụ:
 
 ```json
 {"session_id":"…","operation_id":"select-item-1","observation_id":"…","action":{"type":"click","x":120,"y":80,"modifiers":["SHIFT"]}}
 ```
 
-`key_down`、`key_up`、`mouse_down` 和 `mouse_up` 的按下状态可跨动作保持，例如按住 Ctrl 后移动或拖动鼠标。最后一次动作完成后，按住状态的有效期为十五秒，超时自动释放。`crossdesk_release_inputs` 可立即释放本会话的全部按键和按钮，并取消当前输入动作。人工暂停、断开及输入错误同样释放按住状态。
+Trạng thái nhấn của `key_down`, `key_up`, `mouse_down` và `mouse_up` có thể giữ qua nhiều thao tác, ví dụ giữ Ctrl rồi di chuyển hoặc kéo chuột. Sau khi thao tác cuối kết thúc, trạng thái giữ có hiệu lực mười lăm giây, hết hạn tự nhả. `crossdesk_release_inputs` nhả ngay mọi phím/nút của phiên và hủy thao tác nhập hiện tại. Tạm dừng thủ công, ngắt và lỗi nhập cũng nhả trạng thái giữ.
 
-`key_press`、`hotkey` 支持 `duration_ms`，最长三十秒；`drag` 时长上限同样为三十秒。状态返回 `held_key_codes` 和 `held_mouse_flags`。文本输入前应释放持续按住的键鼠状态。
+`key_press`, `hotkey` hỗ trợ `duration_ms` tối đa ba mươi giây; `drag` cũng tối đa ba mươi giây. Trạng thái trả `held_key_codes` và `held_mouse_flags`. Trước khi nhập văn bản, nên nhả trạng thái chuột/phím đang giữ liên tục.
 
-### 减少 Agent 操作往返
+### Giảm lượt gọi thao tác Agent
 
-`crossdesk_action` 支持 `action.type: "sequence"`，在一次调用中依次执行 1–8 个固定动作，最后只返回一次截图。例如已聚焦远程浏览器时，可以将聚焦地址栏、输入网址、回车合并：
+`crossdesk_action` hỗ trợ `action.type: "sequence"`, thực hiện tuần tự 1–8 thao tác cố định trong một lần gọi và chỉ trả một ảnh cuối. Ví dụ khi trình duyệt từ xa đã có tiêu điểm, bạn có thể gộp đặt tiêu điểm thanh địa chỉ, nhập URL và Enter:
 
 ```json
 {
@@ -359,104 +359,104 @@ Apps 依赖宿主遵守 app-only 工具可见性和 `_meta` 的模型不可见�
 }
 ```
 
-该例适用于 macOS；其他系统按实际快捷键选择修饰键。只有无需中途观察判断的动作才能合并，所有坐标仍对应起始观测。序列禁止嵌套和跨动作保持按下状态，累计文本不超过 16 KiB，计划输入时长（含间隔）不超过 8 秒，执行总期限为 25 秒。`interval_ms` 为动作间最小间隔，默认 100 毫秒，可设为 0–500；它不代表应用完成加载。原生层在首次输入前验证整组动作，每步等待支持的输入回执；回执失败、超时、人工暂停、取消或几何变化都会停止余下动作。旧被控端没有回执时保留 `remote_execution: "unsupported"`，最终画面仍需检查。`sequence.finished_actions` 表示已结束输入阶段的动作数，错误时的 `stopped_at` 是从 0 开始的停止位置，不代表应用业务结果。
+Ví dụ này dành cho macOS; hệ khác chọn phím bổ trợ theo phím tắt thực tế. Chỉ gộp thao tác không cần quan sát/phán đoán giữa chừng; mọi tọa độ vẫn theo quan sát ban đầu. Chuỗi không cho lồng hoặc giữ nhấn xuyên thao tác, tổng văn bản không quá 16 KiB, thời gian nhập dự kiến kể cả khoảng cách không quá 8 giây, thời hạn thực thi tổng là 25 giây. `interval_ms` là khoảng tối thiểu giữa thao tác, mặc định 100 mili giây, đặt được 0–500, không có nghĩa ứng dụng tải xong. Lớp native kiểm cả nhóm trước lần nhập đầu và mỗi bước đợi biên nhận nhập nếu hỗ trợ. Biên nhận thất bại, quá hạn, tạm dừng thủ công, hủy hoặc đổi hình học đều dừng các bước còn lại. Máy cũ không có biên nhận giữ `remote_execution: "unsupported"`, vẫn cần kiểm hình cuối. `sequence.finished_actions` là số thao tác đã hết giai đoạn nhập; `stopped_at` khi lỗi là vị trí dừng bắt đầu từ 0, không đại diện kết quả nghiệp vụ của ứng dụng.
 
-连接和状态结果的 `automation` 汇总本机序列支持、远端输入回执及桌面自动化能力。Agent 应复用当前会话和有效观测，支持桌面自动化时优先用 `crossdesk_desktop_action` 直接打开网址、应用或操作可访问性元素；未声明支持时直接使用截图输入路径。旧 CLI 不支持序列时在任何输入前返回 `NATIVE_SEQUENCE_UNSUPPORTED`，需更新本机 CLI。远端能力未声明时会给出兼容性提示，不自动断开连接或尝试不支持的操作。
+`automation` trong kết quả kết nối/trạng thái tổng hợp hỗ trợ chuỗi cục bộ, biên nhận nhập từ xa và khả năng tự động hóa desktop. Agent nên dùng lại phiên hiện tại và quan sát hợp lệ. Khi có tự động hóa desktop, ưu tiên `crossdesk_desktop_action` để mở URL, ứng dụng hoặc thao tác phần tử trợ năng; nếu chưa khai hỗ trợ, dùng trực tiếp đường ảnh chụp/nhập. CLI cũ không hỗ trợ chuỗi sẽ trả `NATIVE_SEQUENCE_UNSUPPORTED` trước mọi nhập, cần cập nhật CLI cục bộ. Khi khả năng từ xa chưa được khai, dịch vụ đưa gợi ý tương thích, không tự ngắt hoặc thử thao tác không hỗ trợ.
 
-动作结果的 `timing_ms` 包含原生输入阶段、MCP 到 CLI 的输入往返、等待及截图阶段和工具内总耗时，可用来区分工具执行与工具调用之外的宿主、模型或语音延迟。
+`timing_ms` của kết quả gồm giai đoạn nhập native, khứ hồi nhập MCP–CLI, giai đoạn chờ/chụp và tổng thời gian trong công cụ. Bạn có thể dùng để phân biệt thời gian thực thi công cụ với độ trễ host, mô hình hoặc giọng nói bên ngoài lần gọi.
 
-### 截图与条件等待
+### Ảnh chụp và chờ điều kiện
 
-截图默认最长边 1280，最大 2048；允许指定源帧像素区域。返回 `source_size`、`source_rect`、`image_size`、`generation`、`geometry_epoch`、`frame_id`、`frame_age_ms` 和 `observation_id`。动作坐标使用返回图像坐标，不使用浏览器 CSS 像素。观测保留最多 32 个，30 秒过期；切换显示器、连接代际或图像几何变化立即失效。截图使用不超过 2 秒的帧，PNG 不超过 2 MiB，必要时继续缩小输出并返回真实尺寸。
+Ảnh chụp mặc định có cạnh dài tối đa 1280, giới hạn lớn nhất 2048, cho phép chỉ vùng pixel của khung nguồn. Kết quả trả `source_size`, `source_rect`, `image_size`, `generation`, `geometry_epoch`, `frame_id`, `frame_age_ms` và `observation_id`. Tọa độ thao tác theo ảnh trả về, không dùng pixel CSS trình duyệt. Giữ tối đa 32 quan sát, hết hạn sau 30 giây; đổi màn hình, thế hệ kết nối hoặc hình học ảnh sẽ vô hiệu ngay. Khung dùng để chụp không quá 2 giây, PNG không quá 2 MiB; nếu cần sẽ thu nhỏ tiếp và trả kích thước thực.
 
-`timeout_ms` 限制等待可用帧的时间，PNG 编码独立执行；`0` 表示只使用当前已就绪的新鲜帧，无帧返回 `FRAME_TIMEOUT`，编码器繁忙返回 `BUSY`。截图按到达顺序处理，并优先于预览。视频超过 2 秒未更新时拒绝新的键鼠输入，恢复新鲜画面后可继续；已提交操作的去重查询仍可读取原结果。
+`timeout_ms` giới hạn thời gian đợi khung khả dụng, còn mã hóa PNG thực hiện độc lập. `0` nghĩa chỉ dùng khung mới đã sẵn; không có khung trả `FRAME_TIMEOUT`, encoder bận trả `BUSY`. Yêu cầu chụp xử lý theo thứ tự đến và ưu tiên hơn xem trước. Video quá 2 giây không cập nhật sẽ từ chối nhập chuột/phím mới; hình mới trở lại thì tiếp tục được. Truy vấn loại trùng cho thao tác đã gửi vẫn đọc được kết quả cũ.
 
-键鼠动作的 `operation_id` 在当前原生会话中缓存最近 128 个操作，至少在未被容量淘汰的 5 分钟窗口内支持同参数查询；不同参数复用 ID 返回冲突，整组序列同样受此规则约束。`submitted` 表示输入已发送，远端原生输入处理状态见 `remote_execution`，应用界面的实际结果仍需后续观察确认。超时、断网、取消或发送失败可能返回 `outcome_unknown`/`side_effect_possible`，禁止自动重放。
+`operation_id` của nhập chuột/phím đệm 128 thao tác gần nhất trong phiên native hiện tại. Trong cửa sổ 5 phút, ít nhất khi chưa bị loại do dung lượng, có thể hỏi lại bằng cùng tham số. Dùng lại ID với tham số khác trả xung đột; cả chuỗi cũng tuân quy tắc này. `submitted` nghĩa đầu vào đã gửi; trạng thái xử lý nhập native ở xa xem `remote_execution`, còn kết quả giao diện thực vẫn cần quan sát sau đó. Quá hạn, mất mạng, hủy hoặc gửi lỗi có thể trả `outcome_unknown`/`side_effect_possible`, cấm tự phát lại.
 
-`observe_after` 默认开启：在同一次调用内最多等待 1000 毫秒的画面变化，再返回最终截图及 `wait.matched` / `wait.wait_timed_out`。纯移动和单独按下／释放默认只取新帧，避免等待本来就不会变化的像素；仍可显式指定 `wait`。显式 `wait` 可选择 `changed`、`stable`，或指定 `condition: "ui"` 与 `text` / `role` 等待远端可访问性元素出现；最长等待 5000 毫秒。视觉等待可以提供同一会话的预先裁剪观测 `wait.observation_id`，避免视频、动画或时钟等无关区域干扰。新版 CLI 的视觉等待只接受动作结束帧之后的帧，旧 CLI 返回 `wait.frame_bound: false`。等待超时或截图错误不会覆盖已经提交的输入结果，也不会重放动作；变化或稳定不等于应用任务成功。`observe_after: false` 只返回输入结果，不能同时指定 `wait`。
+`observe_after` mặc định bật: cùng lần gọi đợi hình thay đổi tối đa 1000 mili giây rồi trả ảnh cuối cùng cùng `wait.matched` / `wait.wait_timed_out`. Chỉ di chuyển hoặc nhấn/nhả riêng mặc định lấy khung mới, tránh đợi pixel vốn không đổi; vẫn có thể chỉ `wait` tường minh. `wait` chọn `changed`, `stable`, hoặc `condition: "ui"` với `text` / `role` để đợi phần tử trợ năng từ xa xuất hiện, tối đa 5000 mili giây. Chờ hình có thể dùng quan sát cắt trước của cùng phiên qua `wait.observation_id`, tránh vùng video, hoạt ảnh hay đồng hồ không liên quan. CLI mới chỉ nhận khung sau khung kết thúc thao tác; CLI cũ trả `wait.frame_bound: false`. Chờ quá hạn hoặc chụp lỗi không ghi đè kết quả nhập đã gửi và không phát lại thao tác. Hình đổi hoặc ổn định không có nghĩa tác vụ ứng dụng thành công. `observe_after: false` chỉ trả kết quả nhập, không được đồng thời chỉ `wait`.
 
-更新后的被控端通过 `capabilities.input_ack` 声明输入处理回执。动作结果的 `remote_execution` 表示远端原生输入处理状态，应用界面的实际结果由后续观察确认。旧被控端返回 `unsupported`。回执等待有明确期限，超时动作保留结果不确定状态。
+Máy được điều khiển mới khai biên nhận xử lý nhập qua `capabilities.input_ack`. `remote_execution` trong kết quả là trạng thái xử lý nhập native ở xa; kết quả giao diện thực được xác nhận qua quan sát sau. Máy cũ trả `unsupported`. Chờ biên nhận có thời hạn rõ; quá hạn thì giữ trạng thái kết quả không chắc chắn.
 
-`crossdesk_wait` 使用已有截图的 `observation_id`，等待对应区域变化（`changed`）或持续稳定（`stable`）。可设置 `stable_ms` 和最长 25000 毫秒的 `timeout_ms`。满足条件后返回新截图，切换显示器、断开和取消会结束等待。
+`crossdesk_wait` dùng `observation_id` của ảnh hiện có để đợi vùng tương ứng thay đổi (`changed`) hoặc ổn định liên tục (`stable`). Có thể đặt `stable_ms` và `timeout_ms` tối đa 25000 mili giây. Đủ điều kiện sẽ trả ảnh mới; đổi màn hình, ngắt hoặc hủy đều kết thúc chờ.
 
-### 锁屏解锁与密码保存
+### Mở khóa hệ thống và lưu mật khẩu
 
-Agent 识别到远端系统锁屏后，先聚焦画面中的系统密码框并重新截图，再调用 `crossdesk_unlock`，传入 `session_id`、`operation_id` 和截图的 `observation_id`。默认 `use_saved: true` 会读取该设备独立保存的锁屏凭据。缺少凭据时，浏览器或 Apps 面板通过悬浮弹窗显示隐藏输入框，终端观看器显示隐藏输入提示。弹窗可关闭，并通过左侧连接信息中的“输入密码”重新打开。提交结果显示为六秒后收起的悬浮提示，连接信息持续展示解锁状态和锁屏凭据配置状态。
+Khi nhận ra hệ thống từ xa đang khóa, Agent đặt tiêu điểm vào ô mật khẩu trên ảnh và chụp lại, rồi gọi `crossdesk_unlock` với `session_id`, `operation_id` và `observation_id` ảnh. Mặc định `use_saved: true` đọc xác thực khóa được lưu riêng cho thiết bị. Thiếu xác thực thì bảng trình duyệt/Apps hiện ô nhập ẩn trong hộp nổi, còn trình xem terminal hỏi ẩn. Hộp đóng được và mở lại qua “Nhập mật khẩu” trong thông tin kết nối bên trái. Kết quả gửi hiển thị bằng gợi ý nổi thu sau sáu giây; thông tin kết nối tiếp tục hiện trạng thái mở khóa và cấu hình xác thực khóa.
 
-用户可在解锁输入框勾选“保存密码并允许以后自动解锁”。连接表单的“保存与授权”和本机 `crossdesk-mcp setup` 也提供锁屏密码配置。持久保存要求设备已在本地设备簿中，系统凭据库使用独立账户保存访问密码和锁屏密码。设备列表返回 `unlock_credential_provider` 摘要，配置文件保存 `unlock_credential` 引用。环境变量方式使用 `unlock_credential: "environment"` 和 `unlock_environment_variable`，旧设备配置继续有效。
+Người dùng có thể chọn “Lưu mật khẩu và cho phép tự mở khóa sau” trong ô mở khóa. “Lưu và cấp quyền” trên form kết nối và `crossdesk-mcp setup` cục bộ cũng cung cấp cấu hình mật khẩu khóa. Lưu bền vững cần thiết bị đã có trong sổ cục bộ; kho hệ thống dùng tài khoản riêng cho mật khẩu truy cập và mật khẩu khóa. Danh sách thiết bị trả tóm tắt `unlock_credential_provider`, tệp cấu hình lưu tham chiếu `unlock_credential`. Cách dùng biến môi trường đặt `unlock_credential: "environment"` và `unlock_environment_variable`; cấu hình thiết bị cũ vẫn hiệu lực.
 
-等待输入时，Agent 使用 `crossdesk_get_session`，提供 `session_id` 或 `view_id`、`unlock_request_id` 和 `wait_ms: 25000`。`wait_timed_out` 后可继续等待，等待取消仅结束当前查询。解锁请求有效期为五分钟，等待期间保留实时画面，常规 Agent 输入和显示器切换会返回 `UNLOCK_PENDING`。用户取消、人工暂停、连接结束或画面代际变化会终止请求。
+Trong lúc chờ nhập, Agent dùng `crossdesk_get_session` với `session_id` hoặc `view_id`, `unlock_request_id` và `wait_ms: 25000`. Sau `wait_timed_out` có thể tiếp tục đợi; hủy chờ chỉ kết thúc truy vấn hiện tại. Yêu cầu mở khóa hạn năm phút và vẫn giữ hình trực tiếp khi chờ; nhập Agent thường hoặc đổi màn hình sẽ trả `UNLOCK_PENDING`. Người dùng hủy, tạm dừng thủ công, kết thúc kết nối hoặc đổi thế hệ hình đều kết thúc yêu cầu.
 
-提交前重新获取同一显示器代际的截图，原生端执行选择密码框内容、文本输入和回车。对支持 `capabilities.system` 的被控端，服务在发送密码前先查询锁定状态，已经解锁时返回 `unlock.state: "verified"` 和 `unlock.result.status: "already_unlocked"`，不再输入密码。提交后会进入 `verifying`，在八秒验证窗口内查询系统状态；确认解锁时返回 `verified`，无法确认时保留 `submitted` 和验证信息。旧被控端成功发送后返回 `submitted`。Agent 随后获取新截图，确认桌面状态后继续原任务。
+Trước khi gửi, dịch vụ lấy lại ảnh của cùng thế hệ màn hình; phía native chọn nội dung ô mật khẩu, nhập văn bản và Enter. Với máy hỗ trợ `capabilities.system`, dịch vụ hỏi trạng thái khóa trước khi gửi mật khẩu. Nếu đã mở, kết quả là `unlock.state: "verified"` và `unlock.result.status: "already_unlocked"`, không nhập nữa. Sau khi gửi, trạng thái sang `verifying` và hỏi hệ thống trong cửa sổ tám giây. Xác nhận mở được thì trả `verified`; không xác nhận được thì giữ `submitted` kèm thông tin xác minh. Máy cũ trả `submitted` sau khi gửi thành công. Agent lấy ảnh mới, xác nhận trạng thái desktop rồi tiếp tục tác vụ ban đầu.
 
-用户在解锁弹窗选择保存密码时，支持系统状态的被控端仅在验证为已解锁后写入凭据库；未确认时返回 `persistence_error: "UNLOCK_NOT_CONFIRMED"`。旧被控端仍在成功发送后保存，密码正确性需通过画面确认。密码被拒绝时，使用新请求并设置 `use_saved: false` 让用户更正，结果不确定时先观察画面。相同 `operation_id` 与参数查询原请求结果。
+Khi người dùng chọn lưu trong hộp mở khóa, máy hỗ trợ trạng thái hệ thống chỉ ghi kho xác thực sau khi xác minh đã mở; chưa xác nhận trả `persistence_error: "UNLOCK_NOT_CONFIRMED"`. Máy cũ vẫn lưu sau khi gửi thành công, cần kiểm hình để xác nhận mật khẩu đúng. Nếu mật khẩu bị từ chối, dùng yêu cầu mới với `use_saved: false` để người dùng sửa; nếu kết quả chưa chắc, quan sát hình trước. Cùng `operation_id` và tham số sẽ truy vấn kết quả yêu cầu cũ.
 
-锁屏密码通过经过认证的本地面板或终端 IPC 进入原生输入通道。模型侧工具参数和结果只包含请求状态，原生操作缓存仅保存解锁请求标识及结果。解锁遵守现有控制授权和人工暂停状态，依赖远端文本输入能力。`off` 模式可使用预先配置的锁屏凭据，缺少凭据时返回 `UNLOCK_CREDENTIAL_REQUIRED`。原生 CLI 通过 `unlock_protocol: "password/1"` 声明支持，更新源码后需重建 CLI 和 MCP 并重新启动服务。
+Mật khẩu khóa đi qua bảng cục bộ đã xác thực hoặc IPC terminal vào kênh nhập native. Tham số/kết quả công cụ phía mô hình chỉ chứa trạng thái yêu cầu; đệm thao tác native chỉ lưu ID và kết quả yêu cầu mở khóa. Mở khóa tuân quyền điều khiển và trạng thái tạm dừng thủ công hiện có, phụ thuộc khả năng nhập văn bản từ xa. Chế độ `off` dùng được xác thực khóa cấu hình trước, thiếu thì trả `UNLOCK_CREDENTIAL_REQUIRED`. CLI native khai hỗ trợ qua `unlock_protocol: "password/1"`; cập nhật nguồn cần biên dịch lại CLI/MCP và khởi động lại dịch vụ.
 
-### 远端剪贴板
+### Clipboard từ xa
 
-`crossdesk_clipboard_get` 读取远端文本剪贴板，`crossdesk_clipboard_set` 设置文本，空字符串清空。读取上限为 128 KiB，单次工具写入上限为 16 KiB UTF-8。写入需要 `operation_id`，相同请求查询原结果。工具使用已授权控制会话，并遵守人工暂停及解锁等待状态。更新后的被控端通过 `capabilities.clipboard` 声明支持，写入成功由系统剪贴板更新回执确认。
+`crossdesk_clipboard_get` đọc clipboard văn bản từ xa; `crossdesk_clipboard_set` đặt văn bản, chuỗi rỗng sẽ xóa. Đọc tối đa 128 KiB, một lần ghi tối đa 16 KiB UTF-8. Ghi cần `operation_id`, cùng yêu cầu hỏi kết quả cũ. Công cụ dùng phiên điều khiển đã cấp quyền và tuân tạm dừng thủ công/chờ mở khóa. Máy mới khai qua `capabilities.clipboard`; ghi thành công được xác nhận bởi biên nhận cập nhật bảng nhớ hệ thống.
 
-### 文件浏览与传输
+### Duyệt và truyền tệp
 
-`crossdesk_files_list` 浏览远端目录，空路径选择远端主目录，`@roots` 返回文件系统根目录。每页最多 256 项，使用 `request_id` 和 `next_offset` 继续读取。超时返回可继续查询的请求标识。
+`crossdesk_files_list` duyệt thư mục từ xa: đường rỗng chọn thư mục chính người dùng, `@roots` trả gốc hệ thống tệp. Mỗi trang tối đa 256 mục, tiếp tục bằng `request_id` và `next_offset`. Quá hạn trả ID yêu cầu có thể truy vấn tiếp.
 
-`crossdesk_files_transfer` 支持上传和下载文件、文件夹，源路径为绝对路径，目标目录需要已存在。传输使用 `operation_id` 去重，通过 `crossdesk_files_status` 查询每个文件的字节进度和终态，通过 `crossdesk_files_cancel` 取消并清理未完成文件。每个连接同时处理一个传输任务，多文件按现有传输引擎排队。已完成任务保留四份历史记录，状态中的文件清单分页返回。目标同名文件按现有冲突命名规则另存。
+`crossdesk_files_transfer` hỗ trợ tải lên/xuống tệp và thư mục. Đường nguồn tuyệt đối, thư mục đích cần tồn tại. `operation_id` loại trùng; `crossdesk_files_status` hỏi tiến độ byte và trạng thái cuối từng tệp; `crossdesk_files_cancel` hủy và dọn tệp chưa xong. Mỗi kết nối xử lý một tác vụ truyền đồng thời, nhiều tệp xếp hàng theo bộ máy hiện có. Giữ bốn bản ghi lịch sử đã xong; danh sách tệp trong trạng thái được phân trang. Tệp đích trùng tên lưu riêng theo quy tắc xử lý xung đột hiện có.
 
-目录浏览及新建传输需要已授权且未暂停的控制会话，并要求被控端声明 `capabilities.files`。下载请求绑定目标目录及传输标识，接收器接受已为该请求预留的文件。人工暂停后仍可查询或取消已有任务。
+Duyệt thư mục và bắt đầu truyền cần phiên điều khiển đã cấp quyền, chưa tạm dừng, và máy được điều khiển khai `capabilities.files`. Yêu cầu tải xuống gắn thư mục đích/ID truyền; bên nhận chấp nhận tệp đã dành trước cho yêu cầu đó. Sau khi tạm dừng thủ công, vẫn có thể truy vấn hoặc hủy tác vụ hiện có.
 
-### 系统状态与安全桌面
+### Trạng thái hệ thống và desktop an toàn
 
-`crossdesk_system_status` 查询系统锁定状态。Windows 同时报告服务可用性和交互桌面阶段。`crossdesk_system_command` 支持 `lock`，Windows 可通过已运行的服务执行 `send_sas`。命令需要控制授权和独立的 `operation_id`，相同请求查询原结果。系统接受命令后，通过状态及画面观察确认实际界面。
+`crossdesk_system_status` hỏi trạng thái khóa hệ thống; Windows đồng thời báo dịch vụ khả dụng và giai đoạn desktop tương tác. `crossdesk_system_command` hỗ trợ `lock`; Windows có thể dùng dịch vụ đang chạy để thực hiện `send_sas`. Lệnh cần quyền điều khiển và `operation_id` riêng; cùng yêu cầu hỏi kết quả cũ. Sau khi hệ thống nhận lệnh, quan sát trạng thái và hình để xác nhận giao diện thực tế.
 
-### 多会话与显示管理
+### Quản lý nhiều phiên và màn hình
 
-同一 MCP 实例支持最多八个并行设备连接。`crossdesk_list_sessions` 返回各连接的设备、显示器及控制状态。面板按设备绑定会话，断开一个连接会释放该连接的资源。每个连接的诊断日志位于 `logs/<session_id>/transport.log`。
+Một MCP hỗ trợ tối đa tám kết nối thiết bị song song. `crossdesk_list_sessions` trả thiết bị, màn hình và trạng thái điều khiển từng kết nối. Bảng gắn phiên theo thiết bị; ngắt một kết nối sẽ giải phóng tài nguyên của nó. Nhật ký chẩn đoán mỗi kết nối nằm ở `logs/<session_id>/transport.log`.
 
-`crossdesk_capture_displays` 按顺序截取最多八个显示器并恢复原显示器，通过一次工具结果展示多屏画面。`capture_id` 有效期三十秒，供 `crossdesk_drag_across` 使用各屏截图坐标完成跨屏拖拽。拖拽保持按下状态跨越显示器切换，在完成、取消或异常时释放按钮。普通输入操作使用重新选择显示器后取得的新截图。
+`crossdesk_capture_displays` chụp tuần tự tối đa tám màn hình rồi khôi phục màn hình ban đầu, hiển thị ảnh nhiều màn trong một kết quả công cụ. `capture_id` có hiệu lực ba mươi giây để `crossdesk_drag_across` dùng tọa độ ảnh từng màn kéo xuyên màn hình. Thao tác kéo giữ nhấn qua lúc đổi màn và nhả khi xong, hủy hoặc lỗi. Nhập thông thường dùng ảnh mới lấy sau khi chọn lại màn hình.
 
-`crossdesk_video_settings` 在运行时调整预览帧率、分辨率、质量和码率，返回远端接受状态。设置受对端能力限制。多屏采集及跨屏拖拽期间，同一会话的其他输入请求返回忙碌状态。
+`crossdesk_video_settings` chỉnh tốc độ khung, độ phân giải, chất lượng và bitrate xem trước lúc chạy, trả trạng thái chấp nhận từ xa. Thiết lập bị giới hạn bởi khả năng máy từ xa. Trong lúc chụp nhiều màn hoặc kéo xuyên màn hình, các yêu cầu nhập khác cùng phiên trả trạng thái bận.
 
-### 有界断线恢复
+### Khôi phục kết nối có giới hạn
 
-`crossdesk_set_recovery` 和面板的“断线自动恢复”开关用于启用恢复。默认关闭，启用要求设备已保存连接凭据及持久授权。后台监测覆盖临时信令中断、连接丢失和原生进程异常，使用退避策略，在六十秒预算内最多执行配置次数的重连。每次重连重新核对设备身份和授权，人工暂停、关闭恢复开关和主动断开会停止恢复。
+`crossdesk_set_recovery` và công tắc “Tự khôi phục khi mất kết nối” trên bảng dùng để bật khôi phục. Mặc định tắt; bật cần thiết bị đã lưu xác thực kết nối và quyền bền vững. Giám sát nền bao phủ mất tín hiệu tạm, mất kết nối và tiến trình native bất thường, dùng backoff để nối lại tối đa số lần cấu hình trong ngân sách sáu mươi giây. Mỗi lần nối lại kiểm danh tính và quyền thiết bị; tạm dừng thủ công, tắt khôi phục hoặc chủ động ngắt sẽ dừng khôi phục.
 
-恢复期间返回 `reconnecting`，可以用 `crossdesk_get_session` 携带 `session_id` 和 `wait_ms` 等待。恢复成功后返回新的 `session_id`，既有监看面板跟随新连接。旧会话标识可用于查询替代连接，后续操作使用新会话及新截图。截图标识包含所属会话，避免不同原生进程的观测编号相互混淆。先前的输入、解锁和文件任务保持原有结果边界，恢复流程只重建连接并恢复观看配置。
+Trong khôi phục, trạng thái là `reconnecting`; có thể đợi qua `crossdesk_get_session` với `session_id` và `wait_ms`. Thành công trả `session_id` mới; bảng giám sát hiện có theo kết nối mới. ID phiên cũ có thể hỏi kết nối thay thế, nhưng thao tác tiếp theo dùng phiên và ảnh mới. ID ảnh chứa phiên sở hữu để tránh nhầm số quan sát giữa tiến trình native. Nhập, mở khóa và tác vụ tệp trước đó giữ ranh giới kết quả cũ; khôi phục chỉ dựng lại kết nối và thiết lập xem.
 
-### 面板人工接管
+### Người dùng tiếp quản qua bảng
 
-浏览器及 Apps 面板提供“人工接管”和“交还 Agent”。接管后面板可操作鼠标、滚轮、键盘快捷键和中文输入法，连接信息展示当前控制权。输入绑定面板、控制批次和画面尺寸，交接会释放按住状态并使旧批次失效。画面超过两秒未更新时停止发送新输入，窗口失焦或隐藏时释放按键。原生层保留十五秒的输入租约作为断线清理保障。
+Bảng trình duyệt/Apps có “Tiếp quản thủ công” và “Trả quyền cho Agent”. Sau khi tiếp quản, người dùng thao tác chuột, con lăn, phím tắt và bộ gõ tiếng Trung; thông tin kết nối hiển thị quyền hiện tại. Nhập gắn với bảng, đợt điều khiển và kích thước hình; bàn giao nhả trạng thái giữ và vô hiệu đợt cũ. Hình quá hai giây không cập nhật thì dừng gửi nhập mới, cửa sổ mất tiêu điểm hoặc ẩn thì nhả phím. Lớp native giữ thời hạn thuê nhập mười lăm giây làm bảo đảm dọn khi mất kết nối.
 
-Agent 在人工接管期间仍可观察画面，键鼠、显示设置和其他要求控制权的操作等待用户在面板交还控制。连接需预先授予控制权限，并使用支持 `events/1` 的原生 CLI。
+Agent vẫn có thể quan sát khi người dùng tiếp quản. Nhập chuột/phím, thiết lập màn hình và thao tác khác cần quyền điều khiển phải đợi người dùng trả quyền trong bảng. Kết nối cần được cấp quyền điều khiển trước và dùng CLI native hỗ trợ `events/1`.
 
-### 远端声音
+### Âm thanh từ xa
 
-`crossdesk_audio` 开关远端桌面音频接收，默认关闭。面板的“播放声音”按钮同时启用接收和本地播放，音量在本面板调节。播放使用已授权的视频 WebSocket 通道，PCM 队列与浏览器播放时延均设有上限，拥塞时丢弃过时音频。浏览器首次播放需要用户点击按钮。
+`crossdesk_audio` bật/tắt nhận âm thanh desktop từ xa, mặc định tắt. Nút “Phát âm thanh” trong bảng bật cả nhận và phát cục bộ, âm lượng chỉnh riêng trong bảng. Phát dùng kênh WebSocket video đã cấp quyền; hàng PCM và độ trễ phát trình duyệt đều có trần, nghẽn sẽ bỏ âm thanh cũ. Lần phát đầu trên trình duyệt cần người dùng nhấn nút.
 
-`crossdesk_audio_capture` 采集接下来 100 至 10000 毫秒的音频，通过 MCP 音频内容块返回单声道 48 kHz WAV。采集期间临时开启接收，结束或取消后恢复之前的设置，未收到足够音频时返回 `AUDIO_UNAVAILABLE`。系统需允许被控端捕获桌面声音。自动恢复连接会恢复用户选择的音频接收设置。
+`crossdesk_audio_capture` ghi 100 tới 10000 mili giây âm thanh tiếp theo, trả WAV đơn kênh 48 kHz qua khối nội dung âm MCP. Trong lúc ghi tạm bật nhận, kết thúc hoặc hủy thì khôi phục thiết lập cũ; thiếu âm thanh trả `AUDIO_UNAVAILABLE`. Hệ thống cần cho máy được điều khiển ghi âm desktop. Tự khôi phục kết nối sẽ phục hồi lựa chọn nhận âm thanh của người dùng.
 
-### 窗口、应用与可访问性元素
+### Cửa sổ, ứng dụng và phần tử trợ năng
 
-`crossdesk_desktop` 查询平台能力、窗口清单及可访问性树。可按进程或先前快照中的元素继续读取子树，节点包含角色、名称、可读取值和系统原生桌面坐标。每份快照最多 128 个节点，响应限制为 48 KiB 左右，超出范围返回 `truncated`。元素引用绑定连接，有效期三十秒，最多保留八份快照。
+`crossdesk_desktop` hỏi khả năng nền tảng, danh sách cửa sổ và cây trợ năng. Có thể đọc tiếp cây con theo tiến trình hoặc phần tử snapshot trước; nút có vai trò, tên, giá trị đọc được và tọa độ desktop native của hệ thống. Mỗi snapshot tối đa 128 nút, phản hồi khoảng 48 KiB, vượt thì trả `truncated`. Tham chiếu phần tử mount nối, có hiệu lực ba mươi giây, giữ tối đa tám snapshot.
 
-`crossdesk_desktop_action` 支持激活窗口、按下或聚焦元素、设置文本值、启动应用以及打开 HTTP(S) 地址。元素操作使用快照和 `element_id`，执行后该快照失效。所有修改操作需要控制授权及 `operation_id`，相同请求查询已有结果。安全密码字段隐藏值并拒绝通过结构化接口修改，系统解锁使用本地密码流程。操作结果表示系统接口接受情况，随后使用画面或新树确认界面变化。
+`crossdesk_desktop_action` hỗ trợ kích hoạt cửa sổ, nhấn/đặt tiêu điểm phần tử, đặt giá trị văn bản, khởi ứng dụng và mở HTTP(S). Thao tác phần tử dùng snapshot và `element_id`, làm xong thì snapshot mất hiệu lực. Mọi thay đổi cần quyền điều khiển và `operation_id`; cùng yêu cầu hỏi kết quả cũ. Trường mật khẩu an toàn ẩn giá trị, từ chối sửa qua API cấu trúc; mở khóa hệ thống dùng luồng mật khẩu cục bộ. Kết quả biểu thị API hệ thống có chấp nhận hay không; sau đó dùng hình hoặc cây mới xác nhận thay đổi UI.
 
-`crossdesk_wait_ui` 根据文本及角色等待元素出现或消失。读取范围不完整时无法确认消失，会在超时结果中返回 `search_incomplete`。
+`crossdesk_wait_ui` đợi phần tử xuất hiện hoặc biến mất theo văn bản/vai trò. Nếu phạm vi đọc chưa đầy đủ thì không xác nhận biến mất được và trả `search_incomplete` trong kết quả quá hạn.
 
-macOS 使用 AX，需要系统辅助功能权限。Windows 使用 UI Automation，窗口激活遵守系统前台窗口及权限约束。Linux 构建时若检测到 `atspi-2` 开发包，会启用 AT-SPI 元素访问，否则提供 X11 窗口查询和激活。Wayland 的元素访问依赖桌面和应用提供 AT-SPI。应用启动参数接受 macOS bundle ID 或绝对 `.app` 路径、Windows 绝对 `.exe` 路径、Linux 绝对可执行文件路径。Linux 接口的所有权和超时处理依据官方文档。[AT-SPI 接口文档](https://docs.gtk.org/atspi2/)
+macOS dùng AX, cần quyền trợ năng hệ thống. Windows dùng UI Automation; kích hoạt cửa sổ tuân giới hạn cửa sổ foreground và quyền hệ thống. Linux bật truy cập phần tử AT-SPI nếu phát hiện gói phát triển `atspi-2` lúc biên dịch; nếu không, chỉ hỏi/kích hoạt cửa sổ X11. Trên Wayland, truy cập phần tử phụ thuộc desktop và ứng dụng cung cấp AT-SPI. Tham số khởi ứng dụng nhận bundle ID macOS hoặc đường `.app` tuyệt đối, Windows nhận `.exe` tuyệt đối, Linux nhận tệp thực thi tuyệt đối. Quyền sở hữu và xử lý quá hạn API Linux theo tài liệu chính thức. [Tài liệu AT-SPI](https://docs.gtk.org/atspi2/)
 
-## 实时视频与按需截图
+## Video trực tiếp và ảnh theo nhu cầu
 
-实时视频提供两条路径，默认 `browser`，两条路径均由原生 CLI 的本机 WebSocket 直接发送给浏览器。Node 只处理会话、授权票据和 MCP 工具，不读取或转发实时视频字节；不再创建视频管道，不经过 MCP stdio 或模型上下文，不逐帧转 PNG、不重新编码视频。
+Video trực tiếp có hai đường, mặc định `browser`; cả hai được WebSocket cục bộ của CLI native gửi trực tiếp tới trình duyệt. Node chỉ xử lý phiên, vé quyền và công cụ MCP, không đọc/chuyển byte video. Không còn tạo pipe video, không qua stdio MCP hay ngữ cảnh mô hình, không chuyển từng khung thành PNG hoặc mã hóa lại video.
 
-| `video.decode_path` | 画面路径 |
+| `video.decode_path` | Đường hình ảnh |
 | --- | --- |
-| `browser` | MiniRTC 输出原始 H.264 Annex B → 浏览器 WebCodecs 解码 → canvas |
-| `minirtc` | MiniRTC 解码 → 紧凑 NV12 原始帧 → 浏览器 VideoFrame / canvas；浏览器不再解码 H.264 |
+| `browser` | MiniRTC xuất H.264 Annex B gốc → WebCodecs trình duyệt giải → canvas |
+| `minirtc` | MiniRTC giải → khung NV12 gọn thô → VideoFrame / canvas trình duyệt; trình duyệt không giải H.264 nữa |
 
-`video.decoder` 默认 `auto`：优先使用可用硬件解码器，不支持时使用软件。`software` 禁用本程序的硬件选择与硬件回退。浏览器路径使用 WebCodecs 的 `prefer-hardware` / `prefer-software`；这些值是浏览器 API 的偏好，浏览器可以忽略，不能据此宣称已确认物理硬件或软件后端。原生路径由 MiniRTC 的解码器工厂选择，本机 macOS 使用 VideoToolbox 或 OpenH264；其他平台使用 MiniRTC 已支持的后端。状态中的 `native_video_decoder` 返回 MiniRTC 报告的后端名称（统计可用前为空），不代表浏览器后端。
+`video.decoder` mặc định `auto`: ưu tiên bộ giải mã phần cứng khả dụng, không hỗ trợ thì dùng phần mềm. `software` không cho chương trình chọn hoặc chuyển dự phòng sang phần cứng. Đường trình duyệt dùng WebCodecs `prefer-hardware` / `prefer-software`; đây là ưu tiên API mà trình duyệt có thể bỏ qua, không được coi là xác nhận backend phần cứng vật lý hay phần mềm. Đường native do factory giải mã MiniRTC chọn, macOS này dùng VideoToolbox hoặc OpenH264; nền tảng khác dùng backend MiniRTC đã hỗ trợ. `native_video_decoder` trả tên backend MiniRTC báo, rỗng trước khi có thống kê, không đại diện backend trình duyệt.
 
-在 `~/.config/crossdesk/mcp/devices.json` 的根对象中加入：
+Thêm vào đối tượng gốc của `~/.config/crossdesk/mcp/devices.json`:
 
 ```json
 "video": {
@@ -465,35 +465,35 @@ macOS 使用 AX，需要系统辅助功能权限。Windows 使用 UI Automation�
 }
 ```
 
-也可在 Agent 宿主的 MCP 启动参数中配置，命令行优先于文件：
+Bạn cũng có thể cấu hình qua tham số khởi MCP trong host Agent; dòng lệnh ưu tiên hơn tệp:
 
 ```sh
 crossdesk-mcp serve --stdio --video-path browser --video-decoder auto
 crossdesk-mcp serve --stdio --video-path minirtc --video-decoder software
 ```
 
-修改后重启 MCP，再建立连接。选项适用于整个 MCP 进程，两条路径均将解码选项传给原生端；浏览器路径中的原生解码用于截图缓存。PNG 编码按截图请求触发，包括单屏截图、多屏采集及动作或等待后的截图，WebSocket 实时视频不触发 PNG 编码；Apps 的兼容预览按需触发 PNG 编码。这里配置的是控制端解码器，不更改远端编码器。原有配置文件无需新增字段即可继续使用。
+Sau khi sửa, khởi động lại MCP rồi tạo kết nối. Tùy chọn áp dụng toàn tiến trình MCP; cả hai đường đều gửi lựa chọn giải mã sang phía native. Giải mã native trong đường trình duyệt phục vụ đệm ảnh chụp. Mã hóa PNG chỉ kích hoạt theo yêu cầu chụp, gồm một màn, nhiều màn và ảnh sau thao tác/chờ; video WebSocket không kích PNG, xem trước tương thích Apps chỉ kích theo nhu cầu. Đây là cấu hình bộ giải mã bên điều khiển, không đổi bộ mã hóa từ xa. Tệp cấu hình cũ tiếp tục dùng được mà không thêm trường.
 
-Agent 模式初始请求高帧率档位，初始分辨率上限为 1920 × 1080。连接后可通过 `crossdesk_video_settings` 调整帧率、分辨率、质量和码率；工具接受的分辨率最大为 3840 × 2160，实际分辨率和帧率由远端能力、网络和本机解码性能决定。面板显示实际尺寸与呈现 FPS。浏览器路径需要 WebCodecs H.264 解码能力；MiniRTC 路径仅需浏览器支持从 NV12 创建 VideoFrame 并绘制。浏览器面板能力不足时明确报错；Apps 面板无法连接实时通道或不支持解码时切换到下述有界 PNG 预览。NV12 不压缩，1080p / 30 FPS 约需 93 MB/s 本机传输，4K / 30 FPS 约需 373 MB/s；它不增加远端到控制端的 H.264 网络码率。移除 Node 转发没有消除 NV12 自身的本机传输与浏览器像素处理开销；这不是 GPU 零拷贝。
+Chế độ Agent ban đầu yêu cầu mức tốc độ khung cao, giới hạn độ phân giải 1920 × 1080. Sau khi nối, dùng `crossdesk_video_settings` chỉnh tốc độ khung, độ phân giải, chất lượng và bitrate. Công cụ nhận tối đa 3840 × 2160; độ phân giải/FPS thực tùy khả năng từ xa, mạng và giải mã cục bộ. Bảng hiển thị kích thước và FPS trình bày thực. Đường trình duyệt cần WebCodecs giải H.264; đường MiniRTC chỉ cần trình duyệt tạo VideoFrame từ NV12 và vẽ. Bảng trình duyệt thiếu khả năng sẽ báo rõ; Apps không nối được kênh trực tiếp hoặc không giải mã được sẽ về xem trước PNG giới hạn dưới đây. NV12 không nén: 1080p / 30 FPS cần khoảng 93 MB/s truyền cục bộ, 4K / 30 FPS khoảng 373 MB/s, không tăng bitrate H.264 từ xa tới bên điều khiển. Bỏ Node chuyển tiếp không bỏ chi phí truyền NV12 và xử lý pixel trình duyệt; đây không phải GPU zero-copy.
 
-视频 WebSocket 在原生 CLI 的独立 I/O 线程中运行，只监听随机 `127.0.0.1` 端口，与 Node 面板 HTTP 端口不同。浏览器面板通过 cookie/CSRF 授权获取视频票据，Apps 通过 app-only `crossdesk_video_open` 和视图令牌获取。票据 15 秒内一次性有效，绑定视图、会话和代际，通过 WebSocket 第一条消息提交，不写入 URL、日志或模型可见工具结果。WebSocket 提供画面、已启用的 PCM 音频、收帧 ACK 和关键帧恢复请求，不能执行远端输入操作。最多 8 个活动观看者。H.264 丢帧后等待关键帧恢复；NV12 每帧独立，每个观看者最多一帧未确认，原生发送队列只保留最新画面；H.264 最多 8 帧未确认并受字节阈值限制。10 秒未确认最早一帧则关闭该视频通道，不阻塞其他观看者或 MCP 控制。视图撤销、显示器/连接代际变化、断开和进程退出会关闭对应视频连接；暂停 Agent 控制仍继续播放。页面隐藏或卸载时释放视频订阅，恢复可见时重新订阅。
+WebSocket video chạy trong luồng I/O riêng của CLI native, chỉ nghe cổng ngẫu nhiên `127.0.0.1`, khác cổng HTTP Node. Bảng trình duyệt lấy vé qua cookie/CSRF; Apps qua app-only `crossdesk_video_open` và token view. Vé có hiệu lực một lần trong 15 giây, gắn view, phiên và thế hệ, gửi trong tin đầu WebSocket, không ghi URL, nhật ký hay kết quả công cụ thấy bởi mô hình. WebSocket cung cấp hình, PCM đã bật, ACK nhận khung và yêu cầu phục hồi khung khóa, không thực hiện nhập từ xa. Tối đa 8 người xem hoạt động. H.264 mất khung đợi khung khóa; NV12 độc lập từng khung, mỗi người xem tối đa một khung chưa xác nhận, hàng gửi native chỉ giữ hình mới nhất. H.264 tối đa 8 khung chưa xác nhận và chịu trần byte. Quá 10 giây chưa xác nhận khung sớm nhất sẽ đóng kênh video đó, không chặn người xem khác hay điều khiển MCP. Rút view, đổi màn/thế hệ kết nối, ngắt hoặc thoát sẽ đóng kênh tương ứng; tạm dừng Agent vẫn tiếp tục phát. Trang ẩn/gỡ sẽ nhả đăng ký video, hiện lại thì đăng ký lại.
 
-浏览器页面和 MCP Apps 资源的 CSP 允许原生服务使用的 `ws://127.0.0.1:*`（仅动态端口），HTTP 控制仍限制到 Node 面板的确切地址。原生服务另外校验确切 Host、Origin 和一次性票据。宿主仍可能限制 loopback、WebSocket、WebCodecs 或 iframe 权限。已观察到 Codex 内嵌宿主过滤 HTTP/WS 白名单，最终以 `connect-src 'self'` 拦截原生视频连接；添加同义 CSP 字段无法解决协议限制。播放器区分 CSP 拦截，并在 Apps 实时视频失败时通过已授权的 MCP 通道提供兼容预览。
+CSP của trang trình duyệt và tài nguyên MCP Apps cho `ws://127.0.0.1:*` mà dịch vụ native dùng, chỉ cổng động; HTTP điều khiển vẫn giới hạn đúng địa chỉ Node. Dịch vụ native còn kiểm Host, Origin chính xác và vé một lần. Host vẫn có thể hạn loopback, WebSocket, WebCodecs hoặc quyền iframe. Đã thấy host nhúng Codex lọc whitelist HTTP/WS và cuối cùng dùng `connect-src 'self'` chặn video native; thêm trường CSP đồng nghĩa không giải quyết giới hạn giao thức. Player phân biệt lỗi CSP và cung cấp xem trước tương thích qua kênh MCP đã cấp quyền khi video Apps thất bại.
 
-兼容预览显示“预览”和实际 FPS，最高每秒 1 帧、最长边 960 像素、PNG 每帧不超过 256 KiB，不含声音。`crossdesk_ui_preview` 仅供面板使用，验证视图令牌、代际及绑定会话，每个视图最多一个进行中的请求，并在响应前重新检查会话是否改变。图像只放在工具结果 `_meta` 中，不进入模型可见内容，也不占用 Agent 的操作截图历史。前端直接解码 PNG 字节，无需新增网络白名单；隐藏或卸载面板时停止刷新，迟到响应不再绘制。需要流畅视频及声音时使用 `--panel=browser`；`--panel=apps` 仍禁止自动打开外部浏览器。
+Xem trước tương thích hiển thị “Xem trước” và FPS thực, tối đa 1 khung/giây, cạnh dài 960 pixel, PNG tối đa 256 KiB/khung, không âm thanh. `crossdesk_ui_preview` chỉ cho bảng, xác minh token view, thế hệ và phiên gắn; mỗi view tối đa một yêu cầu đang chạy, trước phản hồi kiểm lại phiên có đổi không. Ảnh chỉ ở `_meta`, không vào nội dung mô hình thấy và không chiếm lịch sử ảnh thao tác Agent. Frontend giải trực tiếp byte PNG, không cần whitelist mạng mới. Ẩn/gỡ bảng thì dừng làm mới, phản hồi trễ không vẽ. Cần video mượt và tiếng thì dùng `--panel=browser`; `--panel=apps` vẫn cấm tự mở trình duyệt ngoài.
 
-2026-11-11 在本机 Codex MCP Apps 中以仅查看模式连接 macOS 远端，确认 WebSocket 被 CSP 拦截后自动显示兼容预览，画布帧计数持续递增，实测约 0.5–1 FPS。该画面在 256 KiB 上限内自适应缩小为 540 × 303；此结果验证了内嵌预览，不代表宿主已支持本机 WebSocket 实时视频。
+Ngày 2026-11-11, Codex MCP Apps cục bộ nối macOS từ xa ở chế độ chỉ xem, xác nhận WebSocket bị CSP chặn rồi tự hiện xem trước tương thích. Số khung canvas tăng liên tục, đo khoảng 0.5–1 FPS. Trong trần 256 KiB, ảnh tự co thành 540 × 303. Kết quả xác minh xem trước nhúng, không đại diện host đã hỗ trợ video WebSocket cục bộ trực tiếp.
 
-## 打包
+## Đóng gói
 
 ```sh
 npm run build
 npm run pack:npm -- --out-dir /absolute/path/artifacts
 ```
 
-默认生成通用 tarball，包含 MCP、DSH 插件入口与 bundle 声明、面板、源代码、许可和固定版本的五个平台可选依赖。CI 的 `MCP package` 工作流上传此通用 `mcp-package`，不发布 npm；`Publish MCP to npm` 复用它构建并发布，见下方[自动发布说明](#github-actions-发布到-npm)。使用通用包前需要对应版本的原生 npm 依赖已经可用。
+Mặc định sinh tarball chung gồm MCP, điểm vào plugin DSH và khai báo bundle, bảng, mã nguồn, giấy phép và năm phụ thuộc nền tảng tùy chọn cố định phiên bản. Quy trình CI `MCP package` tải lên gói chung `mcp-package`, không phát hành npm; `Publish MCP to npm` tái dùng để biên dịch/phát hành, xem [phát hành tự động](#phát-hành-lên-npm-qua-github-actions) dưới đây. Trước khi dùng gói chung, phụ thuộc npm native đúng phiên bản cần có sẵn.
 
-为 DSH 生成只需安装一次的平台包时，将 CLI 工作流生成的原生 `.tgz` 解压到工程外目录，再传入其 `package` 目录：
+Để sinh gói nền tảng DSH chỉ cần cài một lần, giải nén `.tgz` native do quy trình CLI sinh ra ngoài dự án, rồi truyền thư mục `package` của nó:
 
 ```sh
 native_package_dir=$(mktemp -d)
@@ -502,69 +502,69 @@ npm run pack:npm -- --native-package-dir "$native_package_dir/package" --out-dir
 rm -rf "$native_package_dir"
 ```
 
-平台包保留原生包的程序、源码、许可和构建信息，设置对应 OS / CPU / libc 限制，不再下载原生平台依赖；其他 JavaScript 依赖仍由包管理器安装。CLI 构建工作流为每个平台生成 `crossdesk-mcp-<平台>` 产物，CLI、MCP、DSH 和原生依赖版本不一致时直接停止构建或打包。通用包和平台包名称、版本相同，应放在不同输出目录，不要将平台包当成通用版本发布到 npm。
+Gói nền tảng giữ chương trình, nguồn, giấy phép và thông tin biên dịch của gói native, đặt giới hạn OS / CPU / libc tương ứng và không tải phụ thuộc native theo nền tảng nữa; phụ thuộc JavaScript khác vẫn do trình quản lý gói cài. Quy trình CLI sinh sản phẩm `crossdesk-mcp-<nen-tang>` cho từng nền tảng. Phiên bản CLI, MCP, DSH và phụ thuộc native không khớp sẽ dừng biên dịch hoặc đóng gói ngay. Gói chung và gói nền tảng cùng tên/phiên bản nên đặt ở thư mục đầu ra khác nhau; không phát hành gói nền tảng lên npm như bản chung.
 
-原生 `doctor` 必须同时声明自动化协议和 `automation_video_protocols: ["h264-annexb/1", "nv12/1"]`、`automation_video_decoders: ["auto", "software"]`，以及 `automation_video_transport: "loopback-websocket/1"`、`automation_terminal_protocol: "ansi/1"`。通用 npm 分发需要先发布对应 0.2.0 平台包，再发布 MCP；内含原生程序的平台包不受此顺序限制。构建通过不等于各宿主和设备上的联调完成。
+`doctor` native bắt buộc khai đồng thời giao thức tự động hóa, `automation_video_protocols: ["h264-annexb/1", "nv12/1"]`, `automation_video_decoders: ["auto", "software"]`, `automation_video_transport: "loopback-websocket/1"` và `automation_terminal_protocol: "ansi/1"`. Phân phối npm chung cần phát hành gói nền tảng 0.2.0 tương ứng trước rồi mới MCP; gói nền tảng chứa chương trình native không chịu thứ tự này. Biên dịch thành công không có nghĩa tích hợp trên từng host/thiết bị đã hoàn tất.
 
-从发布 tarball 重建 TypeScript/面板时，将包中的 `build-package.json` 复制为 `package.json`，运行 `npm ci && npm run build`。原生源码和依赖来源随平台包提供，详见 [源码来源](../cli/docs/source-provenance.md)。
+Khi biên dịch lại TypeScript/bảng từ tarball phát hành, sao `build-package.json` trong gói thành `package.json` rồi chạy `npm ci && npm run build`. Nguồn gốc và nguồn phụ thuộc kèm gói nền tảng, xem [nguồn gốc mã nguồn](../cli/docs/source-provenance.md).
 
-## GitHub Actions 发布到 npm
+## Phát hành lên npm qua GitHub Actions
 
-[`release-mcp.yml`](../../.github/workflows/release-mcp.yml) 发布 `@chunkdash/crossdesk-mcp` 通用包，同时提供 stdio MCP 和 DSH 插件。发布过程不需要另发一个 DSH 插件包。
+[`release-mcp.yml`](../../.github/workflows/release-mcp.yml) phát hành gói chung `@chunkdash/crossdesk-mcp`, đồng thời cung cấp stdio MCP và plugin DSH. Không cần phát hành gói plugin DSH riêng trong quy trình này.
 
-| 操作 | 结果 |
+| Thao tác | Kết quả |
 | --- | --- |
-| 普通提交或 PR | `MCP package` 编译并上传 `mcp-package`，不发布 npm |
-| Actions → Publish MCP to npm → Run workflow，保持 `dry_run` 勾选 | 构建并检查发布包，不使用 npm 发布凭据，不要求 GitHub `npm` environment 审批 |
-| 推送 `mcp-v0.2.1` | 校验共同源码版本为 `0.2.1`，构建、检查原生依赖并发布到 `latest` |
-| 推送 `mcp-v0.3.0-rc.1` | 校验共同源码版本为 `0.3.0-rc.1`，发布到 `next` |
-| 在匹配的 `mcp-v*` 标签上手动运行并取消 `dry_run` | 执行真实发布；分支上不允许真实发布 |
+| Commit/PR thường | `MCP package` biên dịch/tải `mcp-package`, không phát hành npm |
+| Actions → Publish MCP to npm → Run workflow, giữ chọn `dry_run` | Biên dịch/kiểm gói, không dùng thông tin xác thực npm, không cần duyệt environment GitHub `npm` |
+| Đẩy `mcp-v0.2.1` | Kiểm phiên bản nguồn chung `0.2.1`, biên dịch/kiểm phụ thuộc native/phát hành `latest` |
+| Đẩy `mcp-v0.3.0-rc.1` | Kiểm nguồn chung `0.3.0-rc.1`, phát hành `next` |
+| Chạy thủ công ở nhãn `mcp-v*` khớp, bỏ `dry_run` | Phát hành thật; không cho phát hành thật trên nhánh |
 
-MCP 标签不触发独立的桌面、CLI 或重复 MCP 构建。手动运行入口需要工作流先进入默认分支；预演可选择分支，标签上的预演也必须与源码版本一致。
+Nhãn MCP không kích hoạt biên dịch máy tính, CLI độc lập hay biên dịch MCP lặp. Điểm chạy thủ công cần quy trình đã vào nhánh mặc định; chạy thử có thể chọn nhánh, nhưng chạy thử trên nhãn cũng bắt buộc khớp phiên bản nguồn.
 
-### 配置 npm 发布权限
+### Cấu hình quyền phát hành npm
 
-在 npm 网站打开 `@chunkdash/crossdesk-mcp` 的 **Settings → Trusted Publisher**，选择 **GitHub Actions**：
+Trên npm, mở **Settings → Trusted Publisher** của `@chunkdash/crossdesk-mcp` và chọn **GitHub Actions**:
 
-| 字段 | 值 |
+| Trường | Giá trị |
 | --- | --- |
 | Organization or user | `kunkundi` |
 | Repository | `crossdesk` |
 | Workflow filename | `release-mcp.yml` |
 | Environment name | `npm` |
-| Allowed actions | 勾选 **Allow npm publish** |
+| Allowed actions | Chọn **Allow npm publish** |
 
-工作流使用 GitHub-hosted runner、Node.js 24、npm 12.2.1 和 OIDC，无需设置 `NPM_TOKEN`。只有实际发布 job 获得 `id-token: write`，上传时附带 provenance。配置字段需与工作流完全一致，详见 [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/)。
+Quy trình dùng GitHub-hosted runner, Node.js 24, npm 12.2.1 và OIDC, không cần đặt `NPM_TOKEN`. Chỉ job phát hành thật được `id-token: write`; tải lên kèm provenance. Các trường cấu hình cần khớp hoàn toàn quy trình; xem [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/).
 
-GitHub 仓库的 **Settings → Environments → npm** 若已限制只允许 `cli-v*`，需同时允许 `mcp-v*`。预演不进入该环境；真实发布会遵循已有的环境审批规则。MCP 与 CLI 的 npm 信任配置分别对应 `release-mcp.yml` 和 `release-cli.yml`，不能互换。
+Nếu **Settings → Environments → npm** của kho GitHub đang chỉ cho `cli-v*`, cần cho cả `mcp-v*`. Chạy thử không vào môi trường này; phát hành thật tuân quy tắc duyệt môi trường hiện có. Cấu hình tin cậy npm của MCP và CLI lần lượt ứng với `release-mcp.yml` và `release-cli.yml`, không hoán đổi.
 
-### 发布一个新版本
+### Phát hành bản mới
 
-1. 在仓库根目录统一设置 CLI、MCP、DSH 和原生依赖版本。例如准备 `0.2.1`：
+1. Tại gốc kho, đặt chung phiên bản CLI, MCP, DSH và phụ thuộc native. Ví dụ chuẩn bị `0.2.1`:
 
    ```sh
    python3 scripts/version.py set mcp 0.2.1
    python3 scripts/version.py check
    ```
 
-2. 提交并推送改动，再运行一次 MCP 发布工作流的 `dry_run`。版本脚本同时同步 CLI 构建配置、MCP 锁文件和 DSH 集成元数据，详见[组件版本管理](../../docs/VERSIONING.md)。预演检查 tarball 的名称、版本、SHA-512、可执行入口、页面、DSH bundle 和固定版本的原生依赖声明；它不检查 npm 发布权限或注册表中的原生包是否已经可用。
-3. 按 [CLI 发布指南](../cli/docs/npm-distribution.md#ci-与发布)从该提交推送 `cli-v0.2.1`，先发布五个平台原生包和 CLI 入口。确认 [`platforms.json`](../cli/npm/platforms.json) 中五个原生包的 `0.2.1` 均可查询后再发布 MCP。即使只改动 MCP，也需要发布同版本 CLI；已发布版本不能用不同内容覆盖。
-4. 确认 MCP 的 npm 信任配置可用后，从同一提交创建并推送 MCP 标签：
+2. Commit và đẩy thay đổi rồi chạy một `dry_run` của quy trình phát hành MCP. Script phiên bản cũng đồng bộ cấu hình CLI, tệp khóa MCP và siêu dữ liệu tích hợp DSH; xem [quản lý phiên bản thành phần](../../docs/VERSIONING.md). Chạy thử kiểm tên, phiên bản, SHA-512, điểm vào thực thi, trang, bundle DSH và khai báo phụ thuộc native cố định trong tarball; không kiểm quyền phát hành npm hay gói native đã có trên registry chưa.
+3. Theo [phát hành CLI](../cli/docs/npm-distribution.md#ci-và-phát-hành), đẩy `cli-v0.2.1` từ commit đó để phát hành năm gói native theo nền tảng và điểm vào CLI trước. Xác nhận truy vấn được `0.2.1` của cả năm gói trong [`platforms.json`](../cli/npm/platforms.json) rồi mới MCP. Dù chỉ sửa MCP, vẫn cần phát hành CLI cùng phiên bản; bản đã phát hành không được ghi đè bằng nội dung khác.
+4. Sau khi xác nhận cấu hình tin cậy npm MCP khả dụng, tạo và đẩy nhãn MCP từ cùng commit:
 
    ```sh
    git tag mcp-v0.2.1
    git push origin mcp-v0.2.1
    ```
 
-真实发布前会检查五个平台原生包的确切版本、平台字段和分发信息；任何一个缺失，或注册表返回权限／网络错误，都会停止发布。原生版本不依赖其 `latest` 或 `next` 标签，只需 MCP 引用的确切版本可用。`crossdesk-mcp-<平台>` 安装包会被拒绝；npm 只发布 `mcp-package` 中的通用包。
+Trước khi phát hành thật, quy trình kiểm phiên bản chính xác, trường nền tảng và thông tin phân phối của năm gói native. Thiếu bất kỳ gói nào hoặc registry lỗi quyền/mạng đều dừng phát hành. Phiên bản native không phụ thuộc dist-tag `latest` hay `next`, chỉ cần đúng phiên bản MCP tham chiếu có sẵn. Gói cài `crossdesk-mcp-<nen-tang>` bị từ chối; npm chỉ phát hành gói chung trong `mcp-package`.
 
-### 验证结果与失败恢复
+### Kiểm kết quả và phục hồi lỗi
 
-发布 job 只下载当前工作流的 `mcp-package` artifact。上传后每 15 秒检查版本、SHA-512 和目标 dist-tag，最多等待 15 分钟；npm 尚在处理时不会重复上传。成功后 Actions Summary 显示发布版本、原生依赖版本和 tarball 校验值。
+Job phát hành chỉ tải artifact `mcp-package` của quy trình hiện tại. Sau khi tải lên, cứ 15 giây kiểm phiên bản, SHA-512 và dist-tag đích, tối đa 15 phút; npm còn xử lý thì không tải lên lặp. Thành công sẽ hiện phiên bản phát hành, phiên bản phụ thuộc native và checksum tarball trong Actions Summary.
 
-发布失败后优先 **Re-run failed jobs**，复用原 artifact。同版本、同校验值且 dist-tag 匹配的已发布包会跳过上传；同版本内容不同、dist-tag 已指向更新版本、已有版本的 dist-tag 不匹配或注册表仅有 `0.0.0-stage` 占位版本时，工作流会停止并给出原因。等待处理完成或修复依赖／权限后再重跑，不要为恢复上传而重跑全部构建或覆盖已有版本。本工作流不自动修改已有版本的 dist-tag。
+Nếu phát hành thất bại, ưu tiên **Re-run failed jobs** để dùng lại artifact cũ. Gói đã phát hành cùng phiên bản, checksum và dist-tag khớp sẽ bỏ tải lên. Nếu cùng phiên bản khác nội dung, dist-tag trỏ bản mới hơn, dist-tag bản đã có không khớp hoặc registry chỉ có bản giữ chỗ `0.0.0-stage`, quy trình sẽ dừng và nêu nguyên nhân. Đợi xử lý xong hoặc sửa phụ thuộc/quyền rồi chạy lại, không dựng lại toàn bộ hay ghi đè bản cũ để khôi phục tải. Quy trình không tự sửa dist-tag của phiên bản hiện có.
 
-发布成功后在工程外验证，避免 `npx` 匹配到源码目录中的同名包。以下以 `0.2.1` 为例：
+Sau khi phát hành thành công, kiểm ngoài dự án để tránh `npx` khớp gói cùng tên trong thư mục nguồn. Ví dụ `0.2.1`:
 
 ```sh
 cd "$(mktemp -d)"
@@ -572,12 +572,12 @@ npm view @chunkdash/crossdesk-mcp@0.2.1 version optionalDependencies --registry=
 npx --yes --registry=https://registry.npmjs.org/ @chunkdash/crossdesk-mcp@0.2.1 --help
 ```
 
-`--help` 仅验证命令入口；完整验收还需按[用户指南](README.md)在 Codex 或 DSH 中连接已授权设备。
+`--help` chỉ kiểm điểm vào lệnh. Nghiệm thu đầy đủ vẫn cần theo [hướng dẫn người dùng](README.md), kết nối thiết bị đã cấp quyền trong Codex hoặc DSH.
 
-## 本地审阅验证（2026-11-03）
+## Kiểm chứng rà soát cục bộ (2026-11-03)
 
-动作参数校验和输入步骤生成集中在 `apps/cli/automation_protocol.*`，主循环负责调度、取消和权限检查。截图按色度网格对齐后仅转换所需区域，PNG 在容量受限的缓冲区中单次压缩；原生帧仅在没有其他读取者时复用内存。Node 按行累计响应字节，在完整响应到达时解码，避免反复扫描和复制大截图。
+Kiểm tham số thao tác và sinh bước nhập tập trung trong `apps/cli/automation_protocol.*`; vòng lặp chính điều phối, hủy và kiểm quyền. Ảnh căn theo lưới sắc độ rồi chỉ chuyển vùng cần; PNG nén một lần trong đệm giới hạn dung lượng. Khung gốc chỉ tái dùng bộ nhớ khi không có người đọc khác. Node tích lũy byte phản hồi theo dòng, giải mã khi đủ phản hồi để tránh quét và sao ảnh lớn lặp lại.
 
-本机 macOS arm64 完成 TypeScript/面板构建、原生 CLI 构建、现有 wire/keyboard-state 测试，以及工程外的 MCP、会话和原生动作回归检查。ASan/UBSan 检查覆盖动作调度和输入清理；140 组随机图像覆盖完整帧、奇偶裁剪边界、缩放及容量回退，优化前后 PNG 字节一致。
+macOS arm64 cục bộ đã hoàn tất biên dịch TypeScript/bảng, CLI native, kiểm wire/keyboard-state hiện có và hồi quy MCP, phiên, thao tác native ngoài dự án. ASan/UBSan kiểm điều phối thao tác và dọn nhập. 140 nhóm ảnh ngẫu nhiên bao phủ nguyên khung, biên cắt chẵn/lẻ, tỷ lệ và giảm kích thước khi chạm trần; PNG trước/sau tối ưu giống nhau từng byte.
 
-使用 1920 × 1080 合成 NV12、最长边 1280、每项 6 次的 `-O2` 本地基准：完整画面编码约 22.5 → 11.5 ms，321 × 241 裁剪约 2.1 → 0.9 ms。数字仅衡量图像转换与编码，不包含网络、解码、远端执行或宿主渲染；未连接真实远端或完成 Windows/Linux 验收。额外测试代码、脚本、数据和产物均存放于工程外系统临时目录。
+Benchmark cục bộ `-O2` với NV12 tổng hợp 1920 × 1080, cạnh dài tối đa 1280, mỗi mục 6 lần: mã hóa nguyên ảnh khoảng 22.5 → 11.5 ms, cắt 321 × 241 khoảng 2.1 → 0.9 ms. Các số chỉ đo chuyển ảnh/mã hóa, không gồm mạng, giải mã, thực thi từ xa hay render host. Chưa nối máy từ xa thật hoặc nghiệm thu Windows/Linux. Mã, script, dữ liệu và sản phẩm kiểm bổ sung đều ở thư mục tạm hệ thống ngoài dự án.

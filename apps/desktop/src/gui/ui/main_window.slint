@@ -2,11 +2,11 @@ import { SurfaceSeparator, FlatSurface, UiSurface } from "ui_surface.slint";
 import { TrustedDevicesDialog, TrustedDeviceEntry, TrustStrings } from "trusted_devices.slint";
 import { ControllerEntry, ServerPanel, ServerStrings } from "server_window.slint";
 import { LanStrings } from "lan_strings.slint";
-import { SpecialSponsorStrip, SponsorDirectory } from "sponsor_strip.slint";
 import { AboutPanel, AboutPage, AboutComponent, AboutStrings, AboutNavigationRow, AboutNavigationGroup, AboutRowSeparator } from "about_panel.slint";
 import { FeedbackPanel, FeedbackStrings } from "feedback_panel.slint";
 import { UiRadius } from "ui_radius.slint";
-import { WorkbenchStyle, WorkbenchButton, WorkbenchCard, WorkbenchNotice } from "workbench_controls.slint";
+import { WorkbenchNotice } from "workbench_controls.slint";
+import { PostcardStyle as WorkbenchStyle, PostcardCard as WorkbenchCard, PostcardButton as WorkbenchButton } from "postcard_controls.slint";
 import { DetailPopup, DetailPopupRow } from "detail_popup.slint";
 import { GalleryStrings } from "device_strings.slint";
 import { DeviceCardStyle } from "device_card_actions.slint";
@@ -45,14 +45,14 @@ export struct ReleaseNoteBlock {
 export enum UpdateCheckStatus { idle, checking, up-to-date, available, failed }
 export enum AutostartStatus { checking, enabled, disabled, unsupported, failed }
 enum CopyFeedback { idle, success, failed }
-enum SponsorPlatform { afdian, kofi, github }
 
 export global UiStrings {
     in-out property <string> window-minimize: "Minimize";
     in-out property <string> window-close: "Close window";
-    in-out property <string> local-desktop: "Local Desktop";
+    in-out property <string> connect-heading: "Connect to a device";
+    in-out property <string> local-desktop: "This device";
     in-out property <string> remote-desktop: "Remote Desktop";
-    in-out property <string> recent-connections: "Recent Connections";
+    in-out property <string> recent-connections: "Recent Devices";
     in-out property <string> local-id: "Local ID";
     in-out property <string> device-name: "Device Name";
     in-out property <string> remote-id: "Remote ID";
@@ -64,8 +64,6 @@ export global UiStrings {
     in-out property <string> connect: "Connect";
     in-out property <string> settings: "Settings";
     in-out property <string> about: "About";
-    in-out property <string> sponsorship-title: "Sponsorship";
-    in-out property <string> sponsor-via-afdian: "AFDIAN";
     in-out property <string> ok: "OK";
     in-out property <string> cancel: "Cancel";
     in-out property <string> save: "Save";
@@ -153,49 +151,6 @@ export global UiStrings {
     in-out property <string> release-date-label: "Release Date: ";
 }
 
-// Keep sponsor labels, order, and sizing consistent across dialogs.
-component SponsorshipSection inherits VerticalLayout {
-    in property <bool> show-title: true;
-    callback open-afdian;
-    callback open-kofi;
-    callback open-github;
-    vertical-stretch: 0;
-    spacing: 10px;
-    if root.show-title: Text {
-        text: UiStrings.sponsorship-title;
-        color: WorkbenchStyle.text; font-size: 12px; font-weight: 600;
-        wrap: word-wrap;
-    }
-    HorizontalLayout {
-        spacing: 8px;
-        for platform in (GalleryStrings.language == 0
-            ? [SponsorPlatform.afdian, SponsorPlatform.kofi, SponsorPlatform.github]
-            : [SponsorPlatform.kofi, SponsorPlatform.github, SponsorPlatform.afdian]): Rectangle {
-            // Size to the label, icon, and padding, then share extra row space.
-            min-width: sponsor-label-metrics.preferred-width + 56px;
-            preferred-width: self.min-width;
-            horizontal-stretch: 1;
-            height: 32px;
-            SettingsButton {
-                width: parent.width; height: parent.height;
-                icon: platform == SponsorPlatform.afdian ? @image-url("icons/sponsors/afdian.png")
-                    : platform == SponsorPlatform.kofi ? @image-url("icons/sponsors/kofi.png")
-                    : @image-url("icons/sponsors/github.svg");
-                text: platform == SponsorPlatform.afdian ? UiStrings.sponsor-via-afdian
-                    : platform == SponsorPlatform.kofi ? "Ko-fi" : "GitHub Sponsors";
-                sponsor-label-metrics := Text {
-                    visible: false; text: parent.text; font-size: 12px;
-                }
-                clicked => {
-                    if platform == SponsorPlatform.afdian { root.open-afdian(); }
-                    else if platform == SponsorPlatform.kofi { root.open-kofi(); }
-                    else { root.open-github(); }
-                }
-            }
-        }
-    }
-}
-
 // Prompt copy in modal dialogs sits slightly low in the legacy ImGui layout.
 // Offset only the rendered text so input fields and action buttons keep their
 // established geometry.
@@ -243,7 +198,7 @@ component ServicePromptDialog inherits DialogSurface {
     callback secondary-action;
     height: min(root.available-height, content.preferred-height + 113px);
     background: #f8fafc;
-    outline-color: UiSurface.edge;
+    outline-color: WorkbenchStyle.separator;
     TouchArea { scroll-event(event) => { accept } }
     ScrollView {
         x: 24px; y: 24px; width: parent.width - 40px;
@@ -292,7 +247,7 @@ component ServicePromptDialog inherits DialogSurface {
     }
     SurfaceSeparator {
         x: 24px; y: parent.height - 73px; width: parent.width - 48px;
-        outline-color: UiSurface.separator;
+        outline-color: WorkbenchStyle.separator;
     }
     HorizontalLayout {
         x: 24px; y: parent.height - 56px;
@@ -322,7 +277,7 @@ component PasswordInput inherits FlatSurface {
 
     width: 70px;
     height: 23px;
-    background: editor.has-focus ? ControlStyle.input-focused : ControlStyle.input-surface;
+    background: editor.has-focus ? #fffdf7 : WorkbenchStyle.field-surface;
     outline-color: root.error ? UiSurface.error : editor.has-focus ? UiSurface.focus : UiSurface.edge;
     outline-focused: editor.has-focus || root.error;
     border-radius: UiRadius.control;
@@ -477,9 +432,9 @@ export component MainWindow inherits Window {
     in property <bool> window-active: true;
     private property <length> titlebar-height:
         root.custom-titlebar && !root.gallery-fullscreen ? (root.wayland-titlebar ? 32px : 31px) : 0px;
-    out property <length> minimum-window-width: 640px;
+    out property <length> minimum-window-width: root.gallery-mode ? 640px : 960px;
     out property <length> minimum-window-height:
-        (root.gallery-mode ? 448px : 472px) + root.titlebar-height;
+        (root.gallery-mode ? 448px : 650px) + root.titlebar-height;
     private property <length> wayland-corner-radius: 12px;
     in property <[ControllerEntry]> controllers;
     in-out property <int> selected-controller: 0;
@@ -670,8 +625,10 @@ export component MainWindow inherits Window {
     in property <bool> signal-reconnecting: false;
     in property <bool> signal-tls-error: false;
     in property <[RecentConnection]> recent-connections;
-    out property <length> recent-preview-width: max(1px, (recent-scroll.width - 24px) / 3);
-    out property <length> recent-preview-height: 80px;
+    out property <length> recent-preview-width: max(168px, (recent-scroll.width - 12px) / 2);
+    out property <length> recent-preview-height: root.recent-preview-width * 9 / 16;
+    private property <length> recent-card-footer-height: 44px;
+    private property <length> recent-card-height: root.recent-preview-height + root.recent-card-footer-height;
     in property <[string]> recent-groups: [GalleryStrings.texts[57], GalleryStrings.texts[31]];
     in-out property <int> recent-group-index: 0;
     callback recent-group-selected(int);
@@ -751,7 +708,7 @@ export component MainWindow inherits Window {
     in property <string> portable-service-status: "";
     in-out property <bool> portable-service-do-not-remind: false;
 
-    in-out property <int> language-index: 10;
+    in-out property <int> language-index: 1;
     in property <[string]> language-options;
     in-out property <int> codec-index: 0;
     in-out property <bool> ip-direct-enabled-draft: true;
@@ -822,10 +779,7 @@ export component MainWindow inherits Window {
     callback open-manual-download;
     callback confirm-update;
     callback cancel-update;
-    callback open-website;
-    callback open-afdian-sponsor;
-    callback open-github-sponsor;
-    callback open-kofi-sponsor;
+    callback open-update-channel;
     callback dismiss-release-welcome;
     callback check-for-updates;
     callback signal-reconnect-requested;
@@ -918,6 +872,18 @@ export component MainWindow inherits Window {
         if !root.update-open { root.update-confirm-open = false; }
     }
     in-out property <bool> update-confirm-open: false;
+    out property <length> reset-password-dialog-width: min(440px, root.width - 40px);
+    out property <length> reset-password-dialog-height: root.reset-password-invalid ? 298px : 252px;
+    out property <length> reset-password-dialog-x: (root.width - root.reset-password-dialog-width) / 2;
+    out property <length> reset-password-dialog-y: root.titlebar-height + (root.height - root.titlebar-height - root.reset-password-dialog-height) / 2;
+    out property <length> reset-password-input-x: root.reset-password-dialog-x + 24px;
+    out property <length> reset-password-input-y: root.reset-password-dialog-y + 106px;
+    out property <length> reset-password-input-width: root.reset-password-dialog-width - 48px;
+    out property <length> reset-password-input-height: 42px;
+    out property <length> reset-password-save-x: root.reset-password-dialog-x + root.reset-password-dialog-width - 136px;
+    out property <length> reset-password-save-y: root.reset-password-dialog-y + root.reset-password-dialog-height - 58px;
+    out property <length> reset-password-cancel-x: root.reset-password-dialog-x + root.reset-password-dialog-width - 256px;
+    out property <length> reset-password-cancel-y: root.reset-password-save-y;
     in-out property <bool> reset-password-open: false;
     changed reset-password-open => {
         root.new-password-input = "";
@@ -1128,7 +1094,7 @@ export component MainWindow inherits Window {
             SurfaceSeparator {
                 y: parent.height - 1px;
                 height: 1px;
-                outline-color: UiSurface.separator;
+                outline-color: WorkbenchStyle.separator;
             }
         }
 
@@ -1215,7 +1181,7 @@ export component MainWindow inherits Window {
         SurfaceSeparator {
             y: parent.height - 1px;
             height: 1px;
-            outline-color: UiSurface.separator;
+            outline-color: WorkbenchStyle.separator;
         }
     }
 
@@ -1287,16 +1253,38 @@ export component MainWindow inherits Window {
             y: 0px;
             width: parent.width;
             height: 1px;
-            outline-color: UiSurface.separator;
+            outline-color: WorkbenchStyle.separator;
             z: 7;
         }
 
+        // Printed rules and a perforation separate actions from device identity.
+        if !root.gallery-mode: Rectangle {
+            x: 28px; y: 55px; width: parent.width - 56px; height: 1px;
+            background: WorkbenchStyle.separator;
+        }
+        if !root.gallery-mode: Rectangle {
+            x: 28px; y: 304px; width: parent.width - 56px; height: 1px;
+            background: WorkbenchStyle.separator;
+        }
+        if !root.gallery-mode: Rectangle {
+            x: parent.width - 368px; y: 318px; width: 1px; height: 240px;
+            for index in 40: Rectangle {
+                y: index * 6px; width: 1px; height: 2px;
+                background: WorkbenchStyle.separator;
+            }
+        }
+        if !root.gallery-mode: Rectangle {
+            x: 28px; y: parent.height - 54px; width: parent.width - 56px; height: 2px;
+            background: WorkbenchStyle.separator;
+            Rectangle { x: 0px; width: 170px; height: 5px; y: -1px; background: WorkbenchStyle.accent; }
+        }
+
         // A compact application toolbar keeps global actions outside device cards.
-        // Center the 28px buttons above the cards with 6px of space on each side.
+        // Leave a clear margin before the printed rule below the toolbar.
         connection-mode-switch := WorkbenchButton {
             visible: !root.gallery-mode && root.ip-direct-enabled;
-            x: 20px; y: 6px;
-            width: 136px; height: 28px;
+            x: 28px; y: 9px;
+            width: 170px; height: 40px;
             background: WorkbenchStyle.field-surface;
             enabled: !root.connection-pending && !root.lan-connecting;
             tooltip: root.lan-mode ? GalleryStrings.texts[63] : GalleryStrings.texts[64];
@@ -1310,22 +1298,22 @@ export component MainWindow inherits Window {
             }
 
             Rectangle {
-                x: root.lan-mode ? parent.width / 2 + 1px : 2px;
-                y: 2px;
-                width: (parent.width - 6px) / 2;
-                height: parent.height - 4px;
-                border-radius: UiRadius.control;
+                x: root.lan-mode ? parent.width / 2 : 1px;
+                y: 1px;
+                width: parent.width / 2 - 1px;
+                height: parent.height - 2px;
+                border-radius: WorkbenchStyle.corner-radius;
                 background: WorkbenchStyle.accent;
                 animate x { duration: 180ms; easing: ease-in-out; }
             }
             for lan in [false, true]: Text {
-                x: lan ? parent.width / 2 + 1px : 2px;
-                y: 2px;
-                width: (parent.width - 6px) / 2;
-                height: parent.height - 4px;
+                x: lan ? parent.width / 2 : 1px;
+                y: 1px;
+                width: parent.width / 2 - 1px;
+                height: parent.height - 2px;
                 text: lan ? GalleryStrings.texts[66] : GalleryStrings.texts[67];
-                font-size: 12px;
-                font-weight: 500;
+                font-size: 15px;
+                font-weight: 600;
                 color: root.lan-mode == lan ? white : WorkbenchStyle.muted;
                 horizontal-alignment: center;
                 vertical-alignment: center;
@@ -1337,8 +1325,10 @@ export component MainWindow inherits Window {
             visible: !root.gallery-mode;
             x: root.ip-direct-enabled ? connection-mode-switch.x + connection-mode-switch.width + 8px : 20px;
             y: connection-mode-switch.y;
-            width: 80px; height: 28px;
-            normal-background: white;
+            width: 112px; height: 40px;
+            text-size: 15px;
+            normal-background: WorkbenchStyle.canvas;
+            normal-outline-color: WorkbenchStyle.separator;
             text: GalleryStrings.texts[54];
             z: 8;
             clicked => { root.open-gallery(); }
@@ -1376,10 +1366,13 @@ export component MainWindow inherits Window {
         }
         menu-button := WorkbenchButton {
             visible: !root.gallery-mode;
-            x: parent.width - 56px; y: open-gallery-button.y;
-            width: 36px; height: 28px;
+            x: parent.width - self.width - 28px; y: open-gallery-button.y;
+            width: 106px; height: 40px;
+            text-size: 15px;
+            icon-size: 16px;
             normal-background: white;
             icon: FontAwesomeIcons.bars;
+            text: GalleryStrings.texts[68];
             tooltip: GalleryStrings.texts[68];
             z: 8;
             clicked => { root.gallery-action("release", ""); root.menu-open = !root.menu-open; }
@@ -1391,7 +1384,7 @@ export component MainWindow inherits Window {
             width: 16px;
             height: 16px;
             border-radius: 8px;
-            outline-color: UiSurface.edge;
+            outline-color: WorkbenchStyle.separator;
             background: WorkbenchStyle.accent;
             opacity: root.menu-open || mod(animation-tick(), 2s) < 1s ? 1 : 0;
             z: 9;
@@ -1431,7 +1424,7 @@ export component MainWindow inherits Window {
             width: max(16px, unread-badge-label.preferred-width + 8px);
             height: 16px;
             border-radius: 8px;
-            outline-color: UiSurface.edge;
+            outline-color: WorkbenchStyle.separator;
             background: #d92d20;
             z: 9;
             accessible-role: button;
@@ -1453,48 +1446,51 @@ export component MainWindow inherits Window {
         }
 
         Rectangle {
-            y: 0px; height: parent.height - 28px; visible: !root.gallery-mode;
-        // Two balanced cards keep identity and connection actions distinct.
+            y: 0px; height: parent.height - 38px; visible: !root.gallery-mode;
+        // The connection hero and device identity retain their original action paths.
         Rectangle {
-            x: 20px; y: 40px; width: parent.width - 40px; height: 208px;
+            x: 28px; y: 70px; width: parent.width - 56px; height: 490px;
             // Button tooltips extend below these cards into the recent section.
             z: 1;
             local-card := WorkbenchCard {
-                x: 0px; y: 0px;
-                width: (parent.width - 16px) / 2; height: parent.height;
-                Text { x: 16px; y: 14px; width: parent.width - 32px; height: 24px; overflow: elide; text: UiStrings.local-desktop; font-size: 16px; font-weight: 600; color: WorkbenchStyle.text; }
+                x: parent.width - 330px; y: 252px;
+                width: 330px; height: 224px;
+                Text { x: 16px; y: 14px; width: parent.width - 32px; height: 24px; overflow: elide; text: UiStrings.local-desktop; font-size: 25px; font-weight: 600; color: WorkbenchStyle.text; }
                 Text { x: 16px; y: 38px; width: parent.width - 32px; height: 18px; text: root.lan-mode ? GalleryStrings.texts[69] : GalleryStrings.texts[70]; font-size: 11px; color: WorkbenchStyle.muted; overflow: elide; }
-                local-address-label := Text { x: 16px; y: 68px; height: 18px; text: root.lan-mode ? GalleryStrings.texts[71] : UiStrings.local-id; font-size: 12px; color: WorkbenchStyle.muted; vertical-alignment: top; }
+                local-address-label := Text {
+                    x: 16px; y: 62px;
+                    width: root.lan-mode ? lan-switch-ip-action.x - self.x - 6px : parent.width - 32px;
+                    height: 36px;
+                    text: root.lan-mode ? GalleryStrings.texts[71] : UiStrings.local-id;
+                    font-size: 13px; color: WorkbenchStyle.muted;
+                    vertical-alignment: center; wrap: word-wrap; overflow: elide;
+                }
                 lan-switch-ip-metrics := Text {
                     visible: false; accessible-role: none;
-                    text: GalleryStrings.texts[72];
-                    font-size: 12px; font-weight: 500;
+                    text: GalleryStrings.texts[72]; font-size: 14px; font-weight: 500;
                 }
                 lan-edit-port-metrics := Text {
                     visible: false; accessible-role: none;
-                    text: GalleryStrings.texts[73];
-                    font-size: 12px; font-weight: 500;
+                    text: GalleryStrings.texts[73]; font-size: 14px; font-weight: 500;
                 }
                 lan-switch-ip-action := WorkbenchButton {
                     visible: root.lan-mode;
-                    x: local-address-label.x + local-address-label.preferred-width + 4px;
-                    y: local-address-label.y - 5px;
-                    width: lan-switch-ip-metrics.preferred-width + 20px; height: 22px;
-                    quiet: true; text: lan-switch-ip-metrics.text;
-                    text-size: 12px; text-color: WorkbenchStyle.accent;
+                    x: lan-edit-port-action.x - self.width - 6px; y: local-address-label.y;
+                    width: max(74px, lan-switch-ip-metrics.preferred-width + 24px); height: 36px;
+                    text: lan-switch-ip-metrics.text;
+                    text-size: 14px;
                     enabled: root.lan-mode && !root.lan-password-pending && root.lan-interfaces.length > 0;
                     clicked => {
                         if root.lan-port-dirty && !root.apply-lan-endpoint() { return; }
                         lan-ip-picker.open-menu();
                     }
                 }
-                WorkbenchButton {
+                lan-edit-port-action := WorkbenchButton {
                     visible: root.lan-mode;
-                    x: lan-switch-ip-action.x + lan-switch-ip-action.width + 2px;
-                    y: lan-switch-ip-action.y;
-                    width: lan-edit-port-metrics.preferred-width + 20px; height: 22px;
-                    quiet: true; text: lan-edit-port-metrics.text;
-                    text-size: 12px; text-color: WorkbenchStyle.accent;
+                    x: parent.width - 16px - self.width; y: local-address-label.y;
+                    width: max(74px, lan-edit-port-metrics.preferred-width + 24px); height: 36px;
+                    text: lan-edit-port-metrics.text;
+                    text-size: 14px;
                     enabled: root.lan-mode && !root.lan-password-pending && (root.lan-listen-all || root.lan-interfaces.length > 0);
                     clicked => {
                         // Moving from the editor to this action is still editing.
@@ -1504,11 +1500,11 @@ export component MainWindow inherits Window {
                     }
                 }
                 local-address-field := FlatSurface {
-                    x: 16px; y: 90px; width: parent.width - 32px; height: 40px;
+                    x: 16px; y: 101px; width: parent.width - 32px; height: 46px;
                     // Reserve five port digits. Long IPv6 addresses elide at a
                     // readable size; the picker and Copy retain the full value.
                     private property <float> lan-font-scale: max(0.75, min(1,
-                        (self.width - 80px) / (lan-ip-metrics.preferred-width + lan-port-metrics.preferred-width)));
+                        (self.width - 92px) / (lan-ip-metrics.preferred-width + lan-port-metrics.preferred-width)));
                     lan-ip-metrics := Text {
                         visible: false; accessible-role: none;
                         text: root.lan-interface-labels[root.lan-interface-draft-index];
@@ -1521,29 +1517,35 @@ export component MainWindow inherits Window {
                     // Raise the whole field: a child's z cannot escape its
                     // parent's stacking order above the following password row.
                     z: 1;
-                    background: ControlStyle.input-surface; border-radius: UiRadius.control;
+                    background: WorkbenchStyle.field-surface; border-radius: WorkbenchStyle.corner-radius;
                     outline-color: !root.lan-mode ? UiSurface.edge
                         : root.lan-endpoint-error != "" ? UiSurface.error
-                        : lan-ip-picker.has-focus || root.lan-port-editing ? UiSurface.focus
-                        : UiSurface.edge;
+                        : lan-ip-picker.has-focus || root.lan-port-editing ? WorkbenchStyle.accent
+                        : WorkbenchStyle.separator;
                     animate outline-color { duration: 120ms; }
                     if !root.lan-mode: Text { x: 12px; width: parent.width - 64px; height: parent.height; text: root.local-id; font-size: 24px; font-weight: 600; letter-spacing: 1px; overflow: elide; color: WorkbenchStyle.text; vertical-alignment: center; }
-                    SurfaceSeparator { x: parent.width - 48px; y: 10px; width: 1px; height: parent.height - 20px; vertical: true; outline-color: UiSurface.separator; }
+                    SurfaceSeparator { x: parent.width - 54px; y: 10px; width: 1px; height: parent.height - 20px; vertical: true; outline-color: WorkbenchStyle.separator; }
                     lan-ip-picker := GroupFilter {
                         visible: root.lan-mode;
                         x: 4px; y: 2px;
                         width: min(lan-ip-metrics.preferred-width * local-address-field.lan-font-scale + 16px,
-                            parent.width - 64px - lan-port-metrics.preferred-width * local-address-field.lan-font-scale);
+                            parent.width - 76px - lan-port-metrics.preferred-width * local-address-field.lan-font-scale);
                         height: parent.height - 4px;
                         embedded: true; text-size: 18px * local-address-field.lan-font-scale;
                         text-weight: 600; text-color: WorkbenchStyle.text;
                         show-indicator: false;
-                        popup-min-width: max(160px, min(root.width - 80px, lan-ip-metrics.preferred-width + 40px));
+                        postcard: true;
+                        // Open upward and align to the full field, so long IPv6
+                        // addresses do not squeeze against the right/bottom edges.
+                        popup-min-width: min(450px, root.width - 56px);
+                        popup-anchor-width: local-address-field.width - 4px;
+                        popup-above: true;
+                        popup-gap: 44px;
                         model: root.lan-interface-labels; system-count: 0;
                         current-index <=> root.lan-interface-draft-index;
                         enabled: root.lan-mode && !root.lan-password-pending && root.lan-interfaces.length > 0;
-                        normal-outline-color: UiSurface.edge;
-                        hover-outline-color: UiSurface.hover;
+                        normal-outline-color: WorkbenchStyle.separator;
+                        hover-outline-color: WorkbenchStyle.accent;
                         focus-outline-color: WorkbenchStyle.accent;
                         accessible-label: GalleryStrings.texts[74];
                         selected(index) => {
@@ -1574,10 +1576,10 @@ export component MainWindow inherits Window {
                         x: lan-ip-picker.x + lan-ip-picker.width + 2px; y: 2px;
                         width: lan-port-metrics.preferred-width * local-address-field.lan-font-scale + 4px;
                         height: parent.height - 4px;
-                        background: lan-port-editor.has-focus ? ControlStyle.input-focused
-                            : lan-port-hover.has-hover ? ControlStyle.hover : transparent;
-                        border-radius: UiRadius.control;
-                        outline-color: lan-port-editor.has-focus ? UiSurface.focus : transparent;
+                        background: lan-port-editor.has-focus ? #fffaf0
+                            : lan-port-hover.has-hover ? WorkbenchStyle.hover-surface : transparent;
+                        border-radius: WorkbenchStyle.corner-radius;
+                        outline-color: lan-port-editor.has-focus ? WorkbenchStyle.accent : transparent;
                         animate background, outline-color { duration: 120ms; }
                         lan-port-hover := TouchArea {
                             enabled: root.lan-mode && !root.lan-password-pending;
@@ -1617,7 +1619,8 @@ export component MainWindow inherits Window {
                         }
                     }
                     copy-button := WorkbenchButton {
-                        x: parent.width - 42px; y: 2px; width: 36px; quiet: true;
+                        x: parent.width - 50px; y: 1px; width: 46px; height: 44px; quiet: true;
+                        icon-size: 18px;
                         icon: root.copy-feedback == CopyFeedback.success ? FontAwesomeIcons.check : FontAwesomeIcons.copy;
                         icon-color: root.copy-feedback == CopyFeedback.success ? WorkbenchStyle.success : WorkbenchStyle.muted;
                         tooltip: root.lan-mode ? GalleryStrings.texts[76] : GalleryStrings.texts[77];
@@ -1652,7 +1655,7 @@ export component MainWindow inherits Window {
                         y: parent.height + 6px;
                         width: min(parent.width, edit-hint-text.preferred-width + 20px);
                         height: max(28px, edit-hint-text.preferred-height + 12px);
-                        background: #24324a; border-radius: UiRadius.control; z: 20;
+                        background: #24324a; border-radius: WorkbenchStyle.corner-radius; z: 20;
                         edit-hint-text := Text {
                             x: 10px; y: 6px; width: parent.width - 20px; height: parent.height - 12px;
                             text: local-address-field.edit-hint; font-size: 12px; color: white;
@@ -1660,27 +1663,30 @@ export component MainWindow inherits Window {
                         }
                     }
                 }
-                Text { x: 16px; y: 138px; height: 18px; text: UiStrings.password; font-size: 12px; color: WorkbenchStyle.muted; }
+                Text { x: 16px; y: 151px; height: 20px; text: UiStrings.password; font-size: 13px; color: WorkbenchStyle.muted; }
                 FlatSurface {
-                    x: 16px; y: 158px; width: parent.width - 32px; height: 36px;
-                    background: ControlStyle.input-surface; border-radius: UiRadius.control;
-                    outline-color: UiSurface.edge;
-                    Text { x: 12px; width: parent.width - 132px; height: parent.height; text: root.active-password == "" ? "—" : root.active-password-visible ? root.active-password : "••••••"; font-size: 20px; font-weight: 500; letter-spacing: 2px; color: WorkbenchStyle.text; vertical-alignment: center; }
-                    SurfaceSeparator { x: parent.width - 118px; y: 8px; width: 1px; height: parent.height - 16px; vertical: true; outline-color: UiSurface.separator; }
+                    x: 16px; y: 174px; width: parent.width - 32px; height: 44px;
+                    background: WorkbenchStyle.field-surface; border-radius: WorkbenchStyle.corner-radius;
+                    outline-color: WorkbenchStyle.separator;
+                    Text { x: 12px; width: parent.width - 157px; height: parent.height; text: root.active-password == "" ? "-" : root.active-password-visible ? root.active-password : "••••••"; font-size: 20px; font-weight: 500; letter-spacing: 2px; color: WorkbenchStyle.text; vertical-alignment: center; }
+                    SurfaceSeparator { x: parent.width - 144px; y: 8px; width: 1px; height: parent.height - 16px; vertical: true; outline-color: WorkbenchStyle.separator; }
                     WorkbenchButton {
-                        x: parent.width - 112px; y: 0px; width: 36px; quiet: true;
+                        x: parent.width - 139px; y: 0px; width: 44px; height: 44px; quiet: true;
+                        icon-size: 18px;
                         icon: root.active-password-visible ? FontAwesomeIcons.eye : FontAwesomeIcons.eye-slash;
                         tooltip: root.active-password-visible ? GalleryStrings.texts[80] : GalleryStrings.texts[81];
                         clicked => { if root.lan-mode { root.lan-password-visible = !root.lan-password-visible; } else { root.toggle-password-visibility(); } }
                     }
                     WorkbenchButton {
-                        x: parent.width - 74px; y: 0px; width: 36px; quiet: true;
+                        x: parent.width - 93px; y: 0px; width: 44px; height: 44px; quiet: true;
+                        icon-size: 18px;
                         icon: FontAwesomeIcons.rotate; tooltip: UiStrings.refresh-password;
                         enabled: root.lan-mode ? !root.lan-password-pending : !root.password-change-pending;
                         clicked => { if root.lan-mode { root.lan-reset-password(); } else { root.refresh-password(); } }
                     }
                     WorkbenchButton {
-                        x: parent.width - 36px; y: 0px; width: 36px; quiet: true;
+                        x: parent.width - 47px; y: 0px; width: 44px; height: 44px; quiet: true;
+                        icon-size: 18px;
                         icon: FontAwesomeIcons.pen;
                         tooltip: GalleryStrings.texts[82];
                         enabled: root.lan-mode ? !root.lan-password-pending : !root.password-change-pending;
@@ -1689,25 +1695,25 @@ export component MainWindow inherits Window {
                 }
             }
             WorkbenchCard {
-                x: local-card.width + 16px; y: 0px; width: local-card.width; height: parent.height;
-                Text { x: 16px; y: 14px; width: parent.width - 32px; height: 24px; overflow: elide; text: UiStrings.remote-desktop; font-size: 16px; font-weight: 600; color: WorkbenchStyle.text; }
-                Text { x: 16px; y: 38px; width: parent.width - 32px; height: 18px; text: root.lan-mode ? GalleryStrings.texts[83] : GalleryStrings.texts[84]; font-size: 11px; color: WorkbenchStyle.muted; overflow: elide; }
-                Text { x: 16px; y: 68px; height: 18px; text: root.lan-mode ? GalleryStrings.texts[85] : UiStrings.remote-id; font-size: 12px; color: WorkbenchStyle.muted; }
+                x: 0px; y: 0px; width: parent.width; height: 220px;
+                Text { x: 0px; y: 28px; width: parent.width; height: 76px; overflow: elide; text: UiStrings.connect-heading; font-size: 62px; font-weight: 600; color: WorkbenchStyle.text; }
+                Text { x: 0px; y: 0px; width: parent.width; height: 20px; text: "CROSSDESK   /   " + UiStrings.remote-desktop; font-size: 12px; letter-spacing: 1.5px; color: WorkbenchStyle.muted; overflow: elide; }
+                Text { x: 16px; y: 132px; width: 150px; height: 52px; vertical-alignment: center; text: root.lan-mode ? GalleryStrings.texts[85] : UiStrings.remote-id; font-size: 14px; color: WorkbenchStyle.muted; }
                 FlatSurface {
-                    x: 16px; y: 90px; width: parent.width - 32px; height: 40px;
-                    background: remote-id-editor.has-focus ? ControlStyle.input-focused : ControlStyle.input-surface;
-                    border-radius: UiRadius.control;
-                    outline-color: root.connection-input-error != "" ? UiSurface.error : remote-id-editor.has-focus ? UiSurface.focus : UiSurface.edge;
+                    x: 174px; y: 126px; width: parent.width - 370px; height: 60px;
+                    background: remote-id-editor.has-focus ? #fffdf7 : WorkbenchStyle.field-surface;
+                    border-radius: WorkbenchStyle.corner-radius;
+                    outline-color: root.connection-input-error != "" ? UiSurface.error : remote-id-editor.has-focus ? WorkbenchStyle.accent : WorkbenchStyle.separator;
                     outline-focused: remote-id-editor.has-focus || root.connection-input-error != "";
                     animate outline-color { duration: 120ms; }
                     if root.remote-id-input == "": Text {
                         x: 12px; width: parent.width - 24px; height: parent.height;
                         text: root.lan-mode ? "192.168.1.20:52888" : GalleryStrings.texts[86];
-                        font-size: 13px; color: ControlStyle.input-placeholder; vertical-alignment: center;
+                        font-size: root.lan-mode ? 22px : 18px; font-weight: 500; color: WorkbenchStyle.muted; vertical-alignment: center;
                     }
                     remote-id-editor := TextInput {
                         x: 12px; width: parent.width - 24px; height: parent.height;
-                        text <=> root.remote-id-input; font-size: root.lan-mode ? 18px : 24px; font-weight: 600; letter-spacing: root.lan-mode ? 0px : 1px;
+                        text <=> root.remote-id-input; font-size: 24px; font-weight: 600; letter-spacing: root.lan-mode ? 0px : 1px;
                         input-type: root.lan-mode ? InputType.text : InputType.number; color: WorkbenchStyle.text;
                         accessible-label: root.lan-mode ? GalleryStrings.texts[85] : UiStrings.remote-id;
                         enabled: !root.connection-pending && !root.lan-connecting;
@@ -1727,13 +1733,14 @@ export component MainWindow inherits Window {
                     }
                 }
                 Text {
-                    x: 16px; y: 133px; width: parent.width - 32px; height: 24px;
+                    x: 174px; y: 192px; width: parent.width - 190px; height: 26px;
                     text: root.connection-input-error != "" ? root.connection-input-error
                         : root.lan-mode ? GalleryStrings.texts[87] : "";
                     font-size: 11px; color: root.connection-input-error != "" ? #be3d42 : WorkbenchStyle.muted; wrap: word-wrap;
                 }
                 WorkbenchButton {
-                    x: 16px; y: 158px; width: parent.width - 32px; height: 36px;
+                    x: parent.width - 188px; y: 126px; width: 188px; height: 60px;
+                    border-radius: 0px; text-size: 23px; icon-size: 20px;
                     primary: true;
                     text: root.connection-pending || root.lan-connecting ? GalleryStrings.texts[56] : UiStrings.connect;
                     enabled: !root.connection-pending && !root.lan-connecting;
@@ -1744,8 +1751,8 @@ export component MainWindow inherits Window {
 
         // Recent connections: previews, presence badges, and separate primary/overflow actions.
         recent-panel := TouchArea {
-            y: 260px;
-            height: parent.height - self.y;
+            x: 8px; y: 322px; width: parent.width - 380px;
+            height: recent-list.y + recent-list.height;
             // This observer survives model resets that destroy hovered cards
             // before their has-hover changed handler can dismiss the details.
             private property <bool> preview-hovered: root.window-active && self.has-hover
@@ -1762,14 +1769,15 @@ export component MainWindow inherits Window {
                 if !self.preview-hovered { root.recent-tooltip-visible = false; }
             }
 
-            Text { x: 20px; y: 0px; width: recent-group-filter.x - self.x - 12px; height: 32px; text: UiStrings.recent-connections; font-size: 15px; font-weight: 600; color: WorkbenchStyle.text; vertical-alignment: center; }
+            Text { x: 20px; y: 0px; width: recent-group-filter.x - self.x - 12px; height: 38px; text: UiStrings.recent-connections; font-size: 24px; font-weight: 600; color: WorkbenchStyle.text; vertical-alignment: center; }
             recent-group-filter := GroupFilter {
                 visible: !root.lan-mode;
                 x: parent.width - self.width - 20px; y: 0px;
-                width: 155px; height: 32px;
-                normal-background: white;
-                normal-outline-color: UiSurface.edge;
-                hover-outline-color: UiSurface.hover;
+                width: 155px; height: 38px;
+                postcard: true; text-size: 14px;
+                normal-background: WorkbenchStyle.canvas;
+                normal-outline-color: WorkbenchStyle.separator;
+                hover-outline-color: WorkbenchStyle.accent;
                 focus-outline-color: WorkbenchStyle.accent;
                 model: root.recent-groups;
                 current-index <=> root.recent-group-index;
@@ -1778,22 +1786,22 @@ export component MainWindow inherits Window {
 
             recent-list := FlatSurface {
                 x: 20px;
-                y: 36px;
+                y: 50px;
                 width: parent.width - 40px;
-                height: 142px;
+                height: root.recent-connections.length == 0 ? 160px : root.recent-card-height + 22px;
                 // A light flat surface groups the cards and their scrollbar.
-                background: root.recent-connections.length > 0 ? #f5f7fb : transparent;
+                background: transparent;
                 outline-enabled: root.recent-connections.length > 0;
-                outline-color: UiSurface.edge;
-                border-radius: UiRadius.surface;
+                outline-color: WorkbenchStyle.separator;
+                border-radius: WorkbenchStyle.corner-radius;
                 clip: true;
 
                 if root.recent-connections.length == 0: WorkbenchCard {
                     x: 0px; y: 6px; width: parent.width; height: 124px;
                     Rectangle {
                         x: 20px; y: 38px; width: 48px; height: 48px;
-                        background: #f0f4fb; border-radius: UiRadius.surface;
-                        Text { text: FontAwesomeIcons.display; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 20px; color: #8297b9; horizontal-alignment: center; vertical-alignment: center; }
+                        background: WorkbenchStyle.field-surface; border-radius: WorkbenchStyle.corner-radius;
+                        Text { text: FontAwesomeIcons.display; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 20px; color: WorkbenchStyle.muted; horizontal-alignment: center; vertical-alignment: center; }
                     }
                     Text {
                         x: 84px; y: 36px; width: parent.width - 104px; height: 24px;
@@ -1820,6 +1828,8 @@ export component MainWindow inherits Window {
                     width: parent.width - 12px;
                     height: parent.height - 6px;
                     horizontal-stretch: 1;
+                    horizontal-scrollbar-policy: as-needed;
+                    vertical-scrollbar-policy: always-off;
                     changed viewport-x => {
                         root.recent-tooltip-visible = false;
                         root.copy-feedback = CopyFeedback.idle;
@@ -1832,7 +1842,7 @@ export component MainWindow inherits Window {
                     alignment: start;
                     for connection[index] in root.recent-connections: connection-card := Rectangle {
                         width: root.recent-preview-width;
-                        height: 126px;
+                        height: root.recent-card-height;
                         background: transparent;
                         private property <bool> available: connection.lan || connection.online || connection.connected;
                         private property <length> content-width: self.width;
@@ -1845,9 +1855,9 @@ export component MainWindow inherits Window {
 
                         Rectangle {
                             width: connection-card.content-width;
-                            height: 124px;
-                            border-radius: UiRadius.surface;
-                            background: white;
+                            height: root.recent-card-height;
+                            border-radius: WorkbenchStyle.corner-radius;
+                            background: WorkbenchStyle.surface;
                             clip: true;
 
                             Rectangle {
@@ -1855,7 +1865,8 @@ export component MainWindow inherits Window {
                                 y: 0px;
                                 width: parent.width;
                                 height: root.recent-preview-height;
-                                background: !connection-card.available ? DeviceCardStyle.offline-preview :
+                                background: connection.has-thumbnail ? WorkbenchStyle.preview-matte
+                                    : !connection-card.available ? DeviceCardStyle.offline-preview :
                                     connection.platform == "windows" ? #296ebc :
                                     connection.platform == "macos" ? #7d57b9 :
                                     connection.platform == "linux" ? #ad591a :
@@ -1864,20 +1875,20 @@ export component MainWindow inherits Window {
                                     width: parent.width;
                                     height: parent.height;
                                     source: connection.thumbnail;
-                                    image-fit: cover;
-                                    // Keep the saved preview recognizable under the offline gray.
+                                    image-fit: contain;
+                                    // Dim offline previews without changing their geometry.
                                     opacity: connection-card.available ? 1 : 0.16;
                                 }
                                 if !connection.has-thumbnail: Text {
-                                    x: 8px;
-                                    width: parent.width - 16px;
-                                    height: parent.height;
+                                    x: 14px; y: 36px;
+                                    width: parent.width - 28px;
+                                    height: parent.height - 36px;
                                     text: connection.platform == "windows" ? "Windows" :
                                         connection.platform == "macos" ? "macOS" :
                                         connection.platform == "linux" ? "Linux" :
                                         connection.platform == "ios" ? "iOS" : UiStrings.unknown-platform;
                                     color: connection-card.available ? white : DeviceCardStyle.offline-placeholder;
-                                    font-size: 20px;
+                                    font-size: 17px;
                                     font-weight: 600;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
@@ -1886,7 +1897,7 @@ export component MainWindow inherits Window {
                                 Rectangle {
                                     x: 8px; y: 8px;
                                     width: presence-label.preferred-width + 24px; height: 20px;
-                                    background: #fffffff0; border-radius: self.height / 2;
+                                    background: WorkbenchStyle.surface; border-radius: WorkbenchStyle.corner-radius;
                                     Rectangle {
                                         x: 8px; y: (parent.height - self.height) / 2;
                                         width: 5px; height: 5px; border-radius: self.height / 2;
@@ -1902,11 +1913,11 @@ export component MainWindow inherits Window {
                             }
                             Rectangle {
                                 x: 0px;
-                                y: 80px;
+                                y: root.recent-preview-height;
                                 width: parent.width;
-                                height: 44px;
-                                background: white;
-                                SurfaceSeparator { x: 0px; y: 0px; width: parent.width; height: 1px; outline-color: UiSurface.separator; }
+                                height: root.recent-card-footer-height;
+                                background: WorkbenchStyle.surface;
+                                SurfaceSeparator { x: 0px; y: 0px; width: parent.width; height: 1px; outline-color: WorkbenchStyle.separator; }
                                 Text {
                                     x: 12px; y: 5px; height: 19px;
                                     width: parent.width - 56px;
@@ -1921,27 +1932,17 @@ export component MainWindow inherits Window {
                                     overflow: elide;
                                 }
                             }
-                            // The software renderer only clips rectangular bounds.
-                            // This outer border masks the four corners there too.
-                            Rectangle {
-                                x: -parent.border-radius;
-                                y: -parent.border-radius;
-                                width: parent.width + 2 * parent.border-radius;
-                                height: parent.height + 2 * parent.border-radius;
-                                border-width: parent.border-radius;
-                                border-radius: 2 * parent.border-radius;
-                                border-color: recent-list.background;
-                            }
+
                         }
                         card-touch := TouchArea {
                             width: connection-card.content-width;
-                            height: 124px;
+                            height: root.recent-card-height;
                             mouse-cursor: pointer;
                             clicked => { root.copy-feedback = CopyFeedback.idle; root.recent-connect(connection.remote-id); }
                             image-touch := TouchArea {
                                 x: 0px; y: 0px;
                                 width: parent.width;
-                                height: 80px;
+                                height: root.recent-preview-height;
                                 private property <string> group-names: connection.group-names;
                                 private property <bool> available: connection-card.available;
                                 changed available => {
@@ -1992,7 +1993,8 @@ export component MainWindow inherits Window {
                             }
                             card-menu := GalleryMenuButton {
                                 x: parent.width - self.width - 8px; y: 8px;
-                                width: 24px; height: 24px;
+                                width: 36px; height: 36px;
+                                postcard: true;
                                 compact-trigger: true;
                                 compact-menu: true;
                                 enabled: !root.gallery-mode;
@@ -2022,8 +2024,9 @@ export component MainWindow inherits Window {
                                 }
                             }
                             WorkbenchButton {
-                                x: parent.width - self.width - 8px; y: 88px;
-                                width: 28px; height: 28px;
+                                x: parent.width - self.width - 8px;
+                                y: root.recent-preview-height + (root.recent-card-footer-height - self.height) / 2;
+                                width: 36px; height: 36px; icon-size: 16px;
                                 soft: true;
                                 primary: !connection.connected;
                                 destructive: connection.connected;
@@ -2043,9 +2046,9 @@ export component MainWindow inherits Window {
                             }
                         }
                         FlatSurface {
-                            width: parent.width; height: 124px;
-                             border-radius: UiRadius.surface;
-                            outline-color: card-touch.has-hover || card-menu.menu-open ? UiSurface.hover : UiSurface.edge;
+                            width: parent.width; height: root.recent-card-height;
+                             border-radius: WorkbenchStyle.corner-radius;
+                            outline-color: card-touch.has-hover || card-menu.menu-open ? WorkbenchStyle.accent : WorkbenchStyle.separator;
                             animate outline-color { duration: 120ms; }
                         }
                     }
@@ -2100,16 +2103,16 @@ export component MainWindow inherits Window {
         }
         // Show availability for the selected connection mode.
         if !root.gallery-mode: Rectangle {
-            y: parent.height - 28px;
-            height: 28px;
+            y: parent.height - 38px;
+            height: 38px;
             background: white;
             SurfaceSeparator {
                 y: 0px;
                 height: 1px;
-                outline-color: UiSurface.separator;
+                outline-color: WorkbenchStyle.separator;
             }
             Rectangle {
-                x: 20px; y: 11px; width: 6px; height: 6px; border-radius: 3px;
+                x: 20px; y: 16px; width: 6px; height: 6px; border-radius: 3px;
                 background: root.lan-mode ? (root.lan-message != "" || root.lan-listener-error != "" ? #d6932b : root.lan-listening ? WorkbenchStyle.success : WorkbenchStyle.muted) : root.signal-tls-error || root.signal-reconnecting ? #d6932b : root.signal-connected ? WorkbenchStyle.success : #d65252;
             }
             Text {
@@ -2124,21 +2127,21 @@ export component MainWindow inherits Window {
                           : root.signal-reconnecting ? UiStrings.signal-reconnecting
                           : UiStrings.signal-disconnected;
                     color: WorkbenchStyle.muted;
-                    font-size: 11px;
+                    font-size: 13px;
                     vertical-alignment: center;
             }
             if root.lan-mode || (root.signal-connected && !root.signal-tls-error): Text {
                 x: parent.width - self.preferred-width - 20px; height: parent.height;
                 text: root.current-version;
-                font-size: 11px; color: WorkbenchStyle.muted; vertical-alignment: center;
+                font-size: 13px; color: WorkbenchStyle.muted; vertical-alignment: center;
             }
             if !root.lan-mode && !root.signal-connected: WorkbenchButton {
                 x: parent.width - self.width - 20px;
                 y: (parent.height - self.height) / 2;
                 width: max(64px, reconnect-label-metrics.preferred-width + 22px);
-                height: 22px;
+                height: 32px;
                 text: UiStrings.signal-reconnect;
-                text-size: 11px;
+                text-size: 13px;
                 text-color: WorkbenchStyle.accent;
                 clicked => {
                     root.copy-feedback = CopyFeedback.idle;
@@ -2147,7 +2150,7 @@ export component MainWindow inherits Window {
                 reconnect-label-metrics := Text {
                     visible: false;
                     text: UiStrings.signal-reconnect;
-                    font-size: 11px;
+                    font-size: 13px;
                     font-weight: 500;
                 }
             }
@@ -2225,7 +2228,7 @@ export component MainWindow inherits Window {
             x: 12px; y: tooltip-name.y + tooltip-name.height
                 + (device-tip.has-host-name ? tooltip-host.height + 3px : 0px) + 8px;
             width: parent.width - 24px; height: 1px;
-            outline-color: UiSurface.separator;
+            outline-color: WorkbenchStyle.separator;
         }
         tooltip-id := DetailPopupRow {
             x: 12px; y: tooltip-divider.y + 7px; width: parent.width - 24px; height: 16px;
@@ -2289,164 +2292,192 @@ export component MainWindow inherits Window {
     if !root.gallery-mode && root.menu-open: FlatSurface {
         x: menu-button.x + menu-button.width - self.width;
         y: menu-button.y + menu-button.height + 6px;
-        width: max(128px, max(menu-feedback-label.preferred-width, max(menu-settings-label.preferred-width,
+        width: max(220px, max(menu-feedback-label.preferred-width, max(menu-settings-label.preferred-width,
                    max(menu-messages-label.preferred-width + (root.announcement-unread > 0 ? menu-message-badge.width + 8px : 0px),
-                       menu-about-label.preferred-width + (root.update-available ? menu-update-badge.width + 8px : 0px)))) + 28px);
+                       menu-about-label.preferred-width + (root.update-available ? menu-update-badge.width + 8px : 0px)))) + 56px);
         height: application-menu-content.preferred-height;
         background: WorkbenchStyle.surface;
-        outline-color: UiSurface.edge;
-        border-radius: UiRadius.menu;
+        outline-color: WorkbenchStyle.separator;
+        border-radius: WorkbenchStyle.corner-radius;
         z: 10;
         TouchArea { }
-        application-menu-content := VerticalLayout {
-            padding: 6px;
-            spacing: 0px;
-            menu-settings := Rectangle {
-                height: 30px;
-                background: settings-touch.pressed ? WorkbenchStyle.pressed-surface
-                          : settings-touch.has-hover ? WorkbenchStyle.hover-surface
-                                                     : transparent;
-                border-width: 0px;
-                border-radius: UiRadius.control;
-                animate background { duration: 120ms; }
-                accessible-role: button;
-                accessible-label: UiStrings.settings;
-                accessible-action-default => { settings-touch.clicked(); }
-                menu-settings-label := Text {
-                    x: 8px;
-                    height: parent.height;
-                    text: UiStrings.settings;
-                    color: WorkbenchStyle.text; font-size: 12px;
-                    vertical-alignment: center;
-                    accessible-role: none;
-                }
-                settings-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => { root.menu-open = false; root.settings-open = true; }
-                }
+        menu-focus := FocusScope {
+            width: parent.width;
+            height: parent.height;
+            private property <int> selected-row: 0;
+            Timer {
+                interval: 1ms;
+                running: true;
+                triggered => { self.running = false; menu-focus.focus(); }
             }
-            Rectangle {
-                height: 7px;
-                SurfaceSeparator {
-                    x: 8px; y: 3px; width: parent.width - 16px; height: 1px;
-                    outline-color: UiSurface.separator;
+            key-pressed(event) => {
+                if event.text == Key.Escape {
+                    root.menu-open = false;
+                    menu-button.focus();
+                } else if event.text == Key.UpArrow || (event.text == Key.Tab && event.modifiers.shift) {
+                    self.selected-row = mod(self.selected-row + 3, 4);
+                } else if event.text == Key.DownArrow || event.text == Key.Tab {
+                    self.selected-row = mod(self.selected-row + 1, 4);
+                } else if event.text == Key.Return || event.text == " " {
+                    if self.selected-row == 0 { settings-touch.clicked(); }
+                    if self.selected-row == 1 { messages-touch.clicked(); }
+                    if self.selected-row == 2 { about-touch.clicked(); }
+                    if self.selected-row == 3 { feedback-touch.clicked(); }
+                } else {
+                    return reject;
                 }
+                return accept;
             }
-            menu-messages := Rectangle {
-                height: 30px;
-                background: messages-touch.pressed ? WorkbenchStyle.pressed-surface
-                          : messages-touch.has-hover ? WorkbenchStyle.hover-surface : transparent;
-                border-radius: UiRadius.control;
-                animate background { duration: 120ms; }
-                accessible-role: button;
-                accessible-label: MessageStrings.messages + (root.announcement-unread > 0 ? " · " + MessageStrings.unread + " " + root.announcement-unread : "");
-                accessible-action-default => { messages-touch.clicked(); }
-                menu-messages-label := Text {
-                    x: 8px;
-                    height: parent.height;
-                    text: MessageStrings.messages;
-                    color: WorkbenchStyle.text; font-size: 12px;
-                    vertical-alignment: center;
-                    accessible-role: none;
-                }
-                menu-message-badge := Rectangle {
-                    visible: root.announcement-unread > 0;
-                    x: parent.width - self.width - 7px;
-                    y: (parent.height - self.height) / 2;
-                    width: max(18px, menu-message-count.preferred-width + 10px);
-                    height: 18px;
-                    border-radius: 9px;
-                    background: #fee4e2;
-                    accessible-role: none;
-                    menu-message-count := Text {
-                        text: root.announcement-unread-label;
-                        font-size: 10px; font-weight: 600; color: #b42318;
-                        horizontal-alignment: center; vertical-alignment: center;
+            application-menu-content := VerticalLayout {
+                padding: 10px;
+                spacing: 3px;
+                menu-settings := Rectangle {
+                    height: 44px;
+                    background: settings-touch.pressed ? WorkbenchStyle.pressed-surface
+                              : (settings-touch.has-hover || (menu-focus.has-focus && menu-focus.selected-row == 0)) ? WorkbenchStyle.hover-surface
+                                                         : transparent;
+                    border-width: 0px;
+                    border-radius: WorkbenchStyle.corner-radius;
+                    animate background { duration: 120ms; }
+                    accessible-role: button;
+                    accessible-label: UiStrings.settings;
+                    accessible-action-default => { settings-touch.clicked(); }
+                    menu-settings-label := Text {
+                        x: 8px;
+                        height: parent.height;
+                        text: UiStrings.settings;
+                        color: WorkbenchStyle.text; font-size: 15px;
+                        vertical-alignment: center;
                         accessible-role: none;
                     }
-                }
-                messages-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        root.menu-open = false;
-                        root.messages-open = true;
-                        root.refresh-announcements();
+                    settings-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.menu-open = false; root.settings-open = true; }
                     }
                 }
-            }
-            Rectangle {
-                height: 7px;
-                SurfaceSeparator {
-                    x: 8px; y: 3px; width: parent.width - 16px; height: 1px;
-                    outline-color: UiSurface.separator;
+                Rectangle {
+                    height: 7px;
+                    SurfaceSeparator {
+                        x: 8px; y: 3px; width: parent.width - 16px; height: 1px;
+                        outline-color: WorkbenchStyle.separator;
+                    }
                 }
-            }
-            menu-about := Rectangle {
-                height: 30px;
-                background: about-touch.pressed ? WorkbenchStyle.pressed-surface
-                          : about-touch.has-hover ? WorkbenchStyle.hover-surface
-                                                  : transparent;
-                border-width: 0px;
-                border-radius: UiRadius.control;
-                animate background { duration: 120ms; }
-                accessible-role: button;
-                accessible-label: UiStrings.about + (root.update-available ? " · " + UiStrings.update-available : "");
-                accessible-action-default => { about-touch.clicked(); }
-                menu-about-label := Text {
-                    x: 8px;
-                    height: parent.height;
-                    text: UiStrings.about;
-                    color: WorkbenchStyle.text; font-size: 12px;
-                    vertical-alignment: center;
-                    accessible-role: none;
-                }
-                menu-update-badge := Rectangle {
-                    visible: root.update-available;
-                    x: parent.width - self.width - 7px;
-                    y: (parent.height - self.height) / 2;
-                    width: menu-update-label.preferred-width + 12px;
-                    height: 18px;
-                    border-radius: 9px;
-                    background: #dbeafe;
-                    accessible-role: none;
-                    menu-update-label := Text {
-                        text: UiStrings.new-version;
-                        font-size: 11px; font-weight: 400; color: #1d4ed8;
-                        horizontal-alignment: center; vertical-alignment: center;
+                menu-messages := Rectangle {
+                    height: 44px;
+                    background: messages-touch.pressed ? WorkbenchStyle.pressed-surface
+                              : (messages-touch.has-hover || (menu-focus.has-focus && menu-focus.selected-row == 1)) ? WorkbenchStyle.hover-surface : transparent;
+                    border-radius: WorkbenchStyle.corner-radius;
+                    animate background { duration: 120ms; }
+                    accessible-role: button;
+                    accessible-label: MessageStrings.messages + (root.announcement-unread > 0 ? " · " + MessageStrings.unread + " " + root.announcement-unread : "");
+                    accessible-action-default => { messages-touch.clicked(); }
+                    menu-messages-label := Text {
+                        x: 8px;
+                        height: parent.height;
+                        text: MessageStrings.messages;
+                        color: WorkbenchStyle.text; font-size: 15px;
+                        vertical-alignment: center;
                         accessible-role: none;
                     }
+                    menu-message-badge := Rectangle {
+                        visible: root.announcement-unread > 0;
+                        x: parent.width - self.width - 7px;
+                        y: (parent.height - self.height) / 2;
+                        width: max(18px, menu-message-count.preferred-width + 10px);
+                        height: 18px;
+                        border-radius: 9px;
+                        background: #fee4e2;
+                        accessible-role: none;
+                        menu-message-count := Text {
+                            text: root.announcement-unread-label;
+                            font-size: 10px; font-weight: 600; color: #b42318;
+                            horizontal-alignment: center; vertical-alignment: center;
+                            accessible-role: none;
+                        }
+                    }
+                    messages-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.menu-open = false;
+                            root.messages-open = true;
+                            root.refresh-announcements();
+                        }
+                    }
                 }
-                about-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => { root.menu-open = false; root.about-open = true; }
+                Rectangle {
+                    height: 7px;
+                    SurfaceSeparator {
+                        x: 8px; y: 3px; width: parent.width - 16px; height: 1px;
+                        outline-color: WorkbenchStyle.separator;
+                    }
                 }
-            }
-            Rectangle {
-                height: 7px;
-                SurfaceSeparator {
-                    x: 8px; y: 3px; width: parent.width - 16px; height: 1px;
-                    outline-color: UiSurface.separator;
+                menu-about := Rectangle {
+                    height: 44px;
+                    background: about-touch.pressed ? WorkbenchStyle.pressed-surface
+                              : (about-touch.has-hover || (menu-focus.has-focus && menu-focus.selected-row == 2)) ? WorkbenchStyle.hover-surface
+                                                      : transparent;
+                    border-width: 0px;
+                    border-radius: WorkbenchStyle.corner-radius;
+                    animate background { duration: 120ms; }
+                    accessible-role: button;
+                    accessible-label: UiStrings.about + (root.update-available ? " · " + UiStrings.update-available : "");
+                    accessible-action-default => { about-touch.clicked(); }
+                    menu-about-label := Text {
+                        x: 8px;
+                        height: parent.height;
+                        text: UiStrings.about;
+                        color: WorkbenchStyle.text; font-size: 15px;
+                        vertical-alignment: center;
+                        accessible-role: none;
+                    }
+                    menu-update-badge := Rectangle {
+                        visible: root.update-available;
+                        x: parent.width - self.width - 7px;
+                        y: (parent.height - self.height) / 2;
+                        width: menu-update-label.preferred-width + 12px;
+                        height: 18px;
+                        border-radius: 9px;
+                        background: #dbeafe;
+                        accessible-role: none;
+                        menu-update-label := Text {
+                            text: UiStrings.new-version;
+                            font-size: 13px; font-weight: 400; color: #1d4ed8;
+                            horizontal-alignment: center; vertical-alignment: center;
+                            accessible-role: none;
+                        }
+                    }
+                    about-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.menu-open = false; root.about-open = true; }
+                    }
                 }
-            }
-            Rectangle {
-                height: 30px;
-                background: feedback-touch.pressed ? WorkbenchStyle.pressed-surface
-                          : feedback-touch.has-hover ? WorkbenchStyle.hover-surface : transparent;
-                border-radius: UiRadius.control;
-                animate background { duration: 120ms; }
-                accessible-role: button;
-                accessible-label: FeedbackStrings.title;
-                accessible-action-default => { feedback-touch.clicked(); }
-                menu-feedback-label := Text {
-                    x: 8px; height: parent.height;
-                    text: FeedbackStrings.title;
-                    color: WorkbenchStyle.text; font-size: 12px;
-                    vertical-alignment: center;
-                    accessible-role: none;
+                Rectangle {
+                    height: 7px;
+                    SurfaceSeparator {
+                        x: 8px; y: 3px; width: parent.width - 16px; height: 1px;
+                        outline-color: WorkbenchStyle.separator;
+                    }
                 }
-                feedback-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => { root.menu-open = false; root.feedback-open = true; }
+                Rectangle {
+                    height: 44px;
+                    background: feedback-touch.pressed ? WorkbenchStyle.pressed-surface
+                              : (feedback-touch.has-hover || (menu-focus.has-focus && menu-focus.selected-row == 3)) ? WorkbenchStyle.hover-surface : transparent;
+                    border-radius: WorkbenchStyle.corner-radius;
+                    animate background { duration: 120ms; }
+                    accessible-role: button;
+                    accessible-label: FeedbackStrings.title;
+                    accessible-action-default => { feedback-touch.clicked(); }
+                    menu-feedback-label := Text {
+                        x: 8px; height: parent.height;
+                        text: FeedbackStrings.title;
+                        color: WorkbenchStyle.text; font-size: 15px;
+                        vertical-alignment: center;
+                        accessible-role: none;
+                    }
+                    feedback-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.menu-open = false; root.feedback-open = true; }
+                    }
                 }
             }
         }
@@ -2518,47 +2549,63 @@ export component MainWindow inherits Window {
         z: 30;
     }
 
-    // Reset password modal.
+    // Password changes remain on the existing validation callback, including LAN.
     if root.reset-password-open: Rectangle {
-        background: #00000042;
+        width: parent.width; height: parent.height;
+        background: #17151066;
         z: 40;
         TouchArea { clicked => { focus-sink.focus(); } }
-        DialogSurface {
+        reset-password-dialog := DialogSurface {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            width: root.compact-language ? 260px : 320px;
-            height: reset-content.preferred-height;
-            reset-content := VerticalLayout {
-                padding: 24px;
-                spacing: 16px;
-                Text {
-                    text: UiStrings.new-password; color: WorkbenchStyle.text;
-                    font-size: 13px; font-weight: 500; wrap: word-wrap;
-                    min-height: 22px; vertical-alignment: center;
+            width: root.reset-password-dialog-width;
+            height: root.reset-password-dialog-height;
+            background: WorkbenchStyle.canvas;
+            outline-color: WorkbenchStyle.separator;
+            Text {
+                x: 24px; y: 22px; width: parent.width - 48px; height: 32px;
+                text: GalleryStrings.texts[82]; color: WorkbenchStyle.text;
+                font-size: 23px; font-weight: 700; wrap: word-wrap;
+            }
+            Text {
+                x: 24px; y: 66px; width: parent.width - 48px; height: 36px;
+                text: UiStrings.new-password; color: WorkbenchStyle.muted;
+                font-size: 14px; wrap: word-wrap;
+            }
+            reset-password-field := PasswordInput {
+                x: 24px; y: 106px; width: parent.width - 48px; height: 42px;
+                text-size: 18px; text <=> root.new-password-input;
+                max-length: 6; error: root.reset-password-invalid;
+            }
+            if root.reset-password-invalid: Text {
+                x: 24px; y: 158px; width: parent.width - 48px; height: 42px;
+                text: UiStrings.invalid-password; color: #b42318;
+                font-size: 13px; wrap: word-wrap;
+            }
+            SurfaceSeparator {
+                x: 24px; y: parent.height - 74px; width: parent.width - 48px;
+                outline-color: WorkbenchStyle.separator;
+            }
+            reset-password-cancel := SecondaryButton {
+                x: parent.width - 256px; y: parent.height - 58px;
+                width: 112px; height: 36px; text: UiStrings.cancel;
+                clicked => {
+                    root.new-password-input = "";
+                    root.reset-password-invalid = false;
+                    root.reset-password-open = false;
                 }
-                PasswordInput {
-                    width: parent.width - 48px; height: 38px; text-size: 16px;
-                    text <=> root.new-password-input;
-                    max-length: 6;
-                    error: root.reset-password-invalid;
-                }
-                if root.reset-password-invalid: Text {
-                    text: UiStrings.invalid-password; color: #b42318; font-size: 12px; wrap: word-wrap;
-                }
-                HorizontalLayout {
-                    spacing: 12px; height: 34px;
-                    PrimaryButton {
-                        text: UiStrings.ok; height: 34px; horizontal-stretch: 1;
-                        enabled: root.lan-mode ? !root.lan-password-pending : !root.password-change-pending;
-                        clicked => {
-                            if (root.reset-password(root.new-password-input)) {
-                                root.new-password-input = "";
-                                root.reset-password-invalid = false;
-                                root.reset-password-open = false;
-                            } else { root.reset-password-invalid = true; }
-                        }
-                    }
-                    SecondaryButton { text: UiStrings.cancel; height: 34px; horizontal-stretch: 1; clicked => { root.new-password-input = ""; root.reset-password-invalid = false; root.reset-password-open = false; } }
+            }
+            reset-password-save := WorkbenchButton {
+                x: parent.width - 136px; y: parent.height - 58px;
+                width: 112px; height: 36px; text: UiStrings.save;
+                primary: true; background: WorkbenchStyle.accent;
+                enabled: root.lan-mode ? !root.lan-password-pending : !root.password-change-pending;
+                clicked => {
+                    if root.reset-password(root.new-password-input) {
+                        root.new-password-input = "";
+                        root.reset-password-invalid = false;
+                        root.reset-password-open = false;
+                    } else { root.reset-password-invalid = true; }
                 }
             }
         }
@@ -2596,8 +2643,8 @@ export component MainWindow inherits Window {
                 padding: 20px; spacing: 14px;
                 DialogPromptText { prompt: UiStrings.edit-alias; }
                 RoundedLineEdit {
-                    height: 28px;
-                    normal-outline-color: UiSurface.edge;
+                    height: 38px;
+                    normal-outline-color: WorkbenchStyle.separator;
                     text <=> root.alias-input;
                     accepted => {
                         root.recent-edit-alias(root.alias-remote-id, root.alias-input);
@@ -2672,7 +2719,7 @@ export component MainWindow inherits Window {
                 y: (parent.height - self.height) / 2;
                 width: min(420px, parent.width - 40px);
                 height: disconnect-content.preferred-height;
-                outline-color: UiSurface.edge;
+                outline-color: WorkbenchStyle.separator;
                 TouchArea { scroll-event(event) => { accept } }
                 disconnect-content := VerticalLayout {
                     padding: 24px;
@@ -2821,7 +2868,7 @@ export component MainWindow inherits Window {
             y: (parent.height - self.height) / 2;
             width: min(400px, parent.width - 40px);
             height: min(permission-content.preferred-height, parent.height - 32px);
-            background: #f8fafc; outline-color: UiSurface.edge;
+            background: #f8fafc; outline-color: WorkbenchStyle.separator;
             TouchArea { clicked => { focus-sink.focus(); } }
             permission-scroll := ScrollView {
                 width: parent.width; height: parent.height;
@@ -2863,7 +2910,7 @@ export component MainWindow inherits Window {
                                         color: WorkbenchStyle.text; wrap: word-wrap;
                                     }
                                     Text {
-                                        text: permission.description; font-size: 11px;
+                                        text: permission.description; font-size: 13px;
                                         color: WorkbenchStyle.muted; wrap: word-wrap;
                                     }
                                 }
@@ -2902,15 +2949,15 @@ export component MainWindow inherits Window {
                         }
                         VerticalLayout {
                             spacing: 12px;
-                            SurfaceSeparator { height: 1px; outline-color: UiSurface.separator; }
+                            SurfaceSeparator { height: 1px; outline-color: WorkbenchStyle.separator; }
                             if root.permission-migration-running || root.permission-migration-failed: Text {
                                 text: root.permission-migration-running
                                     ? UiStrings.permission-migration-running : UiStrings.permission-migration-failed;
-                                font-size: 11px; color: WorkbenchStyle.muted; wrap: word-wrap;
+                                font-size: 13px; color: WorkbenchStyle.muted; wrap: word-wrap;
                             }
                             Text {
                                 text: GalleryStrings.texts[112];
-                                font-size: 11px; color: WorkbenchStyle.muted; wrap: word-wrap;
+                                font-size: 13px; color: WorkbenchStyle.muted; wrap: word-wrap;
                             }
                             HorizontalLayout {
                                 alignment: end; spacing: 8px;
@@ -2950,7 +2997,7 @@ export component MainWindow inherits Window {
             y: (parent.height - self.height) / 2;
             width: min(400px, parent.width - 40px);
             height: min(446px, parent.height - 16px);
-            background: #f8fafc; border-radius: UiRadius.surface; outline-color: UiSurface.edge;
+            background: #f8fafc; border-radius: UiRadius.surface; outline-color: WorkbenchStyle.separator;
 
             TouchArea { clicked => { focus-sink.focus(); } }
             Text {
@@ -2961,10 +3008,10 @@ export component MainWindow inherits Window {
             // Match the compact connection-mode switch, centered in the tab row.
             FlatSurface {
                 x: settings-dialog.content-inset; y: 62px;
-                width: parent.width - 2 * settings-dialog.content-inset; height: 28px;
+                width: parent.width - 2 * settings-dialog.content-inset; height: 38px;
                 background: WorkbenchStyle.field-surface; border-radius: UiRadius.control;
                 border-width: 1px; border-color: WorkbenchStyle.accent;
-                outline-color: UiSurface.edge;
+                outline-color: WorkbenchStyle.separator;
                 Rectangle {
                     x: root.settings-tab == 1 ? parent.width / 2 + 1px : 2px;
                     y: 2px; width: (parent.width - 6px) / 2; height: parent.height - 4px;
@@ -3055,7 +3102,7 @@ export component MainWindow inherits Window {
                                 checked <=> root.self-hosted-enabled; enabled: !root.settings-session-active; divider: false;
                                 self-host-edit := SettingsButton {
                                     x: parent.width - self.width - 60px; y: 4px;
-                                    width: self-host-edit-metrics.preferred-width + 24px; height: 28px;
+                                    width: self-host-edit-metrics.preferred-width + 24px; height: 38px;
                                     text: GalleryStrings.texts[118];
                                     enabled: !root.settings-session-active;
                                     clicked => { root.self-host-settings-open = true; }
@@ -3080,7 +3127,7 @@ export component MainWindow inherits Window {
                                 label: TrustStrings.title; divider: root.mac-permission-settings-visible || root.portable-service-settings-visible;
                                 SettingsButton {
                                     x: parent.width - self.width - 12px; y: 4px;
-                                    width: max(104px, self.label-width); height: 28px;
+                                    width: max(104px, self.label-width); height: 38px;
                                     text: TrustStrings.manage;
                                     clicked => { root.trusted-devices-open = true; root.trust-action("open", "", ""); }
                                 }
@@ -3089,7 +3136,7 @@ export component MainWindow inherits Window {
                                 label: UiStrings.system-permissions; divider: false;
                                 SettingsButton {
                                     x: parent.width - self.width - 12px; y: 4px;
-                                    width: max(104px, self.label-width); height: 28px;
+                                    width: max(104px, self.label-width); height: 38px;
                                     text: TrustStrings.manage;
                                     clicked => { root.open-permissions(); }
                                 }
@@ -3099,7 +3146,7 @@ export component MainWindow inherits Window {
                                 label-reserve: service-button.width + 24px;
                                 service-button := SettingsButton {
                                     x: parent.width - self.width - 12px; y: 4px;
-                                    width: max(104px, self.label-width); height: 28px;
+                                    width: max(104px, self.label-width); height: 38px;
                                     text: root.portable-service-installed || root.portable-service-needs-repair
                                         ? UiStrings.repair-service : UiStrings.install-service;
                                     enabled: !root.portable-service-installing;
@@ -3112,7 +3159,7 @@ export component MainWindow inherits Window {
                             SettingsToggleRow { label: UiStrings.save-remote-previews; checked <=> root.save-remote-previews; }
                             SettingsRow {
                                 label: UiStrings.file-save-path; enabled: !root.settings-session-active; divider: false;
-                                SettingsButton { x: parent.width - 116px; y: 4px; width: 104px; height: 28px; text: root.file-save-path == "" ? UiStrings.default-desktop : root.file-save-path; enabled: !root.settings-session-active; clicked => { root.browse-save-path(); } }
+                                SettingsButton { x: parent.width - 116px; y: 4px; width: 104px; height: 38px; text: root.file-save-path == "" ? UiStrings.default-desktop : root.file-save-path; enabled: !root.settings-session-active; clicked => { root.browse-save-path(); } }
                             }
                         }
                         SettingsGroup {
@@ -3128,7 +3175,7 @@ export component MainWindow inherits Window {
                         }
                         if root.service-autostart-platform: Text {
                             text: root.service-autostart-hint; wrap: word-wrap;
-                            font-size: 11px; color: WorkbenchStyle.muted;
+                            font-size: 13px; color: WorkbenchStyle.muted;
                         }
 
                     }
@@ -3146,11 +3193,11 @@ export component MainWindow inherits Window {
             if root.settings-save-error != "": Text {
                 x: settings-dialog.content-inset; y: parent.height - 92px;
                 width: parent.width - 2 * settings-dialog.content-inset; height: 24px;
-                text: root.settings-save-error; font-size: 11px; color: #c53e3e; wrap: word-wrap;
+                text: root.settings-save-error; font-size: 13px; color: #c53e3e; wrap: word-wrap;
             }
             SurfaceSeparator {
                 x: settings-dialog.content-inset; y: parent.height - 64px;
-                width: parent.width - 2 * settings-dialog.content-inset; height: 1px; outline-color: UiSurface.separator;
+                width: parent.width - 2 * settings-dialog.content-inset; height: 1px; outline-color: WorkbenchStyle.separator;
             }
             HorizontalLayout {
                 x: settings-dialog.content-inset; y: parent.height - 50px;
@@ -3195,7 +3242,7 @@ export component MainWindow inherits Window {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: min(460px, parent.width - 32px);
             height: min(380px, parent.height - 24px);
-            background: #f8fafc; outline-color: UiSurface.edge;
+            background: #f8fafc; outline-color: WorkbenchStyle.separator;
             TouchArea { clicked => { focus-sink.focus(); } }
             Text {
                 x: 24px; y: 18px; width: parent.width - 48px; height: 26px;
@@ -3257,7 +3304,7 @@ export component MainWindow inherits Window {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             width: 360px; height: root.self-host-settings-error == "" ? 266px : 322px;
-            border-radius: UiRadius.surface; outline-color: UiSurface.edge; background: #f8fafc;
+            border-radius: UiRadius.surface; outline-color: WorkbenchStyle.separator; background: #f8fafc;
             TouchArea { clicked => { focus-sink.focus(); } }
             Text {
                 x: 18px; y: 18px; width: parent.width - 36px; height: 24px;
@@ -3267,21 +3314,21 @@ export component MainWindow inherits Window {
             RoundedLineEdit {
                 x: 18px; y: 80px; width: parent.width - 36px; height: 30px;
                 surrounding-background: #f8fafc;
-                normal-outline-color: UiSurface.edge;
+                normal-outline-color: WorkbenchStyle.separator;
                 text <=> root.server-host;
             }
             Text { x: 18px; y: 120px; width: parent.width - 36px; height: 20px; text: UiStrings.server-port; color: #34445a; font-size: 12px; overflow: elide; vertical-alignment: center; }
             RoundedLineEdit {
                 x: 18px; y: 144px; width: parent.width - 36px; height: 30px;
                 surrounding-background: #f8fafc;
-                normal-outline-color: UiSurface.edge;
+                normal-outline-color: WorkbenchStyle.separator;
                 text <=> root.server-port; input-type: InputType.number;
             }
             if root.self-host-settings-error != "": Text {
                 x: 18px; y: 186px; width: parent.width - 36px; height: 48px;
                 text: root.self-host-settings-error; color: #c53e3e; font-size: 11px; wrap: word-wrap;
             }
-            SurfaceSeparator { x: 18px; y: parent.height - 66px; width: parent.width - 36px; height: 1px; outline-color: UiSurface.separator; }
+            SurfaceSeparator { x: 18px; y: parent.height - 66px; width: parent.width - 36px; height: 1px; outline-color: WorkbenchStyle.separator; }
             SettingsButton { x: parent.width - 114px; y: parent.height - 50px; width: 92px; primary: true; text: UiStrings.ok; clicked => { if root.save-self-hosted-settings() { root.self-host-settings-open = false; } } }
             SettingsButton { x: parent.width - 124px - self.width; y: parent.height - 50px; width: max(80px, self.label-width); text: UiStrings.cancel; clicked => { root.cancel-self-hosted-settings(); root.self-host-settings-open = false; } }
         }
@@ -3336,15 +3383,6 @@ export component MainWindow inherits Window {
                             }
                         }
                     }
-                }
-                if SponsorDirectory.special.length > 0: SpecialSponsorStrip {
-                    active: root.window-active;
-                    open-link(url) => { root.open-about-link(url); }
-                }
-                SponsorshipSection {
-                    open-afdian => { root.open-afdian-sponsor(); }
-                    open-kofi => { root.open-kofi-sponsor(); }
-                    open-github => { root.open-github-sponsor(); }
                 }
                 HorizontalLayout {
                     alignment: end;
@@ -3414,19 +3452,17 @@ export component MainWindow inherits Window {
                         height: product-info.preferred-height + 16px;
                         background: WorkbenchStyle.surface;
                         border-radius: UiRadius.surface;
-                        outline-color: UiSurface.edge;
-                        product-info := HorizontalLayout {
-                            x: 12px; y: 8px; width: parent.width - 24px;
-                            height: self.preferred-height; spacing: 10px;
-                            Image {
-                                width: 32px; height: 32px;
-                                source: @image-url("../../../resources/linux/crossdesk_128x128.png");
-                                image-fit: contain;
-                            }
-                            Text {
-                                text: "CrossDesk"; font-size: 16px; font-weight: 600;
-                                color: WorkbenchStyle.text; vertical-alignment: center;
-                            }
+                        outline-color: WorkbenchStyle.separator;
+                        Image {
+                            x: 16px; y: (parent.height - self.height) / 2;
+                            width: 56px; height: 56px;
+                            source: @image-url("../../../resources/linux/crossdesk_128x128.png");
+                            image-fit: contain;
+                        }
+                        product-info := VerticalLayout {
+                            x: 88px; y: 16px; width: parent.width - 104px; height: parent.height - 32px;
+                            alignment: center; spacing: 5px;
+                            Text { text: "CrossDesk"; font-size: 22px; font-weight: 600; color: WorkbenchStyle.text; }
                             Text {
                                 text: UiStrings.version + " " + root.current-version;
                                 color: WorkbenchStyle.muted; font-size: 12px; wrap: word-wrap;
@@ -3438,7 +3474,7 @@ export component MainWindow inherits Window {
                         height: update-summary.preferred-height + 24px;
                         background: WorkbenchStyle.field-surface;
                         border-radius: UiRadius.control;
-                        outline-color: UiSurface.edge;
+                        outline-color: WorkbenchStyle.separator;
                         update-summary := VerticalLayout {
                             x: 12px; y: 12px; width: parent.width - 24px;
                             height: self.preferred-height;
@@ -3472,15 +3508,6 @@ export component MainWindow inherits Window {
                             }
                         }
                     }
-                    if SponsorDirectory.special.length > 0: SpecialSponsorStrip {
-                        active: root.window-active;
-                        open-link(url) => { root.open-about-link(url); }
-                    }
-                    SponsorshipSection {
-                        open-afdian => { root.open-afdian-sponsor(); }
-                        open-kofi => { root.open-kofi-sponsor(); }
-                        open-github => { root.open-github-sponsor(); }
-                    }
                     VerticalLayout {
                         spacing: 5px;
                         Text { text: UiStrings.copyright; color: WorkbenchStyle.muted; font-size: 11px; wrap: word-wrap; }
@@ -3512,7 +3539,7 @@ export component MainWindow inherits Window {
                 x: 24px; y: parent.height - self.height - 24px;
                 width: parent.width - 48px; height: self.preferred-height;
                 spacing: 16px;
-                SurfaceSeparator { height: 1px; outline-color: UiSurface.separator; }
+                SurfaceSeparator { height: 1px; outline-color: WorkbenchStyle.separator; }
                 if root.update-status-text != "": Text {
                     text: root.update-status-text;
                     color: root.update-check-status == UpdateCheckStatus.failed ? #b3261e
@@ -3556,7 +3583,7 @@ export component MainWindow inherits Window {
             // Use the same content area for sizing and centering the dialog.
             height: min(488px, parent.height - 32px);
             border-radius: UiRadius.surface;
-            outline-color: UiSurface.edge;
+            outline-color: WorkbenchStyle.separator;
 
             VerticalLayout {
                 padding: 24px;
@@ -3586,14 +3613,14 @@ export component MainWindow inherits Window {
                             width: update-website-label.preferred-width;
                             accessible-role: button;
                             accessible-label: update-website-label.text;
-                            accessible-action-default => { root.open-website(); }
+                            accessible-action-default => { root.open-update-channel(); }
                             update-website-label := Text {
-                                text: UiStrings.access-website + "https://crossdesk.cn";
+                                text: UiStrings.access-website + "GitHub Releases";
                                 color: website-touch.has-hover ? #254cc0 : WorkbenchStyle.accent;
                                 font-size: 13px;
                                 vertical-alignment: center;
                             }
-                            website-touch := TouchArea { mouse-cursor: pointer; clicked => { root.open-website(); } }
+                            website-touch := TouchArea { mouse-cursor: pointer; clicked => { root.open-update-channel(); } }
                         }
                     }
                 }
@@ -3611,7 +3638,7 @@ export component MainWindow inherits Window {
                     }
                     FlatSurface {
                         background: WorkbenchStyle.field-surface;
-                        outline-color: UiSurface.edge;
+                        outline-color: WorkbenchStyle.separator;
                         border-radius: UiRadius.control;
                         // Inset the viewport so text and the scrollbar stay clear
                         // of the rounded frame, including at either scroll limit.
@@ -3649,16 +3676,10 @@ export component MainWindow inherits Window {
                     }
                 }
 
-                SponsorshipSection {
-                    open-afdian => { root.open-afdian-sponsor(); }
-                    open-kofi => { root.open-kofi-sponsor(); }
-                    open-github => { root.open-github-sponsor(); }
-                }
-
                 VerticalLayout {
                     vertical-stretch: 0;
                     spacing: 16px;
-                    SurfaceSeparator { height: 1px; outline-color: UiSurface.separator; }
+                    SurfaceSeparator { height: 1px; outline-color: WorkbenchStyle.separator; }
                     if root.update-install-status != "": Text {
                         text: root.update-install-status;
                         font-size: 12px;
@@ -3739,7 +3760,7 @@ export component MainWindow inherits Window {
                 width: min(440px, parent.width - 40px);
                 height: update-confirm-content.preferred-height;
                 border-radius: UiRadius.surface;
-                outline-color: UiSurface.edge;
+                outline-color: WorkbenchStyle.separator;
                 TouchArea {}
                 update-confirm-content := VerticalLayout {
                     padding: 24px;
@@ -3793,7 +3814,7 @@ export component MainWindow inherits Window {
             width: 512px;
             height: wayland-notice-content.preferred-height;
             border-radius: UiRadius.surface;
-            outline-color: UiSurface.edge;
+            outline-color: WorkbenchStyle.separator;
 
             wayland-notice-content := VerticalLayout {
                 padding: 24px; spacing: 18px;
@@ -3816,7 +3837,7 @@ export component MainWindow inherits Window {
 
                 FlatSurface {
                     background: #fff8eb;
-                    outline-color: UiSurface.edge;
+                    outline-color: WorkbenchStyle.separator;
 
                     border-radius: UiRadius.surface;
                     VerticalLayout {
@@ -3839,7 +3860,7 @@ export component MainWindow inherits Window {
 
                 FlatSurface {
                     background: #f3f7fd;
-                    outline-color: UiSurface.edge;
+                    outline-color: WorkbenchStyle.separator;
 
                     border-radius: UiRadius.surface;
                     VerticalLayout {
@@ -3860,7 +3881,7 @@ export component MainWindow inherits Window {
                     }
                 }
 
-                SurfaceSeparator { height: 1px; outline-color: UiSurface.separator; }
+                SurfaceSeparator { height: 1px; outline-color: WorkbenchStyle.separator; }
                 HorizontalLayout {
                     height: 34px; alignment: end;
                     PrimaryButton {
@@ -3945,7 +3966,7 @@ export component MainWindow inherits Window {
         width: root.width;
         height: root.height;
         background: transparent;
-        outline-color: UiSurface.edge;
+        outline-color: WorkbenchStyle.separator;
         border-radius:
             root.wayland-titlebar ? root.wayland-corner-radius : 0px;
         z: 200;

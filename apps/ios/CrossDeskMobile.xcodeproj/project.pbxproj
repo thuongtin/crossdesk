@@ -56,6 +56,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A4B0CD5FA58B47E68246F901 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = "Resources/vi.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		A4B0CD5FA58B47E68246F902 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = "Resources/vi.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		02A713C4B5A1623480A005D6 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = Resources/ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		093D4362C938821DE02B9032 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = Resources/es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		0BB7EC0F2A5A6A313F782DCA /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = Resources/fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -256,9 +258,10 @@
 			};
 			buildConfigurationList = 900000000000000000000001 /* Build configuration list for PBXProject "CrossDeskMobile" */;
 			compatibilityVersion = "Xcode 15.0";
-			developmentRegion = en;
+			developmentRegion = vi;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				vi,
 				Base,
 				en,
 				"zh-Hans",
@@ -383,6 +386,7 @@
 		5BD6CC3A43B86A2E2267994F /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
+				A4B0CD5FA58B47E68246F901 /* vi */,
 				51B43C654308785E6FC27C98 /* en */,
 				C04C96DC6D837D5C45257B37 /* zh-Hans */,
 				4E23FD4A4331F613A7BF3C81 /* zh-Hant */,
@@ -401,6 +405,7 @@
 		A0A3C0DA09EE562AE21DF986 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
+				A4B0CD5FA58B47E68246F902 /* vi */,
 				23D5AD87A9BF0CBF3A6AADDF /* en */,
 				2E83770B40B2D299796EB0CD /* zh-Hans */,
 				36B135DFBFBD8F03E16FB09A /* zh-Hant */,
