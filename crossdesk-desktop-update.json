@@ -1,20 +1,20 @@
 {
-  "latest_version": "1.7.7-1-20261124",
-  "version": "1.7.7-1-20261124",
-  "releaseDate": "2026-11-24",
-  "patch": 1,
-  "releaseName": "CrossDesk v1.7.7-1-20261124",
-  "releaseNotes": "## Downloads\n\n- macOS 14 or later, Apple Silicon: Developer ID signed, notarized and stapled `.pkg`.\n- Windows 10/11, x64: unsigned NSIS installer with optional NVIDIA CUDA support; installation is manual.\n- Verify the installers with `SHA256SUMS.txt`. No Intel Mac or Windows ARM64 installer is included.\n\n## Changes\n\n- Updated to upstream CrossDesk 1.7.7, including signaling reconnect fixes, smoother macOS fullscreen transitions, Windows capture fixes and video pipeline improvements.\n- Desktop update notifications and the release link use the `thuongtin/crossdesk` channel. macOS ARM64 verifies the signed update metadata and package checksum.\n- Retains the Postcard interface, DeskHub, English as the default language and uncropped 16:9 Recent Devices previews. The default signaling endpoint remains `crossdesk.ecom.io.vn:9099`.\n",
-  "tagName": "v1.7.7-1-20261124",
+  "latest_version": "1.7.7-2-20261125",
+  "version": "1.7.7-2-20261125",
+  "releaseDate": "2026-11-25",
+  "patch": 2,
+  "releaseName": "CrossDesk v1.7.7-2-20261125",
+  "releaseNotes": "## Downloads\n\n- macOS 14 or later, Apple Silicon: signed, notarized, stapled Developer ID installer. Existing fork builds can update from the app.\n- This release ships only the macOS installer. The previous [Windows x64 release](https://github.com/thuongtin/crossdesk/releases/tag/v1.7.7-1-20261124) remains available.\n- Use `SHA256SUMS.txt` to verify the downloads.\n\n## Changes\n\n- Adds an H.265 option for desktop connections, with hardware codec support on macOS through VideoToolbox and Windows through Media Foundation where supported.\n- Adds low-load encoding for new desktop connections and reduces capture overhead.\n- The source also includes Windows H.265 and service-pipe fixes. This tag has no newly built Windows installer.\n- Keeps Postcard, DeskHub and the fork update channel. The default signaling endpoint remains `crossdesk.ecom.io.vn:9099`.\n",
+  "tagName": "v1.7.7-2-20261125",
   "downloads": {
     "macos-arm64": {
-      "version": "1.7.7-1-20261124",
-      "releaseDate": "2026-11-24",
-      "filename": "crossdesk-macos-arm64-v1.7.7-1-20261124.pkg",
-      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-1-20261124/crossdesk-macos-arm64-v1.7.7-1-20261124.pkg",
+      "version": "1.7.7-2-20261125",
+      "releaseDate": "2026-11-25",
+      "filename": "crossdesk-macos-arm64-v1.7.7-2-20261125.pkg",
+      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-2-20261125/crossdesk-macos-arm64-v1.7.7-2-20261125.pkg",
       "update": {
-        "payload": "{\"filename\":\"crossdesk-macos-arm64-v1.7.7-1-20261124.pkg\",\"platform\":\"macos-arm64\",\"schema\":1,\"sha256\":\"9c268eddd6edaca7038fd37efb6e200f799433f2c6d0ef7d1d752b2d75cdcfaa\",\"size\":28322102,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-1-20261124/crossdesk-macos-arm64-v1.7.7-1-20261124.pkg\",\"version\":\"1.7.7-1-20261124\"}",
-        "signature": "587d52151c3487af1fcd8ec41bf2cae8a2f9c1fcc261dfbc3e9b2e7eaf27942c53c192a9de39f2a78e293e1c40a5ec0e3fd1793ca8c77d422524c4b546f58c0a"
+        "payload": "{\"filename\":\"crossdesk-macos-arm64-v1.7.7-2-20261125.pkg\",\"platform\":\"macos-arm64\",\"schema\":1,\"sha256\":\"e932c6ee34100386573feb79334c9d12aa99c68e21f21cb6aa0b9de9a362bc77\",\"size\":28352555,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-2-20261125/crossdesk-macos-arm64-v1.7.7-2-20261125.pkg\",\"version\":\"1.7.7-2-20261125\"}",
+        "signature": "0b805bae46ad685624837d4f26af28955f704b8f2642620dfd50042386855c9d992fbd104d33e2a545ee95e2dd8d6a95811e232eede17f5e0297446ddf902605"
       }
     }
   }
