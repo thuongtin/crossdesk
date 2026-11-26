@@ -4,6 +4,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -144,8 +145,10 @@ int main() {
             harness.write_text(source, encoding='utf-8')
             executable = directory / 'localization_test.exe'
             compiler = shutil.which('g++') or shutil.which('clang++')
+            # system_language.h gọi CFLocale trên macOS nên phải link CoreFoundation.
+            frameworks = ['-framework', 'CoreFoundation'] if sys.platform == 'darwin' else []
             subprocess.run([compiler, '-std=c++17', '-I' + str(generate.ROOT / 'apps/desktop/src/gui/assets/localization'),
-                            str(harness), '-o', str(executable)], check=True)
+                            str(harness), '-o', str(executable), *frameworks], check=True)
             subprocess.run([str(executable)], check=True)
 
 
