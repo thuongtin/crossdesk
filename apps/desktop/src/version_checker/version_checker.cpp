@@ -190,7 +190,9 @@ std::optional<VersionInfo> CheckUpdate() {
   try {
     const auto manifest = nlohmann::json::parse(body);
 #if defined(__OHOS__)
-    auto info = ParseVersionInfo(manifest);
+    // Bản HarmonyOS chỉ mở trang release, nên chỉ báo khi tag mới thật sự có gói HarmonyOS.
+    // Phiên bản cấp cao nhất có thể thuộc bản phát hành chỉ có gói macOS, Windows hay Linux.
+    auto info = ParsePlatformUpdateManifest(manifest, {kHarmonyUpdatePlatform});
     if (info) info->download_url = updater::kReleasePage;
 #elif CROSSDESK_PORTABLE
     // Bản portable không tự cài đặt mà chỉ mở trang release, nên chỉ báo khi tag mới thật sự có

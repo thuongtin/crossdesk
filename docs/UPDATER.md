@@ -166,6 +166,8 @@ của GitHub (`release-assets.githubusercontent.com` hoặc `objects.githubuserc
 giới hạn kích thước gói 2 GiB, cấm cài cùng phiên bản và hạ cấp.
 Bản portable không tự cài: ứng dụng chỉ đọc phiên bản trong mục `downloads` của đúng nền tảng
 (mục portable, nếu chưa có thì mục gói cài của cùng nền tảng) rồi mở trang Releases của bản fork.
+Giao diện máy tính chạy trên HarmonyOS cũng vậy: chỉ đọc mục `harmony-arm64`, nên bản phát hành
+không có gói HarmonyOS không được báo là có cập nhật.
 Gói portable và di động không có tùy chọn tự cài này.
 
 ## Ranh giới nền tảng

@@ -200,6 +200,17 @@ int main(int argc, char** argv) {
         mac && mac->version == "9.0.0-1-20261201" && mac->release_notes == "macOS only", true);
     ok &= ExpectEqual("platform without an entry offers no update",
         crossdesk::ParsePlatformUpdateManifest(feed, {"linux-amd64", ""}).has_value(), false);
+    ok &= ExpectEqual("HarmonyOS ignores a release without a Harmony package",
+        crossdesk::ParsePlatformUpdateManifest(feed, {crossdesk::kHarmonyUpdatePlatform})
+            .has_value(),
+        false);
+    auto with_harmony = feed;
+    with_harmony["downloads"][crossdesk::kHarmonyUpdatePlatform] = {
+        {"version", "1.7.7-3-20261126"}};
+    const auto harmony = crossdesk::ParsePlatformUpdateManifest(
+        with_harmony, {crossdesk::kHarmonyUpdatePlatform});
+    ok &= ExpectEqual("HarmonyOS reads its own platform version",
+        harmony && harmony->version == "1.7.7-3-20261126", true);
     ok &= ExpectEqual("manifest without downloads offers no update",
         crossdesk::ParsePlatformUpdateManifest({{"version", "9.0.0"}}, {"windows-x64"})
             .has_value(),

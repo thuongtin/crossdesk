@@ -16,6 +16,9 @@
 
 namespace crossdesk {
 
+// Khoá nền tảng của gói HarmonyOS trong `downloads`, giống đường kiểm phiên bản của bản di động.
+inline constexpr char kHarmonyUpdatePlatform[] = "harmony-arm64";
+
 std::optional<VersionInfo> ParseVersionInfo(const nlohmann::json& json);
 std::optional<VersionInfo> ParseSignedUpdateManifest(
     const nlohmann::json& manifest, const std::string& platform,
