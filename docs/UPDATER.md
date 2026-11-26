@@ -142,6 +142,8 @@ xmake b crossdesk
 
 Bản biên dịch không có khóa công khai vẫn chạy và kiểm tra phiên bản bình thường nhưng không tự cài:
 ứng dụng đọc phiên bản trong mục `downloads` của đúng nền tảng rồi mở trang Releases để tải thủ công.
+Bản Linux tự biên dịch không có dấu `package-name` cũng tải thủ công như vậy, theo mục gói thường cùng
+kiến trúc (`linux-amd64` hoặc `linux-arm64`).
 Nếu khóa riêng và công khai không khớp, tạo manifest thất bại. Hiện chỉ hỗ trợ một khóa công khai; trước khi đổi khóa cần
 thiết kế phiên bản chuyển tiếp, không được thay thẳng khóa riêng phát hành rồi để ứng dụng cũ tiếp tục tự nâng cấp.
 

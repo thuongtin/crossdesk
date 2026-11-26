@@ -11,7 +11,7 @@
     "directory": "apps/cli"
   },
   "homepage": "https://github.com/kunkundi/crossdesk#readme",
-  "bugs": { "url": "https://github.com/kunkundi/crossdesk/issues" },
+  "bugs": { "url": "https://github.com/thuongtin/crossdesk/blob/mcp/README_EN.md#documentation-and-feedback" },
   "engines": { "node": ">=22" },
   "scripts": {
     "pack:npm": "node scripts/pack-npm.cjs"

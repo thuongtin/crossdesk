@@ -104,6 +104,20 @@ void ConfigureLinuxCaCerts(httplib::Client* cli) {
 }
 #endif
 
+#if !defined(__OHOS__) && !CROSSDESK_PORTABLE
+// Mục gói thường cùng kiến trúc, dùng để tải thủ công khi PlatformKey không nhận ra gói cài.
+// Chỉ Linux cần: PlatformKey trên Windows và macOS không phụ thuộc vào dấu gói bên cạnh tệp chạy.
+std::string ManualUpdatePlatform() {
+#if defined(__linux__) && defined(__aarch64__)
+  return "linux-arm64";
+#elif defined(__linux__) && defined(__x86_64__)
+  return "linux-amd64";
+#else
+  return {};
+#endif
+}
+#endif
+
 }  // namespace
 
 #ifndef __OHOS__
@@ -158,11 +172,13 @@ std::optional<VersionInfo> ParsePlatformUpdateManifest(
 #ifndef __OHOS__
 std::optional<VersionInfo> ParseDesktopUpdateManifest(
     const nlohmann::json& manifest, const std::string& platform,
-    const std::string& public_key) {
-  if (!public_key.empty()) return ParseSignedUpdateManifest(manifest, platform, public_key);
-  // Bản tự biên dịch không nhúng khoá công khai thì không xác minh được chữ ký nên không tự cài:
-  // vẫn báo phiên bản mới của đúng nền tảng, nhưng chỉ mở trang Releases để tải thủ công.
-  auto info = ParsePlatformUpdateManifest(manifest, {platform});
+    const std::string& public_key, const std::string& manual_platform) {
+  if (!public_key.empty() && !platform.empty())
+    return ParseSignedUpdateManifest(manifest, platform, public_key);
+  // Không có khoá công khai thì không xác minh được chữ ký; không nhận ra gói cài (ví dụ bản Linux
+  // tự biên dịch thiếu dấu `package-name`) thì không có nơi để cài. Cả hai trường hợp đều không tự
+  // cài: vẫn báo phiên bản mới của nền tảng này, nhưng chỉ mở trang Releases để tải thủ công.
+  auto info = ParsePlatformUpdateManifest(manifest, {platform, manual_platform});
   if (info) info->download_url = updater::kReleasePage;
   return info;
 }
@@ -217,7 +233,8 @@ std::optional<VersionInfo> CheckUpdate() {
     if (info) info->download_url = updater::kReleasePage;
 #else
     const auto platform = updater::PlatformKey(updater::ExecutablePath());
-    auto info = ParseDesktopUpdateManifest(manifest, platform, updater::PublicKey());
+    auto info = ParseDesktopUpdateManifest(manifest, platform, updater::PublicKey(),
+                                           ManualUpdatePlatform());
 #endif
     if (info) {
       LOG_INFO("Fetched fork update manifest: latest_version={}", info->version);

@@ -227,6 +227,24 @@ int main(int argc, char** argv) {
         crossdesk::ParseDesktopUpdateManifest(feed, "windows-x64", std::string(64, 'a'))
             .has_value(),
         false);
+    // Bản Linux tự biên dịch không có dấu `package-name` nên PlatformKey trả về rỗng.
+    auto with_linux = feed;
+    with_linux["downloads"]["linux-amd64"] = {{"version", "1.7.7-3-20261126"}};
+    for (const auto& key : {std::string(), std::string(64, 'a')}) {
+      const auto linux_manual =
+          crossdesk::ParseDesktopUpdateManifest(with_linux, "", key, "linux-amd64");
+      ok &= ExpectEqual(std::string("unrecognized Linux build falls back to its architecture") +
+                            (key.empty() ? " without a key" : " with a key"),
+          linux_manual && linux_manual->version == "1.7.7-3-20261126" &&
+              linux_manual->download_url == kReleasePage && linux_manual->update_envelope.empty(),
+          true);
+    }
+    with_linux["downloads"]["linux-amd64-virtual-desktop-xfce"] = {
+        {"version", "1.7.7-4-20261127"}};
+    const auto package_first = crossdesk::ParseDesktopUpdateManifest(
+        with_linux, "linux-amd64-virtual-desktop-xfce", "", "linux-amd64");
+    ok &= ExpectEqual("recognized package entry wins over the architecture fallback",
+        package_first && package_first->version == "1.7.7-4-20261127", true);
   }
   if (argc == 3 && std::string(argv[1]) == "--live") {
     try {
