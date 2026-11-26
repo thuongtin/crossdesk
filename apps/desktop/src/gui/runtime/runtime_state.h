@@ -154,8 +154,6 @@ struct UserSettingsState {
   char connection_login_identity_[17] = "";
   int language_button_value_ = 11;
   int video_encode_format_button_value_ = 0;
-  char signal_server_ip_[256] = "api.crossdesk.cn";
-  char signal_server_port_[6] = "9099";
   bool enable_self_hosted_ = false;
   int language_button_value_last_ = 11;
   int video_encode_format_button_value_last_ = 0;

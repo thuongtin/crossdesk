@@ -20,10 +20,14 @@ export component WorkbenchButton inherits FlatSurface {
     in property <length> text-size: 13px;
     in property <color> text-color: root.destructive || root.primary ? white : WorkbenchStyle.text;
     in property <color> normal-outline-color: ButtonStyle.border;
+    in property <color> focus-outline-color: WorkbenchStyle.accent;
+    in property <color> hover-outline-color: ButtonStyle.hover-border;
+    in property <color> pressed-outline-color: ButtonStyle.pressed-border;
     in property <color> normal-background: ButtonStyle.surface;
     in property <color> hover-background: ButtonStyle.hover;
     in property <color> pressed-background: ButtonStyle.pressed;
     in property <string> icon;
+    in property <length> icon-size: root.soft ? 12px : 14px;
     in property <string> tooltip;
     in property <bool> tooltip-above: false;
     in property <bool> tooltip-align-left: false;
@@ -38,6 +42,8 @@ export component WorkbenchButton inherits FlatSurface {
     in property <bool> enabled: true;
     in property <MouseCursor> mouse-cursor: pointer;
     out property <bool> has-focus: button-focus.has-focus;
+    out property <bool> hovered: touch.has-hover;
+    out property <bool> pressed: touch.pressed;
     private property <bool> keyboard-focus: false;
     private property <bool> show-focus: button-focus.has-focus && root.keyboard-focus;
     private property <bool> tooltip-active: root.enabled && root.tooltip != ""
@@ -52,9 +58,9 @@ export component WorkbenchButton inherits FlatSurface {
     outline-enabled: root.show-focus || (!root.quiet && !root.soft && !root.primary && !root.destructive);
     outline-focused: root.show-focus;
     outline-color: !root.enabled ? ButtonStyle.disabled-border
-        : root.show-focus ? WorkbenchStyle.accent
-        : touch.pressed ? ButtonStyle.pressed-border
-        : touch.has-hover ? ButtonStyle.hover-border : root.normal-outline-color;
+        : root.show-focus ? root.focus-outline-color
+        : touch.pressed ? root.pressed-outline-color
+        : touch.has-hover ? root.hover-outline-color : root.normal-outline-color;
     background: root.destructive
         ? (touch.pressed ? #912018 : touch.has-hover ? #b42318 : #d92d20)
         : root.soft
@@ -81,7 +87,7 @@ export component WorkbenchButton inherits FlatSurface {
             text: root.icon;
             font-family: "Font Awesome 6 Free";
             font-weight: 900;
-            font-size: root.soft ? 12px : 14px;
+            font-size: root.icon-size;
             color: root.icon-color;
             vertical-alignment: center;
             accessible-role: none;

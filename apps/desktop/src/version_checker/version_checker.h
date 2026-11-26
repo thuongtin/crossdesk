@@ -13,6 +13,9 @@
 namespace crossdesk {
 
 std::optional<VersionInfo> ParseVersionInfo(const nlohmann::json& json);
+std::optional<VersionInfo> ParseSignedUpdateManifest(
+    const nlohmann::json& manifest, const std::string& platform,
+    const std::string& public_key);
 std::optional<VersionInfo> CheckUpdate();
 
 }  // namespace crossdesk

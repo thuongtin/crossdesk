@@ -61,7 +61,7 @@ class Thumbnail {
   // An existing destination wins when importing a legacy record or retrying.
   bool ImportRecord(const RecentConnection& record, std::filesystem::file_time_type modified);
 
-  // Crop from the saved master and downsample for a physical-pixel viewport.
+  // Fit the whole saved master within a physical-pixel viewport.
   // Low-resolution legacy images are never enlarged in the cache.
   bool DecodeImage(const std::filesystem::path& image_path,
                    int target_width, int target_height,

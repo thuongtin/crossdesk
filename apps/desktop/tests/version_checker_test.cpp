@@ -1,4 +1,6 @@
 #include "version_checker.h"
+#include "updater/update_core.h"
+#include "updater/update_source.h"
 
 #include <nlohmann/json.hpp>
 #include <iostream>
@@ -21,7 +23,7 @@ bool ExpectEqual(const std::string& name, bool actual, bool expected) {
 
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
   bool ok = true;
 
   ok &= ExpectEqual("new patch-before-date is newer",
@@ -157,5 +159,104 @@ int main() {
           R"({"downloads":{"android-arm64":{"version":"1.6.0","patch":3}}})",
           "android-arm64") == "1.6.0-3", true);
 
+  using namespace crossdesk::updater;
+  ok &= ExpectEqual("asset is scoped to the release tag on the fork",
+      ReleaseAssetUrl("1.7.6-7-20261123", "crossdesk-macos-arm64-v1.7.6-7-20261123.pkg") ==
+          "https://github.com/thuongtin/crossdesk/releases/download/v1.7.6-7-20261123/crossdesk-macos-arm64-v1.7.6-7-20261123.pkg",
+      true);
+  const auto cdn = ReleaseAssetRedirect("https://release-assets.githubusercontent.com/a?x=1&y=2");
+  ok &= ExpectEqual("GitHub CDN URL retains its signed query",
+      cdn && cdn->first == "https://release-assets.githubusercontent.com" &&
+          cdn->second == "/a?x=1&y=2", true);
+  for (const auto* url : {"http://release-assets.githubusercontent.com/a",
+                         "https://release-assets.githubusercontent.com.evil.example/a",
+                         "https://user@release-assets.githubusercontent.com/a",
+                         "https://release-assets.githubusercontent.com:443/a",
+                         "https://github.com/kunkundi/crossdesk/releases/download/v1/a",
+                         "https://release-assets.githubusercontent.com/a#fragment",
+                         "https://release-assets.githubusercontent.com/a\r\nInjected: header",
+                         "/relative"}) {
+    ok &= ExpectEqual(std::string("blocked redirect: ") + url,
+        ReleaseAssetRedirect(url).has_value(), false);
+  }
+  ok &= ExpectEqual("unsigned manifest does not offer an install",
+      crossdesk::ParseSignedUpdateManifest({{"latest_version", "1.7.6-7-20261123"}},
+                                           "macos-arm64", "").has_value(), false);
+  if (argc == 3 && std::string(argv[1]) == "--live") {
+    try {
+      const auto info = crossdesk::CheckUpdate();
+      if (!info) throw std::runtime_error("Live fork manifest unavailable or invalid");
+      const auto platform = PlatformKey(argv[0]);
+      const auto artifact = VerifyReleaseEnvelope(info->update_envelope, PublicKey(), platform);
+      if (crossdesk::IsNewerVersion(BuildVersion(), artifact.version))
+        throw std::runtime_error("The live feed changed during this release smoke test");
+      std::atomic<int> progress{0};
+      const std::atomic<bool> cancel{false};
+      DownloadPackage(artifact, argv[2], progress, cancel);
+      if (progress != 100) throw std::runtime_error("Live download did not complete");
+      std::cout << "PASS: live signed manifest and GitHub/CDN download; version="
+                << artifact.version << " SHA256=" << artifact.sha256
+                << "; no installation performed.\n";
+      return ok ? 0 : 1;
+    } catch (const std::exception& e) {
+      std::cerr << "Failed: " << e.what() << '\n';
+      return 1;
+    }
+  }
+  if (argc == 4 || argc == 6) {
+    const std::string platform = "macos-arm64";
+    const auto pub = argc == 6 ? std::string(argv[4]) : PublicKey();
+    try {
+      auto manifest = nlohmann::json::parse(ReadText(argv[1], 256 * 1024));
+      const auto info = crossdesk::ParseSignedUpdateManifest(manifest, platform, pub);
+      if (!info) throw std::runtime_error("Signed fixture could not be parsed");
+      const auto artifact = VerifyEnvelope(info->update_envelope, pub, platform, argv[3]);
+      VerifyPackage(argv[2], artifact);
+      auto rejects = [&](const std::string& current) {
+        try {
+          VerifyEnvelope(info->update_envelope, pub, platform, current);
+          return false;
+        } catch (const std::exception&) { return true; }
+      };
+      ok &= ExpectEqual("same version cannot install", rejects(artifact.version), true);
+      ok &= ExpectEqual("downgrade cannot install", rejects("99.1.0"), true);
+      ok &= ExpectEqual("wrong architecture cannot install",
+          crossdesk::ParseSignedUpdateManifest(manifest, "macos-x64", pub).has_value(), false);
+      ok &= ExpectEqual("wrong key cannot offer an install",
+          crossdesk::ParseSignedUpdateManifest(manifest, platform,
+                                               std::string(64, '0')).has_value(), false);
+      manifest["patch"] = 9001;
+      manifest["downloads"][platform]["patch"] = 9001;
+      const auto patch = crossdesk::ParseSignedUpdateManifest(manifest, platform, pub);
+      ok &= ExpectEqual("unsigned patch cannot override signed version",
+          patch && patch->patch == -1 && patch->version == artifact.version, true);
+      manifest["downloads"][platform]["version"] = "99.0.0";
+      ok &= ExpectEqual("unsigned version mismatch cannot offer an install",
+          crossdesk::ParseSignedUpdateManifest(manifest, platform, pub).has_value(), false);
+      manifest["downloads"][platform]["version"] = artifact.version;
+      auto& sig = manifest["downloads"][platform]["update"]["signature"];
+      auto tampered = sig.get<std::string>();
+      tampered[0] = tampered[0] == '0' ? '1' : '0';
+      sig = tampered;
+      ok &= ExpectEqual("tampered signature cannot offer an install",
+          crossdesk::ParseSignedUpdateManifest(manifest, platform, pub).has_value(), false);
+      auto altered = artifact;
+      altered.sha256 = std::string(64, '0');
+      bool reject_hash = false;
+      try { VerifyPackage(argv[2], altered); } catch (const std::exception&) { reject_hash = true; }
+      ok &= ExpectEqual("altered package hash fails verification", reject_hash, true);
+      if (argc == 6) {
+        const auto wrong_origin = nlohmann::json::parse(ReadText(argv[5], 256 * 1024));
+        ok &= ExpectEqual("valid signature cannot authorize an out-of-fork URL",
+            crossdesk::ParseSignedUpdateManifest(wrong_origin, platform, pub).has_value(), false);
+      }
+      if (ok) std::cout << "PASS: signed fork manifest and package; invalid signature, key, platform, version, downgrade and digest blocked.\n";
+    } catch (const std::exception& e) {
+      std::cerr << "Failed: " << e.what() << '\n';
+      return 1;
+    }
+  } else if (argc != 1) {
+    return 2;
+  }
   return ok ? 0 : 1;
 }

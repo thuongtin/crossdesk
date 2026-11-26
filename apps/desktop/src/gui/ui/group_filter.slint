@@ -2,6 +2,7 @@ import { SurfaceSeparator, FlatSurface, UiSurface } from "ui_surface.slint";
 import { UiRadius } from "ui_radius.slint";
 import { ScrollView } from "std-widgets.slint";
 import { FontAwesomeIcons, ControlStyle, IconButton } from "common.slint";
+import { PostcardStyle } from "postcard_controls.slint";
 
 // Shared by history and DeskHub; system choices precede the named groups.
 export component GroupFilter inherits FlatSurface {
@@ -11,7 +12,11 @@ export component GroupFilter inherits FlatSurface {
     // An embedded picker shares its enclosing field's outline and focus state.
     in property <bool> embedded: false;
     in property <bool> show-indicator: true;
+    in property <bool> postcard: false;
+    in property <bool> popup-above: false;
+    in property <length> popup-gap: 4px;
     in property <length> popup-min-width: 0px;
+    in property <length> popup-anchor-width: 0px;
     in property <length> text-size: 12px;
     in property <int> text-weight: 400;
     in property <color> text-color: #30343b;
@@ -26,8 +31,16 @@ export component GroupFilter inherits FlatSurface {
     in property <string> delete-label;
     callback delete-requested(string);
     private property <bool> has-divider: root.system-count > 0 && root.model.length > root.system-count;
-    private property <length> list-height: root.model.length * 26px + (root.has-divider ? 6px : 0px);
-    private property <length> visible-height: min(root.list-height, 162px);
+    private property <length> row-height: root.postcard ? 36px : 26px;
+    private property <length> list-height: root.model.length * root.row-height + (root.has-divider ? 6px : 0px);
+    private property <length> visible-height: min(root.list-height, root.postcard ? 216px : 162px);
+    private property <length> menu-width: max(root.width, root.popup-min-width);
+    private property <color> hover-fill: root.postcard ? PostcardStyle.hover-surface : ControlStyle.hover;
+    private property <color> pressed-fill: root.postcard ? PostcardStyle.pressed-surface : ControlStyle.pressed;
+    private property <color> selected-fill: root.postcard ? #f2ded1 : ControlStyle.selected;
+    private property <color> selected-hover: root.postcard ? #edd2bf : ControlStyle.selected-hover;
+    private property <color> selected-pressed: root.postcard ? #e4c2ac : ControlStyle.selected-pressed;
+    private property <color> selected-ink: root.postcard ? #9b3411 : ControlStyle.selected-text;
     // Fluent's scrollbar expands to 14px over the viewport on hover.
     // Leave a 4px gap between its full track and the option rows.
     private property <length> scrollbar-gutter: root.list-height > root.visible-height ? 18px : 0px;
@@ -41,15 +54,15 @@ export component GroupFilter inherits FlatSurface {
     }
 
     width: 155px; height: 28px;
-    background: root.embedded ? (root.enabled && trigger-touch.has-hover ? ControlStyle.hover : transparent)
+    background: root.embedded ? (root.enabled && trigger-touch.has-hover ? root.hover-fill : transparent)
         : !root.enabled ? ControlStyle.disabled
-        : trigger-touch.pressed || popup.is-open ? ControlStyle.pressed
-        : trigger-touch.has-hover ? ControlStyle.hover : root.normal-background;
+        : trigger-touch.pressed || popup.is-open ? root.pressed-fill
+        : trigger-touch.has-hover ? root.hover-fill : root.normal-background;
     outline-enabled: !root.embedded;
     outline-focused: popup.is-open || trigger-focus.has-focus;
     outline-color: popup.is-open || trigger-focus.has-focus ? root.focus-outline-color
         : trigger-touch.has-hover ? root.hover-outline-color : root.normal-outline-color;
-    border-radius: UiRadius.control;
+    border-radius: root.postcard ? PostcardStyle.corner-radius : UiRadius.control;
     animate background, outline-color { duration: 100ms; easing: ease-out; }
     forward-focus: trigger-focus;
     accessible-role: combobox;
@@ -57,12 +70,13 @@ export component GroupFilter inherits FlatSurface {
     accessible-expandable: true;
     accessible-expanded: popup.is-open;
     accessible-value: root.model[root.current-index];
+    accessible-action-default => { if popup.is-open { popup.close(); } else { root.open-menu(); } }
 
     function reveal-selection() {
-        let top = root.current-index * 26px + (root.has-divider && root.current-index >= root.system-count ? 6px : 0px);
+        let top = root.current-index * root.row-height + (root.has-divider && root.current-index >= root.system-count ? 6px : 0px);
         if top < -root.scroll-y { root.scroll-y = -top; }
-        if top + 26px > -root.scroll-y + root.visible-height {
-            root.scroll-y = root.visible-height - top - 26px;
+        if top + root.row-height > -root.scroll-y + root.visible-height {
+            root.scroll-y = root.visible-height - top - root.row-height;
         }
         root.scroll-y = clamp(root.scroll-y, min(0px, root.visible-height - root.list-height), 0px);
     }
@@ -127,7 +141,7 @@ export component GroupFilter inherits FlatSurface {
         x: parent.width - (root.embedded ? 16px : 25px);
         width: root.embedded ? 10px : 16px; height: parent.height;
         text: FontAwesomeIcons.angle-down; font-family: "Font Awesome 6 Free";
-        font-weight: 900; font-size: 10px; color: #858c96;
+        font-weight: 900; font-size: root.postcard ? 12px : 10px; color: root.postcard ? PostcardStyle.muted : #858c96;
         horizontal-alignment: center; vertical-alignment: center;
         transform-rotation: popup.is-open ? 180deg : 0deg;
         animate transform-rotation { duration: 140ms; easing: ease-out; }
@@ -143,8 +157,9 @@ export component GroupFilter inherits FlatSurface {
         }
     }
     popup := PopupWindow {
-        x: 0px; y: root.height + 4px;
-        width: max(root.width, root.popup-min-width); height: root.visible-height + 8px;
+        x: root.popup-anchor-width > 0px ? root.popup-anchor-width - root.menu-width : 0px;
+        y: root.popup-above ? -self.height - root.popup-gap : root.height + root.popup-gap;
+        width: root.menu-width; height: root.visible-height + 8px;
         close-policy: close-on-click-outside;
         forward-focus: popup-focus;
         popup-focus := FocusScope {
@@ -153,9 +168,10 @@ export component GroupFilter inherits FlatSurface {
                 y: (1 - root.popup-progress) * -4px;
                 width: parent.width; height: parent.height;
                 opacity: root.popup-progress;
-                background: white;
+                background: root.postcard ? PostcardStyle.surface : white;
                 clip: true;
-                outline-color: root.normal-outline-color; border-radius: UiRadius.menu;
+                outline-color: root.normal-outline-color;
+                border-radius: root.postcard ? PostcardStyle.corner-radius : UiRadius.menu;
                 list := ScrollView {
                     x: 4px; y: 4px; width: parent.width - 8px; height: parent.height - 8px;
                     viewport-width: self.visible-width;
@@ -167,22 +183,25 @@ export component GroupFilter inherits FlatSurface {
                         x: 0px; y: 0px;
                         width: max(0px, list.viewport-width - root.scrollbar-gutter); height: root.list-height;
                         if root.has-divider: SurfaceSeparator {
-                            x: 6px; y: root.system-count * 26px + 3px;
+                            x: 6px; y: root.system-count * root.row-height + 3px;
                             width: parent.width - 12px; height: 1px; outline-color: UiSurface.separator;
                         }
                         for choice[index] in root.model: Rectangle {
                             private property <bool> deletable: root.delete-label != "" && index >= root.system-count;
-                            y: index * 26px + (root.has-divider && index >= root.system-count ? 6px : 0px);
-                            width: parent.width; height: 26px; border-radius: UiRadius.control;
+                            y: index * root.row-height + (root.has-divider && index >= root.system-count ? 6px : 0px);
+                            width: parent.width; height: root.row-height; border-radius: UiRadius.control;
                             background: index == root.current-index
-                                ? (option-touch.pressed ? ControlStyle.selected-pressed : option-touch.has-hover ? ControlStyle.selected-hover : ControlStyle.selected)
-                                : option-touch.pressed ? ControlStyle.pressed : option-touch.has-hover ? ControlStyle.hover : transparent;
+                                ? (option-touch.pressed ? root.selected-pressed : option-touch.has-hover ? root.selected-hover : root.selected-fill)
+                                : option-touch.pressed ? root.pressed-fill : option-touch.has-hover ? root.hover-fill : transparent;
                             animate background { duration: 100ms; easing: ease-out; }
                             accessible-role: list-item;
                             accessible-label: choice;
+                            accessible-action-default => { root.choose(index); popup.close(); }
                             Text {
                                 x: 8px; width: parent.width - 34px - (parent.deletable ? 26px : 0px); height: parent.height;
-                                text: choice; color: index == root.current-index ? ControlStyle.selected-text : #30343b; font-size: 12px;
+                                text: choice;
+                                color: index == root.current-index ? root.selected-ink : root.postcard ? PostcardStyle.text : #30343b;
+                                font-size: root.postcard ? 14px : 12px;
                                 font-weight: index == root.current-index ? 600 : 400;
                                 overflow: elide; vertical-alignment: center;
                                 accessible-role: none;
@@ -190,7 +209,7 @@ export component GroupFilter inherits FlatSurface {
                             if index == root.current-index: Text {
                                 x: parent.width - 24px - (parent.deletable ? 26px : 0px); width: 16px; height: parent.height;
                                 text: FontAwesomeIcons.check; font-family: "Font Awesome 6 Free";
-                                font-weight: 900; font-size: 10px; color: ControlStyle.selected-text;
+                                font-weight: 900; font-size: root.postcard ? 13px : 10px; color: root.selected-ink;
                                 horizontal-alignment: center; vertical-alignment: center;
                                 accessible-role: none;
                             }

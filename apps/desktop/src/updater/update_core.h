@@ -27,6 +27,9 @@ struct Artifact {
 
 // The envelope contains the exact signed UTF-8 payload and a hex Ed25519 signature.
 // Never reserialize the payload before verifying it.
+Artifact VerifyReleaseEnvelope(const std::string& envelope,
+                               const std::string& public_key,
+                               const std::string& platform);
 Artifact VerifyEnvelope(const std::string& envelope, const std::string& public_key,
                         const std::string& platform,
                         const std::string& current_version);

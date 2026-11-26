@@ -6268,7 +6268,7 @@
     },
     "本桌面": {
       "zh-Hans": "本桌面",
-      "en": "Local Desktop",
+      "en": "This device",
       "ru": "Локальный рабочий стол",
       "zh-Hant": "本桌面",
       "ja": "ローカルデスクトップ",
@@ -9401,7 +9401,7 @@
     },
     "近期连接": {
       "zh-Hans": "近期连接",
-      "en": "Recent Connections",
+      "en": "Recent Devices",
       "ru": "Недавние подключения",
       "zh-Hant": "近期連線",
       "ja": "最近の接続",
@@ -13922,6 +13922,19 @@
       "es": "Se conservarán los dispositivos y el historial de conexiones.",
       "pt-BR": "Os dispositivos e o histórico de conexões serão mantidos.",
       "vi": "Thiết bị và lịch sử kết nối trong nhóm vẫn được giữ lại."
+    },
+    "连接到设备": {
+      "zh-Hans": "连接到设备",
+      "en": "Connect to a device",
+      "ru": "Подключение к устройству",
+      "zh-Hant": "連線至裝置",
+      "ja": "デバイスに接続",
+      "ko": "장치에 연결",
+      "de": "Mit einem Gerät verbinden",
+      "fr": "Se connecter à un appareil",
+      "es": "Conectar a un dispositivo",
+      "pt-BR": "Conectar a um dispositivo",
+      "vi": "Kết nối với thiết bị"
     }
   },
   "desktop": {
@@ -15161,7 +15174,8 @@
       "对端地址",
       "删除分组",
       "组内设备和连接记录将保留。",
-      "重试"
+      "重试",
+      "连接到设备"
     ],
     "android": [
       " · 已完成",

@@ -1,4 +1,5 @@
 #include "crossdesk_ui.h"
+#include "slint_render_test_platform.h"
 #include "fa_solid_900.h"
 #include "features/gallery/gallery_window_state.h"
 #include "ui/release_notes_text.h"
@@ -300,8 +301,11 @@ void ConfigureMainCapturePage(
         "**Исправления**\n\n"
         "6. Исправлено отображение состояния после обрыва соединения, улучшена читаемость на экранах высокого разрешения.\n"
         "7. Унифицированы скругления элементов и улучшена прокрутка длинных описаний обновлений."};
+    // Documentation notes only have ZH/EN/RU fixtures; keep every other UI
+    // locale while falling back to English notes instead of indexing past them.
     std::vector<crossdesk::ui::ReleaseNoteBlock> blocks;
-    for (const auto &parsed : crossdesk::release_notes_text::Parse(notes[language])) {
+    for (const auto &parsed : crossdesk::release_notes_text::Parse(
+             notes[language >= 0 && language < 3 ? language : 1])) {
       crossdesk::ui::ReleaseNoteBlock block{};
       block.content = parsed.content;
       block.section_gap = parsed.section_gap;
@@ -661,14 +665,16 @@ int RunCaptureMode(
 
 // Sample the native window while the same restoration used by the application
 // runs. A component-only screenshot used to miss the conflicting restore width.
-bool VerifyMainWindowGeometry() {
+bool VerifyMainWindowGeometry(RenderTestPlatform *platform) {
   for (bool restore : {false, true}) {
     auto component = crossdesk::ui::MainWindow::create();
     auto &window = component->window();
     crossdesk::gallery::WindowState placement;
     const float width = component->get_minimum_window_width();
     const float height = component->get_minimum_window_height();
-    if (width != 640.0f || height != 472.0f) return false;
+    if (width != 960.0f || height != 650.0f) return false;
+    const auto expected_logical = slint::LogicalSize(slint::Size<float>{width, height});
+    if (platform && !restore) window.set_size(expected_logical);
     if (restore) {
       placement.BeginRestore();
       placement.PrepareForShow(
@@ -679,8 +685,7 @@ bool VerifyMainWindowGeometry() {
     window.show();
     bool stable = true;
     int samples = 0;
-    slint::Timer timer;
-    timer.start(slint::TimerMode::Repeated, std::chrono::milliseconds(16), [&] {
+    auto sample = [&] {
       const auto actual = window.size();
       const auto expected = placement.RestoreSize(
           false, window.scale_factor(), height, width);
@@ -699,10 +704,22 @@ bool VerifyMainWindowGeometry() {
         // report a fixed-size window as zoomed even at its normal dimensions.
         placement.FinishRestore(false, actual, false, false);
       }
-      if (++samples == 20) slint::quit_event_loop();
-    });
-    slint::run_event_loop();
-    timer.stop();
+      ++samples;
+    };
+    if (platform) {
+      for (int i = 0; i < 20; ++i) {
+        platform->adapter->Settle(1);
+        sample();
+      }
+    } else {
+      slint::Timer timer;
+      timer.start(slint::TimerMode::Repeated, std::chrono::milliseconds(16), [&] {
+        sample();
+        if (samples == 20) slint::quit_event_loop();
+      });
+      slint::run_event_loop();
+      timer.stop();
+    }
     window.hide();
     if (!stable || placement.Restoring()) return false;
   }
@@ -714,10 +731,11 @@ bool VerifyMainWindowGeometry() {
 bool VerifyWorkbenchActions() {
   auto window = crossdesk::ui::MainWindow::create();
   const float width = window->get_minimum_window_width();
-  window->window().set_size(
-      slint::LogicalSize(slint::Size<float>{width, window->get_minimum_window_height()}));
+  const float height = window->get_minimum_window_height();
+  window->window().set_size(slint::LogicalSize(slint::Size<float>{width, height}));
   auto click = [&](float x, float y) {
     const auto position = slint::LogicalPosition(slint::Point<float>{x, y});
+    window->window().dispatch_pointer_move_event(position);
     window->window().dispatch_pointer_press_event(
         position, slint::PointerEventButton::Left);
     window->window().dispatch_pointer_release_event(
@@ -733,42 +751,42 @@ bool VerifyWorkbenchActions() {
   window->on_connect_requested([&](slint::SharedString id) {
     if (id == "987 654 321") ++connections;
   });
-  click(width / 2 - 48, 150);
-  click(width / 2 - 118, 216);
-  click(width / 2 - 80, 216);
-  click(width / 2 - 42, 216);
+  click(width - 69, 446);
+  click(width - 161, 518);
+  click(width - 115, 518);
+  click(width - 69, 518);
   if (copies != 1 || visibility_changes != 1 || refreshes != 1 ||
       !window->get_reset_password_open()) return false;
   window->set_reset_password_open(false);
   window->set_password_change_pending(true);
-  click(width / 2 - 80, 216);
-  click(width / 2 - 42, 216);
+  click(width - 115, 518);
+  click(width - 69, 518);
   if (refreshes != 1 || window->get_reset_password_open()) return false;
-  click(width * 0.75f - 6, 216);
+  click(width - 122, 226);
   // Space activates the focused primary button; pending state blocks repeats.
   window->window().dispatch_key_press_event(" ");
   window->window().dispatch_key_release_event(" ");
   if (connections != 2) return false;
   window->set_connection_pending(true);
-  click(width * 0.75f - 6, 216);
+  click(width - 122, 226);
   if (connections != 2) return false;
   window->set_connection_pending(false);
-  click(width - 38, 20);
-  click(width - 78, 56);
+  click(width - 46, 28);
+  click(width - 110, 87);
   if (!window->get_settings_open()) return false;
   // Both tabs must remain at the same position, including with a save error.
-  click(width / 2 + 87, 89);
+  click(width / 2 + 87, height / 2 - 148);
   if (window->get_settings_tab() != 1) return false;
-  click(width / 2 - 87, 89);
+  click(width / 2 - 87, height / 2 - 148);
   if (window->get_settings_tab() != 0) return false;
-  click(width / 2 + 87, 89);
+  click(width / 2 + 87, height / 2 - 148);
   window->set_gallery_settings_error("Unable to save settings. Please try again.");
-  click(width / 2 - 87, 89);
+  click(width / 2 - 87, height / 2 - 148);
   if (window->get_settings_tab() != 0) return false;
   window->set_gallery_settings_error("");
   window->set_settings_open(false);
   // DeskHub follows the ID/IP mode switch when direct IP connections are enabled.
-  click(window->get_ip_direct_enabled() ? 204 : 60, 20);
+  click(window->get_ip_direct_enabled() ? 262 : 70, 28);
   if (!gallery_opened) return false;
   crossdesk::ui::RecentConnection device{};
   device.remote_id = "987654321";
@@ -781,7 +799,7 @@ bool VerifyWorkbenchActions() {
   window->on_recent_connect([&](slint::SharedString id) {
     recent_connected = id == "987654321";
   });
-  click(100, 344);
+  click(100, 406);
   if (!recent_connected) return false;
   bool password_submitted = false, cancelled = false;
   window->on_connection_submit_password([&](slint::SharedString value, bool) {
@@ -791,8 +809,8 @@ bool VerifyWorkbenchActions() {
   window->set_connection_password("654321");
   window->set_connection_password_required(true);
   window->set_connection_dialog_open(true);
-  click(width / 2 + 62, 312);
-  click(width / 2 - 62, 312);
+  click(width / 2 + 62, height / 2 + 76);
+  click(width / 2 - 62, height / 2 + 76);
   if (!password_submitted || !cancelled) return false;
   window->set_connection_dialog_open(false);
 
@@ -810,7 +828,7 @@ bool VerifyWorkbenchActions() {
   });
   window->set_alias_input("");
   window->set_alias_open(true);
-  click(width / 2, 238);
+  click(width / 2, height / 2 + 2);
   type("Office\n");
   if (!renamed || window->get_alias_open()) {
     std::cerr << "Alias editor did not accept the typed name; text="
@@ -914,6 +932,18 @@ bool VerifyRemoteIdEditing() {
 } // namespace
 
 int main() {
+  const CaptureOptions capture_options = LoadCaptureOptions();
+  RenderTestPlatform *headless = nullptr;
+  if (!capture_options.enabled && !std::getenv("CROSSDESK_NATIVE_UI_SMOKE") &&
+      !std::getenv("CROSSDESK_MAIN_UI_SNAPSHOT") &&
+      !std::getenv("CROSSDESK_MAIN_INACTIVE_UI_SNAPSHOT") &&
+      !std::getenv("CROSSDESK_SETTINGS_UI_SNAPSHOT") &&
+      !std::getenv("CROSSDESK_STREAM_UI_SNAPSHOT") &&
+      !std::getenv("CROSSDESK_STREAM_INACTIVE_UI_SNAPSHOT")) {
+    auto platform = std::make_unique<RenderTestPlatform>();
+    headless = platform.get();
+    slint::platform::set_platform(std::move(platform));
+  }
   if (!VerifySystemShortcutMenu()) {
     std::cerr << "Shortcut menu must dispatch Windows shortcuts and hide for unsupported hosts\n";
     return 13;
@@ -922,8 +952,7 @@ int main() {
     std::cerr << "Remote ID editor must preserve Ctrl+A selection after formatting\n";
     return 12;
   }
-  const CaptureOptions capture_options = LoadCaptureOptions();
-  if (!VerifyMainWindowGeometry()) {
+  if (!VerifyMainWindowGeometry(headless)) {
     std::cerr << "Main window dimensions must stay stable through startup\n";
     return 11;
   }
