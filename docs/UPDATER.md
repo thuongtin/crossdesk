@@ -21,7 +21,10 @@ Các trường hợp sau cần cài thủ công:
 - Vị trí cài không được cập nhật trong ứng dụng hỗ trợ.
 - Gói phát hành hiện tại không có thông tin cập nhật đã ký khả dụng hoặc xác minh không thành công.
 
-Tải gói cài đầy đủ khớp hệ thống và kiến trúc của bạn từ [trang web chính thức](https://www.crossdesk.cn/) hoặc [GitHub Releases](https://github.com/kunkundi/crossdesk/releases), đóng CrossDesk rồi cài. Giữ loại cài đặt cũ; chọn bản Linux thường hoặc màn hình ảo theo nhu cầu thực tế.
+Tải gói cài đầy đủ khớp hệ thống và kiến trúc của bạn từ [trang Releases của CrossDesk Postcard](https://github.com/thuongtin/crossdesk/releases), đóng CrossDesk rồi cài. Giữ loại cài đặt cũ; chọn bản Linux thường hoặc màn hình ảo theo nhu cầu thực tế.
+
+Không cài gói từ trang web hay trang Releases của dự án gốc `kunkundi/crossdesk`: gói đó thay bản
+Postcard bằng bản upstream, mất cấu hình máy chủ báo hiệu nội bộ và nguồn cập nhật của bản fork.
 
 ## Lưu ý từng nền tảng
 
@@ -47,7 +50,7 @@ Nếu Linux tự cấu hình systemd hoặc trình giám sát tiến trình khá
 | Nhập liệu màn hình khóa không dùng được sau cập nhật | Xác nhận chương trình chính, dịch vụ và trình trợ giúp phiên Windows cùng phiên bản |
 | Chỉ khác ngày biên dịch nhưng không nhắc cập nhật | Cập nhật so sánh phiên bản số và số bản vá, chỉ đổi ngày không kích hoạt nâng cấp |
 
-Cài đặt gián đoạn không bảo đảm tự quay lui. Không chỉ thay một tệp thực thi để sửa cài đặt; nên dùng gói đầy đủ của nền tảng tương ứng. Nếu vẫn không khôi phục được, báo cáo qua **Phản hồi và góp ý → Xuất nhật ký chẩn đoán**, đính kèm phiên bản trước/sau và nội dung lỗi.
+Cài đặt gián đoạn không bảo đảm tự quay lui. Không chỉ thay một tệp thực thi để sửa cài đặt; nên dùng gói đầy đủ của nền tảng tương ứng. Nếu vẫn không khôi phục được, xuất log qua **Phản hồi và góp ý → Xuất nhật ký chẩn đoán** rồi gửi gói ZIP cho quản trị viên CrossDesk, kèm phiên bản trước/sau và nội dung lỗi.
 
 ## Bản tự biên dịch
 
@@ -56,6 +59,12 @@ Không đặt khóa công khai cập nhật vẫn chạy và kiểm tra phiên b
 ## Biên dịch và phát hành trình nâng cấp
 
 Lõi nâng cấp Windows, macOS và Linux ở `apps/desktop/src/updater`, triển khai nền tảng ở `apps/desktop/src/platform/<nền-tảng>/updater`. Bản cài đặt biên dịch trình nâng cấp cùng chương trình chính; bản portable chỉ tải thủ công.
+
+Bản CrossDesk Postcard không phát hành bằng GitHub Actions. Gói, chữ ký và feed được tạo bằng
+`scripts/release/release.sh` theo [hướng dẫn phát hành](RELEASE.md); feed
+`crossdesk-desktop-update.json` nằm trên nhánh `desktop-updates` của `thuongtin/crossdesk` và
+được ký bằng khóa riêng của bản fork. Các mục về `Build and Release`, Actions variable và
+`update_version_manifest.py` bên dưới mô tả quy trình của upstream, giữ lại để đối chiếu khi đồng bộ.
 
 ### Quy trình phối hợp cài đặt
 
@@ -151,8 +160,12 @@ Sau khi cấu hình khóa riêng, gói cài máy tính còn chứa:
 
 Chữ ký bao phủ byte UTF-8 gốc của chuỗi `payload`; ứng dụng xác minh chữ ký trước rồi phân tích.
 Chữ ký gồm phiên bản, nền tảng, tên gói, địa chỉ tải, kích thước và hàm băm để tránh tráo bản ghi tải xuống.
-Chỉ cho phép tên gói dưới `https://downloads.crossdesk.cn/` khớp phiên bản và nền tảng,
-cấm chuyển hướng tải xuống, giới hạn kích thước gói 2 GiB, cấm cài cùng phiên bản và hạ cấp.
+Bản fork chỉ chấp nhận địa chỉ gói `https://github.com/thuongtin/crossdesk/releases/download/v<phiên-bản>/<tên-gói>`,
+với tên gói khớp phiên bản và nền tảng. Chuyển hướng tải xuống chỉ được đi tới CDN tài sản release
+của GitHub (`release-assets.githubusercontent.com` hoặc `objects.githubusercontent.com`) qua HTTPS;
+giới hạn kích thước gói 2 GiB, cấm cài cùng phiên bản và hạ cấp.
+Bản portable không tự cài: ứng dụng chỉ đọc phiên bản trong mục `downloads` của đúng nền tảng
+(mục portable, nếu chưa có thì mục gói cài của cùng nền tảng) rồi mở trang Releases của bản fork.
 Gói portable và di động không có tùy chọn tự cài này.
 
 ## Ranh giới nền tảng

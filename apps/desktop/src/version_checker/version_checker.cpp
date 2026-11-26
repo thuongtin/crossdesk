@@ -132,6 +132,29 @@ std::optional<VersionInfo> ParseSignedUpdateManifest(
 }
 #endif
 
+std::optional<VersionInfo> ParsePlatformUpdateManifest(
+    const nlohmann::json& manifest, const std::vector<std::string>& platforms) {
+  try {
+    const auto& downloads = manifest.at("downloads");
+    for (const auto& platform : platforms) {
+      if (platform.empty()) continue;
+      const auto entry = downloads.find(platform);
+      if (entry == downloads.end()) continue;
+      auto info = ParseVersionInfo(*entry);
+      if (!info) return std::nullopt;
+      // Ghi chú phát hành ở cấp cao nhất chỉ dùng khi chúng nói về đúng phiên bản này.
+      const auto notes = ParseVersionInfo(manifest);
+      if (notes && notes->version == info->version) {
+        info->release_name = notes->release_name;
+        info->release_notes = notes->release_notes;
+      }
+      return info;
+    }
+  } catch (const std::exception&) {
+  }
+  return std::nullopt;
+}
+
 std::optional<VersionInfo> CheckUpdate() {
   httplib::Client cli(updater::kManifestOrigin);
   cli.set_connection_timeout(5);
@@ -166,8 +189,16 @@ std::optional<VersionInfo> CheckUpdate() {
   }
   try {
     const auto manifest = nlohmann::json::parse(body);
-#if defined(__OHOS__) || CROSSDESK_PORTABLE
+#if defined(__OHOS__)
     auto info = ParseVersionInfo(manifest);
+    if (info) info->download_url = updater::kReleasePage;
+#elif CROSSDESK_PORTABLE
+    // Bản portable không tự cài đặt mà chỉ mở trang release, nên chỉ báo khi tag mới thật sự có
+    // gói cho hệ điều hành và kiến trúc này. Bản fork chỉ phát hành gói cài đặt, vì vậy khi chưa
+    // có mục portable thì dùng mục gói cài đặt của cùng nền tảng.
+    const auto executable = updater::ExecutablePath();
+    auto info = ParsePlatformUpdateManifest(
+        manifest, {updater::PlatformKey(executable, true), updater::PlatformKey(executable)});
     if (info) info->download_url = updater::kReleasePage;
 #else
     const auto platform = updater::PlatformKey(updater::ExecutablePath());

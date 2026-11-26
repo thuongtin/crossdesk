@@ -182,6 +182,29 @@ int main(int argc, char** argv) {
   ok &= ExpectEqual("unsigned manifest does not offer an install",
       crossdesk::ParseSignedUpdateManifest({{"latest_version", "1.7.6-7-20261123"}},
                                            "macos-arm64", "").has_value(), false);
+  {
+    // Bản phát hành chỉ có gói macOS đẩy phiên bản cấp cao nhất lên, còn mục Windows giữ bản cũ.
+    const nlohmann::json feed = {
+        {"version", "9.0.0-1-20261201"},
+        {"releaseNotes", "macOS only"},
+        {"downloads",
+         {{"macos-arm64", {{"version", "9.0.0-1-20261201"}}},
+          {"windows-x64", {{"version", "1.7.7-3-20261126"}}}}}};
+    const auto windows = crossdesk::ParsePlatformUpdateManifest(
+        feed, {"windows-x64-portable", "windows-x64"});
+    ok &= ExpectEqual("portable check reads its own platform version",
+        windows && windows->version == "1.7.7-3-20261126" && windows->release_notes.empty(),
+        true);
+    const auto mac = crossdesk::ParsePlatformUpdateManifest(feed, {"macos-arm64"});
+    ok &= ExpectEqual("matching platform keeps the release notes",
+        mac && mac->version == "9.0.0-1-20261201" && mac->release_notes == "macOS only", true);
+    ok &= ExpectEqual("platform without an entry offers no update",
+        crossdesk::ParsePlatformUpdateManifest(feed, {"linux-amd64", ""}).has_value(), false);
+    ok &= ExpectEqual("manifest without downloads offers no update",
+        crossdesk::ParsePlatformUpdateManifest({{"version", "9.0.0"}}, {"windows-x64"})
+            .has_value(),
+        false);
+  }
   if (argc == 3 && std::string(argv[1]) == "--live") {
     try {
       const auto info = crossdesk::CheckUpdate();

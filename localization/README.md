@@ -28,7 +28,7 @@
 
 Trước hết kiểm tra ngôn ngữ ưu tiên của hệ thống hoặc cài đặt ngôn ngữ ứng dụng, rồi mở lại CrossDesk. Trên máy tính, bạn cũng có thể chọn ngôn ngữ thủ công trong cài đặt và lưu. Tên thiết bị, nội dung tệp và thông báo không được dịch mà giữ nguyên là hành vi bình thường.
 
-Nếu phát hiện bản dịch giao diện sai hoặc chữ bị cắt, bạn có thể [báo cáo sự cố](https://github.com/kunkundi/crossdesk/issues), cung cấp ngôn ngữ sử dụng, phiên bản ứng dụng, trang đang xem và bản dịch đề xuất. Hãy che mật khẩu kết nối và nội dung riêng tư trong ảnh chụp.
+Nếu phát hiện bản dịch giao diện sai hoặc chữ bị cắt, hãy báo cho quản trị viên CrossDesk, cung cấp ngôn ngữ sử dụng, phiên bản ứng dụng, trang đang xem và bản dịch đề xuất. Hãy che mật khẩu kết nối và nội dung riêng tư trong ảnh chụp.
 
 ## Bảo trì tài nguyên
 

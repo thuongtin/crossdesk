@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="Logo CrossDesk: biểu tượng bên trái, chữ hai màu bên phải" />
   <p>Ứng dụng điều khiển máy tính từ xa nhẹ, đa nền tảng, hỗ trợ kết nối từ máy tính, trình duyệt, thiết bị di động và terminal; xem và điều khiển tập trung nhiều thiết bị bằng DeskHub.</p>
-  <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a> · <a href="README_ZH.md">中文</a></p>
+  <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/thuongtin/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a> · <a href="README_ZH.md">中文</a></p>
 </div>
 
 <div align="center">
@@ -10,7 +10,7 @@
 
 [![Clients](https://img.shields.io/badge/client-Desktop%20%7C%20Mobile%20%7C%20Web%20%7C%20CLI-2ea44f?style=flat)](#download)
 
-[![Release](https://img.shields.io/github/v/release/kunkundi/crossdesk?style=flat)](https://github.com/kunkundi/crossdesk/releases)
+[![Release](https://img.shields.io/github/v/release/thuongtin/crossdesk?style=flat)](https://github.com/thuongtin/crossdesk/releases)
 [![npm](https://img.shields.io/npm/v/%40chunkdash%2Fcrossdesk-cli?style=flat)](https://www.npmjs.com/package/@chunkdash/crossdesk-cli)
 [![Build](https://img.shields.io/github/actions/workflow/status/kunkundi/crossdesk/build.yml?style=flat&label=build)](https://github.com/kunkundi/crossdesk/actions/workflows/build.yml)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat)](LICENSE)
@@ -68,7 +68,7 @@ CrossDesk cho phép bạn kết nối đến máy tính từ xa từ máy tính,
 
 ## Tải xuống và nền tảng hỗ trợ
 
-Tải gói cài đặt phù hợp với hệ điều hành và kiến trúc CPU của bạn từ [trang web chính thức](https://www.crossdesk.cn/) hoặc [GitHub Releases](https://github.com/kunkundi/crossdesk/releases); bạn cũng có thể mở trực tiếp [ứng dụng Web](https://web.crossdesk.cn/).
+Bản máy tính CrossDesk Postcard (macOS, Windows, Linux) tải từ [Releases của bản fork](https://github.com/thuongtin/crossdesk/releases); chọn gói khớp hệ điều hành và kiến trúc CPU của bạn. Không cài gói máy tính từ trang web hay Releases của dự án gốc: gói đó thay bản Postcard và mất cấu hình máy chủ báo hiệu nội bộ. Ứng dụng di động và [ứng dụng Web](https://web.crossdesk.cn/) vẫn do dự án gốc phát hành trên [trang web chính thức](https://www.crossdesk.cn/).
 
 | Nền tảng | Phạm vi hỗ trợ và yêu cầu cài đặt |
 | --- | --- |
@@ -343,7 +343,7 @@ Bạn có thể tự triển khai dịch vụ signaling và TURN relay, rồi b�
 - [Kiến trúc và tích hợp](docs/README.md#biên-dịch-và-tích-hợp): kiến trúc GUI và kết nối, giao diện CLI / MCP, hỗ trợ từng nền tảng.
 - [Phiên bản và phát hành](docs/VERSIONING.md): đồng bộ phiên bản thành phần, số bản phát hành và manifest cập nhật.
 
-Khi gặp sự cố, bạn có thể mở **Phản hồi và góp ý** trong menu chính của ứng dụng máy tính, xuất nhật ký chẩn đoán rồi [báo cáo sự cố](https://github.com/kunkundi/crossdesk/issues). Hãy đính kèm hệ điều hành hai bên, phiên bản ứng dụng, phương thức kết nối, thông báo lỗi và các bước tái hiện; kiểm tra thông tin riêng tư trong nhật ký và ảnh chụp trước khi chia sẻ. Xem [phản hồi và nhật ký chẩn đoán](docs/USER_GUIDE.md#feedback).
+Khi gặp sự cố, bạn có thể mở **Phản hồi và góp ý** trong menu chính của ứng dụng máy tính, xuất nhật ký chẩn đoán rồi gửi gói ZIP cho quản trị viên CrossDesk. Hãy kèm hệ điều hành hai bên, phiên bản ứng dụng, phương thức kết nối, thông báo lỗi và các bước tái hiện; kiểm tra thông tin riêng tư trong nhật ký và ảnh chụp trước khi chia sẻ. Không gửi nhật ký hay ảnh chụp của bản CrossDesk Postcard lên trang issue của dự án gốc. Xem [phản hồi và nhật ký chẩn đoán](docs/USER_GUIDE.md#feedback).
 
 <a id="sponsor"></a>
 

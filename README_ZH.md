@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="CrossDesk 标志：图标在左，双色文字在右" />
   <p>轻量、跨平台的远程桌面，支持电脑、浏览器、移动端和终端连接，用桌面墙集中查看与操控多台设备。</p>
-  <p><a href="https://www.crossdesk.cn/">官方网站</a> · <a href="https://github.com/kunkundi/crossdesk/releases">下载客户端</a> · <a href="#build">构建指南</a> · <a href="https://web.crossdesk.cn/">打开 Web 客户端</a> · <a href="README.md">Tiếng Việt</a> · <a href="README_EN.md">English</a></p>
+  <p><a href="https://www.crossdesk.cn/">官方网站</a> · <a href="https://github.com/thuongtin/crossdesk/releases">下载客户端</a> · <a href="#build">构建指南</a> · <a href="https://web.crossdesk.cn/">打开 Web 客户端</a> · <a href="README.md">Tiếng Việt</a> · <a href="README_EN.md">English</a></p>
 </div>
 
 <div align="center">
@@ -10,7 +10,7 @@
 
 [![Clients](https://img.shields.io/badge/client-Desktop%20%7C%20Mobile%20%7C%20Web%20%7C%20CLI-2ea44f?style=flat)](#download)
 
-[![Release](https://img.shields.io/github/v/release/kunkundi/crossdesk?style=flat)](https://github.com/kunkundi/crossdesk/releases)
+[![Release](https://img.shields.io/github/v/release/thuongtin/crossdesk?style=flat)](https://github.com/thuongtin/crossdesk/releases)
 [![npm](https://img.shields.io/npm/v/%40chunkdash%2Fcrossdesk-cli?style=flat)](https://www.npmjs.com/package/@chunkdash/crossdesk-cli)
 [![Build](https://img.shields.io/github/actions/workflow/status/kunkundi/crossdesk/build.yml?style=flat&label=build)](https://github.com/kunkundi/crossdesk/actions/workflows/build.yml)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat)](LICENSE)
@@ -68,7 +68,7 @@ CrossDesk 让你从电脑、浏览器、手机或终端（桌面 CLI）连接远
 
 ## 下载与平台支持
 
-从 [官方网站](https://www.crossdesk.cn/) 或 [GitHub Releases](https://github.com/kunkundi/crossdesk/releases) 下载与你的系统和 CPU 架构匹配的安装包；也可直接打开 [Web 客户端](https://web.crossdesk.cn/)。
+CrossDesk Postcard 桌面版（macOS、Windows、Linux）请从 [本 fork 的 Releases](https://github.com/thuongtin/crossdesk/releases) 下载与你的系统和 CPU 架构匹配的安装包。请勿安装上游官网或上游 Releases 的桌面安装包：它会替换 Postcard 版本并丢失内部信令服务器配置。移动端与 [Web 客户端](https://web.crossdesk.cn/) 仍由上游项目在 [官方网站](https://www.crossdesk.cn/) 发布。
 
 | 平台 | 支持范围与安装要求 |
 | --- | --- |
@@ -343,7 +343,7 @@ PC 端可控制和被控制，复用桌面界面与桌面墙；手机和平板�
 - [架构与集成](docs/README.md#biên-dịch-và-tích-hợp)：GUI 和连接架构、CLI / MCP 接口、各平台适配。
 - [版本与发布](docs/VERSIONING.md)：组件版本同步、发布编号及更新清单。
 
-遇到问题时，可在桌面端主菜单打开 **反馈与建议**，导出诊断日志，并 [提交问题](https://github.com/kunkundi/crossdesk/issues)。请附上两端系统、客户端版本、连接方式、报错及复现步骤；分享前检查日志和截图中的私人信息。详见 [反馈与诊断日志](docs/USER_GUIDE.md#feedback)。
+遇到问题时，可在桌面端主菜单打开 **反馈与建议**，导出诊断日志，并将 ZIP 发送给 CrossDesk 管理员。请附上两端系统、客户端版本、连接方式、报错及复现步骤；分享前检查日志和截图中的私人信息。请勿把 CrossDesk Postcard 的日志或截图提交到上游项目的问题页面。详见 [反馈与诊断日志](docs/USER_GUIDE.md#feedback)。
 
 <a id="sponsor"></a>
 

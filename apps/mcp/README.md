@@ -238,7 +238,7 @@ Gỡ cài đặt không xóa cấu hình thiết bị và thông tin xác thực
 | Báo `NATIVE_PACKAGE_MISSING` hoặc `NATIVE_PROTOCOL_MISMATCH` | Cài lại gói đầy đủ đúng nền tảng trong bảng; chạy nguồn thì kiểm tra [cấu hình chương trình native](DEVELOPMENT.md#chạy-từ-mã-nguồn) |
 | Vì sao không tự kết nối lại | Bật “Tự khôi phục khi mất kết nối” theo nhu cầu trong **Chi tiết phiên**; cần quyền tự kết nối đã lưu và thông tin xác thực khả dụng, chủ động ngắt không kích hoạt khôi phục |
 
-Nếu vẫn lỗi, bạn có thể [gửi phản hồi](https://github.com/kunkundi/crossdesk/issues), nêu hệ thống cục bộ và từ xa, phiên bản Codex / DSH, nguồn gói cài, lỗi và bước tái hiện. Không đính kèm mật khẩu thiết bị hoặc địa chỉ trang có thông tin ghép nối.
+Nếu vẫn lỗi, hãy báo cho quản trị viên CrossDesk, nêu hệ thống cục bộ và từ xa, phiên bản Codex / DSH, nguồn gói cài, lỗi và bước tái hiện. Không đính kèm mật khẩu thiết bị hoặc địa chỉ trang có thông tin ghép nối.
 
 <a id="从源码运行"></a>
 
