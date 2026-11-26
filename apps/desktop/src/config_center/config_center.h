@@ -7,10 +7,14 @@
 #ifndef _CONFIG_CENTER_H_
 #define _CONFIG_CENTER_H_
 
+#include <minirtc.h>
+
 #include <atomic>
 #include <initializer_list>
+#include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 #include <string>
 
@@ -25,7 +29,7 @@ class ConfigCenter {
     BRAZILIAN_PORTUGUESE = 9, SYSTEM = 10, VIETNAMESE = 11
   };
   enum class CONNECTION_MODE { DEVICE_ID = 0, DIRECT_IP = 1 };
-  enum class VIDEO_ENCODE_FORMAT { H264 = 0, AV1 = 1 };
+  using VIDEO_ENCODE_FORMAT = MiniRtcVideoCodec;
   enum class TURN_MODE {
     DISABLED = 0,
     AUTO_UDP_TCP = 1,
@@ -37,10 +41,19 @@ class ConfigCenter {
   explicit ConfigCenter(const std::string& config_path = "config.ini");
   ~ConfigCenter();
 
+  struct StreamWindowSize {
+    int width;
+    int height;
+    bool operator==(const StreamWindowSize& other) const {
+      return width == other.width && height == other.height;
+    }
+  };
+
   // write config
   int SetLanguage(LANGUAGE language);
   int SetConnectionMode(CONNECTION_MODE mode);
   int SetIpDirectEnabled(bool enabled);
+  int SetDesktopRealtimeRateControl(bool enabled);
   int SetVideoEncodeFormat(VIDEO_ENCODE_FORMAT video_encode_format);
   int SetTurnMode(TURN_MODE turn_mode);
   int SetForceRelay(bool force_relay);
@@ -48,16 +61,23 @@ class ConfigCenter {
   int SetServerPort(int signal_server_port);
   int SetServerEndpoint(const std::string& address, int port);
   int SetSelfHosted(bool enable_self_hosted);
-  int SetAutostart(bool enable_autostart);
+#if defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
+  bool MigrateAutostart();
+  static bool MigrateAutostartWhileRunning(const std::string& config_path);
+#endif
+  int SetAutostart(bool enabled);
   int SetDaemon(bool enable_daemon);
   int SetPrivacyScreen(bool enable_privacy_screen);
   int SetPrivacyLocalUnlock(bool allowed);
+  int SetPrivacyBlackScreen(bool enabled);
   int SetLockOnDisconnect(bool enabled);
   int SetTrustedDevicesOnly(bool enabled);
   int SetSaveRemotePreviews(bool enabled);
   int SetPauseVideoWhenMinimized(bool enabled);
+  int SetInputSensitivity(const std::string& device, int mouse_percent, int wheel_percent);
+  int SetStreamWindowSize(const std::string& device, StreamWindowSize size);
   int SetPortableServicePromptSuppressed(bool suppressed);
-  int SetSponsorshipPromptDismissedVersion(const std::string& version);
+  int SetLastPresentedRelease(const std::string& version);
   int SetFileTransferSavePath(const std::string& path);
 
   // read config
@@ -66,6 +86,11 @@ class ConfigCenter {
   CONNECTION_MODE GetConnectionMode() const;
   bool IsIpDirectEnabled() const;
   VIDEO_ENCODE_FORMAT GetVideoEncodeFormat() const;
+  bool IsDesktopRealtimeRateControlEnabled() const { return desktop_realtime_rate_control_.load(); }
+  MiniRtcDesktopEncodingMode GetDesktopEncodingMode() const {
+    return IsDesktopRealtimeRateControlEnabled() ? MiniRtcDesktopEncodingMode::LowLoad
+                                                : MiniRtcDesktopEncodingMode::EncoderDefault;
+  }
   TURN_MODE GetTurnMode() const;
   int GetDirectStartBitrateBps() const;
   int GetRelayStartBitrateBps() const;
@@ -81,12 +106,16 @@ class ConfigCenter {
   bool IsEnableDaemon() const;
   bool IsEnablePrivacyScreen() const;
   bool IsPrivacyLocalUnlockAllowed() const;
+  bool IsPrivacyBlackScreen() const { return privacy_black_screen_.load(); }
   bool IsLockOnDisconnect() const;
   bool IsTrustedDevicesOnly() const;
   bool IsSaveRemotePreviews() const;
   bool IsPauseVideoWhenMinimized() const;
+  int GetMouseSensitivityPercent() const { return mouse_sensitivity_percent_.load(); }
+  int GetWheelSensitivityPercent(const std::string& device) const;
+  std::optional<StreamWindowSize> GetStreamWindowSize(const std::string& device) const;
   bool IsPortableServicePromptSuppressed() const;
-  std::string GetSponsorshipPromptDismissedVersion() const;
+  std::string GetLastPresentedRelease() const;
   std::string GetFileTransferSavePath() const;
 
   int Load();
@@ -107,6 +136,7 @@ class ConfigCenter {
   LANGUAGE language_ = LANGUAGE::VIETNAMESE;
   CONNECTION_MODE connection_mode_ = CONNECTION_MODE::DEVICE_ID;
   bool enable_ip_direct_ = true;
+  std::atomic<bool> desktop_realtime_rate_control_{true};
   VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::H264;
   TURN_MODE turn_mode_ = TURN_MODE::AUTO_UDP_TCP;
   static constexpr int kDefaultDirectStartBitrateBps = 2'500'000;
@@ -124,12 +154,16 @@ class ConfigCenter {
   bool enable_daemon_ = false;
   std::atomic<bool> enable_privacy_screen_{true};
   std::atomic<bool> privacy_local_unlock_allowed_{true};
+  std::atomic<bool> privacy_black_screen_{false};
   std::atomic<bool> lock_on_disconnect_{true};
   std::atomic<bool> trusted_devices_only_{false};
   std::atomic<bool> save_remote_previews_{true};
   std::atomic<bool> pause_video_when_minimized_{true};
+  std::atomic<int> mouse_sensitivity_percent_{100};
+  int legacy_wheel_sensitivity_percent_ = 100;
+  std::map<std::string, int> device_wheel_sensitivity_;
   bool portable_service_prompt_suppressed_ = false;
-  std::string sponsorship_prompt_dismissed_version_;
+  std::string last_presented_release_;
   std::string file_transfer_save_path_ = "";
 };
 }  // namespace crossdesk

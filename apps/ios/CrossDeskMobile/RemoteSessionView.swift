@@ -39,11 +39,23 @@ private struct RemoteViewportState: Equatable {
     var offset = CGSize.zero
 }
 
+private extension EnvironmentValues {
+    var hasVerticalSystemBar: Bool {
+        // The vertical bar environment value ships with the iOS 27.1 SDK.
+        #if canImport(SwiftUI, _version: 8.0.85)
+        if #available(iOS 27.1, *) { return toolbarVerticalEdge != nil }
+        #endif
+        return false
+    }
+}
+
 struct RemoteSessionView: View {
     @ObservedObject var session: RemoteSessionModel
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.hasVerticalSystemBar) private var hasVerticalSystemBar
     @State private var mouseInput = RemoteMouseInput()
-    @State private var virtualMouseVisible = false
+    @State private var virtualMouseVisible = true
+    @State private var virtualMouseCenter: CGPoint?
     @StateObject private var systemKeyboardContext = RemoteKeyboardInputContext()
     @StateObject private var keyboardGeometry = RemoteKeyboardGeometry()
     @StateObject private var shortcutStore = RemoteShortcutStore()
@@ -63,6 +75,8 @@ struct RemoteSessionView: View {
     @GestureState private var statusOrbDragTranslation = CGSize.zero
 
     var body: some View {
+        let isPhone = UIDevice.current.userInterfaceIdiom == .phone
+        let videoEdges: Edge.Set = hasVerticalSystemBar ? .all : (isPhone ? .bottom : [])
         ZStack {
             Color.black.ignoresSafeArea()
             GeometryReader { proxy in
@@ -102,6 +116,7 @@ struct RemoteSessionView: View {
 
                     RemoteTouchInputView(
                         mouseInput: mouseInput,
+                        keyboardGeometry: keyboardInputVisible ? keyboardGeometry : nil,
                         videoSize: session.displayGeometrySize,
                         controlMode: session.mouseControlMode,
                         remoteCursorPosition: session.remoteCursorPosition,
@@ -147,8 +162,9 @@ struct RemoteSessionView: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .clipped()
             }
-            // Fit video and input to the same unobscured area. Only the black
-            // background extends beneath the home indicator and display cutout.
+            // Video and input can use the home indicator area together.
+            // Floating controls still use the safe area around the display cutout.
+            .ignoresSafeArea(.container, edges: videoEdges)
             .ignoresSafeArea(.keyboard)
             .transaction { transaction in
                 transaction.animation = nil
@@ -200,6 +216,8 @@ struct RemoteSessionView: View {
                     .zIndex(50)
             }
         }
+        .statusBarHidden(isPhone || hasVerticalSystemBar)
+        .persistentSystemOverlays(isPhone ? .hidden : .automatic)
         .alert(NSLocalizedString("升级提示", comment: ""), isPresented: Binding(
             get: { !session.privacyScreen.unlockNotice && session.remoteUpdateMessage != nil },
             set: { if !$0 && !session.privacyScreen.unlockNotice { session.dismissRemoteUpdate() } }
@@ -236,7 +254,6 @@ struct RemoteSessionView: View {
         .onDisappear {
             mouseInput.releaseAll()
             mouseInput.send = nil
-            virtualMouseVisible = false
             keyboardInputVisible = false
             viewport = RemoteViewportState()
             cursorPosition = nil
@@ -413,11 +430,6 @@ struct RemoteSessionView: View {
                                  ? 380 : min(340, max(280, containerSize.width - 160)))
 
             ZStack(alignment: .topLeading) {
-                if virtualMouseVisible && !statusMenuVisible && session.pixelBuffer != nil {
-                    VirtualMouseBar(input: mouseInput)
-                        .frame(width: 140, height: 48)
-                        .position(virtualMouseCenter(orbCenter: orbCenter, in: containerSize))
-                }
                 if statusMenuVisible {
                     Color.clear
                         .contentShape(Rectangle())
@@ -426,6 +438,12 @@ struct RemoteSessionView: View {
                                 statusMenuVisible = false
                             }
                         }
+                }
+                if virtualMouseVisible, session.pixelBuffer != nil {
+                    VirtualMouseBar(input: mouseInput,
+                                    center: boundedMouseCenter(virtualMouseCenter, in: containerSize),
+                                    constrain: { boundedMouseCenter($0, in: containerSize) },
+                                    moved: { self.virtualMouseCenter = $0 })
                 }
 
                 FloatingMenuLayout(orbCenter: orbCenter, panelWidth: panelWidth) {
@@ -506,33 +524,24 @@ struct RemoteSessionView: View {
         }
     }
 
-    private func virtualMouseCenter(orbCenter: CGPoint, in size: CGSize) -> CGPoint {
-        let halfWidth: CGFloat = 70
-        let halfHeight: CGFloat = 24
-        let reach: CGFloat = 27 + 6 + halfWidth
-        var x = orbCenter.x - reach
-        var y = orbCenter.y
-        if x - halfWidth < 8 {
-            x = orbCenter.x + reach
-            if x + halfWidth > size.width - 8 {
-                x = orbCenter.x
-                y = orbCenter.y + 27 + 6 + halfHeight
-                if y + halfHeight > size.height - 8 {
-                    y = orbCenter.y - 27 - 6 - halfHeight
-                }
-            }
-        }
-        x = min(max(x, halfWidth + 8), max(halfWidth + 8, size.width - halfWidth - 8))
+    private func boundedMouseCenter(_ preferred: CGPoint?, in size: CGSize) -> CGPoint {
+        let halfWidth = VirtualMouseBar.size.width / 2
+        let halfHeight = VirtualMouseBar.size.height / 2
+        let point = preferred ?? CGPoint(x: size.width - halfWidth - 16,
+                                         y: size.height - halfHeight - 24)
+        let x = min(max(point.x, halfWidth + 8), max(halfWidth + 8, size.width - halfWidth - 8))
+        let maxY = max(halfHeight + 8, size.height - halfHeight - 8)
+        var y = min(max(point.y, halfHeight + 8), maxY)
         if keyboardInputVisible && keyboardMode != .system {
             let keyboardSize = keyboardPanelSize(in: size)
             let center = keyboardCenter(in: size, panelSize: keyboardSize)
             let keyboardRect = CGRect(x: center.x - keyboardSize.width / 2, y: center.y - keyboardSize.height / 2, width: keyboardSize.width, height: keyboardSize.height)
-            if keyboardRect.intersects(CGRect(x: x - halfWidth, y: y - halfHeight, width: 140, height: 48)) {
+            if keyboardRect.intersects(CGRect(origin: CGPoint(x: x - halfWidth, y: y - halfHeight), size: VirtualMouseBar.size)) {
                 y = keyboardRect.minY - 6 - halfHeight
                 if y - halfHeight < 8 { y = keyboardRect.maxY + 6 + halfHeight }
             }
         }
-        return CGPoint(x: x, y: min(max(y, halfHeight + 8), max(halfHeight + 8, size.height - halfHeight - 8)))
+        return CGPoint(x: x, y: min(max(y, halfHeight + 8), maxY))
     }
 
     private var dockedKeyboard: some View {
@@ -547,6 +556,7 @@ struct RemoteSessionView: View {
                                              windowSize: windowSize)
             remoteKeyboardPanel(bottomInset: proxy.safeAreaInsets.bottom)
                 .frame(width: panelSize.width, height: panelSize.height)
+                .background(RemoteKeyboardPanelFrame(geometry: keyboardGeometry))
                 .position(keyboardCenter(in: containerSize, panelSize: panelSize))
                 .transaction { transaction in
                     transaction.animation = nil
@@ -1139,6 +1149,7 @@ private struct FloatingSessionMenu: View {
     let releaseMouse: () -> Void
     private enum Page { case controls, videoSettings, networkStats }
     @State private var page: Page = .controls
+    @State private var endpointsExpanded = false
     @State private var displayedNetworkSnapshot: RemoteNetworkSnapshot
     @State private var displayedFrameSize: CGSize
     let showKeyboard: () -> Void
@@ -1196,6 +1207,9 @@ private struct FloatingSessionMenu: View {
             // when the menu closes. Rendering only reads the sampled values.
             while !Task.isCancelled {
                 displayedNetworkSnapshot = session.networkSnapshot
+                if displayedNetworkSnapshot.report?.hasDirectEndpoints != true {
+                    endpointsExpanded = false
+                }
                 displayedFrameSize = session.frameSize
                 do {
                     try await Task.sleep(nanoseconds: 1_000_000_000)
@@ -1262,7 +1276,8 @@ private struct FloatingSessionMenu: View {
             FloatingVideoSettings(session: session)
         } else if page == .networkStats {
             FloatingNetworkStatistics(snapshot: displayedNetworkSnapshot,
-                                      frameSize: displayedFrameSize)
+                                      frameSize: displayedFrameSize,
+                                      endpointsExpanded: $endpointsExpanded)
         } else {
             VStack(spacing: 9) {
                 LazyVGrid(columns: columns, spacing: 7) {
@@ -1309,6 +1324,7 @@ private struct FloatingSessionMenu: View {
                                           symbol: "folder.badge.plus",
                                           action: chooseFile)
                     FloatingControlButton(title: NSLocalizedString("网络状态", comment: ""), symbol: "chart.bar.xaxis") {
+                        endpointsExpanded = false
                         page = .networkStats
                     }
                     if session.remotePlatform == .windows {
@@ -1423,6 +1439,7 @@ private struct ScrollingCodecName: View {
 private struct FloatingNetworkStatistics: View {
     let snapshot: RemoteNetworkSnapshot
     let frameSize: CGSize
+    @Binding var endpointsExpanded: Bool
 
     var body: some View {
         VStack(spacing: 10) {
@@ -1445,7 +1462,26 @@ private struct FloatingNetworkStatistics: View {
                 detail(NSLocalizedString("分辨率", comment: ""), value: resolution)
                 detail(NSLocalizedString("画面延时", comment: ""), value: RemoteNetworkSnapshot.latency(snapshot.videoLatencyMilliseconds))
                 detail(NSLocalizedString("连接延时（RTT）", comment: ""), value: RemoteNetworkSnapshot.latency(snapshot.rttMilliseconds))
-                detail(NSLocalizedString("连接方式", comment: ""), value: snapshot.connectionMode)
+                if let report = snapshot.report, report.hasDirectEndpoints {
+                    Button {
+                        endpointsExpanded.toggle()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(NSLocalizedString("连接方式", comment: "")).foregroundStyle(.secondary)
+                            Spacer(minLength: 8)
+                            Text(snapshot.connectionMode)
+                            Image(systemName: endpointsExpanded ? "chevron.down" : "chevron.right")
+                                .font(.caption2).accessibilityHidden(true)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    if endpointsExpanded {
+                        detail(NSLocalizedString("本端地址", comment: ""), value: report.localEndpoint)
+                        detail(NSLocalizedString("对端地址", comment: ""), value: report.remoteEndpoint)
+                    }
+                } else {
+                    detail(NSLocalizedString("连接方式", comment: ""), value: snapshot.connectionMode)
+                }
                 HStack {
                     Text(NSLocalizedString("媒体加密", comment: ""))
                         .foregroundStyle(.secondary)
@@ -1515,36 +1551,30 @@ private struct FloatingNetworkStatistics: View {
 
 private struct FloatingVideoSettings: View {
     @ObservedObject var session: RemoteSessionModel
+    @State private var showingResolutions = false
 
     var body: some View {
+        let display = session.displayResolutions.display(session.selectedDisplay)
+        let canChooseResolution = session.isConnected && !session.displayResolutions.pending
+            && !session.privacyScreen.unlockNotice && display?.modes.isEmpty == false
+
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 5) {
                 Text(NSLocalizedString("被控端分辨率", comment: ""))
                     .font(.caption).foregroundStyle(.secondary)
-                let display = session.displayResolutions.display(session.selectedDisplay)
-                Menu {
-                    ForEach(Array(Set(display?.modes ?? [])).sorted {
-                        $0.width == $1.width ? $0.height > $1.height : $0.width > $1.width
-                    }, id: \.self) { mode in
-                        Button {
-                            if let display {
-                                session.updateDisplayResolution(mode, displayID: display.display_id, displayKey: display.display_key)
-                            }
-                        } label: {
-                            if mode == display?.current { Label(mode.label, systemImage: "checkmark") }
-                            else { Text(mode.label) }
-                        }
-                    }
+                Button {
+                    showingResolutions = true
                 } label: {
                     HStack {
                         Text(display?.current.label ?? NSLocalizedString("设备不支持", comment: ""))
                         Spacer()
-                        Image(systemName: "chevron.up.chevron.down")
+                        Image(systemName: "chevron.forward")
+                            .accessibilityHidden(true)
                     }
                     .font(.subheadline).padding(8)
                     .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 7))
                 }
-                .disabled(!session.isConnected || session.displayResolutions.pending || (display?.modes.isEmpty ?? true))
+                .disabled(!canChooseResolution)
                 if session.displayResolutions.pending {
                     Text(NSLocalizedString("等待电脑端确认…", comment: "")).font(.caption).foregroundStyle(.secondary)
                 } else if session.displayResolutions.failed {
@@ -1569,6 +1599,16 @@ private struct FloatingVideoSettings: View {
                        ))
         }
         .padding(.vertical, 2)
+        .sheet(isPresented: $showingResolutions) {
+            if let display {
+                DisplayResolutionList(display: display) { mode in
+                    session.updateDisplayResolution(mode, displayID: display.display_id, displayKey: display.display_key)
+                }
+            }
+        }
+        .onValueChange(of: canChooseResolution ? display?.display_key : nil) { _ in
+            showingResolutions = false
+        }
     }
 
     private func settingRow(_ title: String, options: [String], values: [Int],
@@ -1584,6 +1624,40 @@ private struct FloatingVideoSettings: View {
             }
             .pickerStyle(.segmented)
             .disabled(!session.canChangeVideoSettings)
+        }
+    }
+}
+
+private struct DisplayResolutionList: View {
+    let display: RemoteDisplayResolutionInfo
+    let select: (RemoteDisplayResolution) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let modes = Set(display.modes).sorted { ($0.width, $0.height) > ($1.width, $1.height) }
+        NavigationStack {
+            List(modes, id: \.self) { mode in
+                Button {
+                    select(mode)
+                    dismiss()
+                } label: {
+                    HStack {
+                        Text(mode.label).foregroundStyle(.primary)
+                        Spacer()
+                        if mode == display.current {
+                            Image(systemName: "checkmark").accessibilityHidden(true)
+                        }
+                    }
+                }
+                .accessibilityAddTraits(mode == display.current ? .isSelected : [])
+            }
+            .navigationTitle(NSLocalizedString("被控端分辨率", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(NSLocalizedString("取消", comment: "")) { dismiss() }
+                }
+            }
         }
     }
 }

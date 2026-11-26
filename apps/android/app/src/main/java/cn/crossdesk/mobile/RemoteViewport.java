@@ -4,12 +4,15 @@ package cn.crossdesk.mobile;
 final class RemoteViewport {
     private static final float MAXIMUM_SCALE = 10;
     private static final float MINIMUM_VISIBLE_HEIGHT_FRACTION = .2f;
-    private int baseWidth, baseHeight, baseLeft, baseTop, containerHeight;
+    private int baseWidth, baseHeight, baseLeft, baseTop, containerWidth, containerHeight;
     private boolean edgePanned;
+    private int keyboardInset;
+    private float pointerInset;
     private float scale = 1, offsetX, offsetY;
 
     void fit(int width, int height, int videoWidth, int videoHeight) {
         if (width <= 0 || height <= 0 || videoWidth <= 0 || videoHeight <= 0) return;
+        containerWidth = width;
         containerHeight = height;
         double fitScale = Math.min((double) width / videoWidth, (double) height / videoHeight);
         baseWidth = Math.max(1, (int) (videoWidth * fitScale));
@@ -60,17 +63,50 @@ final class RemoteViewport {
         constrainOffset();
     }
 
-    void panForPointer(float y, float dy) {
-        if (baseHeight == 0 || !Float.isFinite(dy)) return;
-        float overflowY = pointerOverflow(top() + y * height(), dy,
-            Math.max(0, top()), Math.min(containerHeight, top() + height()));
-        if (overflowY == 0) return;
-        edgePanned = true;
-        panBy(0, -overflowY);
+    boolean setKeyboardInset(int inset) {
+        if (keyboardInset == inset) return false;
+        keyboardInset = inset;
+        constrainOffset();
+        return true;
     }
 
-    // Only the outward portion of this movement pans; an offscreen cursor must
-    // not make a tiny movement jump the viewport by its entire hidden distance.
+    void panForPointer(float nextX, float nextY, float previousY, float dy, float inset) {
+        if (baseHeight == 0) return;
+        float overflowY = pointerOverflow(top() + previousY * height(), dy,
+            Math.max(0, top()), Math.min(containerHeight, top() + height()));
+        float panX = 0, panY = -overflowY;
+        int visibleHeight = Math.max(0, containerHeight - keyboardInset);
+        if (visibleHeight == 0) return;
+        if (isZoomed()) {
+            pointerInset = inset;
+            panX = followPointer(left() + nextX * width(), containerWidth, inset);
+        }
+        if (isZoomed() || keyboardInset > 0)
+            panY += followPointer(top() + nextY * height() + panY, visibleHeight, inset);
+        if (panX == 0 && panY == 0) return;
+        edgePanned = true;
+        panBy(panX, panY);
+    }
+
+    boolean panForAbsolutePointer(float x, float y, float inset) {
+        int visibleHeight = containerHeight - keyboardInset;
+        if (keyboardInset <= 0 || y < 0 || y >= visibleHeight || !contains(x, y)) return false;
+        // Reveal hidden content before mapping this surface position to the remote desktop.
+        float pan = clamp(followPointer(y, visibleHeight, inset),
+            Math.min(0, visibleHeight - top() - height()), Math.max(0, -top()));
+        if (pan == 0) return false;
+        edgePanned = true;
+        panBy(0, pan);
+        return true;
+    }
+
+    // Keep room for the cursor glyph when its hotspot reaches a screen edge.
+    private static float followPointer(float position, float length, float inset) {
+        float margin = Math.min(inset, length / 2);
+        return clamp(position, margin, length - margin) - position;
+    }
+
+    // Continuing outward at the vertical image edge can also pan the image at 1x.
     private static float pointerOverflow(float position, float delta, float low, float high) {
         if (delta > 0) return Math.min(delta, Math.max(0, position + delta - high));
         if (delta < 0) return Math.max(delta, Math.min(0, position + delta - low));
@@ -87,15 +123,17 @@ final class RemoteViewport {
 
     private void constrainOffset() {
         float maximumX = baseWidth * (scale - 1) / 2;
+        if (edgePanned && isZoomed()) maximumX += pointerInset;
         float minimumY = -baseHeight * (scale - 1) / 2;
         float maximumY = -minimumY;
         if (edgePanned) {
-            // Reserve 20% of the viewport height regardless of zoom. If the
+            // Reserve 20% of the unobscured height regardless of zoom. If the
             // whole image is shorter than that, keep its full height visible.
-            float visibleHeight = Math.min(height(), containerHeight * MINIMUM_VISIBLE_HEIGHT_FRACTION);
+            int availableHeight = Math.max(0, containerHeight - keyboardInset);
+            float visibleHeight = Math.min(height(), availableHeight * MINIMUM_VISIBLE_HEIGHT_FRACTION);
             float centerY = baseTop + baseHeight / 2f;
             minimumY = visibleHeight - centerY - height() / 2;
-            maximumY = containerHeight - visibleHeight - centerY + height() / 2;
+            maximumY = availableHeight - visibleHeight - centerY + height() / 2;
         }
         offsetX = clamp(offsetX, -maximumX, maximumX);
         offsetY = clamp(offsetY, minimumY, maximumY);

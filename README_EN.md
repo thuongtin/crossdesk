@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="CrossDesk logo with the icon on the left and a two-tone wordmark on the right" />
   <p>A lightweight, cross-platform remote desktop for computers, browsers, mobile devices, and terminals, with DeskHub for viewing and controlling multiple desktops.</p>
-  <p><a href="https://www.crossdesk.cn/">Website</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Download</a> · <a href="#build">Build guide</a> · <a href="https://web.crossdesk.cn/">Open Web Client</a> · <a href="README.md">Tiếng Việt</a></p>
+  <p><a href="https://www.crossdesk.cn/">Website</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Download</a> · <a href="#build">Build guide</a> · <a href="https://web.crossdesk.cn/">Open Web Client</a> · <a href="README.md">Tiếng Việt</a> · <a href="README_ZH.md">中文</a></p>
 </div>
 
 <div align="center">
@@ -16,13 +16,37 @@
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/kunkundi/crossdesk?style=flat&label=stars)](https://github.com/kunkundi/crossdesk/stargazers)
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-FF6433?logo=kofi&logoColor=white)](https://ko-fi.com/kunkundi)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-C93C45?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/kunkundi)
-[![AFDIAN](https://img.shields.io/badge/AFDIAN-946CE6?logo=afdian&logoColor=white)](https://afdian.com/a/kunkundi)
-
 </div>
 
-CrossDesk connects your computers from desktop, browser, mobile, and terminal clients, with DeskHub for viewing and controlling multiple devices together. It is built on [MiniRTC](https://github.com/kunkundi/minirtc) and supports self-hosting.
+<p align="center">
+  <a href="https://trendshift.io/repositories/17514?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/17514" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+</p>
+
+<p align="center">
+  <a href="https://trendshift.io/repositories/17514?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/17514/daily?language=C%2B%2B" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/17514?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/17514/weekly?language=C%2B%2B" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/17514?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/17514/monthly?language=C%2B%2B" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+</p>
+
+## Special Sponsors
+
+<table border="1">
+  <tr>
+    <td align="center" valign="middle" width="160">
+      <a href="https://crossdesk.hualong-ai.com/">
+        <img src="apps/desktop/src/gui/ui/icons/sponsors/hualongai.png" width="128" height="128" alt="HuaLongAI 华龙算力" />
+      </a>
+    </td>
+    <td valign="middle">
+      <p><strong><a href="https://crossdesk.hualong-ai.com/">HuaLongAI 华龙算力</a></strong></p>
+      <p>A stable, efficient API relay for Codex, zero-injection Kiro, and Claude models. HuaLongAI sources 100% of its models directly from official providers, with no substitutions. It offers high availability and reports an average SLA above 99.2%. Token-level billing lets you verify each charge. Enterprise contracts and invoices are available.</p>
+    </td>
+  </tr>
+</table>
+
+## Overview
+
+CrossDesk connects your computers from desktop, browser, mobile, and terminal clients, with a desktop wall for viewing and controlling multiple devices together. It is built on [MiniRTC](https://github.com/kunkundi/minirtc) and supports self-hosting.
 
 [Features](#features) · [Download and platforms](#download) · [Build guide](#build) · [Quick start](#quick-start) · [Terminal CLI](#cli) · [Agent / MCP](#mcp) · [Direct IP](#lan-direct) · [Trusted devices](#trusted-devices) · [Preview](#preview) · [User guide](docs/USER_GUIDE_EN.md) · [Self-hosting](#self-hosting) · [Documentation and feedback](#development) · [Sponsor](#sponsor)
 
@@ -31,10 +55,10 @@ CrossDesk connects your computers from desktop, browser, mobile, and terminal cl
 ## Features
 
 - **Cross-platform access:** control Windows, macOS, and Linux desktops from computers, browsers, or native iOS / Android clients. HarmonyOS PC and mobile clients are in development.
-- **Direct IP over LAN:** connect desktop clients using an IP address, port, and six-character password without a cloud signaling service. You can change the port, remember passwords, and view recent devices separately by mode.
+- **Direct IP over LAN:** connect to a desktop from Android, iOS, HarmonyOS, or another desktop using an IP address, port, and six-character password without a cloud signaling service. You can change the port, remember passwords, and view recent devices separately by mode.
 - **Terminal controller:** view and control remote desktops by device ID, with ANSI / Kitty / Sixel rendering, zoom and pan, persistent local command mode, a Pi extension, and a build independent of the desktop GUI.
 - **DeskHub:** live multi-device previews, groups, enlarged control, group input, and batch file distribution.
-- **Video and audio:** H.264 / AV1, hardware codecs, remote audio, and in-session quality, frame-rate, and remote display resolution controls. Confirmed resolution choices are remembered; the original display mode is restored when the last controller disconnects. Capabilities depend on the platform and device.
+- **Video and audio:** H.264 and AV1 video, hardware codecs, remote audio, and in-session quality, frame-rate, and remote display resolution controls. Native sessions can use H.265 when both peers support hardware HEVC encoding and decoding through Media Foundation or NVIDIA codecs on Windows, VideoToolbox on macOS, or NVIDIA codecs on Linux. Confirmed resolution choices are remembered; the original display mode is restored when the last controller disconnects. Capabilities depend on the platform and device.
 - **Everyday controls:** monitor switching, keyboard and mouse input, shortcuts, and text clipboard. A dual-pane file browser supports directory navigation, bidirectional file and folder transfers, drag and drop, and transfer management.
 - **Agent / MCP:** authorize an Agent through a local MCP service to observe and operate remote computers, with live monitoring, manual takeover, multiple sessions, clipboard, and file tools. Install the package for your local platform.
 - **Trusted devices:** optionally restrict desktop access to trusted device identities in addition to the connection password. Copy and paste pairing information to approve devices before they connect.
@@ -96,11 +120,13 @@ For self-hosting, connect both ends to the same service and update the server be
 
 ### Connect directly over LAN
 
-1. **Switch modes.** Run a desktop client with direct IP support on both computers. Click the top-left mode button to select **Direct IP mode**. If the button is hidden, select **Enable direct IP** under **Settings → General → Network** and save.
+On a phone or tablet, paste the address shown by the host into **Device ID or IP address** on the home screen and enter the host’s **Direct IP password**. For a desktop controller, follow these steps.
+
+1. **Switch modes.** Open the desktop client on both computers. Click the top-left mode button to select **Direct IP mode**. If the button is hidden, select **Enable direct IP** under **Settings → General → Network** and save.
 2. **Enter the address.** On the controller, enter the host's displayed `IP:port`, for example `192.168.1.20:52888` or `[2001:db8::20]:52888`, and click **Connect**. Omitting the port uses **52888**; use the actual port shown on the host.
 3. **Enter the password.** Use the host's **six-character ASCII letter/digit password** shown in Direct IP mode. You can select **Remember password**. Switching modes also switches the recent device list.
 
-Both computers must be reachable over the LAN. Internet access may be available or absent; direct sessions do not depend on a cloud signaling service. The main window lets you select the local IP, edit its port, and change the password. **Listen on all IP interfaces** is enabled by default for IPv4, IPv6, VPN, and other local interfaces on a shared port; change it under **Settings → General → Network**. Disabling **Enable direct IP** stops listeners, disconnects direct IP sessions, and hides the mode button. See the [direct IP guide](docs/USER_GUIDE_EN.md#lan-direct).
+The controller and host must be mutually reachable over a LAN or VPN. Internet access may be available or absent; direct sessions do not depend on a cloud signaling service. The main window lets you select the local IP, edit its port, and change the password. **Listen on all IP interfaces** is enabled by default for IPv4, IPv6, VPN, and other local interfaces on a shared port; change it under **Settings → General → Network**. Disabling **Enable direct IP** stops listeners, disconnects direct IP sessions, and hides the mode button. See the [direct IP guide](docs/USER_GUIDE_EN.md#lan-direct).
 
 <a id="trusted-devices"></a>
 
@@ -185,10 +211,20 @@ For Windows, macOS, and Linux X11 hosts, **Video settings → Resolution** selec
 
 ### Display preview
 
-| ANSI character rendering | Kitty pixel graphics |
-| --- | --- |
-| <img src="docs/images/cli-ansi-overview.png" width="480" alt="CrossDesk CLI ANSI quadrant overview, with read-only mode and connection status at the top and shortcuts at the bottom" /> | <img src="docs/images/cli-kitty-overview.png" width="480" alt="CrossDesk CLI Kitty protocol overview of the same remote desktop, rendered as pixels with the status bar and shortcuts" /> |
-| Colored characters show the desktop in standard terminals; use `+/-` or the wheel to zoom at the mouse position. | Pixel graphics display the desktop in terminals supporting the Kitty graphics protocol, such as Ghostty. |
+<table>
+  <tr>
+    <th width="50%">ANSI character rendering</th>
+    <th width="50%">Kitty pixel graphics</th>
+  </tr>
+  <tr>
+    <td><img src="docs/images/cli-ansi-overview.png" width="480" alt="CrossDesk CLI ANSI quadrant overview, with read-only mode and connection status at the top and shortcuts at the bottom" /></td>
+    <td><img src="docs/images/cli-kitty-overview.png" width="480" alt="CrossDesk CLI Kitty protocol overview of the same remote desktop, rendered as pixels with the status bar and shortcuts" /></td>
+  </tr>
+  <tr>
+    <td>Colored characters show the desktop in standard terminals; use <code>+/-</code> or the wheel to zoom at the mouse position.</td>
+    <td>Pixel graphics display the desktop in terminals supporting the Kitty graphics protocol, such as Ghostty.</td>
+  </tr>
+</table>
 
 ANSI displays characters; Kitty displays pixels. Appearance depends on terminal support, font, and window size.
 
@@ -237,6 +273,10 @@ The CLI connects by device ID. Direct IP, audio playback, file transfer, clipboa
 
 [CrossDesk MCP](apps/mcp/README.md) lets you request remote tasks in a Codex or DeepSeek Harness chat and watch the remote screen on the right. Run CrossDesk on the remote computer, follow the installation guide for your local app below, then choose and authorize the device in the panel.
 
+<p align="center">
+  <img src="docs/images/mcp-minesweeper.gif" width="784" alt="Codex uses CrossDesk MCP to connect to a remote Mac mini and win a game of Intermediate Minesweeper in its browser" />
+</p>
+
 | Host | Installation and configuration | Remote video |
 | --- | --- | --- |
 | Codex desktop | [Codex setup](apps/mcp/README.md#install-codex) (Chinese): register the MCP server; no extra plugin | The Agent opens the built-in browser on the right |
@@ -280,7 +320,7 @@ The PC client acts as both controller and host, sharing the desktop UI and DeskH
 
 ## Unattended and headless access
 
-- **Windows:** CrossDesk Service supports lock screens, sign-in, and secure desktops. Enabling **Auto Start** in an installed Release build uses the same device ID and password before and after sign-in. The interface opens after sign-in while the existing remote connection continues. Portable and Debug builds do not offer this switch. Without a monitor, the host attempts to prepare a virtual display and restore a previously recorded resolution. See the [Windows unattended guide](docs/USER_GUIDE_EN.md#windows-service) for capabilities, limits, and commands.
+- **Windows:** CrossDesk Service supports lock screens, sign-in, and secure desktops. Enabling **Auto Start** in an installed Release build uses the same device ID and password before and after sign-in. After sign-in, the client starts in the system tray, and the existing remote connection continues. Portable and Debug builds do not offer this switch. Without a monitor, the host attempts to prepare a virtual display and restore a previously recorded resolution. See the [Windows unattended guide](docs/USER_GUIDE_EN.md#windows-service) for capabilities, limits, and commands.
 - **Linux:** reuse an existing desktop or create an independent Xvfb / Xfce session. See [Linux headless operation](docs/HEADLESS_EN.md).
 
 <a id="self-hosting"></a>
@@ -308,11 +348,27 @@ Open **Feedback & suggestions** from the desktop main menu to export diagnostic 
 
 <a id="sponsor"></a>
 
-## Support CrossDesk
+## Sponsors and support
+
+### Backers
+
+<p>
+  <a href="https://afdian.com/u/41c14324f4b511ee8d785254001e7c00"><img src="docs/images/backers/tantiancheng.png" width="48" height="48" alt="TanTianCheng" /></a>
+  <a href="https://afdian.com/u/0229e818d9a711f1b32852540025c377"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_KwnM" /></a>
+  <a href="https://afdian.com/u/1dfe098add7011f180f252540025c377"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_k7rE" /></a>
+  <a href="https://afdian.com/u/52890a84df4011f1be6a525400c8052f"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_52890" /></a>
+  <a href="https://afdian.com/u/49d40918e87311efb07a5254001e7c00"><img src="docs/images/backers/xs-guend.png" width="48" height="48" alt="XS.GUEND" /></a>
+  <a href="https://afdian.com/u/e9addbece5b211f1970052540025c377"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_e9add" /></a>
+  <a href="https://afdian.com/u/ec7329c4bc1511eda50252540025c377"><img src="docs/images/backers/afdian-avatar-yellow.png" width="48" height="48" alt="爱发电用户_ucXS" /></a>
+</p>
+
+### Become a sponsor
 
 If CrossDesk is useful to you, consider sponsoring its continued development, cross-platform testing, and maintenance through one of the platforms below. Thank you for your support!
 
-[Ko-fi](https://ko-fi.com/kunkundi) · [GitHub Sponsors](https://github.com/sponsors/kunkundi) · [AFDIAN](https://afdian.com/a/kunkundi)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-FF6433?logo=kofi&logoColor=white)](https://ko-fi.com/kunkundi)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-C93C45?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/kunkundi)
+[![AFDIAN](https://img.shields.io/badge/AFDIAN-946CE6?logo=afdian&logoColor=white)](https://afdian.com/a/kunkundi)
 
 ## Acknowledgements and license
 

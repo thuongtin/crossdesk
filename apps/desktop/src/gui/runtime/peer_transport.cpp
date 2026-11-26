@@ -89,11 +89,15 @@ int PeerDisconnectPeerConnection(MiniRtcPeerPtr* peer, const char* host, const c
     return send({{"op", "disconnect"}, {"id", id}}) ? 0 : -1;
   return MiniRtcDisconnectPeerConnection(peer, host, id);
 }
-int PeerUpdateConnectionSettings(MiniRtcPeerPtr* peer, bool hardware, bool av1,
-                                  MiniRtcTurnMode turn) {
-  if (auto send = FindLocalSender(peer))
-    return send({{"op", "connection_settings"},
-          {"av1", av1}, {"turn", static_cast<int>(turn)}}) ? 0 : -1;
-  return MiniRtcUpdateConnectionSettings(peer, hardware, av1, turn);
+int PeerUpdateConnectionParams(MiniRtcPeerPtr* peer, const MiniRtcConnectionParams& params) {
+  if (auto send = FindLocalSender(peer)) {
+    const bool use_encoder_default =
+        params.desktop_encoding_mode == MiniRtcDesktopEncodingMode::EncoderDefault;
+    return send({{"op", "connection_settings"}, {"hardware_acceleration", params.hardware_acceleration},
+                 {"av1", params.video_codec == MiniRtcVideoCodec::AV1},
+                 {"codec", static_cast<int>(params.video_codec)}, {"turn", static_cast<int>(params.turn_mode)},
+                 {"disable_desktop_realtime_rate_control", use_encoder_default}}) ? 0 : -1;
+  }
+  return MiniRtcUpdateConnectionParams(peer, &params);
 }
 }  // namespace crossdesk

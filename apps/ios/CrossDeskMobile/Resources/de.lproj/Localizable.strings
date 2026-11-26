@@ -29,6 +29,7 @@
 "信令连接已关闭" = "Signalverbindung geschlossen";
 "偏好模式" = "Präferenzmodus";
 "像触控板一样滑动光标，点击时操作当前光标位置。" = "Bewegen Sie den Cursor wie ein Trackpad und bedienen Sie die aktuelle Cursorposition, wenn Sie darauf klicken.";
+"全部已读" = "Alle als gelesen markieren";
 "公告加载失败，请重试。" = "Das Laden der Ankündigung ist fehlgeschlagen. Bitte versuchen Sie es erneut.";
 "公告详情" = "Einzelheiten zur Ankündigung";
 "共 %1$@ 条 · %2$@ 条未读" = "Insgesamt %1$@ Artikel ·%2$@ ungelesene Artikel";
@@ -212,6 +213,7 @@
 "网络连接已中断，请重新连接。" = "Die Netzwerkverbindung wurde unterbrochen. Bitte stellen Sie die Verbindung wieder her.";
 "自定义" = "Benutzerdefiniert";
 "虚拟鼠标" = "Virtuelle Maus";
+"拖动虚拟鼠标" = "Virtuelle Maus verschieben";
 "被控端不支持直接输入中文，请更新 macOS 被控端；也可先复制文字，通过远控菜单的剪贴板发送后粘贴" = "Das gesteuerte Terminal unterstützt keine direkte Eingabe von Chinesisch. Bitte aktualisieren Sie das von macOS gesteuerte Terminal. Sie können den Text auch zunächst kopieren, über die Zwischenablage des Fernbedienungsmenüs senden und dann einfügen";
 "被控端已通过组合键解除隐私屏。点击“锁定”将重新开启隐私屏，并禁止本机使用组合键解锁。" = "Der Remote-Datenschutzbildschirm wurde über die lokale Verknüpfung entsperrt. Sperren Sie es erneut, um die Privatsphäre wiederherzustellen und das Entsperren lokaler Verknüpfungen zu deaktivieren.";
 "被控端平台：%1$@" = "Kontrollierte Terminalplattform:%1$@";
@@ -351,3 +353,21 @@
 "选择桌面方案" = "Desktop-Umgebung auswählen";
 "选择桌面方案以加载系统预设" = "Desktop-Umgebung wählen, um Systemvorgaben zu laden";
 "键盘上方常用栏" = "Favoriten über der Tastatur";
+"全部设备" = "Alle Geräte";
+"分组" = "Gruppe";
+"修改名称" = "Umbenennen";
+"修改分组" = "Gruppen bearbeiten";
+"未分组" = "Nicht gruppiert";
+"新建分组（可选）" = "Neue Gruppe (optional)";
+"该分组暂无近期连接" = "Keine aktuellen Verbindungen in dieser Gruppe";
+"更多操作" = "Weitere Aktionen";
+"设备 ID 或 IP 地址" = "Geräte-ID oder IP-Adresse";
+"请输入设备 ID 或有效的 IP 地址" = "Geräte-ID oder gültige IP-Adresse eingeben";
+"IP 直连密码" = "Passwort für direkte IP-Verbindung";
+"IP 直连失败，请检查电脑的直连地址和网络。" = "Direkte IP-Verbindung fehlgeschlagen. Adresse, Port und Netzwerk des Computers prüfen.";
+"本端地址" = "Lokale Adresse";
+"对端地址" = "Remote-Adresse";
+"删除分组" = "Gruppe löschen";
+"组内设备和连接记录将保留。" = "Geräte und Verbindungsverlauf bleiben erhalten.";
+"保存失败，请重试" = "Konnte nicht gespeichert werden; Versuchen Sie es noch einmal";
+"连接服务器后可获取最新公告。" = "Stellen Sie eine Verbindung zum Server her, um die neuesten Ankündigungen zu erhalten.";

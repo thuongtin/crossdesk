@@ -50,12 +50,14 @@ Nút mắt bên cạnh mật khẩu máy này dùng để hiện / ẩn mật kh
 
 ### Kết nối IP trực tiếp qua mạng LAN
 
-Kết nối IP trực tiếp hiện dành cho ứng dụng máy tính thông thường trên Windows, macOS, Linux. Địa chỉ IPv4 hoặc IPv6 của hai máy tính cần truy cập được nhau; có hay không có Internet đều được, không cần chờ kết nối signaling server. Trình duyệt, thiết bị di động, dịch vụ Windows trước đăng nhập và console Linux headless hiện vẫn dùng quy trình kết nối bằng ID thiết bị.
+Ứng dụng máy tính thông thường trên Windows, macOS, Linux có thể khởi tạo hoặc nhận kết nối IP trực tiếp. Điện thoại hoặc máy tính bảng Android, iOS và HarmonyOS có thể khởi tạo kết nối. Địa chỉ IPv4 hoặc IPv6 của máy điều khiển và máy tính cần truy cập được nhau; kết nối vẫn thiết lập được khi không có Internet.
 
-1. **Bật và chuyển chế độ.** Trên cả hai bên, bật **kết nối IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu (mặc định bật), sau đó dùng nút góc trên bên trái cửa sổ chính để chuyển sang **Chế độ kết nối IP**.
+**Kết nối từ điện thoại hoặc máy tính bảng.** Trên máy tính, bật IP trực tiếp và sao chép địa chỉ đang hiển thị. Trên màn hình chính của ứng dụng di động, dán địa chỉ vào ô **ID thiết bị hoặc địa chỉ IP**, nhấn **Kết nối**, rồi nhập **Mật khẩu kết nối IP trực tiếp** của máy tính. Lần đầu iOS hỏi quyền truy cập mạng cục bộ, hãy chọn cho phép.
+
+1. **Bật và chuyển chế độ.** Trên ứng dụng máy tính, bật **kết nối IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu (mặc định bật), sau đó dùng nút góc trên bên trái cửa sổ chính để chuyển sang **Chế độ kết nối IP**.
 2. **Lấy địa chỉ bên kia.** Máy được điều khiển xem địa chỉ trong “IP / cổng máy này”; nút sao chép sẽ sao chép đầy đủ `IP:cổng`. Khi có nhiều địa chỉ, chọn địa chỉ mà máy điều khiển truy cập được.
 3. **Kết nối và xác minh.** Máy điều khiển nhập ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888` trong “IP / cổng từ xa”, nhấn “Kết nối”, rồi nhập mật khẩu sáu ký tự của máy được điều khiển trong chế độ này. Nếu bỏ cổng, dùng **52888**; hỗ trợ địa chỉ số IPv4 và IPv6, không hỗ trợ tên máy.
-4. **Lưu và kết nối lại.** Bạn có thể chọn “Nhớ mật khẩu” trong hộp thoại mật khẩu. Kết nối gần đây hiển thị riêng theo chế độ ID / IP; không chọn vẫn lưu lịch sử thiết bị, nhưng lần sau cần nhập lại mật khẩu. Bạn có thể kết nối lại, sửa tên gợi nhớ hoặc xóa lịch sử từ thẻ.
+4. **Lưu và kết nối lại.** Bạn có thể chọn “Nhớ mật khẩu” trong hộp thoại mật khẩu. Trên máy tính, kết nối gần đây hiển thị riêng theo chế độ ID / IP; không chọn vẫn lưu lịch sử thiết bị, nhưng lần sau cần nhập lại mật khẩu. Bạn có thể kết nối lại, sửa tên gợi nhớ hoặc xóa lịch sử từ thẻ.
 
 <p align="center">
   <img src="images/desktop-lan-password-zh.png" width="720" alt="Hộp thoại mật khẩu IP trực tiếp và tùy chọn nhớ mật khẩu, nền là thiết bị LAN minh họa" />
@@ -108,7 +110,7 @@ Kết nối DeskHub mặc định tắt tiếng; khi cần âm thanh, bật qua 
 
 ## Thao tác thường dùng trong phiên
 
-Cửa sổ từ xa chuyển thiết bị qua thẻ phiên; thanh điều khiển cung cấp các thao tác sau; khi thanh đang thu gọn, nhấn nút mở rộng trước. Di chuột lên biểu tượng để xem gợi ý.
+Mỗi kết nối từ xa có cửa sổ điều khiển riêng, bạn có thể xem nhiều thiết bị cùng lúc. Lần đầu kết nối đến một thiết bị, cửa sổ dùng kích thước mặc định. Khi kết nối lại, cửa sổ trở về kích thước cửa sổ thường lần gần nhất trước khi đóng của thiết bị đó. Chuyển cửa sổ là chuyển đích điều khiển bàn phím và chuột. Đóng cửa sổ của một kết nối thường sẽ ngắt thiết bị đó, các kết nối khác vẫn chạy. Nếu DeskHub vẫn đang dùng thiết bị, đóng cửa sổ riêng vẫn giữ hình xem trước trong DeskHub. Nhấn nút mở rộng để mở thanh điều khiển đang thu gọn. Di chuột lên biểu tượng để xem gợi ý.
 
 | Mục | Công dụng |
 | --- | --- |
@@ -122,6 +124,8 @@ Cửa sổ từ xa chuyển thiết bị qua thẻ phiên; thanh điều khiển
 | Chế độ riêng tư | Bật hoặc tắt chế độ riêng tư của máy tính được điều khiển; di chuột để xem trạng thái hiện tại và thao tác khả dụng |
 | Toàn màn hình | Vào / thoát toàn màn hình |
 | Ngắt kết nối | Kết thúc phiên từ xa hiện tại |
+
+Khi có máy điều khiển kết nối, máy tính được điều khiển hiển thị **Đang được điều khiển** và số thiết bị đang kết nối ở bên trái menu **☰** góc trên bên phải cửa sổ chính. Nhấn **Đang được điều khiển** để mở danh sách thiết bị, chọn một máy điều khiển để gửi tệp hoặc ngắt kết nối. Nhấn ra ngoài bảng hoặc nhấn Esc để thu gọn danh sách.
 
 Ứng dụng máy tính có thể đồng bộ clipboard văn bản. Bạn có thể đổi nơi nhận tệp trong “Cài đặt → Chung → Đường dẫn lưu tệp”. Đóng cửa sổ chính sẽ ẩn cửa sổ và giữ chương trình chạy; để thoát hoàn toàn, dùng mục thoát trong khay hệ thống hoặc thanh menu.
 
@@ -137,7 +141,7 @@ Nếu môi trường triển khai thủ công thiếu FUSE, hoặc container hay
 
 Trên macOS, dùng Finder để dán vào thư mục cục bộ; tệp trùng tên được giữ lại và tệp mới được lưu bằng tên có số thứ tự.
 
-Thanh tác vụ Windows hiển thị cửa sổ chính và cửa sổ điều khiển từ xa thành hai biểu tượng riêng, cho phép chuyển và thu nhỏ riêng. Sau khi đóng cửa sổ chính, cửa sổ điều khiển từ xa và kết nối vẫn được giữ; khi cần cửa sổ chính, mở lại từ khay hệ thống. Biểu tượng thanh tác vụ của cửa sổ điều khiển từ xa chỉ xuất hiện khi có cửa sổ phiên; để ghim ứng dụng, hãy dùng biểu tượng cửa sổ chính.
+Thanh tác vụ Windows hiển thị cửa sổ chính và cửa sổ điều khiển từ xa thành các nhóm riêng, cho phép chuyển và thu nhỏ riêng. Sau khi đóng cửa sổ chính, cửa sổ điều khiển từ xa và kết nối vẫn được giữ; khi cần cửa sổ chính, mở lại từ khay hệ thống. Biểu tượng thanh tác vụ của cửa sổ điều khiển từ xa chỉ xuất hiện khi có cửa sổ phiên; để ghim ứng dụng, hãy dùng biểu tượng cửa sổ chính.
 
 Trên Linux, cửa sổ chính và cửa sổ điều khiển từ xa dùng mã nhóm ứng dụng khác nhau, hỗ trợ X11, XWayland và Wayland native; cách hiển thị thực tế trên thanh tác vụ do môi trường desktop và cài đặt nhóm quyết định. Đóng cửa sổ chính không ảnh hưởng kết nối từ xa; bạn có thể mở lại từ khay hệ thống. Để ghim ứng dụng, hãy dùng trình khởi chạy cửa sổ chính.
 
@@ -158,6 +162,8 @@ Danh sách tác vụ phía dưới hiển thị trạng thái và tiến độ t
 ### Điều chỉnh hình ảnh trong phiên
 
 Sau khi kết nối thành công, nhấn **Cài đặt hình ảnh** (biểu tượng thanh trượt) trên thanh công cụ để chọn trực tiếp chất lượng thấp / trung bình / cao, **30 / 60 fps**, cùng ưu tiên độ mượt / ưu tiên chất lượng / cân bằng. Tùy chọn được gửi đến máy được điều khiển hiện tại, không cần ngắt rồi kết nối lại; hình ảnh thực tế phụ thuộc mạng, thiết bị và khả năng bộ mã hóa. Nếu máy được điều khiển cũ không hỗ trợ, menu thông báo và vô hiệu hóa tùy chọn.
+
+Điều chỉnh tốc độ cuộn ngang và dọc trong **Cài đặt hình ảnh → Độ nhạy con lăn**. Máy điều khiển ghi nhớ giá trị này cho từng máy được điều khiển và tự khôi phục ở lần kết nối sau. Khi điều khiển nhóm trong DeskHub, mỗi thiết bị dùng độ nhạy con lăn riêng của nó.
 
 Khi máy được điều khiển dùng Windows, macOS hoặc Linux X11, bạn còn có thể chọn độ phân giải màn hình nền được màn hình hiện tại hỗ trợ trong **Cài đặt hình ảnh → Độ phân giải**. Điều chỉnh không cần kết nối lại; khi máy điều khiển cuối cùng ngắt kết nối, chế độ hiển thị trước lần điều chỉnh đầu tiên trong thời gian kết nối được khôi phục. Linux cần ghi hình X11 và máy chủ hiển thị hỗ trợ RandR; Wayland, XWayland và cấu hình hiển thị dùng thu phóng hoặc di chuyển khung nhìn tùy chỉnh hiện chưa được hỗ trợ. Độ phân giải khả dụng do màn hình hoặc máy chủ hiển thị ảo cung cấp; màn hình ảo chỉ có một chế độ sẽ không được tạo thêm chế độ.
 
@@ -186,7 +192,7 @@ Nhấn **☰ → Cài đặt** ở góc trên bên phải cửa sổ chính, chu
 | Lưu ảnh xem trước màn hình từ xa | Mặc định bật, lưu ảnh xem trước màn hình từ xa; khi tắt, vùng hình thu nhỏ hiển thị nền tảng máy được điều khiển và xóa ảnh xem trước hiện có, giữ lịch sử kết nối và mật khẩu |
 | Bật chế độ riêng tư khi có kết nối đến | Thiết lập có tự bật chế độ riêng tư khi máy này được kết nối từ xa hay không; trong phiên có thể chuyển qua thanh công cụ máy điều khiển |
 | Cấu hình máy chủ self-host | Nhấn “Chỉnh sửa” để nhập địa chỉ máy chủ và cổng dịch vụ signaling, bật bằng công tắc bên phải |
-| Tự khởi động cùng hệ thống | Bản Release đã cài đặt trên Windows: cung cấp điều khiển từ xa trước đăng nhập bằng ID, mật khẩu hiện có; sau khi người dùng đăng nhập, GUI tự khởi động và kết nối dịch vụ nền để khôi phục đầy đủ tính năng. Bản Windows di động không cần cài đặt và Debug không hỗ trợ công tắc này. Trên nền tảng máy tính khác, lưu sẽ thiết lập tự khởi động khi đăng nhập màn hình |
+| Tự khởi động cùng hệ thống | Bản Release đã cài đặt trên Windows: cung cấp điều khiển từ xa trước đăng nhập bằng ID, mật khẩu hiện có; sau khi người dùng đăng nhập, GUI tự khởi động và kết nối dịch vụ nền để khôi phục đầy đủ tính năng. Bản Windows di động không cần cài đặt và Debug không hỗ trợ công tắc này. Khi bật, CrossDesk tự khởi động vào khay hệ thống lúc đăng nhập màn hình, bạn có thể mở cửa sổ chính từ khay. |
 | Bật daemon | Ở chế độ máy tính Windows / macOS / Linux, lưu sẽ bật hoặc tắt ngay tự khởi động lại sau khi thoát bất thường, không cần khởi động lại chương trình; thoát bình thường hoặc đăng xuất sẽ không khởi chạy lại, chế độ console headless không bật tiến trình giám sát tích hợp |
 | Đường dẫn lưu tệp | Chọn thư mục nhận tệp |
 
@@ -315,7 +321,9 @@ Windows tự chọn cách ghi hình màn hình khả dụng, không cần đặt
 
 Bản cài đặt mặc định đăng ký dịch vụ khởi động theo yêu cầu; ứng dụng thử khởi động dịch vụ khi chạy; nếu chưa bật chế độ không giám sát, dịch vụ tự thoát khi máy này không còn tiến trình ứng dụng CrossDesk. Bản portable có thể cài dịch vụ trong hộp thoại nhắc hoặc “Cài đặt → Dịch vụ điều khiển khi khóa màn hình”, cần quyền quản trị viên.
 
-Sau khi bật **Tự khởi động cùng hệ thống** trong bản cài đặt Windows, bạn có thể kết nối trước đăng nhập bằng cùng ID và mật khẩu; sau đăng nhập giao diện tự mở, kết nối hiện có được giữ. Tắt công tắc này sẽ tắt khởi động không giám sát. **Bật daemon** dùng để khôi phục sau khi giao diện thoát bất thường, là một tùy chọn khác. Bản portable và bản Debug không cung cấp công tắc tự khởi động không giám sát.
+Sau khi bật **Tự khởi động cùng hệ thống** trong bản cài đặt Windows, bạn có thể kết nối trước đăng nhập bằng cùng ID và mật khẩu; sau đăng nhập, ứng dụng tự khởi động vào khay hệ thống, kết nối hiện có được giữ. Tắt công tắc này sẽ tắt khởi động không giám sát. **Bật daemon** dùng để khôi phục sau khi giao diện thoát bất thường, là một tùy chọn khác. Bản portable và bản Debug không cung cấp công tắc tự khởi động không giám sát.
+
+Nếu bản cũ đã bật “Tự khởi động cùng hệ thống”, khi nâng cấp ứng dụng giữ nguyên ID thiết bị, mật khẩu và lịch sử ghép đôi, đồng thời tự bật chế độ không giám sát trước đăng nhập. Nếu thông tin xác thực cũ cần chuyển đổi, ứng dụng sẽ hoàn tất ở lần chạy tiếp theo. Thiết lập đã tắt rõ ràng chế độ không giám sát trong bản mới được ưu tiên.
 
 Trước lần bật đầu tiên, chạy ứng dụng và kết nối mạng để lấy ID máy này. Bật sẽ giữ ID, mật khẩu và lịch sử ghép đôi hiện tại; sau đó có thể dùng thông tin kết nối cũ truy cập màn hình đăng nhập.
 

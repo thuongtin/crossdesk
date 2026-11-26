@@ -13,6 +13,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
 import android.os.Bundle;
 import android.text.*;
 import android.text.method.PasswordTransformationMethod;
@@ -21,7 +22,9 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static cn.crossdesk.mobile.MobileUi.*;
@@ -47,6 +50,8 @@ public final class MainActivity extends Activity implements NativeSession.Listen
     private RecentConnections history;
     private final RecentConnectionPresence recentPresence=new RecentConnectionPresence();
     private LinearLayout recentGrid;
+    private TextView recentCount, recentFilterButton;
+    private String recentFilter, recentFilterServer;
     private int recentColumns=2;
     private final Runnable presenceTick=new Runnable(){public void run(){
         if(!recentPresence.isConnected())return;
@@ -150,15 +155,32 @@ public final class MainActivity extends Activity implements NativeSession.Listen
             }else view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;
         });
         root.setFocusableInTouchMode(true);pageHost.show(canvas,motion);
-        applySystemBars(dark);
+        applySystemBars();
     }
     // Android 8–10 require system UI flags instead of WindowInsetsController.
     @SuppressWarnings("deprecation")
-    private void applySystemBars(boolean dark){
-        if(android.os.Build.VERSION.SDK_INT>=30){
-            android.view.WindowInsetsController controller=getWindow().getInsetsController();
-            if(controller!=null){int light=android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;controller.setSystemBarsAppearance(dark?0:light,light);}
-        }else getWindow().getDecorView().setSystemUiVisibility(dark?0:View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+    private void applySystemBars() {
+        boolean sessionPage = "session".equals(page);
+        boolean immersive = sessionPage && !isInMultiWindowMode();
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller == null) return;
+            int light = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                    | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+            controller.setSystemBarsAppearance(sessionPage ? 0 : light, light);
+            int bars = WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars();
+            if (immersive) {
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                controller.hide(bars);
+            } else {
+                controller.show(bars);
+            }
+        } else {
+            int flags = sessionPage ? 0 : View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            if (immersive) flags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+            getWindow().getDecorView().setSystemUiVisibility(flags);
+        }
     }
     private EditText field(String hint,int type){
         EditText v=new EditText(this);v.setHint(hint);v.setContentDescription(hint);v.setInputType(type);v.setSingleLine(true);v.setTextSize(17);v.setTextColor(INK);v.setHintTextColor(SECONDARY);
@@ -223,16 +245,28 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         LinearLayout connection=column();connection.setPadding(dp(18),dp(18),dp(18),dp(18));content.addView(ui.shadowCard(connection,20));
         connection.addView(text(L10n.tr("远程桌面"),20,true));ui.gap(connection,16);
         LinearLayout entry=row();connection.addView(entry,ui.size(-1,54));
-        remote=field(L10n.tr("对端 ID"),InputType.TYPE_CLASS_NUMBER);remote.setTextSize(20);remote.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+        remote=field(L10n.tr("设备 ID 或 IP 地址"), InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        remote.setImeOptions(remote.getImeOptions() | android.view.inputmethod.EditorInfo.IME_FLAG_FORCE_ASCII);
+        remote.setTextSize(20);remote.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
         remote.setOnFocusChangeListener((view,focused)->{GradientDrawable shape=ui.background(BACKGROUND,12);shape.setStroke(dp(focused?2:1),focused?BLUE:LINE);remote.setBackground(shape);});
-        remote.setFilters(new InputFilter[]{new InputFilter.LengthFilter(11)});remote.setText(formatId(preferences.getString("lastRemote","")));
+        remote.setFilters(new InputFilter[]{new InputFilter.LengthFilter(160)});remote.setText(formatId(preferences.getString("lastRemote","")));
         entry.addView(remote,new LinearLayout.LayoutParams(0,-1,1));
         TextView connect=ui.primary(L10n.tr("连接"),()->promptConnection(id()));connect.setContentDescription(L10n.tr("连接"));LinearLayout.LayoutParams buttonParams=ui.size(96,54);buttonParams.leftMargin=dp(10);entry.addView(connect,buttonParams);
         Runnable update=()->{connect.setEnabled(!id().isEmpty());connect.setAlpha(id().isEmpty()?.45f:1);};update.run();
         remote.addTextChangedListener(new TextWatcher(){boolean editing;public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){update.run();}public void afterTextChanged(Editable value){if(editing)return;String formatted=formatId(value.toString());if(!formatted.equals(value.toString())){editing=true;int cursor=remote.getSelectionStart(),digits=value.subSequence(0,Math.max(0,cursor)).toString().replaceAll("[^0-9]","").length();remote.setText(formatted);remote.setSelection(Math.min(formatted.length(),digits+Math.max(0,digits-1)/3));editing=false;}}});
         LinearLayout recent=column();recent.setPadding(dp(16),dp(16),dp(16),dp(16));ui.card(recent,18);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,0,1);p.topMargin=dp(20);content.addView(recent,p);
         JSONArray records=history.list(serverKey());recentPresence.watch(records,android.os.SystemClock.elapsedRealtime());LinearLayout heading=row();heading.addView(text(L10n.tr("最近连接"),20,true),new LinearLayout.LayoutParams(0,-2,1));
-        if(records.length()>0){TextView count=text(L10n.format("{0} 台设备",records.length()),12,false);count.setTextColor(SECONDARY);heading.addView(count);}recent.addView(heading);
+        if(!serverKey().equals(recentFilterServer)){recentFilter=null;recentFilterServer=serverKey();}
+        if(records.length()>0){
+            recentCount=text("",12,false);recentCount.setTextColor(SECONDARY);heading.addView(recentCount);
+            recentFilterButton=text("",13,true);recentFilterButton.setTextColor(BLUE);
+            recentFilterButton.setSingleLine();recentFilterButton.setEllipsize(TextUtils.TruncateAt.END);
+            recentFilterButton.setMaxWidth(dp(120));recentFilterButton.setPadding(dp(8),0,0,0);
+            recentFilterButton.setGravity(Gravity.CENTER);recentFilterButton.setOnClickListener(v->showRecentFilter());
+            heading.addView(recentFilterButton,ui.size(-2,44));
+        }
+        recent.addView(heading);
         if(records.length()==0){
             LinearLayout empty=column();empty.setGravity(Gravity.CENTER);recent.addView(empty,new LinearLayout.LayoutParams(-1,0,1));empty.addView(ui.icon("history",0xFFB6B6BB),ui.size(34,34));ui.gap(empty,12);
             TextView emptyTitle=text(L10n.tr("还没有连接记录"),17,true);emptyTitle.setGravity(Gravity.CENTER);empty.addView(emptyTitle);ui.gap(empty,8);TextView hint=text(L10n.tr("成功连接后，这里会显示最近的远程设备。"),13,false);hint.setTextColor(SECONDARY);hint.setGravity(Gravity.CENTER);empty.addView(hint);
@@ -244,7 +278,6 @@ public final class MainActivity extends Activity implements NativeSession.Listen
                 if(columns!=recentColumns){recentColumns=columns;view.post(()->{if(view==recentGrid)renderRecentConnections();});}
             });renderRecentConnections();
         }
-        ensureSignaling();
         if(!message.isEmpty())pendingConnectionMessage=message;
         showConnectionMessage();
     }
@@ -256,12 +289,72 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         pendingConnectionMessage="";connectionDialog.show();
     }
     private String id(){return remote.getText().toString().replace(" ","");}
-    static String formatId(String value){String digits=value.replaceAll("[^0-9]","");if(digits.length()>9)digits=digits.substring(0,9);return digits.replaceAll("(.{3})(?=.)","$1 ");}
+    static String formatId(String value) {
+        String target = value.replace(" ", "");
+        return target.matches("[0-9]{1,9}") ? target.replaceAll("(.{3})(?=.)", "$1 ") : target;
+    }
     private void renderRecentConnections(){
         if(recentGrid==null)return;
-        JSONArray records=recentPresence.ordered(history.list(serverKey()),android.os.SystemClock.elapsedRealtime());
+        JSONArray all = history.list(serverKey());
+        if (recentFilter != null && !recentFilter.isEmpty() && !RecentConnections.availableGroups(all).contains(recentFilter)) {
+            recentFilter = null;
+        }
+        JSONArray records = recentPresence.ordered(all, android.os.SystemClock.elapsedRealtime());
+        if (recentFilter != null) {
+            JSONArray filtered = new JSONArray();
+            for (int i = 0; i < records.length(); i++) {
+                JSONObject item = records.optJSONObject(i);
+                Set<String> groups = RecentConnections.groups(item);
+                if (recentFilter.isEmpty() ? groups.isEmpty() : groups.contains(recentFilter)) filtered.put(item);
+            }
+            records = filtered;
+        }
+        recentCount.setText(L10n.format("{0} 台设备",records.length()));
+        recentFilterButton.setText(recentGroupLabel(recentFilter)+" ▾");
+        recentFilterButton.setContentDescription(L10n.tr("分组")+" · "+recentGroupLabel(recentFilter));
         recentGrid.removeAllViews();previewCards.clear();
+        if(records.length()==0){
+            TextView empty=text(L10n.tr("该分组暂无近期连接"),14,false);
+            empty.setGravity(Gravity.CENTER);empty.setTextColor(SECONDARY);recentGrid.addView(empty,ui.size(-1,72));
+        }
         for(int i=0;i<records.length();i+=recentColumns){LinearLayout line=row();line.setGravity(Gravity.TOP);recentGrid.addView(line);for(int j=i;j<i+recentColumns;j++){View card=j<records.length()?recentCard(records.optJSONObject(j)):new View(this);LinearLayout.LayoutParams cell=new LinearLayout.LayoutParams(0,-2,1);if(j>i)cell.setMarginStart(dp(12));line.addView(card,cell);}ui.gap(recentGrid,12);}
+    }
+    private String recentGroupLabel(String filter) {
+        if (filter == null) return L10n.tr("全部设备");
+        return filter.isEmpty() ? L10n.tr("未分组") : filter;
+    }
+    private void showRecentFilter() {
+        String server = serverKey();
+        List<String> filters = new ArrayList<>();
+        filters.add(null);
+        filters.add("");
+        String[] groups = RecentConnections.availableGroups(history.list(server)).toArray(new String[0]);
+        java.util.Collections.addAll(filters, groups);
+        String[] labels = new String[filters.size()];
+        for (int i = 0; i < labels.length; i++) labels[i] = recentGroupLabel(filters.get(i));
+        AlertDialog.Builder picker = new AlertDialog.Builder(this).setTitle(L10n.tr("分组"))
+            .setSingleChoiceItems(labels, filters.indexOf(recentFilter), (dialog, index) -> {
+                if (!server.equals(serverKey())) return;
+                recentFilter = filters.get(index);
+                dialog.dismiss();
+                renderRecentConnections();
+            });
+        if (groups.length > 0) {
+            picker.setNeutralButton(L10n.tr("删除分组"), (dialog, which) ->
+                new AlertDialog.Builder(this).setTitle(L10n.tr("删除分组"))
+                    .setItems(groups, (list, index) -> confirmDeleteGroup(server, groups[index]))
+                    .setNegativeButton(L10n.tr("取消"), null).show());
+        }
+        picker.show();
+    }
+    private void confirmDeleteGroup(String server, String group) {
+        new AlertDialog.Builder(this).setTitle(group).setMessage(L10n.tr("组内设备和连接记录将保留。"))
+            .setNegativeButton(L10n.tr("取消"), null)
+            .setPositiveButton(L10n.tr("删除分组"), (dialog, which) -> {
+                if (!server.equals(serverKey())) return;
+                if (!history.deleteGroup(server, group)) toast(L10n.tr("保存失败，请重试"));
+                renderRecentConnections();
+            }).show();
     }
     private View recentCard(JSONObject item){
         if(item==null)return new View(this);String id=item.optString("id"),platform=item.optString("platform");
@@ -271,16 +364,114 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setVisibility(View.GONE);image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);preview.addView(image,new FrameLayout.LayoutParams(-1,-1));
         String server=serverKey();Runnable load=()->{if(!image.isAttachedToWindow())return;Object binding=new Object();image.setTag(binding);image.setImageDrawable(null);image.setVisibility(View.GONE);label.setVisibility(View.VISIBLE);
             previews.load(server,id,bitmap->{if(image.getTag()!=binding||!image.isAttachedToWindow()){if(bitmap!=null)bitmap.recycle();return;}if(bitmap!=null){image.setImageBitmap(bitmap);image.setVisibility(View.VISIBLE);label.setVisibility(View.GONE);}});};previewCards.add(load);image.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){public void onViewAttachedToWindow(View view){load.run();}public void onViewDetachedFromWindow(View view){image.setTag(null);}});if(image.isAttachedToWindow())load.run();
-        LinearLayout caption=column();caption.setPadding(dp(9),dp(9),dp(9),dp(9));TextView name=text(item.optString("name",id),12,true);name.setSingleLine();name.setEllipsize(TextUtils.TruncateAt.END);caption.addView(name);ui.gap(caption,4);
-        LinearLayout details=row();TextView detail=text("ID "+id,10,false);detail.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));detail.setTextColor(SECONDARY);detail.setSingleLine();detail.setEllipsize(TextUtils.TruncateAt.END);details.addView(detail,new LinearLayout.LayoutParams(0,-2,1));
+        Runnable actions=()->showRecentActions(server,item);
+        boolean dark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
+        GradientDrawable capsule = ui.background(dark ? INK : BACKGROUND, 9);
+        capsule.setStroke(Math.max(1, dp(0.75f)), dark ? 0xFF434348 : LINE);
+        ImageButton more = new ImageButton(this);
+        more.setImageResource(R.drawable.ic_more_horizontal);
+        more.setScaleType(ImageView.ScaleType.CENTER);
+        more.setBackground(new InsetDrawable(capsule, dp(9), dp(13.5f), dp(9), dp(13.5f)));
+        more.setPadding(0, 0, 0, 0);
+        more.setColorFilter(dark ? Color.WHITE : INK);
+        more.setContentDescription(L10n.tr("更多操作"));
+        more.setOnClickListener(v -> actions.run());
+        preview.addView(more, new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.END));
+        String title=RecentConnections.displayName(item);
+        LinearLayout caption=column();caption.setPadding(dp(9),dp(9),dp(9),dp(9));TextView name=text(title,12,true);name.setSingleLine();name.setEllipsize(TextUtils.TruncateAt.END);caption.addView(name);ui.gap(caption,4);
+        Set<String> groups=RecentConnections.groups(item);
+        if(!groups.isEmpty()){
+            TextView groupNames=text(TextUtils.join(" · ",groups),10,false);groupNames.setTextColor(SECONDARY);
+            groupNames.setSingleLine();groupNames.setEllipsize(TextUtils.TruncateAt.END);caption.addView(groupNames);
+        }
+        LinearLayout details=row();TextView detail=text(id.contains(":") ? id : "ID "+id,10,false);detail.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));detail.setTextColor(SECONDARY);detail.setSingleLine();detail.setEllipsize(TextUtils.TruncateAt.END);details.addView(detail,new LinearLayout.LayoutParams(0,-2,1));
         if(item.optBoolean("remember")){View key=ui.icon("key",SECONDARY);key.setContentDescription(L10n.tr("已保存密码"));LinearLayout.LayoutParams keySize=ui.size(10,10);keySize.leftMargin=dp(4);details.addView(key,keySize);}
-        boolean online=recentPresence.isOnline(id,android.os.SystemClock.elapsedRealtime());String availability=online?L10n.tr("在线"):L10n.tr("离线");TextView presence=text(availability,10,true);presence.setSingleLine();presence.setTextColor(online?GREEN:SECONDARY);LinearLayout.LayoutParams presenceSize=ui.size(-2,-2);presenceSize.leftMargin=dp(5);details.addView(presence,presenceSize);caption.addView(details);card.addView(caption);
-        card.setContentDescription(L10n.tr("连接 ")+item.optString("name",id)+"，ID "+id+(item.optBoolean("remember")?L10n.tr("，已保存密码"):"")+"，"+availability);card.setClickable(true);card.setFocusable(true);card.setOnClickListener(v->{remote.setText(formatId(id));promptConnection(id);});
-        card.setOnLongClickListener(v->{new AlertDialog.Builder(this).setTitle(item.optString("name",id)).setItems(new String[]{L10n.tr("连接"),L10n.tr("删除记录")},(d,w)->{if(w==0)promptConnection(id);else{history.delete(serverKey(),id);home("");}}).show();return true;});return card;
+        boolean online=recentPresence.isOnline(id,android.os.SystemClock.elapsedRealtime());String availability=id.contains(":")?"IP":online?L10n.tr("在线"):L10n.tr("离线");TextView presence=text(availability,10,true);presence.setSingleLine();presence.setTextColor(online?GREEN:SECONDARY);LinearLayout.LayoutParams presenceSize=ui.size(-2,-2);presenceSize.leftMargin=dp(5);details.addView(presence,presenceSize);caption.addView(details);card.addView(caption);
+        card.setContentDescription(L10n.tr("连接 ")+title+"，ID "+id+(item.optBoolean("remember")?L10n.tr("，已保存密码"):"")+"，"+availability);card.setClickable(true);card.setFocusable(true);card.setOnClickListener(v->promptConnection(id));
+        card.setOnLongClickListener(v->{actions.run();return true;});return card;
+    }
+    private void showRecentActions(String server, JSONObject item) {
+        String id = item.optString("id");
+        String[] actions = {L10n.tr("连接"), L10n.tr("修改名称"), L10n.tr("修改分组"), L10n.tr("删除记录")};
+        new AlertDialog.Builder(this).setTitle(RecentConnections.displayName(item)).setItems(actions, (dialog, index) -> {
+            switch (index) {
+                case 0: promptConnection(id); break;
+                case 1: editRecentDevice(server, item, false); break;
+                case 2: editRecentDevice(server, item, true); break;
+                case 3: history.delete(server, id); home(""); break;
+            }
+        }).show();
+    }
+    private void editRecentDevice(String server, JSONObject item, boolean editGroups) {
+        String id = item.optString("id");
+        String title = RecentConnections.displayName(item);
+        LinearLayout fields = column();
+        fields.setPadding(dp(22), dp(12), dp(22), 0);
+        fields.addView(text(editGroups ? title + " · ID " + id : "ID " + id, 13, false));
+        EditText input = field(editGroups ? L10n.tr("新建分组（可选）") : item.optString("name", id), InputType.TYPE_CLASS_TEXT);
+        Set<String> selected = RecentConnections.groups(item);
+        if (editGroups) {
+            addGroupChoices(fields, input, selected, RecentConnections.availableGroups(history.list(server)));
+        } else {
+            input.setText(title);
+            input.setSelectAllOnFocus(true);
+        }
+        fields.addView(input, ui.size(-1, 48));
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(fields);
+        new AlertDialog.Builder(this).setTitle(editGroups ? L10n.tr("修改分组") : L10n.tr("修改名称"))
+            .setView(scroll).setNegativeButton(L10n.tr("取消"), null)
+            .setPositiveButton(L10n.tr("保存"), (dialog, which) -> {
+                String value = input.getText().toString().trim();
+                if (editGroups) {
+                    if (!value.isEmpty()) selected.add(value);
+                    history.edit(server, id, null, selected);
+                } else {
+                    history.edit(server, id, value, null);
+                }
+                renderRecentConnections();
+            }).show();
+    }
+    private void addGroupChoices(LinearLayout fields, EditText input, Set<String> selected, Set<String> groups) {
+        CheckBox ungrouped = new CheckBox(this);
+        ungrouped.setText(L10n.tr("未分组"));
+        fields.addView(ungrouped);
+        Runnable updateUngrouped = () -> ungrouped.setChecked(selected.isEmpty() && input.getText().toString().trim().isEmpty());
+        List<CheckBox> choices = new ArrayList<>();
+        for (String group : groups) {
+            CheckBox choice = new CheckBox(this);
+            choice.setText(group);
+            choice.setChecked(selected.contains(group));
+            choice.setOnClickListener(v -> {
+                if (choice.isChecked()) selected.add(group);
+                else selected.remove(group);
+                updateUngrouped.run();
+            });
+            fields.addView(choice);
+            choices.add(choice);
+        }
+        ungrouped.setOnClickListener(v -> {
+            selected.clear();
+            for (CheckBox choice : choices) choice.setChecked(false);
+            input.setText("");
+            updateUngrouped.run();
+        });
+        input.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) { updateUngrouped.run(); }
+            public void afterTextChanged(Editable s) {}
+        });
+        updateUngrouped.run();
     }
     private void promptConnection(String id){
-        hideKeyboard();if(!id.matches("[0-9]{9}")){remote.setError(L10n.tr("请输入 9 位设备 ID"));remote.requestFocus();return;}
-        if(!preferences.getBoolean("networkConsent",false)){consent(()->connectOrPrompt(id));return;}connectOrPrompt(id);
+        if (session != null || (passwordDialog != null && passwordDialog.isShowing()) ||
+                (privacyDialog != null && privacyDialog.isShowing())) return;
+        hideKeyboard();
+        final String target = id.matches("[0-9]{9}") ? id : NativeSession.directEndpoint(id);
+        if (target.isEmpty()) { remote.setError(L10n.tr("请输入设备 ID 或有效的 IP 地址")); remote.requestFocus(); return; }
+        if (!target.equals(id())) remote.setText(formatId(target));
+        if(!preferences.getBoolean("networkConsent",false)){consent(()->connectOrPrompt(target));return;}connectOrPrompt(target);
     }
     private void connectOrPrompt(String id){
         String stored;
@@ -299,20 +490,21 @@ public final class MainActivity extends Activity implements NativeSession.Listen
     private void passwordSheet(String id,String error,boolean rememberDefault){
         Dialog dialog=new Dialog(this);passwordDialog=dialog;LinearLayout sheet=column();sheet.setPadding(dp(22),dp(10),dp(22),dp(22));sheet.setBackground(ui.background(BACKGROUND,24));
         View handle=new View(this);handle.setBackground(ui.background(0xFFC6C6CB,3));LinearLayout.LayoutParams hp=ui.size(36,5);hp.gravity=Gravity.CENTER;sheet.addView(handle,hp);ui.gap(sheet,20);
-        LinearLayout header=row(),titles=column();titles.addView(text(L10n.tr("连接远程桌面"),22,true));ui.gap(titles,5);TextView subtitle=text(L10n.format("对端 ID  {0}",id),15,false);subtitle.setTextColor(SECONDARY);titles.addView(subtitle);header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));header.addView(ui.iconButton("close",L10n.tr("关闭"),dialog::dismiss),ui.size(36,36));sheet.addView(header);ui.gap(sheet,18);
-        LinearLayout passwordRow=row();ui.card(passwordRow,10);EditText password=field(L10n.tr("访问密码"),InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);password.setBackgroundColor(Color.TRANSPARENT);passwordRow.addView(password,new LinearLayout.LayoutParams(0,dp(50),1));
+        LinearLayout header=row(),titles=column();titles.addView(text(L10n.tr("连接远程桌面"),22,true));ui.gap(titles,5);TextView subtitle=text(id.contains(":") ? id : L10n.format("对端 ID  {0}",id),15,false);subtitle.setTextColor(SECONDARY);titles.addView(subtitle);header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));header.addView(ui.iconButton("close",L10n.tr("关闭"),dialog::dismiss),ui.size(36,36));sheet.addView(header);ui.gap(sheet,18);
+        LinearLayout passwordRow=row();ui.card(passwordRow,10);EditText password=field(L10n.tr(id.contains(":") ? "IP 直连密码" : "访问密码"),InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);password.setBackgroundColor(Color.TRANSPARENT);passwordRow.addView(password,new LinearLayout.LayoutParams(0,dp(50),1));
         View eye=ui.iconButton("eye",L10n.tr("显示密码"),()->{boolean hidden=password.getTransformationMethod()!=null;password.setTransformationMethod(hidden?null:PasswordTransformationMethod.getInstance());password.setSelection(password.length());});passwordRow.addView(eye,ui.size(44,44));sheet.addView(passwordRow);ui.gap(sheet,18);
         LinearLayout save=row(),saveText=column();saveText.addView(text(L10n.tr("保存密码"),15,true));ui.gap(saveText,3);TextView security=text(L10n.tr("密码将加密保存在本机 Android Keystore 中"),11,false);security.setTextColor(SECONDARY);saveText.addView(security);save.addView(saveText,new LinearLayout.LayoutParams(0,-2,1));Switch remember=new Switch(this);remember.setContentDescription(L10n.tr("保存密码"));save.addView(remember);sheet.addView(save);
         remember.setChecked(rememberDefault);
         ui.gap(sheet,18);TextView connect=ui.primary(L10n.tr("连接"),()->{
-            String secret=password.getText().toString();if(secret.isEmpty()||secret.length()>128||secret.contains("@")){password.setError(L10n.tr("请输入有效访问密码"));return;}
+            if (!dialog.isShowing() || session != null) return;
+            String secret=password.getText().toString();if(secret.isEmpty()||secret.length()>128||secret.contains("@")||(id.contains(":")&&!secret.matches("[a-zA-Z0-9]{6}"))){password.setError(L10n.tr("请输入有效访问密码"));return;}
             rememberPassword=remember.isChecked();password.setText("");dialog.dismiss();begin(id,secret);
         });connect.setContentDescription(L10n.tr("确认连接"));sheet.addView(connect,ui.size(-1,48));
         ScrollView scroll=new ScrollView(this);scroll.addView(sheet);
         // This floating dialog uses window-managed IME resizing on all supported APIs.
         @SuppressWarnings("deprecation") int resizeMode=WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
         dialog.setContentView(scroll);Window window=dialog.getWindow();if(window!=null){window.setBackgroundDrawableResource(android.R.color.transparent);window.setSoftInputMode(resizeMode);window.setDimAmount(.22f);}dialog.show();sizePasswordDialog();password.requestFocus();if(!error.isEmpty())password.setError(error);
-        dialog.setOnDismissListener(d->{password.setText("");passwordDialog=null;});
+        dialog.setOnDismissListener(d->{password.setText("");if(passwordDialog==dialog)passwordDialog=null;});
     }
     private void sizePasswordDialog(){
         if(passwordDialog==null||passwordDialog.getWindow()==null)return;
@@ -321,6 +513,7 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         window.setGravity(width>=600?Gravity.CENTER:Gravity.BOTTOM);
     }
     private void begin(String id,String secret){
+        if (session != null) return;
         videoWidth=videoHeight=0;enteredPictureInPicture=false;
         pictureInPicture.disconnect();updatePictureInPicture();
         remoteServiceAvailable=false;receivedFile=null;
@@ -328,13 +521,18 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         resetVideoSettings();
         previewCapture=previews.begin(serverKey(),id);previewCopying=false;previewAttempts=0;
         connectedRemote=id;pendingPassword=rememberPassword?secret:"";ready=false;muted=false;selectedDisplay=0;hostPlatform="";remoteClipboard="";displays=new JSONArray();preferences.edit().putString("lastRemote",id).apply();
-        ensureSignaling();
-        if(signaling==null){pendingPassword="";toast(L10n.tr("请先完成联网授权"));return;}
-        session=signaling;showProgress();session.connect(id,secret);
+        if (!id.contains(":")) {
+            ensureSignaling();
+            if(signaling==null){pendingPassword="";toast(L10n.tr("请先完成联网授权"));return;}
+        }
+        session=new NativeSession(this,host,port,id,secret,this);
+        showProgress();
+        session.start();
+        if(signalState==1)session.connectAs(localIdentity);
     }
     private void showProgress(){
         Dialog dialog=new Dialog(this);progressDialog=dialog;LinearLayout card=column();ui.card(card,24);card.setGravity(Gravity.CENTER_HORIZONTAL);LinearLayout body=column();body.setGravity(Gravity.CENTER);body.setPadding(dp(26),dp(24),dp(26),dp(20));
-        ProgressBar spinner=new ProgressBar(this);spinner.setIndeterminateTintList(ColorStateList.valueOf(BLUE));body.addView(spinner,ui.size(34,34));ui.gap(body,14);TextView title=text(L10n.tr("正在连接"),20,true);title.setGravity(Gravity.CENTER);body.addView(title);ui.gap(body,6);status=text(L10n.tr("正在连接信令服务器…"),14,false);status.setGravity(Gravity.CENTER);status.setTextColor(SECONDARY);status.setMinHeight(dp(36));body.addView(status);card.addView(body,ui.size(-1,-2));ui.divider(card);card.addView(ui.action(L10n.tr("取消连接"),RED,()->end("")),ui.size(-1,46));
+        ProgressBar spinner=new ProgressBar(this);spinner.setIndeterminateTintList(ColorStateList.valueOf(BLUE));body.addView(spinner,ui.size(34,34));ui.gap(body,14);TextView title=text(L10n.tr("正在连接"),20,true);title.setGravity(Gravity.CENTER);body.addView(title);ui.gap(body,6);status=text(L10n.tr(connectedRemote.contains(":") ? "正在建立安全连接…" : "正在连接信令服务器…"),14,false);status.setGravity(Gravity.CENTER);status.setTextColor(SECONDARY);status.setMinHeight(dp(36));body.addView(status);card.addView(body,ui.size(-1,-2));ui.divider(card);card.addView(ui.action(L10n.tr("取消连接"),RED,()->end("")),ui.size(-1,46));
         dialog.setContentView(card);dialog.setCanceledOnTouchOutside(false);dialog.setOnCancelListener(d->end(""));Window w=dialog.getWindow();if(w!=null){w.setBackgroundDrawableResource(android.R.color.transparent);w.setDimAmount(.08f);}dialog.show();if(w!=null)w.setLayout(dp(292),-2);
     }
     private void sessionScreen(boolean autoLandscape){
@@ -342,7 +540,7 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         // Video, cursor and touch input must share the area inside system bars
         // and display cutouts; fitting to the outer canvas hides image edges.
         safeArea.addView(video,0,new FrameLayout.LayoutParams(-1,-1));
-        controls=new SessionControls(this,ui,new SessionControls.Actions(){
+        controls=new SessionControls(this,ui,video::setKeyboardInset,new SessionControls.Actions(){
             public void disconnect(){confirmDisconnect();}public void display(){selectDisplay();}public void clipboard(){MainActivity.this.clipboard();}
             public void sendFile(){chooseFile();}public void saveFile(){saveReceivedFile();}public void secureAttention(){MainActivity.this.secureAttention();}
             public void togglePrivacy(){if(ready&&session!=null)session.togglePrivacy();}
@@ -354,7 +552,7 @@ public final class MainActivity extends Activity implements NativeSession.Listen
             public void displayResolution(RemoteDisplayResolutions.Mode mode){updateDisplayResolution(mode);}
             public void videoSettings(int field,int value){RemoteVideoSettings.Values old=MainActivity.this.videoSettings.selection;updateVideoSettings(new RemoteVideoSettings.Values(field==0?value:old.quality,field==1?value:old.frameRate,field==2?value:old.preference));}
         });controls.setHostPlatform(hostPlatform);controls.setRelative(preferences.getBoolean("relativeMouse",true));controls.setMuted(muted);controls.videoSettings(videoSettings);controls.displayResolutions(displayResolutions,selectedDisplay);root.addView(controls,new LinearLayout.LayoutParams(-1,-1));getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        controls.attachMouseBar(canvas,new VirtualMouseBar(ui,video.mouseInput));
+        controls.attachMouseBar(safeArea,safeArea.indexOfChild(root),new VirtualMouseBar(ui,video.mouseInput));
         privacyChanged();
         video.remoteFocusChanged=()->{if(controls!=null)controls.resetKeyboardContext();};
         controls.requestApplyInsets();
@@ -375,7 +573,10 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         resetRemoteVersionCheck();
         resetVideoSettings();
         previewCapture=null;previewCopying=false;
-        if(progressDialog!=null){progressDialog.dismiss();progressDialog=null;}if(session!=null){releaseKeys();session.close();session=null;}stopSignaling();pendingPassword="";remoteClipboard="";hostPlatform="";displays=new JSONArray();ready=false;video=null;controls=null;getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if(progressDialog!=null){progressDialog.dismiss();progressDialog=null;}
+        if(session!=null){releaseKeys();session.close();session=null;}
+        if(!foreground)stopSignaling();
+        pendingPassword="";remoteClipboard="";hostPlatform="";displays=new JSONArray();ready=false;video=null;controls=null;getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if(closeWindow){finish();return;}
         home(reason);
         appUpdates.checkNow();
@@ -484,7 +685,7 @@ public final class MainActivity extends Activity implements NativeSession.Listen
     }
     @Override public void announcement(JSONObject message){
         if(!preferences.getBoolean("networkConsent",false)||signalState!=1)return;
-        if("announcements_changed".equals(message.optString("type")))announcementInbox.refresh();else announcementInbox.receive(message);
+        if("announcements_changed".equals(message.optString("type")))announcementInbox.catalogChanged(message.optBoolean("reset_pages"));else announcementInbox.receive(message);
     }
     @Override public void announcementFailed(String requestId){announcementInbox.failed(requestId);}
     private void privacyPage(){
@@ -568,18 +769,56 @@ public final class MainActivity extends Activity implements NativeSession.Listen
     @Override public void controlFeedback(String message){
         toast(message);
     }
-    private void clipboard(){
-        if(!ready)return;
-        EditText input=field(L10n.tr("要发送到远端的文本"),InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);input.setSingleLine(false);input.setMinLines(3);
-        new AlertDialog.Builder(this).setTitle(L10n.tr("剪贴板")).setView(input)
+    private void clipboard() {
+        NativeSession target = session;
+        if (!ready || target == null) return;
+        EditText input = field(L10n.tr("要发送到远端的文本"),
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        input.setSingleLine(false);
+        input.setMinLines(3);
+        ClipboardManager clipboard = getSystemService(ClipboardManager.class);
+        try {
+            ClipData clip = clipboard.getPrimaryClip();
+            if (clip != null) {
+                for (int i = 0; i < clip.getItemCount(); i++) {
+                    CharSequence text = clip.getItemAt(i).getText();
+                    if (!TextUtils.isEmpty(text)) {
+                        input.setText(text.toString());
+                        break;
+                    }
+                }
+            }
+        } catch (SecurityException denied) {
+            input.setError(L10n.tr("无法访问剪贴板，请重试。"));
+        }
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(L10n.tr("剪贴板")).setView(input)
                 .setMessage(L10n.tr("发送后，在远程键盘中点击“粘贴”。接收的远端文本可手动复制到本机。"))
-                .setNegativeButton(L10n.tr("关闭"),null).setNeutralButton(L10n.tr("复制远端文本"),(d,w)->{
-                    if(!remoteClipboard.isEmpty())((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("CrossDesk",remoteClipboard));
-                }).setPositiveButton(L10n.tr("发送文本"),(d,w)->{
-                    String value=input.getText().toString();
-                    if(value.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>128*1024){Toast.makeText(this,L10n.tr("文本超过 128 KB"),Toast.LENGTH_SHORT).show();return;}
-                    if(session!=null)session.clipboard(value);
-                }).show();
+                .setNegativeButton(L10n.tr("关闭"), null)
+                .setNeutralButton(L10n.tr("复制远端文本"), (d, w) -> {
+                    if (!remoteClipboard.isEmpty()) {
+                        clipboard.setPrimaryClip(ClipData.newPlainText("CrossDesk", remoteClipboard));
+                    }
+                })
+                .setPositiveButton(L10n.tr("发送文本"), null).show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String text = input.getText().toString();
+            if (text.isEmpty()) {
+                input.setError(L10n.tr("剪贴板中没有文本"));
+                return;
+            }
+            byte[] bytes = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            if (bytes.length > NativeSession.MAX_CLIPBOARD_BYTES) {
+                input.setError(L10n.tr("文本超过 128 KB"));
+                return;
+            }
+            if (text.indexOf('\0') >= 0 || !ready || session != target || target.isClosed()) {
+                input.setError(L10n.tr("指令发送失败，请重试"));
+                return;
+            }
+            target.sendClipboard(bytes);
+            dialog.dismiss();
+        });
     }
     void licenseDocument(String title,String value,Runnable back){
         installRoot("document:"+title,false);navigation(title,back);
@@ -602,7 +841,6 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         renderSignaling();signaling.start();
     }
     private void stopSignaling(){
-        if(backgroundSession!=null&&backgroundSession.session==signaling){BackgroundSession retained=backgroundSession;backgroundSession=null;retained.detach(this);retained.finish("");}
         mainHandler.removeCallbacks(presenceTick);recentPresence.setConnected(false,android.os.SystemClock.elapsedRealtime());
         announcementInbox.setConnected(false);
         if(signaling!=null)signaling.close();
@@ -626,6 +864,7 @@ public final class MainActivity extends Activity implements NativeSession.Listen
     }
     @Override public void signaling(int state,String deviceId){
         signalState=state;localIdentity=deviceId;signalError="";renderSignaling();
+        if(state==1&&session!=null&&!ready)session.connectAs(deviceId);
         long now=android.os.SystemClock.elapsedRealtime();recentPresence.watch(history.list(serverKey()),now);
         recentPresence.setConnected(foreground&&preferences.getBoolean("networkConsent",false)&&state==1&&!deviceId.isEmpty(),now);
         mainHandler.removeCallbacks(presenceTick);if(recentPresence.isConnected())mainHandler.postDelayed(presenceTick,1000);
@@ -643,8 +882,11 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         if(foreground&&preferences.getBoolean("networkConsent",false))remoteVersionCheck.connected();
     }
     @Override public void ended(String reason){
-        if(session!=null){end(reason);return;}
+        if(session!=null)end(reason);
+    }
+    @Override public void signalingEnded(String reason){
         stopSignaling();signalError=reason;renderSignaling();
+        if(session!=null&&!ready&&!connectedRemote.contains(":"))end(reason);
     }
     @Override public void passwordRejected(){
         if(session==null)return;
@@ -708,7 +950,7 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         if(message.optInt("type",-1)==12){if(!ready)return;videoSettings.receive(message);if(!videoSettings.pending)cancelVideoSettingsTimeout();if(controls!=null)controls.videoSettings(videoSettings);return;}
         JSONObject info=message.optJSONObject("host_info");
         if(info!=null){
-            hostPlatform=info.optString("platform","");JSONArray list=info.optJSONArray("displays");if(list!=null)displays=list;history.metadata(serverKey(),connectedRemote,info.optString("host_name",connectedRemote),hostPlatform);
+            hostPlatform=info.optString("platform","");JSONArray list=info.optJSONArray("displays");if(list!=null)displays=list;history.metadata(serverKey(),connectedRemote,info.optString("host_name"),hostPlatform);
             if(controls!=null)controls.setHostPlatform(hostPlatform);
             boolean wasSupported=videoSettings.supported;videoSettings.setSupported(info.optBoolean("supports_video_settings",false));
             if(!videoSettings.supported)cancelVideoSettingsTimeout();
@@ -767,7 +1009,11 @@ public final class MainActivity extends Activity implements NativeSession.Listen
     private void releaseKeys(){if(session!=null)for(int code:pressed)session.key(code,false);pressed.clear();}
     private void navigateBack(){if(backAction==null)return;navigatingBack=true;try{backAction.run();}finally{navigatingBack=false;}}
     private void back(){if(controls!=null&&controls.closeKeyboard())return;pageHost.finish();if(session!=null){if(ready)confirmDisconnect();else end("");}else if(backAction!=null)navigateBack();else finish();}
-    @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(!focus)releaseKeys();else applySystemBars(ready);}
+    @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(!focus)releaseKeys();else applySystemBars();}
+    @Override public void onMultiWindowModeChanged(boolean multiWindow, Configuration config) {
+        super.onMultiWindowModeChanged(multiWindow, config);
+        applySystemBars();
+    }
     // API 26–32 use this callback; API 33+ registers OnBackInvokedCallback in onCreate.
     @SuppressWarnings("deprecation")
     @android.annotation.SuppressLint("GestureBackNavigation") @Override public void onBackPressed(){back();}
@@ -825,8 +1071,12 @@ public final class MainActivity extends Activity implements NativeSession.Listen
             if(session==retained.session)end(retained.endReason);return false;
         }
         boolean rebuild=session!=retained.session||video==null||!page.equals("session");
-        backgroundSession=retained;session=signaling=retained.session;signalingServer=serverKey();
-        connectedRemote=retained.remote;localIdentity=retained.identity;signalState=retained.signalState;signalError="";
+        backgroundSession=retained;session=retained.session;
+        if(retained.signaling!=null){
+            signaling=retained.signaling;retained.signaling=null;signaling.setListener(this);
+            signalingServer=serverKey();localIdentity=retained.identity;signalState=retained.signalState;
+        }
+        connectedRemote=retained.remote;
         hostPlatform=retained.platform;displays=retained.displays;muted=retained.muted;selectedDisplay=retained.selectedDisplay;
         remoteServiceAvailable=retained.remoteServiceAvailable;remoteClipboard=retained.clipboard;receivedFile=retained.receivedFile;
         videoSettings=retained.videoSettings;displayResolutions=retained.displayResolutions;ready=true;retained.attach(this);
@@ -889,6 +1139,8 @@ public final class MainActivity extends Activity implements NativeSession.Listen
         // fallback. An unavailable/failed PiP can hand its live session off.
         if(!isFinishing()&&!enteredPictureInPicture&&ready&&(backgroundSession!=null||documentSession==null)&&prepareBackgroundSession(false)){
             captureBackgroundSession();backgroundSession.detach(this);backgroundSession.setBackground(true);
+            backgroundSession.signaling=signaling;
+            if(signaling!=null){signaling.setListener(backgroundSession);signaling=null;}
             mainHandler.removeCallbacks(presenceTick);recentPresence.setConnected(false,android.os.SystemClock.elapsedRealtime());announcementInbox.setConnected(false);
             cancelDisplayResolutionTimeout();if(displayResolutions.pending)displayResolutions.expire(displayResolutions.requested.id);
             cancelVideoSettingsTimeout();if(videoSettings.pending)videoSettings.expire(videoSettings.requestId);
@@ -898,7 +1150,10 @@ public final class MainActivity extends Activity implements NativeSession.Listen
     @Override protected void onDestroy(){dismissPrivacyUnlockDialog();mainHandler.removeCallbacks(documentTimeout);documentSession=null;documentToSave=null;appUpdates.setEnabled(false);pageHost.finish();resetRemoteVersionCheck();cancelVideoSettingsTimeout();cancelDisplayResolutionTimeout();previews.removeListener(previewChanged);if(privacyDialog!=null)privacyDialog.dismiss();if(previewDialog!=null)previewDialog.dismiss();announcementInbox.close();if(disconnectDialog!=null)disconnectDialog.dismiss();if(passwordDialog!=null)passwordDialog.dismiss();if(progressDialog!=null)progressDialog.dismiss();
         if(connectionDialog!=null)connectionDialog.dismiss();
         boolean retained=!isFinishing()&&backgroundSession!=null&&!backgroundSession.ended&&RemoteSessionService.current()==backgroundSession;
-        if(backgroundSession!=null)backgroundSession.detach(this);
+        if(backgroundSession!=null){
+            backgroundSession.detach(this);
+            if(!retained)backgroundSession.finish("");
+        }
         if(!retained){if(session!=null)session.close();stopSignaling();}else{mainHandler.removeCallbacks(presenceTick);session=signaling=null;}
         remoteOrientation.end();super.onDestroy();}
 }

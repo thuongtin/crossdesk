@@ -42,9 +42,13 @@ class LocalizationTest(unittest.TestCase):
     def test_instrumentation_ui_selectors_are_locale_aware(self):
         tests = Path(__file__).with_name('android') / 'java/cn/crossdesk/mobile'
         privacy = (tests / 'PrivacyConsentTest.java').read_text(encoding='utf-8')
-        self.assertIn('findText(dialog.getWindow().getDecorView(),L10n.tr(text))', privacy)
+        # Upstream tách nhãn đã dịch ra biến `label`; chỉ cần bộ chọn tìm theo nhãn đã qua L10n.tr.
+        self.assertIn('String label=L10n.tr(text);', privacy)
+        self.assertIn('findText(dialog.getWindow().getDecorView(),label)', privacy)
         updates = (tests / 'AppUpdateCheckerTest.java').read_text(encoding='utf-8')
-        self.assertEqual(updates.count('L10n.format('), 2)
+        # Nhãn cập nhật được định dạng qua L10n.format một lần rồi dùng lại cho mọi lần tìm.
+        self.assertEqual(updates.count('L10n.format('), 1)
+        self.assertEqual(updates.count('findText(activity.getWindow().getDecorView(), updateLabel)'), 2)
 
 
 if __name__ == '__main__':

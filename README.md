@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="Logo CrossDesk: biểu tượng bên trái, chữ hai màu bên phải" />
   <p>Ứng dụng điều khiển máy tính từ xa nhẹ, đa nền tảng, hỗ trợ kết nối từ máy tính, trình duyệt, thiết bị di động và terminal; xem và điều khiển tập trung nhiều thiết bị bằng DeskHub.</p>
-  <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a></p>
+  <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a> · <a href="README_ZH.md">中文</a></p>
 </div>
 
 <div align="center">
@@ -16,11 +16,35 @@
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/kunkundi/crossdesk?style=flat&label=stars)](https://github.com/kunkundi/crossdesk/stargazers)
 
-[![Afdian](https://img.shields.io/badge/%E7%88%B1%E5%8F%91%E7%94%B5-946CE6?logo=afdian&logoColor=white)](https://afdian.com/a/kunkundi)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-FF6433?logo=kofi&logoColor=white)](https://ko-fi.com/kunkundi)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-C93C45?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/kunkundi)
-
 </div>
+
+<p align="center">
+  <a href="https://trendshift.io/repositories/17514?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/17514" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+</p>
+
+<p align="center">
+  <a href="https://trendshift.io/repositories/17514?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/17514/daily?language=C%2B%2B" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/17514?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/17514/weekly?language=C%2B%2B" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/17514?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-17514" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/17514/monthly?language=C%2B%2B" alt="kunkundi%2Fcrossdesk | Trendshift" width="250" height="55"/></a>
+</p>
+
+## Nhà tài trợ đặc biệt
+
+<table border="1">
+  <tr>
+    <td align="center" valign="middle" width="160">
+      <a href="https://crossdesk.hualong-ai.com/">
+        <img src="apps/desktop/src/gui/ui/icons/sponsors/hualongai.png" width="128" height="128" alt="HuaLongAI 华龙算力" />
+      </a>
+    </td>
+    <td valign="middle">
+      <p><strong><a href="https://crossdesk.hualong-ai.com/">HuaLongAI 华龙算力</a></strong></p>
+      <p>Dịch vụ trung chuyển API ổn định, hiệu quả, chuyên về Codex, Kiro không chèn nội dung và các mô hình dòng Claude. 100% lấy trực tiếp từ nguồn chính thức, không pha trộn, độ sẵn sàng cao, SLA trung bình trên 99,2%. Tính phí minh bạch, hóa đơn theo từng token có thể đối soát từng giao dịch, hỗ trợ hợp đồng doanh nghiệp và hóa đơn.</p>
+    </td>
+  </tr>
+</table>
+
+## Giới thiệu
 
 CrossDesk cho phép bạn kết nối đến máy tính từ xa từ máy tính, trình duyệt, điện thoại hoặc terminal (CLI máy tính), đồng thời xem và điều khiển tập trung nhiều thiết bị qua DeskHub. Dự án dựa trên [MiniRTC](https://github.com/kunkundi/minirtc), hỗ trợ self-host.
 
@@ -31,10 +55,10 @@ CrossDesk cho phép bạn kết nối đến máy tính từ xa từ máy tính,
 ## Tính năng chính
 
 - **Điều khiển từ xa đa nền tảng:** Máy tính Windows, macOS, Linux điều khiển lẫn nhau; truy cập máy tính từ trình duyệt và ứng dụng iOS / Android native; bản HarmonyOS cho PC và thiết bị di động đang trong giai đoạn phát triển.
-- **Kết nối IP trực tiếp trong mạng LAN:** Ứng dụng máy tính kết nối bằng IP, cổng và mật khẩu sáu ký tự, không cần dịch vụ signaling đám mây; hỗ trợ cổng riêng, nhớ mật khẩu và hiển thị thiết bị gần đây theo chế độ.
+- **Kết nối IP trực tiếp trong mạng LAN:** Ứng dụng máy tính và ứng dụng di động Android, iOS, HarmonyOS có thể kết nối đến máy tính bằng IP, cổng và mật khẩu sáu ký tự, không cần dịch vụ signaling đám mây; hỗ trợ cổng riêng, nhớ mật khẩu và hiển thị thiết bị gần đây theo chế độ.
 - **Điều khiển từ terminal:** Xem và điều khiển máy tính từ xa bằng ID thiết bị trong terminal, hỗ trợ hình ảnh ANSI / Kitty / Sixel, thu phóng và di chuyển từng vùng, chế độ lệnh cục bộ liên tục và phần mở rộng Pi; có thể biên dịch riêng.
 - **DeskHub:** Xem trước nhiều thiết bị theo thời gian thực, phân nhóm, phóng to để điều khiển, điều khiển nhóm và gửi tệp hàng loạt.
-- **Hình ảnh và âm thanh:** H.264 / AV1, mã hóa và giải mã phần cứng, âm thanh từ xa; điều chỉnh chất lượng hình ảnh, tốc độ khung hình và độ phân giải màn hình từ xa ngay trong phiên; ghi nhớ lựa chọn độ phân giải đã được xác nhận, khôi phục chế độ hiển thị ban đầu khi máy điều khiển cuối cùng ngắt kết nối. Khả năng sử dụng tùy thuộc nền tảng và thiết bị.
+- **Hình ảnh và âm thanh:** Hỗ trợ H.264, AV1 và âm thanh từ xa. Với kết nối gốc, khi cả hai bên đều hỗ trợ mã hóa và giải mã phần cứng HEVC thì có thể chọn H.265: Windows dùng Media Foundation hoặc bộ mã hóa NVIDIA, macOS dùng VideoToolbox, Linux dùng card NVIDIA tương thích. Có thể điều chỉnh chất lượng hình ảnh, tốc độ khung hình và độ phân giải màn hình từ xa ngay trong phiên; ghi nhớ lựa chọn độ phân giải đã được xác nhận, khôi phục chế độ hiển thị ban đầu khi máy điều khiển cuối cùng ngắt kết nối. Khả năng sử dụng tùy thuộc nền tảng và thiết bị.
 - **Cộng tác hằng ngày:** Chuyển nhiều màn hình, bàn phím, chuột và tổ hợp phím, clipboard văn bản; trình duyệt tệp hai khung hỗ trợ duyệt thư mục, truyền tệp và thư mục hai chiều, kéo thả và quản lý tác vụ.
 - **Agent / MCP:** Cấp quyền cho Agent quan sát và thao tác máy tính từ xa qua dịch vụ MCP trên máy này, cung cấp giám sát thời gian thực, tiếp quản thủ công, nhiều phiên, công cụ clipboard và tệp; có thể cài gói MCP tương ứng với nền tảng.
 - **Thiết bị đáng tin cậy:** Ứng dụng máy tính có thể bật giới hạn thiết bị đáng tin cậy để xác minh danh tính thiết bị ngoài mật khẩu kết nối; hỗ trợ sao chép và dán thông tin ghép đôi, thêm trước các thiết bị được phép truy cập máy này.
@@ -96,11 +120,13 @@ Khi dùng máy chủ tự triển khai, hai bên cần kết nối cùng dịch 
 
 ### Kết nối IP trực tiếp qua mạng LAN
 
-1. **Chuyển chế độ.** Cả hai máy tính đều chạy ứng dụng máy tính có hỗ trợ kết nối IP trực tiếp; nhấn nút chế độ ở góc trên bên trái để chuyển sang **Chế độ kết nối IP**. Nếu không thấy nút, chọn **Bật kết nối IP** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
+Trên điện thoại hoặc máy tính bảng, dán địa chỉ hiển thị trên máy tính được điều khiển vào ô **ID thiết bị hoặc địa chỉ IP** ở màn hình chính, rồi nhập **Mật khẩu kết nối IP trực tiếp** của máy tính đó. Trên ứng dụng máy tính, làm như sau.
+
+1. **Chuyển chế độ.** Khi dùng ứng dụng máy tính, nhấn nút chế độ ở góc trên bên trái để chuyển sang **Chế độ kết nối IP**. Nếu không thấy nút, chọn **Bật kết nối IP** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
 2. **Nhập địa chỉ.** Trên máy điều khiển, nhập `IP:cổng` hiển thị trên máy được điều khiển, ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888`, rồi nhấn “Kết nối”. Khi chỉ nhập IP, cổng mặc định là **52888**; hãy căn cứ vào cổng thực tế hiển thị trên giao diện bên kia.
 3. **Nhập mật khẩu.** Nhập **mật khẩu gồm 6 chữ cái tiếng Anh hoặc chữ số** hiển thị trên máy được điều khiển ở chế độ kết nối IP trực tiếp; bạn có thể chọn “Nhớ mật khẩu”. Khi chuyển chế độ, “Kết nối gần đây” cũng chuyển sang lịch sử thiết bị của chế độ tương ứng.
 
-Hai máy tính cần truy cập được nhau trong mạng LAN; mạng có thể có hoặc không có Internet, phiên kết nối trực tiếp không phụ thuộc dịch vụ signaling đám mây. Trong cửa sổ chính, bạn có thể trực tiếp đổi IP máy này, cổng và mật khẩu. Mặc định bật lắng nghe trên tất cả interface mạng, hỗ trợ IPv4 và IPv6, cho phép kết nối qua giao diện như VPN; có thể điều chỉnh trong “Kết nối mạng” của cài đặt. Tắt “Bật kết nối IP” trong cài đặt sẽ dừng lắng nghe, ngắt các phiên IP trực tiếp và ẩn nút chế độ. Xem [hướng dẫn kết nối IP trực tiếp](docs/USER_GUIDE.md#lan-direct).
+Máy điều khiển và máy tính được điều khiển cần truy cập được nhau trong mạng LAN hoặc VPN; mạng có thể có hoặc không có Internet, phiên kết nối trực tiếp không phụ thuộc dịch vụ signaling đám mây. Trong cửa sổ chính, bạn có thể trực tiếp đổi IP máy này, cổng và mật khẩu. Mặc định bật lắng nghe trên tất cả interface mạng, hỗ trợ IPv4 và IPv6, cho phép kết nối qua giao diện như VPN; có thể điều chỉnh trong “Kết nối mạng” của cài đặt. Tắt “Bật kết nối IP” trong cài đặt sẽ dừng lắng nghe, ngắt các phiên IP trực tiếp và ẩn nút chế độ. Xem [hướng dẫn kết nối IP trực tiếp](docs/USER_GUIDE.md#lan-direct).
 
 <a id="trusted-devices"></a>
 
@@ -185,10 +211,20 @@ Khi máy được điều khiển dùng Windows, macOS hoặc Linux X11, bạn c
 
 ### Xem trước hình ảnh
 
-| Hình ảnh ký tự ANSI | Hình ảnh điểm ảnh qua giao thức Kitty |
-| --- | --- |
-| <img src="docs/images/cli-ansi-overview.png" width="480" alt="Toàn cảnh ANSI bốn góc phần tư của CrossDesk CLI: phía trên hiển thị chế độ chỉ xem và trạng thái kết nối, phía dưới hiển thị phím tắt thao tác" /> | <img src="docs/images/cli-kitty-overview.png" width="480" alt="Toàn cảnh qua giao thức Kitty của CrossDesk CLI: cùng màn hình từ xa hiển thị bằng điểm ảnh, giữ thanh trạng thái và phím tắt thao tác" /> |
-| Hiển thị đường nét màn hình bằng ký tự màu, phù hợp với terminal thông thường; dùng `+/-` hoặc con lăn để thu phóng tại vị trí chuột khi xem từng vùng. | Hiển thị trực tiếp hình ảnh điểm ảnh, phù hợp với terminal hỗ trợ giao thức đồ họa Kitty như Ghostty. |
+<table>
+  <tr>
+    <th width="50%">Hình ảnh ký tự ANSI</th>
+    <th width="50%">Hình ảnh điểm ảnh qua giao thức Kitty</th>
+  </tr>
+  <tr>
+    <td><img src="docs/images/cli-ansi-overview.png" width="480" alt="Toàn cảnh ANSI bốn góc phần tư của CrossDesk CLI: phía trên hiển thị chế độ chỉ xem và trạng thái kết nối, phía dưới hiển thị phím tắt thao tác" /></td>
+    <td><img src="docs/images/cli-kitty-overview.png" width="480" alt="Toàn cảnh qua giao thức Kitty của CrossDesk CLI: cùng màn hình từ xa hiển thị bằng điểm ảnh, giữ thanh trạng thái và phím tắt thao tác" /></td>
+  </tr>
+  <tr>
+    <td>Hiển thị đường nét màn hình bằng ký tự màu, phù hợp với terminal thông thường; dùng <code>+/-</code> hoặc con lăn để thu phóng tại vị trí chuột khi xem từng vùng.</td>
+    <td>Hiển thị trực tiếp hình ảnh điểm ảnh, phù hợp với terminal hỗ trợ giao thức đồ họa Kitty như Ghostty.</td>
+  </tr>
+</table>
 
 ANSI hiển thị hình ảnh bằng ký tự, Kitty có thể hiển thị hình ảnh điểm ảnh; kết quả thực tế phụ thuộc vào khả năng hỗ trợ của terminal, phông chữ và kích thước cửa sổ.
 
@@ -237,6 +273,10 @@ CLI kết nối bằng ID thiết bị, hiện chưa cung cấp kết nối IP t
 
 [CrossDesk MCP](apps/mcp/README.md) cho phép bạn giao tác vụ từ xa trong cuộc trò chuyện Codex hoặc DeepSeek Harness và xem hình ảnh từ xa ở bên phải. Máy tính từ xa chạy CrossDesk; sau khi cài đặt trên máy này theo bảng dưới, chọn thiết bị và cấp quyền trong bảng điều khiển.
 
+<p align="center">
+  <img src="docs/images/mcp-minesweeper.gif" width="784" alt="Codex kết nối đến Mac mini từ xa qua CrossDesk MCP và chơi xong một ván dò mìn cấp trung bình trong trình duyệt" />
+</p>
+
 | Môi trường sử dụng | Cài đặt và cấu hình | Hình ảnh từ xa |
 | --- | --- | --- |
 | Codex bản máy tính | [Hướng dẫn cài Codex](apps/mcp/README.md#install-codex): đăng ký MCP, không cần plugin bổ sung | Agent mở trình duyệt tích hợp bên phải |
@@ -280,7 +320,7 @@ Bản PC có thể điều khiển và được điều khiển, tái sử dụn
 
 ## Truy cập không giám sát và chạy headless
 
-- **Windows:** CrossDesk Service hỗ trợ điều khiển màn hình khóa, đăng nhập và màn hình bảo mật. Sau khi bật “Tự khởi động cùng hệ thống” trong bản Release đã cài đặt, máy dùng cùng ID và mật khẩu trước và sau đăng nhập; giao diện tự mở sau khi người dùng đăng nhập, các kết nối từ xa hiện có vẫn được giữ. Bản portable và Debug không cung cấp công tắc này. Khi không có màn hình, ứng dụng sẽ thử chuẩn bị màn hình ảo và ưu tiên khôi phục độ phân giải đã ghi nhận. Xem giới hạn tính năng và lệnh bật/tắt trong [hướng dẫn Windows không giám sát](docs/USER_GUIDE.md#windows-service).
+- **Windows:** CrossDesk Service hỗ trợ điều khiển màn hình khóa, đăng nhập và màn hình bảo mật. Sau khi bật “Tự khởi động cùng hệ thống” trong bản Release đã cài đặt, máy dùng cùng ID và mật khẩu trước và sau đăng nhập; sau khi người dùng đăng nhập, ứng dụng tự khởi động vào khay hệ thống, các kết nối từ xa hiện có vẫn được giữ. Bản portable và Debug không cung cấp công tắc này. Khi không có màn hình, ứng dụng sẽ thử chuẩn bị màn hình ảo và ưu tiên khôi phục độ phân giải đã ghi nhận. Xem giới hạn tính năng và lệnh bật/tắt trong [hướng dẫn Windows không giám sát](docs/USER_GUIDE.md#windows-service).
 - **Linux:** Bạn có thể tái sử dụng màn hình hiện có hoặc tạo phiên Xvfb / Xfce độc lập; xem cách thực hiện trong [chạy Linux headless](docs/HEADLESS.md).
 
 <a id="self-hosting"></a>
@@ -307,11 +347,27 @@ Khi gặp sự cố, bạn có thể mở **Phản hồi và góp ý** trong men
 
 <a id="sponsor"></a>
 
-## Hỗ trợ CrossDesk
+## Tài trợ và ủng hộ
+
+### Người ủng hộ
+
+<p>
+  <a href="https://afdian.com/u/41c14324f4b511ee8d785254001e7c00"><img src="docs/images/backers/tantiancheng.png" width="48" height="48" alt="TanTianCheng" /></a>
+  <a href="https://afdian.com/u/0229e818d9a711f1b32852540025c377"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_KwnM" /></a>
+  <a href="https://afdian.com/u/1dfe098add7011f180f252540025c377"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_k7rE" /></a>
+  <a href="https://afdian.com/u/52890a84df4011f1be6a525400c8052f"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_52890" /></a>
+  <a href="https://afdian.com/u/49d40918e87311efb07a5254001e7c00"><img src="docs/images/backers/xs-guend.png" width="48" height="48" alt="XS.GUEND" /></a>
+  <a href="https://afdian.com/u/e9addbece5b211f1970052540025c377"><img src="docs/images/backers/afdian-avatar-purple.png" width="48" height="48" alt="爱发电用户_e9add" /></a>
+  <a href="https://afdian.com/u/ec7329c4bc1511eda50252540025c377"><img src="docs/images/backers/afdian-avatar-yellow.png" width="48" height="48" alt="爱发电用户_ucXS" /></a>
+</p>
+
+### Tham gia tài trợ
 
 Nếu CrossDesk hữu ích với bạn, hãy cân nhắc tài trợ qua các nền tảng sau để hỗ trợ phát triển, kiểm thử đa nền tảng và bảo trì dự án. Cảm ơn sự ủng hộ của bạn!
 
-[Afdian](https://afdian.com/a/kunkundi) · [Ko-fi](https://ko-fi.com/kunkundi) · [GitHub Sponsors](https://github.com/sponsors/kunkundi)
+[![Afdian](https://img.shields.io/badge/%E7%88%B1%E5%8F%91%E7%94%B5-946CE6?logo=afdian&logoColor=white)](https://afdian.com/a/kunkundi)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-FF6433?logo=kofi&logoColor=white)](https://ko-fi.com/kunkundi)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-C93C45?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/kunkundi)
 
 ## Lời cảm ơn và giấy phép
 

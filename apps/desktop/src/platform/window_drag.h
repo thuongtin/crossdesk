@@ -31,24 +31,25 @@ bool IsGalleryWindowActive();
 bool MaximizeGalleryWindowWithoutAnimation();
 bool IsGalleryWindowMaximized();
 
-// Configures live resize and replaces the stream window's native Space
-// fullscreen action with an immediate, single-window fullscreen transition.
-// |slint_view| is the current stream window's AppKit NSView*. Passing the
-// identity explicitly prevents a closing window with the same title from
-// being selected during a later connection.
-bool ConfigureStreamWindowLiveResize(void* slint_view);
-
-// Drops the native stream-window reference if it belongs to |slint_view|.
-// This must run before the corresponding Slint component is destroyed.
-void UnregisterStreamWindow(void* slint_view);
+// Configures live resize and allows the control window to occupy its own
+// native macOS fullscreen Space. Reports when AppKit starts or finishes the
+// transition for this window. The callback returns whether video uses a native
+// surface that can resize independently of Slint. |slint_view| is its NSView*.
+bool ConfigureStreamWindowLiveResize(void* slint_view,
+                                     std::function<bool(bool)> transition_changed);
+bool IsStreamWindowFullscreenTransitioning(void* slint_view);
+bool IsStreamWindowFullscreen(void* slint_view);
+// Leave the native fullscreen Space to minimize, then restore it on Dock activation.
+void MinimizeMacStreamWindow(void* slint_view);
+// Signed top inset for an aspect-fit video in the moving control window.
+float StreamWindowVideoTransitionInset(void* view, float content_width, float content_height,
+                                      bool* transitioning = nullptr);
 
 // Returns whether the configured stream window is currently the active AppKit
 // key window.
-bool IsStreamWindowActive();
-
-// Enters or leaves the stream window's animation-free fullscreen mode.
-bool SetStreamWindowFullscreen(bool fullscreen);
-bool IsStreamWindowFullscreen();
+bool IsStreamWindowActive(void* slint_view);
+// Moves the system pointer to a control in the stream view (backing pixels).
+bool PlaceMacStreamControlPointer(void* slint_view, float pixel_x, float pixel_y);
 
 // Shows a desktop transfer notification without replacing the current key
 // window, including while the stream is fullscreen.

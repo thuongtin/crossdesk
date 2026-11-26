@@ -4,12 +4,15 @@
 #include <charconv>
 #include <chrono>
 #include <cstring>
+#include <cstdint>
 #include <filesystem>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <vector>
 
 #include "SimpleIni.h"
 #include "autostart.h"
+#include "platform/autostart_backend.h"
 #include "rd_log.h"
 #include <minirtc.h>
 
@@ -23,19 +26,28 @@
 #endif
 
 #if defined(__linux__) && !defined(__OHOS__)
-#include "platform/linux/autostart.h"
 #include "platform/linux/runtime_daemon.h"
 #endif
 
 namespace crossdesk {
 
-struct ConfigCenter::IniStorage : CSimpleIniA {};
+struct ConfigCenter::IniStorage : CSimpleIniA {
+  nlohmann::json stream_window_sizes = nlohmann::json::object();
+};
 
 namespace {
 
 bool IsValidTurnModeValue(long value) {
   return value >= static_cast<long>(ConfigCenter::TURN_MODE::DISABLED) &&
          value <= static_cast<long>(ConfigCenter::TURN_MODE::FORCE_TCP);
+}
+
+bool ValidStreamWindowSize(std::int64_t width, std::int64_t height) {
+  return width >= 640 && height >= 360 && width <= 32768 && height <= 32768;
+}
+
+bool IsValidInputSensitivity(std::int64_t percent) {
+  return percent >= 10 && percent <= 500;
 }
 
 int ReadStartingBitrate(const CSimpleIniA& ini, const char* section,
@@ -92,8 +104,8 @@ int ConfigCenter::Load() {
       ini_->Delete(section_, "enable_desktop_quality_optimization");
   persist_config_migration |=
       ini_->Delete(section_, "enable_minimize_to_tray");
-  // The old global flag has no version information. Prompt once for the
-  // current release, then remember its version when the user dismisses it.
+  persist_config_migration |= ini_->Delete(section_, "silent_autostart");
+  // The legacy global flag carries no release identity.
   persist_config_migration |=
       ini_->Delete(section_, "sponsorship_prompt_dismissed");
 
@@ -116,9 +128,15 @@ int ConfigCenter::Load() {
   // Capture always follows DXGI -> WGC -> GDI; discard old forced choices.
   persist_config_migration |= ini_->Delete(section_, "screen_capture_method");
 
-  video_encode_format_ = static_cast<VIDEO_ENCODE_FORMAT>(
-      ini_->GetLongValue(section_, "video_encode_format",
-                        static_cast<long>(video_encode_format_)));
+  desktop_realtime_rate_control_.store(ini_->GetBoolValue(
+      section_, "desktop_realtime_rate_control", ini_->GetBoolValue(section_, "nvenc_single_pass", true)));
+  if (ini_->Delete(section_, "nvenc_single_pass")) {
+    ini_->SetBoolValue(section_, "desktop_realtime_rate_control", desktop_realtime_rate_control_.load());
+    persist_config_migration = true;
+  }
+  const long codec = ini_->GetLongValue(section_, "video_encode_format", 0);
+  video_encode_format_ = codec >= 0 && codec <= static_cast<long>(VIDEO_ENCODE_FORMAT::H265)
+      ? static_cast<VIDEO_ENCODE_FORMAT>(codec) : VIDEO_ENCODE_FORMAT::H264;
 
   const char* turn_mode_value = ini_->GetValue(section_, "turn_mode", nullptr);
   if (turn_mode_value != nullptr && strlen(turn_mode_value) > 0) {
@@ -194,6 +212,7 @@ int ConfigCenter::Load() {
       ini_->GetBoolValue(section_, "enable_privacy_screen", true));
   privacy_local_unlock_allowed_.store(
       ini_->GetBoolValue(section_, "privacy_local_unlock_allowed", true));
+  privacy_black_screen_.store(ini_->GetBoolValue(section_, "privacy_black_screen", false));
   lock_on_disconnect_.store(
       ini_->GetBoolValue(section_, "lock_on_disconnect", true));
   trusted_devices_only_.store(
@@ -203,11 +222,31 @@ int ConfigCenter::Load() {
       ini_->GetBoolValue(section_, "save_remote_previews", true));
   pause_video_when_minimized_.store(
       ini_->GetBoolValue(section_, "pause_video_when_minimized", true));
+  auto read_sensitivity = [&](const char* key) {
+    const long percent = ini_->GetLongValue(section_, key, 100);
+    return IsValidInputSensitivity(percent) ? static_cast<int>(percent) : 100;
+  };
+  mouse_sensitivity_percent_ = read_sensitivity("mouse_sensitivity_percent");
+  legacy_wheel_sensitivity_percent_ = read_sensitivity("wheel_sensitivity_percent");
+  const auto devices = nlohmann::json::parse(
+      ini_->GetValue(section_, "device_wheel_sensitivity", "{}"), nullptr, false);
+  device_wheel_sensitivity_.clear();
+  if (devices.is_object()) {
+    for (const auto& [device, value] : devices.items()) {
+      if (!device.empty() && value.is_number_integer() &&
+          IsValidInputSensitivity(value.get<std::int64_t>()))
+        device_wheel_sensitivity_.emplace(device, value.get<int>());
+    }
+  }
+  auto sizes = nlohmann::json::parse(
+      ini_->GetValue(section_, "device_stream_window_sizes", "{}"), nullptr, false);
+  ini_->stream_window_sizes = sizes.is_object() ? std::move(sizes) : nlohmann::json::object();
   portable_service_prompt_suppressed_ =
       ini_->GetBoolValue(section_, "portable_service_prompt_suppressed",
                         portable_service_prompt_suppressed_);
-  sponsorship_prompt_dismissed_version_ =
-      ini_->GetValue(section_, "sponsorship_prompt_dismissed_version", "");
+  last_presented_release_ = ini_->GetValue(
+      section_, "last_presented_release",
+      ini_->GetValue(section_, "sponsorship_prompt_dismissed_version", ""));
 
   const char* file_transfer_save_path_value =
       ini_->GetValue(section_, "file_transfer_save_path", nullptr);
@@ -279,6 +318,7 @@ int ConfigCenter::Save() {
   ini_->SetValue(section_, "connection_mode",
                 connection_mode_ == CONNECTION_MODE::DIRECT_IP ? "ip" : "id");
   ini_->SetBoolValue(section_, "enable_ip_direct", enable_ip_direct_);
+  ini_->SetBoolValue(section_, "desktop_realtime_rate_control", desktop_realtime_rate_control_.load());
   ini_->SetLongValue(section_, "video_encode_format",
                     static_cast<long>(video_encode_format_));
   ini_->SetLongValue(section_, "turn_mode", static_cast<long>(turn_mode_));
@@ -304,16 +344,18 @@ int ConfigCenter::Save() {
                     enable_privacy_screen_.load());
   ini_->SetBoolValue(section_, "privacy_local_unlock_allowed",
                     privacy_local_unlock_allowed_.load());
+  ini_->SetBoolValue(section_, "privacy_black_screen", privacy_black_screen_.load());
   ini_->SetBoolValue(section_, "lock_on_disconnect", lock_on_disconnect_.load());
   ini_->SetBoolValue(section_, "trusted_devices_only", trusted_devices_only_.load());
   ini_->SetBoolValue(section_, "save_remote_previews",
                     save_remote_previews_.load());
   ini_->SetBoolValue(section_, "pause_video_when_minimized",
                     pause_video_when_minimized_.load());
+  ini_->SetLongValue(section_, "mouse_sensitivity_percent", GetMouseSensitivityPercent());
   ini_->SetBoolValue(section_, "portable_service_prompt_suppressed",
                     portable_service_prompt_suppressed_);
-  ini_->SetValue(section_, "sponsorship_prompt_dismissed_version",
-                sponsorship_prompt_dismissed_version_.c_str());
+  ini_->SetValue(section_, "last_presented_release",
+                last_presented_release_.c_str());
 
   ini_->SetValue(section_, "file_transfer_save_path",
                 file_transfer_save_path_.c_str());
@@ -338,6 +380,10 @@ std::string ConfigCenter::ExportSharedHostConfig() const {
   host.SetLongValue(section_, "relay_start_bitrate_bps", relay_start_bitrate_bps_);
   host.SetBoolValue(section_, "disable_receiver_padding_probing",
                     disable_receiver_padding_probing_);
+  const bool realtime_rc = desktop_realtime_rate_control_.load();
+  host.SetBoolValue(section_, "desktop_realtime_rate_control", realtime_rc);
+  // Older persistent hosts still read the NVIDIA-only spelling.
+  host.SetBoolValue(section_, "nvenc_single_pass", realtime_rc);
   host.SetLongValue(section_, "video_encode_format", static_cast<long>(video_encode_format_));
   host.SetBoolValue(section_, "trusted_devices_only", trusted_devices_only_.load());
   host.SetBoolValue(section_, "lock_on_disconnect", lock_on_disconnect_.load());
@@ -358,6 +404,8 @@ int ConfigCenter::ApplySharedHostConfig(const std::string& contents) {
   const std::string server = host.GetValue(section_, "signal_server_host", "");
   const long port = host.GetLongValue(section_, "signal_server_port", 0);
   const long turn = host.GetLongValue(section_, "turn_mode", static_cast<long>(turn_mode_));
+  const bool realtime_rc = host.GetBoolValue(section_, "desktop_realtime_rate_control",
+      host.GetBoolValue(section_, "nvenc_single_pass", desktop_realtime_rate_control_.load()));
   const long codec = host.GetLongValue(section_, "video_encode_format", static_cast<long>(video_encode_format_));
   const int direct_bps = ReadStartingBitrate(
       host, section_, "direct_start_bitrate_bps", kDefaultDirectStartBitrateBps);
@@ -369,12 +417,13 @@ int ConfigCenter::ApplySharedHostConfig(const std::string& contents) {
   const bool trusted = host.GetBoolValue(section_, "trusted_devices_only", false);
   const bool lock = host.GetBoolValue(section_, "lock_on_disconnect", true);
   MiniRtcSignalServerAddress address{};
-  if (!IsValidTurnModeValue(turn) || codec < 0 || codec > 1 ||
+  if (!IsValidTurnModeValue(turn) || codec < 0 || codec > static_cast<long>(VIDEO_ENCODE_FORMAT::H265) ||
       (self_hosted && (port < 1 || port > 65535 ||
        MiniRtcParseSignalServerAddress(server.data(), server.size(), &address) != 0))) return -1;
   if (StoreValues({{"enable_self_hosted", self_hosted ? "true" : "false"},
                    {"signal_server_host", server}, {"signal_server_port", std::to_string(port)},
                    {"turn_mode", std::to_string(turn)}, {"video_encode_format", std::to_string(codec)},
+                   {"desktop_realtime_rate_control", realtime_rc ? "true" : "false"},
                    {"direct_start_bitrate_bps", std::to_string(direct_bps)},
                    {"relay_start_bitrate_bps", std::to_string(relay_bps)},
                    {"disable_receiver_padding_probing",
@@ -388,6 +437,7 @@ int ConfigCenter::ApplySharedHostConfig(const std::string& contents) {
   direct_start_bitrate_bps_ = direct_bps;
   relay_start_bitrate_bps_ = relay_bps;
   disable_receiver_padding_probing_ = disable_receiver_padding_probing;
+  desktop_realtime_rate_control_.store(realtime_rc);
   video_encode_format_ = static_cast<VIDEO_ENCODE_FORMAT>(codec);
   trusted_devices_only_.store(trusted);
   lock_on_disconnect_.store(lock);
@@ -431,8 +481,15 @@ int ConfigCenter::SetIpDirectEnabled(bool enabled) {
   return 0;
 }
 
+int ConfigCenter::SetDesktopRealtimeRateControl(bool enabled) {
+  if (desktop_realtime_rate_control_.load() == enabled) return 0;
+  if (StoreValues({{"desktop_realtime_rate_control", enabled ? "true" : "false"}}) != 0) return -1;
+  desktop_realtime_rate_control_.store(enabled);
+  return 0;
+}
+
 int ConfigCenter::SetVideoEncodeFormat(VIDEO_ENCODE_FORMAT format) {
-  if (format != VIDEO_ENCODE_FORMAT::H264 && format != VIDEO_ENCODE_FORMAT::AV1) return -1;
+  if (format > VIDEO_ENCODE_FORMAT::H265) return -1;
   if (StoreValues({{"video_encode_format", std::to_string(static_cast<int>(format))}}) != 0) return -1;
   video_encode_format_ = format;
   return 0;
@@ -491,6 +548,35 @@ int ConfigCenter::SetSelfHosted(bool enabled) {
   return 0;
 }
 
+#if defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
+namespace {
+bool LegacyAutostartEnabled(const CSimpleIniA& ini) {
+  return ini.GetBoolValue("Settings", "enable_autostart", false) &&
+         !ini.GetBoolValue("Settings", "autostart_tray_migrated", false);
+}
+
+bool MigrateLoginEntry(bool restore_missing) {
+  return platform::MigrateLegacyAutostart("CrossDesk") &&
+         (!restore_missing || IsAutostartEnabled("CrossDesk") || EnableAutostart("CrossDesk"));
+}
+}  // namespace
+
+bool ConfigCenter::MigrateAutostart() {
+  const bool restore = LegacyAutostartEnabled(*ini_);
+  if (!MigrateLoginEntry(restore)) return false;
+  // Record success once, so later removals in the system startup manager stick.
+  return !restore || StoreValues({{"autostart_tray_migrated", "true"}}) == 0;
+}
+
+bool ConfigCenter::MigrateAutostartWhileRunning(const std::string& config_path) {
+  // The older running client owns config.ini. Update the system entry now and
+  // let the next client holding the lease record completion.
+  CSimpleIniA ini;
+  ini.SetUnicode(true);
+  return ini.LoadFile(config_path.c_str()) >= 0 && MigrateLoginEntry(LegacyAutostartEnabled(ini));
+}
+#endif
+
 int ConfigCenter::SetAutostart(bool enabled) {
 #ifdef _WIN32
   // System registration determines success; INI only mirrors the last
@@ -515,11 +601,9 @@ int ConfigCenter::SetAutostart(bool enabled) {
   const auto configure = [](bool value) {
     return value ? EnableAutostart("CrossDesk") : DisableAutostart("CrossDesk");
   };
-#if defined(__linux__) && !defined(__OHOS__)
-  // Repair old deb entries even when the saved boolean is unchanged, keeping
-  // desktop-managed disabled flags and custom commands intact.
+#if defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
   if (enabled && previous && !platform::MigrateLegacyAutostart("CrossDesk")) {
-    LOG_ERROR("Failed to migrate Linux autostart");
+    LOG_ERROR("Failed to migrate the existing autostart entry");
     return -1;
   }
 #endif
@@ -527,7 +611,8 @@ int ConfigCenter::SetAutostart(bool enabled) {
     LOG_ERROR("Cannot configure autostart");
     return -1;
   }
-  if (StoreValues({{"enable_autostart", enabled ? "true" : "false"}}) != 0) {
+  if (StoreValues({{"enable_autostart", enabled ? "true" : "false"},
+                   {"autostart_tray_migrated", "true"}}) != 0) {
     if (enabled != previous && !configure(previous))
       LOG_ERROR("Cannot restore autostart");
     return -1;
@@ -592,6 +677,13 @@ bool ConfigCenter::IsPrivacyLocalUnlockAllowed() const {
   return privacy_local_unlock_allowed_.load();
 }
 
+int ConfigCenter::SetPrivacyBlackScreen(bool enabled) {
+  if (privacy_black_screen_.load() == enabled) return 0;
+  if (StoreValues({{"privacy_black_screen", enabled ? "true" : "false"}}) != 0) return -1;
+  privacy_black_screen_.store(enabled);
+  return 0;
+}
+
 int ConfigCenter::SetTrustedDevicesOnly(bool enabled) {
   if (StoreValues({{"trusted_devices_only", enabled ? "true" : "false"}}) != 0) return -1;
   trusted_devices_only_.store(enabled);
@@ -634,6 +726,54 @@ bool ConfigCenter::IsPauseVideoWhenMinimized() const {
   return pause_video_when_minimized_.load();
 }
 
+int ConfigCenter::GetWheelSensitivityPercent(const std::string& device) const {
+  const auto found = device_wheel_sensitivity_.find(device);
+  return found == device_wheel_sensitivity_.end() ? legacy_wheel_sensitivity_percent_
+                                                 : found->second;
+}
+
+int ConfigCenter::SetInputSensitivity(const std::string& device,
+                                     int mouse_percent, int wheel_percent) {
+  if (device.empty() || !IsValidInputSensitivity(mouse_percent) ||
+      !IsValidInputSensitivity(wheel_percent)) return -1;
+
+  const auto mouse = std::make_pair("mouse_sensitivity_percent", std::to_string(mouse_percent));
+  if (wheel_percent != GetWheelSensitivityPercent(device)) {
+    auto devices = device_wheel_sensitivity_;
+    devices[device] = wheel_percent;
+    if (StoreValues({mouse, {"device_wheel_sensitivity", nlohmann::json(devices).dump()}}) != 0)
+      return -1;
+    device_wheel_sensitivity_ = std::move(devices);
+  } else if (mouse_percent != GetMouseSensitivityPercent() && StoreValues({mouse}) != 0) {
+    return -1;
+  }
+  mouse_sensitivity_percent_.store(mouse_percent);
+  return 0;
+}
+
+std::optional<ConfigCenter::StreamWindowSize> ConfigCenter::GetStreamWindowSize(
+    const std::string& device) const {
+  const auto& sizes = ini_->stream_window_sizes;
+  const auto it = sizes.find(device);
+  if (it == sizes.end() || !it->is_array() || it->size() != 2 ||
+      !(*it)[0].is_number_integer() || !(*it)[1].is_number_integer())
+    return std::nullopt;
+  const auto width = (*it)[0].get<std::int64_t>();
+  const auto height = (*it)[1].get<std::int64_t>();
+  if (!ValidStreamWindowSize(width, height)) return std::nullopt;
+  return StreamWindowSize{static_cast<int>(width), static_cast<int>(height)};
+}
+
+int ConfigCenter::SetStreamWindowSize(const std::string& device, StreamWindowSize size) {
+  if (device.empty() || !ValidStreamWindowSize(size.width, size.height)) return -1;
+  if (GetStreamWindowSize(device) == size) return 0;
+  auto sizes = ini_->stream_window_sizes;
+  sizes[device] = {size.width, size.height};
+  if (StoreValues({{"device_stream_window_sizes", sizes.dump()}}) != 0) return -1;
+  ini_->stream_window_sizes = std::move(sizes);
+  return 0;
+}
+
 int ConfigCenter::SetPortableServicePromptSuppressed(bool suppressed) {
   portable_service_prompt_suppressed_ = suppressed;
   ini_->SetBoolValue(section_, "portable_service_prompt_suppressed",
@@ -646,13 +786,12 @@ int ConfigCenter::SetPortableServicePromptSuppressed(bool suppressed) {
   return 0;
 }
 
-int ConfigCenter::SetSponsorshipPromptDismissedVersion(
-    const std::string& version) {
+int ConfigCenter::SetLastPresentedRelease(const std::string& version) {
   if (version.empty() ||
-      StoreValues({{"sponsorship_prompt_dismissed_version", version}}) != 0) {
+      StoreValues({{"last_presented_release", version}}) != 0) {
     return -1;
   }
-  sponsorship_prompt_dismissed_version_ = version;
+  last_presented_release_ = version;
   return 0;
 }
 
@@ -730,8 +869,8 @@ bool ConfigCenter::IsPortableServicePromptSuppressed() const {
   return portable_service_prompt_suppressed_;
 }
 
-std::string ConfigCenter::GetSponsorshipPromptDismissedVersion() const {
-  return sponsorship_prompt_dismissed_version_;
+std::string ConfigCenter::GetLastPresentedRelease() const {
+  return last_presented_release_;
 }
 
 int ConfigCenter::SetFileTransferSavePath(const std::string& path) {

@@ -1,0 +1,175 @@
+# Đồng bộ fork với upstream
+
+Tài liệu này mô tả cách đưa thay đổi mới của upstream `kunkundi/crossdesk` (nhánh `mcp`) vào fork `thuongtin/crossdesk` mà vẫn giữ bản Việt hóa: tiếng Việt là ngôn ngữ mặc định, catalog có cột `vi` đầy đủ, tài liệu chính viết bằng tiếng Việt.
+
+[Danh mục tài liệu](README.md) · [Bảo trì bản địa hóa](../localization/README.md#bảo-trì-tài-nguyên)
+
+## Remote và quy tắc an toàn
+
+| Remote | Kho | Quyền |
+| --- | --- | --- |
+| `origin` | `thuongtin/crossdesk` | Đọc và ghi. Mọi nhánh đồng bộ và PR đều nằm ở đây. |
+| `upstream` | `kunkundi/crossdesk` | Chỉ fetch. Push URL được đặt thành `DISABLED_no_push_to_upstream`. |
+
+Thiết lập một lần cho bản clone mới:
+
+```bash
+git remote add upstream https://github.com/kunkundi/crossdesk.git
+git remote set-url --push upstream DISABLED_no_push_to_upstream
+gh repo set-default thuongtin/crossdesk
+```
+
+Những việc không được làm:
+
+- Không push lên `upstream`, không đổi push URL của `upstream`, không thêm remote khác trỏ tới `kunkundi`.
+- Không dùng nút "Sync fork" trên GitHub hay `gh repo sync`: hai cách này có thể bỏ commit riêng của fork. Luôn merge ở máy local.
+- Không force-push lên `origin/mcp`. Làm trên nhánh mới và chỉ push nhánh đó.
+- Mọi lệnh `gh` có ghi dữ liệu (PR, issue, comment) phải truyền rõ `-R thuongtin/crossdesk`.
+- Không tự merge PR đồng bộ; chủ dự án quyết định.
+
+## Xem trước bằng script
+
+`scripts/sync-upstream.sh` fetch `upstream/mcp` rồi merge thử bằng `git merge-tree`, không đụng tới working tree, index hay ref của fork, và không bao giờ push:
+
+```bash
+scripts/sync-upstream.sh            # so HEAD với upstream/mcp
+scripts/sync-upstream.sh origin/mcp # so một ref khác của fork
+SKIP_FETCH=1 scripts/sync-upstream.sh
+```
+
+Báo cáo gồm: merge base, số commit upstream còn thiếu, danh sách commit, các tệp sẽ xung đột chia theo nhóm (catalog, tài nguyên sinh tự động, tài liệu, code), các tệp Markdown upstream đã sửa và kết quả chạy thử `scripts/merge_localization_catalog.py --dry-run`. Mã thoát là `0` khi merge sạch hoặc không có gì để đồng bộ, `1` khi có xung đột, `2` khi thiếu remote. Đổi remote hay nhánh bằng `UPSTREAM_REMOTE` và `UPSTREAM_BRANCH`.
+
+## Các bước đồng bộ
+
+1. Bắt đầu từ `mcp` mới nhất của fork và tạo nhánh theo ngày:
+
+   ```bash
+   git fetch origin
+   git switch -c sync/upstream-YYYY-MM-DD origin/mcp
+   git fetch --no-tags upstream mcp
+   scripts/sync-upstream.sh
+   ```
+
+2. Tạo một merge commit thật (không rebase, không squash) để lịch sử giữ được điểm nối với upstream:
+
+   ```bash
+   git merge --no-ff --no-commit upstream/mcp
+   git submodule update --init --recursive
+   ```
+
+3. Giải quyết xung đột theo từng nhóm ở mục dưới. Không chạy `git add -u` khi vẫn còn tệp chưa xử lý xong, vì lệnh này đánh dấu cả tệp còn dấu xung đột là đã giải quyết. Thêm từng tệp sau khi đã kiểm tra.
+4. Chạy toàn bộ [danh sách kiểm tra](#danh-sách-kiểm-tra).
+5. Commit merge với tiêu đề `Merge upstream kunkundi/crossdesk mcp (<base>..<upstream>)` và phần thân tóm tắt cách xử lý từng nhóm. Sửa lỗi phát sinh sau merge (ví dụ test hỏng) nằm ở commit riêng.
+6. Push nhánh và mở PR theo [quy tắc PR](#quy-tắc-pr).
+
+## Quy tắc giải quyết xung đột
+
+### Code
+
+Lấy hành vi của upstream, rồi chỉ áp lại phần Việt hóa: chuỗi hiển thị đi qua catalog, giá trị ngôn ngữ mặc định và các chỉ số ngôn ngữ của fork. Trên desktop, `kVietnameseLanguage = 11` và `kSystemLanguage = 10`. Không giữ lại logic cũ của fork chỉ vì nó từng nằm ở đó.
+
+Với tệp merge sạch, vẫn rà chuỗi hiển thị mới mà upstream viết thẳng trong code. Chuỗi nào người dùng nhìn thấy thì phải đi qua `L10n.tr` hoặc cơ chế tương đương của nền tảng, và có trong catalog.
+
+Test riêng của fork (ví dụ `apps/android/test/localization_test.py`) có thể hỏng khi upstream đổi cấu trúc helper. Sửa assertion theo cấu trúc mới, giữ nguyên ý định kiểm tra.
+
+### Catalog bản địa hóa
+
+`localization/catalog.json` là nguồn duy nhất cho mọi chuỗi giao diện. Không sửa tay phần xung đột; dùng script merge ba chiều:
+
+```bash
+python3 scripts/merge_localization_catalog.py --dry-run   # chỉ báo cáo
+python3 scripts/merge_localization_catalog.py             # ghi catalog.json
+```
+
+Script đọc ba phiên bản từ git (merge base, `HEAD`, `upstream/mcp`) và:
+
+- giữ thứ tự key và mọi thay đổi của upstream; key chỉ có ở fork được chèn sau key đứng trước nó trong bản fork;
+- merge riêng từng ngôn ngữ của một chuỗi; hai bên cùng đổi khác nhau thì báo xung đột và tạm giữ bản upstream;
+- giữ nguyên danh sách `slint` của upstream (đây là bảng tra theo chỉ số), nối literal chỉ có ở fork vào cuối, rồi đánh lại chỉ số `GalleryStrings.texts[N]` trong các tệp `.slint` chỉ fork dùng;
+- in danh sách chuỗi còn thiếu bản dịch `vi`.
+
+Mã thoát `1` nghĩa là còn xung đột giá trị, key bị tham chiếu nhưng không tồn tại, hoặc một tệp `.slint` mà cả hai bên cùng thêm chỉ số mới; các trường hợp này phải xử lý tay.
+
+Sau đó dịch mọi chuỗi còn thiếu `vi` trong catalog và sinh lại tài nguyên:
+
+```bash
+python3 localization/generate.py
+python3 localization/generate.py --check
+```
+
+Tài nguyên sinh tự động (Android `strings.xml`, `LocalizationKeys.java`, `locales_config.xml`, iOS `Localizable.strings` và `InfoPlist.strings`, desktop `localization_data.h`, HarmonyOS `LocalizationData.ets`) không bao giờ sửa tay: khi xung đột, chọn bên nào cũng được rồi chạy lại trình sinh.
+
+Ghi chú cập nhật trong `apps/desktop/resources/release-notes.json` không đi qua catalog. Khi upstream đổi nội dung, viết lại mục `vi` cho khớp với bản mới.
+
+### Tài liệu
+
+| Loại tệp | Cách xử lý |
+| --- | --- |
+| `README.md`, `docs/*.md` không có hậu tố | Bản tiếng Việt. Dịch nội dung mới của upstream sang tiếng Việt, giữ cấu trúc và anchor của upstream. |
+| `README_EN.md`, `docs/*_EN.md` | Khớp với bản tiếng Anh của upstream (`README_EN.md` của fork là `README.md` của upstream). |
+| `README_ZH.md` | Bản tiếng Trung của upstream. |
+| README trong `apps/*` | Bản tiếng Việt; dịch nội dung mới của upstream. |
+
+Quy tắc liên kết:
+
+- Tài liệu tiếng Việt liên kết tới `../README.md`; tài liệu `_EN` liên kết tới `../README_EN.md`.
+- README trong `apps/*` giữ đích `../../README.md`.
+- Nhãn và tên mục trong giao diện được viết theo đúng bản dịch trong catalog, để người đọc tìm thấy đúng nút trên ứng dụng.
+- Sau khi dịch, kiểm tra mọi liên kết tương đối và anchor vẫn trỏ tới tệp và tiêu đề có thật.
+
+## Danh sách kiểm tra
+
+- Không còn dấu xung đột và tệp chưa merge:
+
+  ```bash
+  git diff --name-only --diff-filter=U
+  rg -n '^(<<<<<<<|>>>>>>>|=======$)' --glob '!*.png'
+  ```
+
+- Tệp JSON, XML và plist đã đổi vẫn đọc được (`python3 -m json.tool`, `xmllint --noout`, `plutil -lint`).
+- `python3 localization/generate.py --check` báo tài nguyên đã khớp.
+- Toàn bộ test Python chạy được trên máy không có SDK nền tảng:
+
+  ```bash
+  for test in $(git ls-files '*_test.py' '*/test_*.py' 'localization/test_generate.py' | sort -u); do
+    python3 "$test" || echo "FAILED: $test"
+  done
+  ```
+
+- Test `.cjs` của HarmonyOS. Không có DevEco Studio thì cài TypeScript vào một thư mục tạm và truyền đường dẫn `typescript.js`:
+
+  ```bash
+  npm install --prefix "$TMPDIR/ts" typescript@5.6
+  ts="$TMPDIR/ts/node_modules/typescript/lib/typescript.js"
+  for test in localization privacy_policy mobile_localization mobile_models mobile_lifecycle mobile_platform mobile_store; do
+    node "apps/harmony/tests/${test}_test.cjs" "$ts" apps/harmony/entry/src/main/ets/mobile
+  done
+  node apps/harmony/tests/text_input_host_test.cjs "$ts" apps/harmony/desktop-port/TextInputHost.ets \
+    apps/harmony/desktop-port/KeyboardHost.ets apps/harmony/desktop-port/DesktopHost.ets apps/harmony/desktop-port/DesktopAccess.ets
+  node apps/harmony/tests/desktop_window_host_test.cjs "$ts" apps/harmony/desktop-port/DesktopHost.ets
+  node apps/harmony/tests/autostart_host_test.cjs "$ts" apps/harmony/desktop-port/AutostartHost.ets
+  ```
+
+- Quét ký tự Han trong các tệp đã đổi: mọi dòng còn chữ Han phải là key catalog, dữ liệu locale, fixture test hoặc tên thương hiệu, không phải chuỗi giao diện hay bình luận chưa dịch.
+- Kiểm tra liên kết và anchor Markdown trong các tệp tài liệu đã đổi.
+- Nếu máy có đủ công cụ, chạy bản build desktop bằng `xmake` (xem [Hướng dẫn biên dịch](BUILD.md)). Không có thì ghi rõ trong PR và dựa vào CI của fork.
+
+## Quy tắc PR
+
+- Mở PR từ nhánh đồng bộ vào `mcp` của fork, và kiểm tra lệnh trước khi chạy:
+
+  ```bash
+  git push origin sync/upstream-YYYY-MM-DD
+  gh pr create -R thuongtin/crossdesk --base mcp --head sync/upstream-YYYY-MM-DD --title "Sync upstream kunkundi/crossdesk mcp (<base>..<upstream>)"
+  gh pr view -R thuongtin/crossdesk --json url,baseRepository
+  ```
+
+  `baseRepository` phải là `thuongtin/crossdesk`. PR mở nhầm lên `kunkundi/crossdesk` là lỗi nghiêm trọng, cần đóng ngay.
+- Tiêu đề viết bằng tiếng Anh. Phần mô tả nêu dải commit upstream, cách giải quyết từng nhóm xung đột, các chuỗi mới đã dịch, kết quả build và test, và những điểm còn chưa chắc chắn.
+- Theo dõi CI (`Build and Release`, `CLI native builds and npm packages`, `MCP package`, `Check component versions`) và review cho tới khi PR sẵn sàng. Không tự merge.
+
+## Lịch sử đồng bộ
+
+| Ngày | Dải upstream | Số commit | Ghi chú |
+| --- | --- | --- | --- |
+| 2026-11-26 | `ff369cd0..2c046f51` | 106 | 34 tệp xung đột: catalog, 3 tài nguyên sinh, 24 tài liệu, 6 tệp code. Dịch 16 chuỗi mới, thêm mục `vi` cho ghi chú cập nhật. Thêm script merge catalog và script xem trước này. |

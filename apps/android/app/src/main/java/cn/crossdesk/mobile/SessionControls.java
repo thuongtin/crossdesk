@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.view.*;
 import android.widget.*;
+import java.util.function.IntConsumer;
 import static cn.crossdesk.mobile.MobileUi.*;
 
 /** Safe-area overlay: a draggable 54 dp orb, an adaptive menu and a docked keyboard. */
@@ -25,9 +26,10 @@ final class SessionControls extends FrameLayout {
     private View shield;
     private LinearLayout menu;
     private final RemoteKeyboard keyboard;
+    private final IntConsumer keyboardInsetChanged;
     private VirtualMouseBar mouseBar;
-    private FrameLayout mouseHost;
-    private boolean mouseVisible,pictureInPicture;
+    private float mouseX = Float.NaN, mouseY = Float.NaN;
+    private boolean mouseVisible = true, pictureInPicture;
     private ScrollView menuScroll;
     private int menuColumns=3;
     private final ViewTreeObserver.OnGlobalLayoutListener legacyKeyboardLayout=this::legacyKeyboardLayout;
@@ -54,11 +56,14 @@ final class SessionControls extends FrameLayout {
     private final java.util.List<SettingRow> settingRows=new java.util.ArrayList<>();
     private TextView[][] trafficCells;
     private LinearLayout[] trafficRows;
+    private static final int CONNECTION_MODE = 4, LOCAL_ENDPOINT = 5, REMOTE_ENDPOINT = 6, ENCRYPTION = 7;
     private TextView[] networkDetails;
+    private boolean endpointsExpanded;
     private View encryptionLock,encryptionOpen;
     private boolean muted,relative=true,orbPositioned,secureAttentionVisible;
-    SessionControls(Context context,MobileUi ui,Actions actions){
+    SessionControls(Context context,MobileUi ui,IntConsumer keyboardInsetChanged,Actions actions){
         super(context);this.ui=ui;this.actions=actions;
+        this.keyboardInsetChanged = keyboardInsetChanged;
         keyboard=new RemoteKeyboard(context,ui,actions,()->{requestLayout();positionMouse();});
         addView(keyboard,new LayoutParams(-1,ui.dp(44),Gravity.BOTTOM));
         // This container must remain transparent to remote touch outside its controls.
@@ -78,12 +83,11 @@ final class SessionControls extends FrameLayout {
         secureAttentionVisible=visible;
         if(menu!=null&&menuPage.equals("controls"))openMenu("controls");
     }
-    void attachMouseBar(FrameLayout host, VirtualMouseBar bar) {
-        mouseHost=host;mouseBar=bar;
-        // A direct, tightly bounded sibling of the video is essential: otherwise
-        // an existing touch in this full-screen controls container captures the
-        // second finger before Android can dispatch it to the remote surface.
-        host.addView(bar,new FrameLayout.LayoutParams(ui.dp(140),ui.dp(48)));
+    void attachMouseBar(FrameLayout safeArea, int controlsIndex, VirtualMouseBar bar) {
+        mouseBar=bar;
+        // Keep the bar above the video for split touch, and below the orb and menu.
+        safeArea.addView(bar,controlsIndex,new FrameLayout.LayoutParams(ui.dp(VirtualMouseBar.WIDTH_DP),ui.dp(VirtualMouseBar.HEIGHT_DP),Gravity.TOP|Gravity.LEFT));
+        drag(bar.dragHandle,bar,null);
         bar.setVisibility(GONE);
     }
     void cancelMouseInput(){if(mouseBar!=null)mouseBar.cancelInput();}
@@ -95,20 +99,16 @@ final class SessionControls extends FrameLayout {
     private void toggleMouse(){cancelMouseInput();mouseVisible=!mouseVisible;closeMenu();positionMouse();}
     private void positionMouse(){
         if(mouseBar==null)return;
-        boolean visible=!pictureInPicture&&mouseVisible&&menu==null&&waiting.getVisibility()==GONE;
+        boolean visible=!pictureInPicture&&mouseVisible&&waiting.getVisibility()==GONE;
         if(!visible){if(mouseBar.getVisibility()==VISIBLE)cancelMouseInput();mouseBar.setVisibility(GONE);return;}
-        int[] location=new int[2],hostLocation=new int[2];getLocationOnScreen(location);mouseHost.getLocationOnScreen(hostLocation);
-        float width=ui.dp(140),height=ui.dp(48),gap=ui.dp(6),margin=ui.dp(8);
-        float x=orb.getX()>=width+gap+margin?orb.getX()-gap-width:orb.getX()+orb.getWidth()+gap;
-        float y=orb.getY()+(orb.getHeight()-height)/2;
-        // When the orb is near the middle of a narrow phone, use the adjacent
-        // row rather than letting the two controls overlap.
-        if(x+width>getWidth()-margin){x=bound(orb.getX(),margin,getWidth()-width-margin);y=orb.getY()+orb.getHeight()+gap;if(y+height>getHeight()-margin)y=orb.getY()-gap-height;}
-        if(keyboard.isOpen()&&x<keyboard.getX()+keyboard.getWidth()&&x+width>keyboard.getX()&&y<keyboard.getY()+keyboard.getHeight()&&y+height>keyboard.getY()){
-            y=keyboard.getY()-gap-height;if(y<margin)y=keyboard.getY()+keyboard.getHeight()+gap;
-        }
-        mouseBar.setX(location[0]-hostLocation[0]+bound(x,margin,getWidth()-width-margin));
-        mouseBar.setY(location[1]-hostLocation[1]+bound(y,margin,getHeight()-height-margin));
+        float width=ui.dp(VirtualMouseBar.WIDTH_DP),height=ui.dp(VirtualMouseBar.HEIGHT_DP),gap=ui.dp(6),margin=ui.dp(8);
+        float x = Float.isNaN(mouseX) ? getWidth() - width - ui.dp(16) : mouseX;
+        float y = Float.isNaN(mouseY) ? getHeight() - height - ui.dp(24) : mouseY;
+        float maxY = getHeight() - height - margin;
+        if (keyboard.isOpen() && keyboard.getHeight() > 0)
+            maxY = Math.min(maxY, keyboard.getY() - height - gap);
+        mouseBar.setTranslationX(bound(x,margin,getWidth()-width-margin));
+        mouseBar.setTranslationY(bound(y,margin,maxY));
         mouseBar.setVisibility(VISIBLE);
     }
     void setMuted(boolean value){muted=value;if(menu!=null&&menuPage.equals("controls"))openMenu("controls");}
@@ -123,11 +123,25 @@ final class SessionControls extends FrameLayout {
         if(transferLabel!=null){transferLabel.setText(transferStatus);transferLabel.setVisibility(transferStatus.isEmpty()?GONE:VISIBLE);}
         if(saveFileButton!=null)saveFileButton.setVisibility(hasReceivedFile?VISIBLE:GONE);
     }
-    private void closeMenu(){if(resolutionDialog!=null){resolutionDialog.dismiss();resolutionDialog=null;}resolutionButton=resolutionFeedback=null;if(menu!=null){removeView(menu);menu=null;menuScroll=null;}if(shield!=null){removeView(shield);shield=null;}videoFeedback=transferLabel=saveFileButton=null;privacyFeedback=privacyCaption=null;privacyButton=null;privacyIcon=null;trafficCells=null;trafficRows=null;networkDetails=null;encryptionLock=encryptionOpen=null;settingRows.clear();orb.setContentDescription(L10n.tr("展开远程控制菜单"));positionMouse();}
+    private void closeMenu(){if(resolutionDialog!=null){resolutionDialog.dismiss();resolutionDialog=null;}resolutionButton=resolutionFeedback=null;if(menu!=null){removeView(menu);menu=null;menuScroll=null;}if(shield!=null){removeView(shield);shield=null;}videoFeedback=transferLabel=saveFileButton=null;privacyFeedback=privacyCaption=null;privacyButton=null;privacyIcon=null;trafficCells=null;trafficRows=null;networkDetails=null;encryptionLock=encryptionOpen=null;settingRows.clear();orb.setContentDescription(L10n.tr("展开远程控制菜单"));}
     private void openMenu(String page){
         cancelMouseInput();
-        closeMenu();menuPage=page;shield=new View(getContext());shield.setOnClickListener(v->closeMenu());addView(shield,new LayoutParams(-1,-1));
+        closeMenu();menuPage=page;
+        shield=new View(getContext()) {
+            @Override public boolean dispatchTouchEvent(MotionEvent event) {
+                // Let touches starting on the exposed bar reach its own buttons.
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN && mouseBar != null && mouseBar.isShown()) {
+                    float x = event.getX() - mouseBar.getTranslationX();
+                    float y = event.getY() - mouseBar.getTranslationY();
+                    if (x >= 0 && y >= 0 && x < mouseBar.getWidth() && y < mouseBar.getHeight()) return false;
+                }
+                return super.dispatchTouchEvent(event);
+            }
+        };
+        shield.setOnClickListener(v->closeMenu());addView(shield,new LayoutParams(-1,-1));
         menu=ui.column();menu.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12));ui.card(menu,18);menu.setElevation(ui.dp(12));
+        menu.setClickable(true);
+        menu.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         LinearLayout header=ui.row();
         if(!page.equals("controls"))header.addView(ui.iconButton("back",L10n.tr("返回控制栏"),()->openMenu("controls")),ui.size(28,32));
         TextView title=ui.text(page.equals("controls")?L10n.tr("●  已连接"):page.equals("video")?L10n.tr("画面设置"):L10n.tr("网络状态"),14,true);
@@ -168,7 +182,6 @@ final class SessionControls extends FrameLayout {
         }
         ui.gap(menu,9);TextView disconnect=ui.action(L10n.tr("断开连接"),Color.WHITE,()->{closeMenu();closeKeyboard();actions.disconnect();});disconnect.setMinHeight(ui.dp(34));disconnect.setTextSize(14);disconnect.setBackground(ui.background(RED,8));menu.addView(disconnect,ui.size(-1,34));
         addView(menu,new LayoutParams(panelWidth(getWidth()),panelHeight(getHeight())));orb.bringToFront();orb.setContentDescription(L10n.tr("收起远程控制菜单"));
-        positionMouse();
     }
     private void renderPrivacy(){
         if(menu!=null&&menuPage.equals("controls")&&(privacyButton!=null)!=privacy.desktopAvailable){
@@ -226,17 +239,27 @@ final class SessionControls extends FrameLayout {
         for(SettingRow row:settingRows)row.render();
     }
     private void networkPage(LinearLayout body){
+        endpointsExpanded = false;
         trafficCells=new TextView[4][3];trafficRows=new LinearLayout[4];String[] names={L10n.tr("视频"),L10n.tr("音频"),L10n.tr("数据"),L10n.tr("合计")};
         LinearLayout heading=trafficRow(body,"",new TextView[3],false);((TextView)heading.getChildAt(1)).setText(L10n.tr("接收"));((TextView)heading.getChildAt(2)).setText(L10n.tr("发送"));((TextView)heading.getChildAt(3)).setText(L10n.tr("丢包率"));
         for(int i=0;i<heading.getChildCount();i++)((TextView)heading.getChildAt(i)).setTextColor(SECONDARY);
         for(int i=0;i<4;i++)trafficRows[i]=trafficRow(body,names[i],trafficCells[i],i==3);
         ui.gap(body,10);ui.divider(body);ui.gap(body,10);
-        String[] titles={L10n.tr("帧率"),L10n.tr("分辨率"),L10n.tr("画面延时"),L10n.tr("连接延时（RTT）"),L10n.tr("连接方式"),L10n.tr("媒体加密"),L10n.tr("被控端编码器"),L10n.tr("控制端解码器")};networkDetails=new TextView[titles.length];
-        for(int i=0;i<titles.length;i++){LinearLayout row=ui.row();TextView title=ui.text(titles[i],12,false);title.setTextColor(SECONDARY);row.addView(title,i>=6?new LinearLayout.LayoutParams(-2,-2):new LinearLayout.LayoutParams(0,-2,1));
-            if(i==5){encryptionLock=ui.icon("lock",GREEN);encryptionOpen=ui.icon("unlock",SECONDARY);for(View icon:new View[]{encryptionLock,encryptionOpen}){LinearLayout.LayoutParams p=ui.size(14,14);p.rightMargin=ui.dp(4);row.addView(icon,p);}}
+        String[] titles={L10n.tr("帧率"),L10n.tr("分辨率"),L10n.tr("画面延时"),L10n.tr("连接延时（RTT）"),L10n.tr("连接方式"),L10n.tr("本端地址"),L10n.tr("对端地址"),L10n.tr("媒体加密"),L10n.tr("被控端编码器"),L10n.tr("控制端解码器")};networkDetails=new TextView[titles.length];
+        for(int i=0;i<titles.length;i++){LinearLayout row=ui.row();
+            boolean longValue=i>=LOCAL_ENDPOINT && i!=ENCRYPTION;
+            TextView title=ui.text(titles[i],12,false);title.setTextColor(SECONDARY);row.addView(title,longValue?new LinearLayout.LayoutParams(-2,-2):new LinearLayout.LayoutParams(0,-2,1));
+            if(i==ENCRYPTION){encryptionLock=ui.icon("lock",GREEN);encryptionOpen=ui.icon("unlock",SECONDARY);for(View icon:new View[]{encryptionLock,encryptionOpen}){LinearLayout.LayoutParams p=ui.size(14,14);p.rightMargin=ui.dp(4);row.addView(icon,p);}}
             TextView value=ui.text("—",12,false);value.setFontFeatureSettings("tnum");
-            if(i>=6){value.setGravity(Gravity.END);value.setSingleLine();value.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);value.setMarqueeRepeatLimit(-1);value.setSelected(true);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.leftMargin=ui.dp(8);row.addView(value,p);}else row.addView(value);
-            networkDetails[i]=value;body.addView(row);if(i<titles.length-1)ui.gap(body,7);}
+            if(longValue){value.setGravity(Gravity.END);value.setSingleLine();value.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);value.setMarqueeRepeatLimit(-1);value.setSelected(true);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.leftMargin=ui.dp(8);row.addView(value,p);}else row.addView(value);
+            if(i==CONNECTION_MODE) {
+                row.setOnClickListener(v -> { endpointsExpanded=!endpointsExpanded; renderNetwork(); });
+            }
+            networkDetails[i]=value;
+            LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-1,-2);
+            if(i>0)layout.topMargin=ui.dp(7);
+            body.addView(row,layout);
+        }
         renderNetwork();
     }
     private LinearLayout trafficRow(LinearLayout body,String title,TextView[] cells,boolean total){
@@ -254,9 +277,24 @@ final class SessionControls extends FrameLayout {
             String in=RemoteNetworkStatistics.bitrate(traffic==null?-1:traffic.inbound),out=RemoteNetworkStatistics.bitrate(traffic==null?-1:traffic.outbound),loss=RemoteNetworkStatistics.loss(traffic==null?Double.NaN:traffic.loss);
             trafficCells[i][0].setText(in);trafficCells[i][1].setText(out);trafficCells[i][2].setText(loss);trafficRows[i].setContentDescription(L10n.format("{0}，接收 {1}，发送 {2}，丢包率 {3}",names[i],in,out,loss));
         }
-        String[] values={network.fps+" FPS",network.resolution(),RemoteNetworkStatistics.latency(network.latency),RemoteNetworkStatistics.latency(network.rtt),network.mode(),network.report==null?"—":network.report.srtp?L10n.tr("SRTP 已启用"):L10n.tr("未启用"),network.remoteEncoder.isEmpty()?"—":network.remoteEncoder,network.localDecoder.isEmpty()?"—":network.localDecoder};
+        boolean direct=network.report!=null && network.report.mode==0
+                && !network.report.localEndpoint.isEmpty() && !network.report.remoteEndpoint.isEmpty();
+        if(!direct) endpointsExpanded=false;
+        View modeRow=(View)networkDetails[CONNECTION_MODE].getParent();
+        modeRow.setClickable(direct);
+        modeRow.setFocusable(direct);
+        String mode=network.mode();
+        if(direct) mode+=endpointsExpanded?"  ▾":"  ▸";
+        String[] values={network.fps+" FPS",network.resolution(),RemoteNetworkStatistics.latency(network.latency),
+                RemoteNetworkStatistics.latency(network.rtt),mode,direct?network.report.localEndpoint:"",
+                direct?network.report.remoteEndpoint:"",network.report==null?"—":network.report.srtp?L10n.tr("SRTP 已启用"):L10n.tr("未启用"),
+                network.remoteEncoder.isEmpty()?"—":network.remoteEncoder,network.localDecoder.isEmpty()?"—":network.localDecoder};
+        for(int i=LOCAL_ENDPOINT;i<=REMOTE_ENDPOINT;i++)
+            ((View)networkDetails[i].getParent()).setVisibility(endpointsExpanded?VISIBLE:GONE);
         // Reassigning identical text every statistics tick restarts the marquee.
-        for(int i=0;i<values.length;i++)if(!android.text.TextUtils.equals(networkDetails[i].getText(),values[i]))networkDetails[i].setText(values[i]);networkDetails[5].setTextColor(network.report!=null&&network.report.srtp?GREEN:SECONDARY);
+        for(int i=0;i<values.length;i++)if(!android.text.TextUtils.equals(networkDetails[i].getText(),values[i]))networkDetails[i].setText(values[i]);
+        networkDetails[CONNECTION_MODE].setTextColor(direct?BLUE:INK);
+        networkDetails[ENCRYPTION].setTextColor(network.report!=null&&network.report.srtp?GREEN:SECONDARY);
         encryptionLock.setVisibility(network.report!=null&&network.report.srtp?VISIBLE:GONE);encryptionOpen.setVisibility(network.report!=null&&!network.report.srtp?VISIBLE:GONE);
     }
     private int controlColumns(){return getMeasuredHeight()<ui.dp(400)&&getMeasuredWidth()>=ui.dp(400)?4:3;}
@@ -274,22 +312,58 @@ final class SessionControls extends FrameLayout {
         return Math.min(contentHeight,Math.max(1,height-ui.dp(16)));
     }
     private void positionMenu(){if(menu==null)return;float ox=orb.getX()+orb.getWidth()/2f;float x=ox>getWidth()/2f?orb.getX()-ui.dp(12)-menu.getWidth():orb.getX()+orb.getWidth()+ui.dp(12);menu.setX(bound(x,ui.dp(8),getWidth()-menu.getWidth()-ui.dp(8)));menu.setY(bound(orb.getY(),ui.dp(8),getHeight()-menu.getHeight()-ui.dp(8)));}
-    private void positionKeyboard(){positionMouse();}
     boolean closeKeyboard(){return keyboard.close();}
     void resetKeyboardContext(){keyboard.resetContext();}
     void keyboardInsets(int height,boolean visible,int navigation){keyboard.updateInsets(height,visible,navigation);}
     private void toggleKeyboard(){keyboard.bringToFront();keyboard.toggle();}
     @android.annotation.SuppressLint("ClickableViewAccessibility") // Tap dispatches performClick; dragging is an additional action.
     private void drag(View handle,View target,Runnable tap){
-        handle.setOnClickListener(v->tap.run());handle.setOnTouchListener(new View.OnTouchListener(){float startX,startY,originX,originY;boolean moved;
-            public boolean onTouch(View v,MotionEvent event){
-                switch(event.getActionMasked()){
-                    case MotionEvent.ACTION_DOWN:if(target==orb)cancelMouseInput();startX=event.getRawX();startY=event.getRawY();originX=target.getX();originY=target.getY();moved=false;return true;
-                    case MotionEvent.ACTION_MOVE:float dx=event.getRawX()-startX,dy=event.getRawY()-startY;if(Math.hypot(dx,dy)>ui.dp(4))moved=true;if(moved){if(target==orb)closeMenu();target.setX(bound(originX+dx,ui.dp(8),getWidth()-target.getWidth()-ui.dp(8)));target.setY(bound(originY+dy,ui.dp(8),getHeight()-target.getHeight()-ui.dp(8)));positionMouse();}return true;
-                    case MotionEvent.ACTION_UP:if(!moved)v.performClick();return true;
-                    case MotionEvent.ACTION_CANCEL:return true;
-                    default:return false;
+        if (tap != null) handle.setOnClickListener(v -> tap.run());
+        handle.setOnTouchListener(new View.OnTouchListener() {
+            final int[] screen = new int[2], container = new int[2];
+            float startX, startY, originX, originY;
+            boolean moved;
+            int pointer = -1;
+
+            @Override public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        if (target == orb) cancelMouseInput();
+                        pointer = event.getPointerId(0);
+                        startX = event.getRawX(); startY = event.getRawY();
+                        target.getLocationOnScreen(screen);
+                        SessionControls.this.getLocationOnScreen(container);
+                        originX = screen[0] - container[0]; originY = screen[1] - container[1];
+                        moved = false;
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        if (event.getPointerId(0) != pointer) break;
+                        float dx = event.getRawX() - startX, dy = event.getRawY() - startY;
+                        if (!moved && Math.hypot(dx, dy) <= ui.dp(4)) break;
+                        moved = true;
+                        int margin = ui.dp(8);
+                        float x = bound(originX + dx, margin, getWidth() - target.getWidth() - margin);
+                        float y = bound(originY + dy, margin, getHeight() - target.getHeight() - margin);
+                        if (target == orb) {
+                            if (menu != null) closeMenu();
+                            orb.setX(x); orb.setY(y);
+                        } else {
+                            mouseX = x; mouseY = y;
+                            positionMouse();
+                        }
+                        break;
+                    case MotionEvent.ACTION_POINTER_UP:
+                    case MotionEvent.ACTION_UP:
+                        if (event.getPointerId(event.getActionIndex()) == pointer) {
+                            if (!moved && tap != null) v.performClick();
+                            pointer = -1;
+                        }
+                        break;
+                    case MotionEvent.ACTION_CANCEL:
+                        pointer = -1;
+                        break;
                 }
+                return true;
             }
         });
     }
@@ -298,7 +372,6 @@ final class SessionControls extends FrameLayout {
         if(menu!=null&&menuPage.equals("controls")&&menuColumns!=controlColumns())openMenu("controls");
         orb.setX(bound(orb.getX(),ui.dp(8),getWidth()-orb.getWidth()-ui.dp(8)));orb.setY(bound(orb.getY(),ui.dp(8),getHeight()-orb.getHeight()-ui.dp(8)));
         if(menu!=null||keyboard.isOpen())requestLayout();
-        positionKeyboard();
         positionMouse();
     }
     @Override protected void onMeasure(int widthSpec,int heightSpec){
@@ -320,11 +393,11 @@ final class SessionControls extends FrameLayout {
     }
     @Override protected void onLayout(boolean changed,int left,int top,int right,int bottom){
         super.onLayout(changed,left,top,right,bottom);
+        keyboardInsetChanged.accept(keyboard.isOpen() ? getHeight() - keyboard.getTop() : 0);
         if(!orbPositioned){orb.setX(Math.max(ui.dp(12),getWidth()-ui.dp(66)));orb.setY(ui.dp(17));orbPositioned=true;}
         orb.setX(bound(orb.getX(),ui.dp(8),getWidth()-orb.getWidth()-ui.dp(8)));orb.setY(bound(orb.getY(),ui.dp(8),getHeight()-orb.getHeight()-ui.dp(8)));
         // New/rebuilt menus have real dimensions now; position them in the same frame.
         positionMenu();
-        positionKeyboard();
         positionMouse();
     }
     @Override protected void onAttachedToWindow(){super.onAttachedToWindow();if(android.os.Build.VERSION.SDK_INT<30)getViewTreeObserver().addOnGlobalLayoutListener(legacyKeyboardLayout);}

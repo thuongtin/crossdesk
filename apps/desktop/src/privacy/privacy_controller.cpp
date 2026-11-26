@@ -48,7 +48,8 @@ bool PrivacyController::Requested() const {
 void PrivacyController::SetText(const PrivacyScreenText& text) {
   std::lock_guard lock(mutex_);
   if (text_.unlock_hint == text.unlock_hint && text_.locked_hint == text.locked_hint &&
-      text_.allow_local_unlock == text.allow_local_unlock) return;
+      text_.allow_local_unlock == text.allow_local_unlock &&
+      text_.black_screen == text.black_screen) return;
   text_ = text;
   text_pending_ = true;
   WakeLocked();
@@ -166,6 +167,11 @@ void PrivacyController::FailLocked(const std::string& reason) {
 void PrivacyController::Fail(const std::string& reason) {
   std::lock_guard lock(mutex_);
   FailLocked(reason);
+}
+void PrivacyController::CaptureDisplayLost() {
+  std::lock_guard lock(mutex_);
+  capture_running_ = false;
+  WakeLocked();
 }
 void PrivacyController::CaptureChanged(bool running) {
   std::lock_guard lock(mutex_);

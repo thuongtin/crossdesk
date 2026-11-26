@@ -110,9 +110,8 @@ private:
   bool ShouldSendCapturedFrame(std::chrono::steady_clock::time_point now,
                                int fps);
   bool ShouldCaptureCursor() const;
-  bool HasConnectedController() const;
-  void UpdateScreenSharingPower();
   bool SyncDisplayInfo();
+  void RefreshIdleDisplays();
   void SetDisplayInfoList(std::vector<DisplayInfo> displays);
   void ResetCaptureMetrics();
   uint64_t RecordCaptureCadence(std::chrono::steady_clock::time_point now,
@@ -136,7 +135,7 @@ private:
   // Guards display_info_list_ (UI thread writes, transport threads read).
   mutable std::mutex display_info_mutex_;
   std::vector<DisplayInfo> display_info_list_;
-  size_t registered_display_stream_count_ = 0;
+  std::atomic<size_t> registered_display_stream_count_{0};
   CapturedKeyboardQueue captured_keyboard_inputs_;
 #if defined(_WIN32) || defined(__OHOS__)
   std::chrono::steady_clock::time_point next_keyboard_capture_retry_{};

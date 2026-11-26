@@ -7,6 +7,8 @@ import { RemoteViewport, MouseInput, TouchInput, TouchPoint, clamp, NetworkStati
 import { MobileTheme, MobileSegment, MobileIcon, MobileIconButton } from './MobileWidgets';
 
 interface KeyRow { keys: string[]; }
+const mouseBarWidth: number = 140;
+const mouseBarHeight: number = 68;
 @Component
 export struct MobileRemoteView {
   @ObjectLink @Watch('stateChanged') state: MobileState;
@@ -24,6 +26,7 @@ export struct MobileRemoteView {
   @State private orbY: number = 100;
   @State private menu: string = '';
   @State private menuHeight: number = 390;
+  @State private endpointsExpanded: boolean = false;
   @State private keyboardHeight: number = 220;
   private orbPositioned: boolean = false;
   @State private keyboard: boolean = false;
@@ -38,7 +41,9 @@ export struct MobileRemoteView {
   @State private modifiers: number[] = [];
   @State private keyboardX: number = 8;
   @State private keyboardY: number = 150;
-  @State private mouseVisible: boolean = false;
+  @State private mouseVisible: boolean = true;
+  @State private mouseBarOrigin: TouchPoint | undefined = undefined;
+  private mouseDragOrigin: TouchPoint = { x: 0, y: 0 };
   @State private leftHeld: boolean = false;
   @State private rightHeld: boolean = false;
   @State private wheelOffset: number = 0;
@@ -115,6 +120,10 @@ export struct MobileRemoteView {
   }
   private physicalMouse(event: MouseEvent): void {
     if (!this.viewport.contains(event.x, event.y) && event.action !== MouseAction.Release) return;
+    if (event.action === MouseAction.Move && this.keyboard) {
+      this.viewport.panForAbsolutePointer(event.x, event.y);
+      this.applyViewport();
+    }
     this.mouse.move(this.viewport.x(event.x), this.viewport.y(event.y));
     const button = event.button === MouseButton.Left ? 0 : event.button === MouseButton.Right ? 1 : event.button === MouseButton.Middle ? 2 : -1;
     if (button >= 0 && (event.action === MouseAction.Press || event.action === MouseAction.Release))
@@ -139,7 +148,12 @@ export struct MobileRemoteView {
       if (button === 1) {
         const delta = p.screenY - this.wheelY; this.wheelOffset = ((p.screenY - this.wheelLast) % 8 + 8) % 8;
         if (Math.abs(delta) > 8) { this.mouse.scroll(delta); this.wheelY = p.screenY; }
-      } else this.mouse.drag(p.screenX - this.barX, p.screenY - this.barY, this.viewport.width(), this.viewport.height());
+      } else if (this.mouse.held() && (p.screenX !== this.barX || p.screenY !== this.barY)) {
+        const previousY = this.mouse.y;
+        this.mouse.drag(p.screenX - this.barX, p.screenY - this.barY, this.viewport.width(), this.viewport.height());
+        this.viewport.followPointer(this.mouse.x, this.mouse.y, previousY);
+        this.applyViewport();
+      }
       this.barX = p.screenX; this.barY = p.screenY;
     } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
       if (button !== 1) this.mouse.button(button === 0, false); this.wheelOffset = 0;
@@ -149,7 +163,10 @@ export struct MobileRemoteView {
   private action(index: number): void {
     if (index === 0) { this.keyboard = !this.keyboard; this.menu = ''; this.modifiers = []; if (this.keyboard) { this.keyboardX = (this.viewWidth - this.keyboardWidth()) / 2; this.keyboardY = Math.max(8, this.viewHeight - this.keyboardHeight - 20); } }
     if (index === 1) this.controller?.setRelative(!this.state.relative);
-    if (index === 2) { this.release(); this.mouseVisible = !this.mouseVisible; this.menu = ''; }
+    if (index === 2) {
+      this.release();
+      this.mouseVisible = !this.mouseVisible; this.menu = '';
+    }
     if (index === 3) { this.state.modal = 'displays'; this.menu = ''; }
     if (index === 4) this.menu = 'video';
     if (index === 5) this.controller?.mute();
@@ -170,13 +187,29 @@ export struct MobileRemoteView {
   private columns(): number { return this.viewHeight < 400 && this.viewWidth >= 400 ? 4 : 3; }
   private menuWidth(): number { return Math.max(1, Math.min(this.viewWidth - 16, this.columns() === 4 ? 380 : Math.max(280, Math.min(340, this.viewWidth - 160)))); }
   private menuX(): number { return clamp(this.orbX > this.viewWidth / 2 ? this.orbX - this.menuWidth() - 12 : this.orbX + 66, 8, this.viewWidth - this.menuWidth() - 8); }
-  private mousePosition(): Position {
-    let x = this.orbX >= 154 ? this.orbX - 146 : this.orbX + 60, y = this.orbY + 3;
-    if (x + 140 > this.viewWidth - 8) { x = this.orbX; y = this.orbY + 60; if (y + 48 > this.viewHeight - 8) y = this.orbY - 54; }
-    if (this.keyboard && x < this.keyboardX + this.keyboardWidth() && x + 140 > this.keyboardX && y < this.keyboardY + this.keyboardHeight && y + 48 > this.keyboardY) {
-      y = this.keyboardY - 54; if (y < 8) y = this.keyboardY + this.keyboardHeight + 6;
+  private mousePosition(): TouchPoint {
+    const x = clamp(this.mouseBarOrigin?.x ?? (this.viewWidth - mouseBarWidth - 16), 8, this.viewWidth - mouseBarWidth - 8);
+    const maxY = this.viewHeight - mouseBarHeight - 8;
+    let y = clamp(this.mouseBarOrigin?.y ?? (this.viewHeight - mouseBarHeight - 24), 8, maxY);
+    if (this.keyboard) {
+      const kb = this.keyboardPosition();
+      if (x < kb.x + this.keyboardWidth() && x + mouseBarWidth > kb.x &&
+        y < kb.y + this.keyboardHeight && y + mouseBarHeight > kb.y) {
+        y = kb.y - mouseBarHeight - 6;
+        if (y < 8) y = kb.y + this.keyboardHeight + 6;
+      }
     }
-    return { x: clamp(x, 8, this.viewWidth - 148), y: clamp(y, 8, this.viewHeight - 56) };
+    return { x: x, y: clamp(y, 8, maxY) };
+  }
+  private dragMouseBar(event: GestureEvent): void {
+    this.mouseBarOrigin = {
+      x: clamp(this.mouseDragOrigin.x + event.offsetX, 8, this.viewWidth - mouseBarWidth - 8),
+      y: clamp(this.mouseDragOrigin.y + event.offsetY, 8, this.viewHeight - mouseBarHeight - 8)
+    };
+  }
+  private keyboardPosition(): TouchPoint {
+    return { x: clamp(this.keyboardX, 8, this.viewWidth - this.keyboardWidth() - 8),
+      y: clamp(this.keyboardY, 8, this.viewHeight - this.keyboardHeight - 8) };
   }
   private keyboardWidth(): number { return Math.max(1, Math.min(this.computerKeyboard ? 520 : 440, this.viewWidth - 16)); }
   private keyboardTitle(key: string): string {
@@ -292,7 +325,7 @@ export struct MobileRemoteView {
             Button(`${this.state.resolutionCurrent} ▾`, { type: ButtonType.Normal })
               .fontSize(13).fontColor(MobileTheme.ink).backgroundColor('#F0F0F2').borderRadius(7)
               .width('100%').height(34).enabled(this.state.resolutionEnabled)
-              .bindMenu(() => { this.ResolutionMenu(this.state.resolutionModes, this.state.selectedDisplay, this.state.resolutionKey) })
+              .bindMenu(this.ResolutionMenu(this.state.resolutionModes, this.state.selectedDisplay, this.state.resolutionKey))
             if (this.state.resolutionFeedback) { Text(this.state.resolutionFeedback).fontSize(12).fontColor(MobileTheme.secondary).width('100%') }
             Text(this.state.videoFeedback).fontSize(12).fontColor(MobileTheme.secondary).width('100%')
             Text(tr("画面质量")).fontSize(12).width('100%')
@@ -322,7 +355,23 @@ export struct MobileRemoteView {
             this.NetworkDetail(tr("分辨率"), this.state.hasFrame ? `${this.state.width} × ${this.state.height}` : '—')
             this.NetworkDetail(tr("画面延时"), NetworkStatistics.delay(this.controller?.network.latency(this.state.networkTime) ?? -1))
             this.NetworkDetail(tr("连接延时（RTT）"), NetworkStatistics.delay(this.state.networkTime - (this.controller?.network.rttTime ?? 0) < 3000 ? this.controller?.network.rtt ?? -1 : -1))
-            this.NetworkDetail(tr("连接方式"), this.controller?.network.mode(this.state.networkTime) ?? '—')
+            if (this.controller?.network.current(this.state.networkTime)?.mode === 0
+              && this.controller?.network.report?.localEndpoint && this.controller?.network.report?.remoteEndpoint) {
+              Row({ space: 4 }) {
+                Text(tr("连接方式")).fontSize(12).fontColor(MobileTheme.secondary).layoutWeight(1)
+                Text(tr("P2P 直连")).fontSize(12).fontColor(MobileTheme.blue)
+                MobileIcon({ name: 'chevron', iconExtent: 13, color: MobileTheme.blue })
+                  .rotate({ angle: this.endpointsExpanded ? 90 : 0 })
+              }.width('100%').constraintSize({ minHeight: 28 })
+                .onClick(() => { this.endpointsExpanded = !this.endpointsExpanded; })
+                .onDisAppear(() => { this.endpointsExpanded = false; })
+              if (this.endpointsExpanded) {
+                this.NetworkCodec(tr("本端地址"), this.controller?.network.report?.localEndpoint || '—')
+                this.NetworkCodec(tr("对端地址"), this.controller?.network.report?.remoteEndpoint || '—')
+              }
+            } else {
+              this.NetworkDetail(tr("连接方式"), this.controller?.network.mode(this.state.networkTime) ?? '—')
+            }
             this.NetworkDetail(tr("媒体加密"), this.controller?.network.current(this.state.networkTime) === undefined ? '—' : this.controller?.network.report?.srtp ? tr("SRTP 已启用") : tr("未启用"), this.controller?.network.current(this.state.networkTime)?.srtp === true)
             this.NetworkCodec(tr("被控端编码器"), this.controller?.network.remoteEncoder || '—')
             this.NetworkCodec(tr("控制端解码器"), this.controller?.network.report?.decoder || '—')
@@ -388,27 +437,40 @@ export struct MobileRemoteView {
       }.width('100%').constraintSize({ maxHeight: Math.max(31, this.viewHeight - 88) }).scrollBar(BarState.Off)
       }
     }.padding(5).width(this.keyboardWidth()).backgroundColor('#D1D6DE').borderRadius(12)
-      .shadow({ radius: 20, color: '#33000000', offsetY: 5 }).onAreaChange((_old: Area, next: Area) => this.keyboardHeight = Number(next.height))
-      .position({ x: clamp(this.keyboardX, 8, this.viewWidth - this.keyboardWidth() - 8), y: clamp(this.keyboardY, 8, Math.max(8, this.viewHeight - this.keyboardHeight - 8)) })
+      .shadow({ radius: 20, color: '#33000000', offsetY: 5 })
+      .position(this.keyboardPosition())
+      .onAreaChange((_old: Area, next: Area) => {
+        this.keyboardHeight = Number(next.height);
+        this.viewport.setKeyboardBounds({ x: Number(next.position.x), y: Number(next.position.y),
+          width: Number(next.width), height: this.keyboardHeight });
+        this.applyViewport();
+      })
+      .onDisAppear(() => { this.viewport.setKeyboardBounds(); this.applyViewport(); })
   }
   @Builder
   MouseBar() {
-    Row({ space: 2 }) {
-      ForEach([0, 1, 2], (button: number) => {
-        Stack() {
-          if (button === 1) {
-            Stack() {
-              Column({ space: 4 }) {
-                ForEach([0, 1, 2, 3, 4, 5, 6], (line: number) => { Row() {}.height(3).width(14).backgroundColor('#737378') })
-              }.translate({ y: this.wheelOffset - 8 })
-            }.width(18).height(30).clip(true)
-          } else { MobileIcon({ name: button === 0 ? 'mouse_left' : 'mouse_right', iconExtent: 22 }) }
-        }.width(44).height(44).borderRadius(7).clip(true)
-          .backgroundColor(button === 0 && this.leftHeld || button === 2 && this.rightHeld ? '#9BC7F7' : '#E9E9EE')
-          .accessibilityText(button === 0 ? tr("鼠标左键，按住拖动") : button === 1 ? tr("滚轮，上下滑动") : tr("鼠标右键，按住拖动"))
-          .onTouch((event: TouchEvent) => this.barTouch(event, button))
-      })
-    }.padding(2).width(140).height(48).backgroundColor('#FFFFFF').borderRadius(10)
+    Column() {
+      Stack() { Row() {}.width(28).height(3).borderRadius(2).backgroundColor(MobileTheme.secondary) }
+        .width('100%').height(20).accessibilityText(tr('拖动虚拟鼠标'))
+        .gesture(PanGesture().onActionStart(() => { this.mouseDragOrigin = this.mousePosition(); })
+          .onActionUpdate((event: GestureEvent) => this.dragMouseBar(event)))
+      Row({ space: 2 }) {
+        ForEach([0, 1, 2], (button: number) => {
+          Stack() {
+            if (button === 1) {
+              Stack() {
+                Column({ space: 4 }) {
+                  ForEach([0, 1, 2, 3, 4, 5, 6], (line: number) => { Row() {}.height(3).width(14).backgroundColor('#737378') })
+                }.translate({ y: this.wheelOffset - 8 })
+              }.width(18).height(30).clip(true)
+            } else { MobileIcon({ name: button === 0 ? 'mouse_left' : 'mouse_right', iconExtent: 22 }) }
+          }.width(44).height(44).borderRadius(7).clip(true)
+            .backgroundColor(button === 0 && this.leftHeld || button === 2 && this.rightHeld ? '#9BC7F7' : '#E9E9EE')
+            .accessibilityText(button === 0 ? tr("鼠标左键，按住拖动") : button === 1 ? tr("滚轮，上下滑动") : tr("鼠标右键，按住拖动"))
+            .onTouch((event: TouchEvent) => this.barTouch(event, button))
+        })
+      }.height(48)
+    }.width(mouseBarWidth).height(mouseBarHeight).backgroundColor('#FFFFFF').borderRadius(10)
       .border({ width: 0.5, color: MobileTheme.line }).shadow({ radius: 12, color: '#33000000', offsetY: 4 }).position(this.mousePosition())
   }
   build() {
@@ -432,9 +494,10 @@ export struct MobileRemoteView {
         .accessibilityText(tr("远程桌面：轻触点击、长按右键、双指捏合缩放、放大后双指拖动画面，原始比例下双指滚动"))
       MobileIcon({ name: 'cursor', iconExtent: 24, color: '#000000' })
         .position({ x: this.cursorX - 1, y: this.cursorY - 1 }).hitTestBehavior(HitTestMode.None)
-      if (this.menu) { Column() {}.width('100%').height('100%').onClick(() => this.menu = ''); this.Menu() }
+      if (this.menu) { Column() {}.width('100%').height('100%').onClick(() => this.menu = '') }
       if (this.keyboard) { this.Keyboard() }
-      if (this.mouseVisible && !this.menu && this.state.hasFrame) { this.MouseBar() }
+      if (this.mouseVisible && this.state.hasFrame) { this.MouseBar() }
+      if (this.menu) { this.Menu() }
       Stack() {
         Image($r('app.media.mobile_brand')).width(46).height(46).objectFit(ImageFit.Cover).borderRadius(23).draggable(false).hitTestBehavior(HitTestMode.None)
       }.width(54).height(54).backgroundColor('#F5F5F7').borderRadius(27).shadow({ radius: 14, color: '#33000000', offsetY: 4 })

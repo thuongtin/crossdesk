@@ -34,13 +34,14 @@ Dự án sinh dựng lại thư mục nguồn/thư viện mỗi lần để bỏ
 | Kết nối gần đây, xóa, trực tuyến | 20 máy gần nhất, ưu tiên trực tuyến, đăng ký tín hiệu thật, làm mới 30 giây/hết hạn 60 giây; xóa đồng thời mật khẩu/xem trước |
 | H.264 / AV1 | Giải mã phần cứng hệ thống; thiếu khả năng, lỗi cấu hình/chạy thì giữ định dạng thương lượng và về OpenH264 / dav1d; hiển thị NV12 GLES |
 | Âm thanh từ xa, tắt tiếng | OHAudio đơn kênh 48 kHz, tắt tiếng đồng bộ menu/PiP |
-| Chuột tương đối/tuyệt đối, chạm | Nhấn, kéo tuyệt đối, giữ nhấn phải, thu phóng tiêu điểm 1–10 lần, hai ngón di chuyển khi phóng, lăn hai ngón khi 1 lần |
+| Chuột tương đối/tuyệt đối, chạm | Nhấn, kéo tuyệt đối, giữ nhấn phải, thu phóng tiêu điểm 1–10 lần, hai ngón di chuyển khi phóng, theo sát bốn cạnh khi kéo bằng chuột tương đối và chuột ảo, lăn hai ngón khi 1 lần. Khi mở bàn phím, đưa con trỏ tới mép trên bàn phím sẽ đẩy ảnh lên để lộ phần bị che. |
 | Bàn phím/chuột ngoài | Ánh xạ phím vật lý, chuột di chuyển/nút/lăn; mất tiêu điểm, nền, ngắt, chuyển màn hình nhả nhập |
-| Điều khiển nổi | Bóng thương hiệu kéo được, menu ba cột (bốn khi ngang thấp), bàn phím ASCII/máy tính kéo được, tổ hợp phím đầy đủ, chuột ảo 140×48 |
+| Phiên tự toàn màn hình | Điện thoại kết nối thành công thì ẩn thanh trạng thái và thanh điều hướng dưới, về trang chủ thì khôi phục. Khi chia màn hình, hệ thống quản lý việc hiển thị các thanh. |
+| Điều khiển nổi | Bóng thương hiệu kéo được, menu ba cột (bốn khi ngang thấp), bàn phím ASCII/máy tính kéo được, tổ hợp phím đầy đủ, chuột ảo 140×68 (mặc định hiện ở góc dưới bên phải, kéo mép trên để di chuyển độc lập) |
 | Thiết lập video | Thấp/trung bình/cao, 30/60 fps, FPS/chất lượng/cân bằng; thương lượng khả năng, số yêu cầu, bỏ ACK cũ, từ chối quay lại, quá hạn 5 giây |
 | Chẩn đoán mạng | Lưu lượng video/âm thanh/dữ liệu/tổng, tốc độ hai chiều, mất gói, FPS/kích thước gửi thực, trễ hình, RTT mượt, P2P/TURN, SRTP; hết hạn 3 giây |
 | Nhiều màn hình, Ctrl+Alt+Del | Chuyển theo danh sách từ xa; chỉ gửi SAS khi dịch vụ Windows từ xa báo khả dụng |
-| Bảng nhớ tạm | Chủ động gửi (tối đa 128 KB), dán từ xa, sao chép thủ công văn bản nhận; thoát xóa văn bản bộ nhớ |
+| Bảng nhớ tạm | Dùng nút “Dán” của hệ thống để nạp văn bản trên máy hoặc tự sửa, nhấn “Gửi văn bản” để gửi tới máy tính hiện tại (tối đa 128 KB UTF-8), rồi nhấn “Dán vào máy từ xa” để nhập. Hỗ trợ sao chép thủ công văn bản nhận; thoát phiên xóa bản nháp và văn bản đã nhận |
 | Truyền tệp hai chiều | Chọn/xuất tệp hệ thống, tiến độ, chia khối/ACK đáng tin, phủ thứ tự đảo, dọn lỗi/quá hạn; dùng thẳng engine tệp Android chung |
 | PiP hệ thống, duy trì nền | VIDEO_LIVE PiP với tắt tiếng, tác vụ truyền dữ liệu nền/thông báo dự phòng; chặn PiP trong chọn tệp, hệ thống từ chối nền thì kết thúc phiên |
 | Thông báo | Tóm tắt 200/trang, nội dung 20/trang, đã đọc/xóa/sửa, phân trang, làm mới, quá hạn 12 giây, cách ly danh tính/máy chủ, lọc trả lời trễ |

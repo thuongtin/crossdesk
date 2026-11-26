@@ -29,6 +29,7 @@
     <string name="text_3bcdcd330bb3044c" formatted="false">"Save remote screen previews"</string>
     <string name="text_0f197074373e38fd" formatted="false">"Save remote screen preview?"</string>
     <string name="text_71ca53f95a8484da" formatted="false">"The signaling connection is interrupted, please reconnect."</string>
+    <string name="text_231cbc4337c5a60c" formatted="false">"Mark all as read"</string>
     <string name="text_789f22a8b1b34797" formatted="false">"Announcement loading failed, please try again."</string>
     <string name="text_00554b17c432937e" formatted="false">"Announcement details"</string>
     <string name="text_2428420e407fe2e8" formatted="false">"Total "</string>
@@ -47,6 +48,7 @@
     <string name="text_d087671ca7df7f0f" formatted="false">"Delete this announcement?"</string>
     <string name="text_33e7584cd5c252d7" formatted="false">"Refresh announcement"</string>
     <string name="text_8c10e2c1728ddf8e" formatted="false">"Clipboard"</string>
+    <string name="text_517405bc78cc0f2f" formatted="false">"No text in clipboard"</string>
     <string name="text_4927a53bcc886afb" formatted="false">"Loading…"</string>
     <string name="text_af90a08fec8ee28d" formatted="false">"Load more"</string>
     <string name="text_a739f24a9fd8a5d9" formatted="false">"Update recommended"</string>
@@ -91,6 +93,7 @@
     <string name="text_1cbd391383283924" formatted="false">"The saved password cannot be read, please re-enter it."</string>
     <string name="text_6792b9f341380c68" formatted="false">"The saved password cannot be retained, please re-enter it."</string>
     <string name="text_74d3f0927d465047" formatted="false">"Ctrl+Alt+Del sent"</string>
+    <string name="text_8051ec2a0f80d127" formatted="false">"Sent, please paste at the remote end"</string>
     <string name="text_c28d86acbedba3b6" formatted="false">"Background keep-alive is enabled, switching applications can continue to maintain the connection"</string>
     <string name="text_506409ec08cb2a79" formatted="false">"Background keepalive enabled to return or disconnect from connection notifications"</string>
     <string name="text_521e65ffc7d0ff2d" formatted="false">"Granted"</string>
@@ -215,6 +218,7 @@
     <string name="text_872428a7210d5e0c" formatted="false">"Network"</string>
     <string name="text_4eafa9e925b30bcd" formatted="false">"Custom"</string>
     <string name="text_dffd0c12b8f27247" formatted="false">"Virtual mouse"</string>
+    <string name="text_537f1d58c460e682" formatted="false">"Drag virtual mouse"</string>
     <string name="text_62c199f37bf95869" formatted="false">"The remote privacy screen was unlocked using the local shortcut. Lock it again to restore privacy and disable local shortcut unlocking."</string>
     <string name="text_a569ce729c1d6e19" formatted="false">"The controlled version is too low, please upgrade to the latest version."</string>
     <string name="text_d814476826827b78" formatted="false">"Remote encoder"</string>
@@ -314,6 +318,7 @@
     <string name="text_3aab57c59aba6543" formatted="false">"Copy pairing info"</string>
     <string name="text_cbacf1eafbca53e0" formatted="false">"Pairing information copied."</string>
     <string name="text_cde42ccdeacbbbd9" formatted="false">"Unable to copy pairing information. Please try again."</string>
+    <string name="text_0a12799632baaddb" formatted="false">"Cannot access the clipboard. Please try again."</string>
     <string name="text_7383b2ae09252c59" formatted="false">"Secure storage is unavailable, please unlock the device and try again"</string>
     <string name="text_c9b9ae7a61444ab7" formatted="false">"Previous page"</string>
     <string name="text_8a8542f6964852dc" formatted="false">"Next page"</string>
@@ -370,4 +375,21 @@
     <string name="text_4bdabfba3368869d" formatted="false">"Choose desktop environment"</string>
     <string name="text_4fa28857c6f253cc" formatted="false">"Choose a desktop environment to load system presets"</string>
     <string name="text_fc5f6f7462e8557a" formatted="false">"Favorites above keyboard"</string>
+    <string name="text_67943ba6d0038222" formatted="false">"All devices"</string>
+    <string name="text_399ee69347726cee" formatted="false">"Group"</string>
+    <string name="text_88f4625eade235b7" formatted="false">"Rename"</string>
+    <string name="text_663ba1c006b1f12b" formatted="false">"Edit groups"</string>
+    <string name="text_e86ea3f280d920a2" formatted="false">"Ungrouped"</string>
+    <string name="text_1e5709f1b7a405da" formatted="false">"New group (optional)"</string>
+    <string name="text_24c9c756f833ce88" formatted="false">"No recent connections in this group"</string>
+    <string name="text_9f07d2ce4115f575" formatted="false">"More actions"</string>
+    <string name="text_a598bc68e2440131" formatted="false">"Device ID or IP address"</string>
+    <string name="text_1be1c81002d880d1" formatted="false">"Enter a device ID or a valid IP address"</string>
+    <string name="text_288a9a63177b76a1" formatted="false">"Direct IP password"</string>
+    <string name="text_53b856ab7ac9d8e2" formatted="false">"Direct IP connection failed. Check the computer’s direct IP address, port, and network."</string>
+    <string name="text_3a940622a8012b31" formatted="false">"Local endpoint"</string>
+    <string name="text_2c5e32d2c5de5c2b" formatted="false">"Remote endpoint"</string>
+    <string name="text_7605c1d82eed69a5" formatted="false">"Delete group"</string>
+    <string name="text_b113e4e040b875a8" formatted="false">"Devices and connection history will be kept."</string>
+    <string name="text_f42a1238b44a4858" formatted="false">"Could not save; try again"</string>
 </resources>

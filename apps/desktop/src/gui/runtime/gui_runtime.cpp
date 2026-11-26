@@ -13,10 +13,8 @@
 #include <thread>
 #include <vector>
 
-#include <display_stream_id.h>
 #include <web_clipboard_protocol.h>
 #include "localization.h"
-#include "platform/video_renderer.h"
 #include "rd_log.h"
 #ifdef _WIN32
 #include "platform/windows/input/windows_input_injector.h"
@@ -86,14 +84,13 @@ GuiRuntime::~GuiRuntime() {
   RestoreHostDisplayResolutions(true);
 }
 
-void GuiRuntime::SendRemoteInput(const RemoteAction& action) {
+void GuiRuntime::SendRemoteInput(const RemoteAction& action, float wheel_delta) {
   const bool mouse = action.type == ControlType::mouse;
   const bool mouse_move = mouse && action.m.flag == MouseFlag::move;
   if (!mouse && action.type != ControlType::keyboard &&
       action.type != ControlType::keyboard_state)
     return;
-  const std::string& target_id = controlled_remote_id_.empty()
-      ? focused_remote_id_ : controlled_remote_id_;
+  const std::string& target_id = controlled_remote_id_;
   if (target_id.empty()) return;
   const bool group = gallery_group_control_id_ == target_id;
   const bool releasing = mouse
@@ -113,9 +110,21 @@ void GuiRuntime::SendRemoteInput(const RemoteAction& action) {
   if (!releasing &&
       (source == remote_sessions_.end() || !available(source->second)))
     return;
-  const auto message = action.to_json();
+  const bool wheel = mouse && (action.m.flag == MouseFlag::wheel_vertical ||
+                               action.m.flag == MouseFlag::wheel_horizontal);
+  auto message = wheel ? std::string{} : action.to_json();
   for (const auto& [id, props] : remote_sessions_) {
     if ((!group && id != target_id) || !available(props)) continue;
+    if (wheel) {
+      const int steps = props->scroll_.Consume(action.m.flag == MouseFlag::wheel_vertical,
+          wheel_delta, config_center_->GetWheelSensitivityPercent(props->device_preference_key_));
+      if (steps == 0) continue;
+      RemoteAction scaled{};
+      scaled.type = ControlType::mouse;
+      scaled.m = action.m;
+      scaled.m.s = steps;
+      message = scaled.to_json();
+    }
     if (mouse) {
       std::lock_guard cursor_lock(props->remote_cursor_state_mutex_);
       props->cursor_presentation_.NoteInput(SDL_GetTicks());
@@ -299,9 +308,6 @@ int GuiRuntime::CreateConnectionPeer() {
           sizeof(params_.signal_server_ip) - 1);
   params_.signal_server_ip[sizeof(params_.signal_server_ip) - 1] = '\0';
   params_.signal_server_port = signal_server_port;
-  strncpy(params_.log_path, dll_log_path_.c_str(),
-          sizeof(params_.log_path) - 1);
-  params_.log_path[sizeof(params_.log_path) - 1] = '\0';
   // MiniRTC selects the available hardware backend and falls back to software.
   params_.hardware_acceleration = true;
 #if defined(_WIN32) || (defined(__linux__) && !defined(__OHOS__)) || defined(__APPLE__)
@@ -312,16 +318,14 @@ int GuiRuntime::CreateConnectionPeer() {
 #else
   params_.native_video_output = false;
 #endif
-  params_.av1_encoding = config_center_->GetVideoEncodeFormat() ==
-                                 ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
-                             ? true
-                             : false;
+  preferred_video_codec_ = config_center_->GetVideoEncodeFormat();
   params_.turn_mode = static_cast<MiniRtcTurnMode>(config_center_->GetTurnMode());
   params_.direct_start_bitrate_bps = config_center_->GetDirectStartBitrateBps();
   params_.relay_start_bitrate_bps = config_center_->GetRelayStartBitrateBps();
   params_.disable_receiver_padding_probing =
       config_center_->IsReceiverPaddingProbingDisabled();
   params_.enable_srtp = config_center_->IsEnableSrtp();
+  params_.desktop_encoding_mode = config_center_->GetDesktopEncodingMode();
   params_.video_content_type = MiniRtcVideoContentType::ScreenContent;
   // Bootstrap outgoing media with fixed defaults. Live overrides come only
   // from the authorized controller and apply to its connection on this host.
@@ -354,7 +358,7 @@ int GuiRuntime::CreateConnectionPeer() {
   if (unattended_host_ && devices_.EnsureCaptureReady() != 0) return -1;
   {
     std::unique_lock lock(remote_sessions_mutex_);
-    peer_ = MiniRtcCreatePeer(&params_);
+    peer_ = MiniRtcCreatePeerWithVideoCodec(&params_, dll_log_path_.c_str(), preferred_video_codec_);
   }
   if (peer_) {
     LOG_INFO("Create peer instance successful");
@@ -383,33 +387,36 @@ int GuiRuntime::CreateConnectionPeer() {
       return 0;
     }
 #endif
-    MiniRtcInit(peer_);
-    LOG_INFO("Peer initialization finished");
-  } else {
-    LOG_INFO("Create peer instance failed");
-  }
 
-  if (0 == devices_.EnsureCaptureReady()) {
-    const auto &displays = devices_.display_info_list();
-    for (size_t index = 0; index < displays.size(); ++index) {
-      const std::string stream_id = MakeDisplayStreamId(index);
-      MiniRtcAddVideoStream(peer_, stream_id.c_str());
-    }
-
-    MiniRtcAddAudioStream(peer_, audio_label_.c_str());
-    MiniRtcAddDataStream(peer_, data_label_.c_str(), false);
-    MiniRtcAddDataStream(peer_, mouse_label_.c_str(), true);
-    MiniRtcAddDataStream(peer_, keyboard_label_.c_str(), true);
-    MiniRtcAddDataStream(peer_, control_data_label_.c_str(), true);
-    MiniRtcAddDataStream(peer_, file_label_.c_str(), true);
-    MiniRtcAddDataStream(peer_, file_feedback_label_.c_str(), true);
-    MiniRtcAddDataStream(peer_, clipboard_label_.c_str(), true);
-    MiniRtcAddDataStream(peer_, kClipboardFilesStream, true);
+    // An incoming connection snapshots the stream names as soon as signaling
+    // starts. Register them before Init can deliver the first join.
+    devices_.EnsureCaptureReady();
+    RegisterStreams(peer_, std::max<size_t>(1, devices_.display_info_list().size()));
     MiniRtcAddDataStream(peer_, web_clipboard::kStream, true);
-    return 0;
-  } else {
-    return -1;
+    const auto announcement_cache = path_manager_->GetCachePath() / "announcement_catalog";
+    const auto utf8 = announcement_cache.u8string();
+    MiniRtcSetAnnouncementCacheDirectory(peer_, std::string(utf8.begin(), utf8.end()).c_str());
+    const int ret = MiniRtcInit(peer_);
+    if (ret == 0) LOG_INFO("Peer initialization finished");
+    return ret;
   }
+  LOG_ERROR("Create peer instance failed");
+  return -1;
+}
+
+void GuiRuntime::ReloadRecentConnections() {
+  int ret = thumbnail_->LoadThumbnail(recent_connections_);
+  if (!ret) {
+    LOG_INFO("Load recent connection thumbnails");
+  }
+  reload_recent_connections_ = false;
+
+  recent_connection_ids_.clear();
+  for (const auto &conn : recent_connections_) {
+    if (conn.second.lan.address.empty())
+      recent_connection_ids_.push_back(conn.first);
+  }
+  need_to_send_recent_connections_ = true;
 }
 
 void GuiRuntime::HandleRecentConnections() {
@@ -436,15 +443,14 @@ void GuiRuntime::HandleRecentConnections() {
       const auto direct = props->lan_session_;
       const Thumbnail::LanTarget target =
           direct ? Thumbnail::LanTarget{direct->target.address,
-                                        direct->target.device_id,
                                         direct->target.port}
                  : Thumbnail::LanTarget{};
       const auto record_id =
-          direct ? Thumbnail::LanRecordId(target.device_id) : props->remote_id_;
-      if (thumbnail_->SaveToThumbnail(
+          direct ? Thumbnail::LanRecordId(target.address, target.port) : props->remote_id_;
+      if (props->history_store_ && props->history_store_->SaveToThumbnail(
               nullptr, 0, 0, record_id, host_name,
               props->remember_password_ ? props->remote_password_ : "",
-              platform, direct ? &target : nullptr) == 0)
+              platform, direct ? &target : nullptr, props->history_generation_) == 0)
         reload_recent_connections_ = true;
       else
         LOG_ERROR("Failed to save recent connection");
@@ -453,18 +459,7 @@ void GuiRuntime::HandleRecentConnections() {
   if (session_cleanup_tasks_.empty() && reload_recent_connections_ && thumbnail_) {
     uint32_t now_time = SDL_GetTicks();
     if (now_time - recent_connection_image_save_time_ >= 50) {
-      int ret = thumbnail_->LoadThumbnail(recent_connections_);
-      if (!ret) {
-        LOG_INFO("Load recent connection thumbnails");
-      }
-      reload_recent_connections_ = false;
-
-      recent_connection_ids_.clear();
-      for (const auto &conn : recent_connections_) {
-        if (conn.second.lan.device_id.empty())
-          recent_connection_ids_.push_back(conn.first);
-      }
-      need_to_send_recent_connections_ = true;
+      ReloadRecentConnections();
     }
   }
 }

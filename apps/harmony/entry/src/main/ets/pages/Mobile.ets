@@ -29,7 +29,11 @@ struct Mobile {
   @State private editingPort: string = '';
   @State private showPassword: boolean = false;
   @State private accepted: boolean = false;
-  @State private deleteId: string = '';
+  @State private recentId: string = '';
+  @State private recentDraft: string = '';
+  @State private selectedGroups: string[] = [];
+  @State private groupToDelete: string = '';
+  private groupDeleteScope: string = '';
   @State private refreshing: boolean = false;
   @State private licenses: LicenseComponent[] = [];
   @State private component: LicenseComponent | undefined = undefined;
@@ -77,8 +81,8 @@ struct Mobile {
       case 'document': return this.state.documentTitle; default: return '';
     }
   }
-  private deviceId(value: string): string { return value.replace(/[^0-9]/g, '').substring(0, 9); }
-  private formatId(value: string): string { return this.deviceId(value).replace(/(.{3})(?=.)/g, '$1 '); }
+  private deviceId(value: string): string { return value.replace(/\s/g, '').substring(0, 160); }
+  private formatId(value: string): string { return /^[0-9]{1,9}$/.test(value) ? value.replace(/(.{3})(?=.)/g, '$1 ') : value; }
   private policyParagraphs(body: string): string[] {
     const localized = selectPrivacyPolicy(body);
     return localized.split(/\n\s*\n/).map((paragraph: string) => paragraph.trim()).filter((paragraph: string) => !!paragraph && paragraph !== '---');
@@ -101,7 +105,8 @@ struct Mobile {
     if (modal === 'revoke') this.controller?.revoke();
     if (modal === 'previews') { this.controller?.setPreviews(true); this.previewToggle = true; }
     if (modal === 'clearPreviews') this.controller?.clearPreviews();
-    if (modal === 'delete') this.controller?.deleteRecent(this.deleteId);
+    if (modal === 'delete') this.controller?.deleteRecent(this.recentId);
+    if (modal === 'deleteGroup') this.controller?.deleteGroup(this.groupDeleteScope, this.groupToDelete);
     if (modal === 'deleteAnnouncement' && this.state.announcement) { this.controller?.inbox.dismiss(this.state.announcement); this.navigate('announcements'); }
   }
   @Builder
@@ -143,7 +148,7 @@ struct Mobile {
     Column({ space: 16 }) {
       Text(tr("远程桌面")).fontSize(20).fontWeight(600).fontColor(MobileTheme.ink).width('100%')
       Row({ space: 10 }) {
-        TextInput({ text: this.formatId(this.state.remote), placeholder: tr("对端 ID") }).type(InputType.Number).maxLength(11)
+        TextInput({ text: this.formatId(this.state.remote), placeholder: tr("设备 ID 或 IP 地址") }).type(InputType.Normal).maxLength(160)
           .fontSize(20).fontWeight(500).fontColor(MobileTheme.ink).placeholderColor(MobileTheme.secondary)
           .height(54).layoutWeight(1).backgroundColor(MobileTheme.background).borderRadius(12)
           .border({ width: this.idFocused ? 2 : 1, color: this.idFocused ? MobileTheme.blue : MobileTheme.line })
@@ -157,33 +162,115 @@ struct Mobile {
     }.padding(18).width('100%').backgroundColor(Color.White).borderRadius(20)
       .border({ width: 0.5, color: MobileTheme.line }).shadow({ radius: 14, color: '#0E000000', offsetY: 5 })
   }
+  private recentActions(id: string): void {
+    this.recentId = id;
+    this.state.modal = 'recentActions';
+  }
+  private recentTitle(): string {
+    const device = this.state.recent.find((d: RecentDevice) => d.id === this.recentId);
+    return device?.alias || device?.name || this.recentId;
+  }
+  private editRecent(groups: boolean): void {
+    const device = this.state.recent.find((d: RecentDevice) => d.id === this.recentId);
+    if (!device) { this.dismissModal(); return; }
+    this.selectedGroups = device.groups.slice();
+    this.recentDraft = groups ? '' : this.recentTitle();
+    this.state.modal = groups ? 'recentGroups' : 'recentName';
+  }
+  private saveRecentEdit(): void {
+    const draft = this.recentDraft.trim();
+    if (this.state.modal === 'recentName') this.controller?.editRecent(this.recentId, draft);
+    else this.controller?.editRecent(this.recentId, undefined, draft ? this.selectedGroups.concat(draft) : this.selectedGroups);
+    this.dismissModal();
+  }
+  private visibleRecent(): RecentDevice[] {
+    const filter = this.state.recentFilter;
+    if (filter === undefined) return this.state.recent;
+    return this.state.recent.filter((d: RecentDevice) => filter ? d.groups.includes(filter) : d.groups.length === 0);
+  }
+  private groupFilterLabel(): string {
+    return this.state.recentFilter === undefined ? tr("全部设备") : this.state.recentFilter || tr("未分组");
+  }
+  @Builder
+  DeleteGroupMenu() {
+    Menu() {
+      ForEach(this.state.recentGroups, (name: string) => {
+        MenuItem({ content: name }).onClick(() => {
+          this.groupDeleteScope = this.controller?.scope() ?? '';
+          this.groupToDelete = name;
+          this.state.modal = 'deleteGroup';
+        })
+      }, (name: string) => name)
+    }
+  }
+  @Builder
+  RecentFilterMenu() {
+    Menu() {
+      MenuItem({ content: tr("全部设备") }).selectIcon(true).selected(this.state.recentFilter === undefined)
+        .onClick(() => this.state.recentFilter = undefined)
+      MenuItem({ content: tr("未分组") }).selectIcon(true).selected(this.state.recentFilter === '')
+        .onClick(() => this.state.recentFilter = '')
+      ForEach(this.state.recentGroups, (name: string) => {
+        MenuItem({ content: name }).selectIcon(true).selected(this.state.recentFilter === name)
+          .onClick(() => this.state.recentFilter = name)
+      }, (name: string) => name)
+      if (this.state.recentGroups.length) {
+        MenuItem({ content: tr("删除分组"), builder: () => this.DeleteGroupMenu() })
+      }
+    }
+  }
+  private toggleGroup(group: string): void {
+    if (!group) { this.selectedGroups = []; this.recentDraft = ''; }
+    else if (this.selectedGroups.includes(group)) this.selectedGroups = this.selectedGroups.filter((name: string) => name !== group);
+    else this.selectedGroups = this.selectedGroups.concat(group);
+  }
   @Builder
   RecentCard(device: RecentDevice) {
     Column() {
-      Stack() {
+      Stack({ alignContent: Alignment.TopEnd }) {
         Text(device.platform === 'windows' ? 'Windows' : device.platform === 'macos' ? 'macOS' : device.platform === 'linux' ? 'Linux' : tr("远程电脑"))
           .fontSize(19).fontWeight(600).fontColor(Color.White).width('100%').height('100%').textAlign(TextAlign.Center)
         if (this.state.previews && device.preview) { Image(`file://${device.preview}`).objectFit(ImageFit.Cover).width('100%').height('100%') }
+        Button({ type: ButtonType.Normal }) {
+          Row({ space: 2 }) {
+            ForEach([0, 1, 2], () => {
+              Circle().width(2.5).height(2.5).fill($r('sys.color.font_primary'))
+            })
+          }.width(26).height(17).justifyContent(FlexAlign.Center)
+            .backgroundColor($r('sys.color.background_secondary'))
+            .border({ width: 0.75, radius: 9, color: $r('sys.color.comp_divider') })
+        }.width(44).height(44).padding(0).backgroundColor(Color.Transparent)
+          .accessibilityText(tr("更多操作")).onClick(() => this.recentActions(device.id))
       }.aspectRatio(16 / 9).width('100%').backgroundColor(device.platform === 'windows' ? '#316AB7' : device.platform === 'macos' ? '#8057B9' : device.platform === 'linux' ? '#AE642B' : '#677587')
       Column({ space: 4 }) {
-        Text(device.name || device.id).fontSize(12).fontWeight(600).maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis }).width('100%')
+        Text(device.alias || device.name || device.id).fontSize(12).fontWeight(600).maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis }).width('100%')
+        if (device.groups.length) {
+          Text(device.groups.join(' · ')).fontSize(10).fontColor(MobileTheme.secondary).maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis }).width('100%')
+        }
         Row({ space: 4 }) {
-          Text(`ID ${device.id}`).fontSize(10).fontColor(MobileTheme.secondary).layoutWeight(1)
+          Text(device.id.includes(':') ? device.id : `ID ${device.id}`).fontSize(10).fontColor(MobileTheme.secondary).layoutWeight(1)
           if (device.remember) { MobileIcon({ name: 'key', iconExtent: 11, color: MobileTheme.secondary }).accessibilityText(tr("已保存密码")) }
-          Text(this.controller?.presence.online(device.id, this.controller?.now() ?? 0) ? tr("在线") : tr("离线")).fontSize(10)
+          Text(device.id.includes(':') ? 'IP' : this.controller?.presence.online(device.id, this.controller?.now() ?? 0) ? tr("在线") : tr("离线")).fontSize(10)
             .fontColor(this.controller?.presence.online(device.id, this.controller?.now() ?? 0) ? MobileTheme.green : MobileTheme.secondary)
         }.width('100%')
       }.padding(9).width('100%')
     }.width('100%').backgroundColor(Color.White).border({ width: 0.5, color: MobileTheme.line }).borderRadius(14).clip(true)
       .onClick(() => this.controller?.requestConnection(device.id))
-      .gesture(LongPressGesture().onAction(() => { this.deleteId = device.id; this.state.modal = 'recentActions'; }))
+      .gesture(LongPressGesture().onAction(() => this.recentActions(device.id)))
   }
   @Builder
   Recent() {
     Column({ space: 14 }) {
       Row() {
         Text(tr("最近连接")).fontSize(20).fontWeight(600).fontColor(MobileTheme.ink).layoutWeight(1)
-        if (this.state.recent.length) { Text(tr("{0} 台设备", [String(this.state.recent.length)])).fontSize(12).fontColor(MobileTheme.secondary) }
+        if (this.state.recent.length) {
+          Text(tr("{0} 台设备", [String(this.visibleRecent().length)])).fontSize(12).fontColor(MobileTheme.secondary)
+          Button(this.groupFilterLabel() + ' ▾', { type: ButtonType.Normal })
+            .fontSize(13).fontColor(MobileTheme.blue).backgroundColor(Color.Transparent)
+            .constraintSize({ maxWidth: '40%', minHeight: 44 }).margin({ left: 6 })
+            .accessibilityText(tr("分组") + ' · ' + this.groupFilterLabel())
+            .bindMenu(this.RecentFilterMenu())
+        }
       }.width('100%')
       if (this.state.recent.length === 0) {
         Column() {
@@ -191,10 +278,13 @@ struct Mobile {
           Text(tr("还没有连接记录")).fontSize(17).fontWeight(600).fontColor(MobileTheme.ink).margin({ top: 12, bottom: 8 })
           Text(tr("成功连接后，这里会显示最近的远程设备。")).fontSize(13).lineHeight(19).fontColor(MobileTheme.secondary).textAlign(TextAlign.Center)
         }.layoutWeight(1).width('100%').justifyContent(FlexAlign.Center).padding({ left: 6, right: 6 })
+      } else if (!this.visibleRecent().length) {
+        Text(tr("该分组暂无近期连接")).fontSize(14).fontColor(MobileTheme.secondary).layoutWeight(1)
       } else {
         Scroll() {
           GridRow({ columns: { xs: 1, sm: 2, md: 3, lg: 4 }, breakpoints: { value: ['300vp', '564vp', '756vp'], reference: BreakpointsReference.ComponentSize }, gutter: 12 }) {
-            ForEach(this.state.recent, (device: RecentDevice) => { GridCol() { this.RecentCard(device) } }, (device: RecentDevice) => device.id)
+            ForEach(this.visibleRecent(), (device: RecentDevice) => { GridCol() { this.RecentCard(device) } },
+              (device: RecentDevice) => JSON.stringify(device) + this.controller?.presence.online(device.id, this.controller?.now() ?? 0))
           }.width('100%')
         }.layoutWeight(1).width('100%').align(Alignment.Top).scrollBar(BarState.Off)
       }
@@ -368,7 +458,17 @@ struct Mobile {
       if (!this.state.consent) { Text(tr("同意联网后可查看公告")).fontSize(14); this.Action(tr("查看联网说明"), () => this.state.modal = 'consent') }
       if (this.controller?.inbox.failed) { this.Action(tr("加载失败，点击重试"), () => this.controller?.inbox.refresh()) }
       if (this.controller?.inbox.loading) { LoadingProgress().width(28).height(28) }
-      if (this.controller?.inbox.saveFailed) { Text(tr("已读或删除状态保存失败，请重试")).fontSize(12).fontColor(MobileTheme.red) }
+      if (this.state.announcementSaveFailed) { Text(tr("已读或删除状态保存失败，请重试")).fontSize(12).fontColor(MobileTheme.red) }
+      Row({ space: 8 }) {
+        Text(tr("共 {0} 条 · {1} 条未读", [String(this.state.announcementTotal), String(this.state.unread)]))
+          .fontSize(13).fontColor(MobileTheme.secondary).layoutWeight(1)
+        if (this.state.unread > 0) {
+          Button({ type: ButtonType.Normal }) {
+            Text(tr("全部已读")).fontSize(14).fontWeight(500).fontColor(MobileTheme.blue).textAlign(TextAlign.End)
+          }.constraintSize({ minWidth: 48, maxWidth: '50%', minHeight: 48 }).padding(0).backgroundColor(Color.Transparent)
+            .accessibilityText(tr("全部已读")).onClick(() => this.controller?.inbox.markAllRead())
+        }
+      }.width('100%').constraintSize({ minHeight: 48 }).padding({ left: 16, right: 16 })
       if (!this.state.announcements.length && this.controller?.inbox.loaded && !this.controller?.inbox.loading) { Text(tr("暂无公告")).fontSize(16).fontColor(MobileTheme.secondary).padding(40) }
       ForEach(this.state.announcements, (item: AnnouncementItem) => {
         Column({ space: 8 }) {
@@ -378,7 +478,7 @@ struct Mobile {
         }.padding(18).width('100%').backgroundColor(Color.White).borderRadius(18).border({ width: 0.5, color: MobileTheme.line })
           .onClick(() => this.openAnnouncement(item)).gesture(LongPressGesture().onAction(() => { this.state.announcement = item; this.state.modal = 'deleteAnnouncement'; }))
       }, (item: AnnouncementItem) => `${item.id}:${item.revision}:${item.read}`)
-      if ((this.controller?.inbox.total ?? 0) > this.state.announcements.length) { this.Action(tr("加载更多"), () => this.controller?.inbox.more()) }
+      if (this.state.announcementTotal > this.state.announcements.length) { this.Action(tr("加载更多"), () => this.controller?.inbox.more()) }
     }.width('100%')
   }
   @Builder
@@ -390,6 +490,14 @@ struct Mobile {
     else if (this.state.page === 'announcement') {
       Column({ space: 16 }) {
         Text(this.state.announcement?.title ?? '').fontSize(24).fontWeight(600).width('100%').copyOption(CopyOptions.LocalDevice)
+        if (this.state.announcement && !this.state.announcement.body) {
+          if (this.controller?.inbox.loading) { LoadingProgress().width(24).height(24) }
+          else if (this.controller?.inbox.connected) {
+            this.Action(tr("重试"), () => {
+              if (this.state.announcement) this.controller?.inbox.markRead(this.state.announcement)
+            })
+          }
+        }
         Text() {
           ForEach(announcementSpans(this.state.announcement?.body ?? ''), (part: AnnouncementSpan) => {
             if (part.url) {
@@ -482,9 +590,9 @@ struct Mobile {
     Scroll() {
       Column() {
         Row() {}.width(36).height(5).backgroundColor('#C6C6CB').borderRadius(3).margin({ bottom: 20 })
-        this.SheetHeader(tr("连接远程桌面"), tr("对端 ID  {0}", [String(this.formatId(this.state.remote))]))
+        this.SheetHeader(tr("连接远程桌面"), this.state.remote.includes(':') ? this.state.remote : tr("对端 ID  {0}", [String(this.formatId(this.state.remote))]))
         Row() {
-          TextInput({ text: this.state.password, placeholder: tr("访问密码") }).type(this.showPassword ? InputType.Normal : InputType.Password)
+          TextInput({ text: this.state.password, placeholder: this.state.remote.includes(':') ? tr("IP 直连密码") : tr("访问密码") }).type(this.showPassword ? InputType.Normal : InputType.Password)
             .showPasswordIcon(false).maxLength(128).fontSize(17).height(50).layoutWeight(1).backgroundColor(Color.Transparent)
             .padding({ left: 14, right: 4 }).onChange((value: string) => this.state.password = value).onSubmit(() => this.controller?.begin(this.state.password))
           MobileIconButton({ icon: this.showPassword ? 'eye_off' : 'eye', label: this.showPassword ? tr("隐藏密码") : tr("显示密码"), iconExtent: 44,
@@ -571,7 +679,16 @@ struct Mobile {
         Text(tr("发送文本后，点击“粘贴到远端”使用。")).fontSize(13).fontColor(MobileTheme.secondary).width('100%')
         TextArea({ text: this.state.clipboardText, placeholder: tr("要发送到远端的文本") }).fontSize(15).height(120).borderRadius(12).barState(BarState.Off)
           .backgroundColor(MobileTheme.background).onChange((value: string) => this.state.clipboardText = value)
-        MobilePrimaryButton({ label: tr("发送文本"), action: () => this.controller?.clipboard() })
+        Row({ space: 12 }) {
+          PasteButton().onClick((_event: ClickEvent, result: PasteButtonOnClickResult) => {
+            if (result === PasteButtonOnClickResult.SUCCESS) this.controller?.pasteLocalClipboard();
+            else this.controller?.toast(tr("无法访问剪贴板，请重试。"));
+          })
+          Column() {
+            MobilePrimaryButton({ label: tr("发送文本"), available: this.state.ready && this.state.clipboardText.length > 0,
+              action: () => this.controller?.clipboard() })
+          }.layoutWeight(1)
+        }.width('100%')
         Row({ space: 8 }) {
           Column() { this.Action(tr("粘贴到远端"), () => this.controller?.shortcut(86)) }.layoutWeight(1)
           Column() { this.Action(tr("复制远端文本"), () => this.controller?.copyRemote()) }.layoutWeight(1)
@@ -593,20 +710,45 @@ struct Mobile {
         })
       }.padding(20).width('100%')
     } else if (this.state.modal === 'recentActions') {
-      Text(this.state.recent.find((d: RecentDevice) => d.id === this.deleteId)?.name || this.formatId(this.deleteId))
+      Text(this.recentTitle())
         .fontSize(17).fontWeight(600).fontColor(MobileTheme.ink).padding(20).width('100%').textAlign(TextAlign.Center)
       this.Rule()
-      this.Action(tr("连接"), () => { this.dismissModal(); this.controller?.requestConnection(this.deleteId); })
+      this.Action(tr("连接"), () => { this.dismissModal(); this.controller?.requestConnection(this.recentId); })
+      this.Rule()
+      this.Action(tr("修改名称"), () => this.editRecent(false))
+      this.Rule()
+      this.Action(tr("修改分组"), () => this.editRecent(true))
       this.Rule()
       this.Action(tr("删除记录"), () => this.state.modal = 'delete', true)
       this.Rule()
       this.Action(tr("取消"), () => this.dismissModal())
+    } else if (this.state.modal === 'recentGroups' || this.state.modal === 'recentName') {
+      Column({ space: 12 }) {
+        this.SheetHeader(this.state.modal === 'recentGroups' ? tr("修改分组") : tr("修改名称"), this.recentTitle() + ' · ID ' + this.recentId)
+        if (this.state.modal === 'recentGroups') {
+          ForEach(['', ...this.state.recentGroups], (group: string) => {
+            Button({ type: ButtonType.Normal }) {
+              Row({ space: 10 }) {
+                Text(group || tr("未分组")).fontSize(15).fontColor(MobileTheme.ink).layoutWeight(1).textAlign(TextAlign.Start)
+                if (group ? this.selectedGroups.includes(group) : !this.selectedGroups.length && !this.recentDraft.trim()) {
+                  MobileIcon({ name: 'check', iconExtent: 20, color: MobileTheme.blue })
+                }
+              }.width('100%')
+            }.width('100%').height(44).borderRadius(10).backgroundColor(MobileTheme.background).onClick(() => this.toggleGroup(group))
+          }, (group: string) => group)
+        }
+        TextInput({ text: this.recentDraft, placeholder: this.state.modal === 'recentGroups' ? tr("新建分组（可选）") : tr("修改名称") })
+          .height(48).onChange((value: string) => this.recentDraft = value)
+        MobilePrimaryButton({ label: tr("保存"), action: () => this.saveRecentEdit() })
+      }.padding(20).width('100%')
     } else {
       Column({ space: 12 }) {
-        Text(this.state.modal === 'notice' ? tr("连接提示") : this.state.modal === 'upgrade' ? tr("升级提示") : this.state.modal === 'disconnect' ? tr("断开远程连接？") :
+        Text(this.state.modal === 'deleteGroup' ? tr("删除分组") + ' · ' + this.groupToDelete :
+          this.state.modal === 'notice' ? tr("连接提示") : this.state.modal === 'upgrade' ? tr("升级提示") : this.state.modal === 'disconnect' ? tr("断开远程连接？") :
           this.state.modal === 'revoke' ? tr("撤回联网授权？") : this.state.modal === 'previews' ? tr("保存远程画面预览？") : this.state.modal === 'clearPreviews' ? tr("清除预览图？") : this.state.modal === 'deleteAnnouncement' ? tr("删除公告？") : tr("删除记录？"))
           .fontSize(20).fontWeight(600).fontColor(MobileTheme.ink).textAlign(TextAlign.Center).width('100%')
-        Text(this.state.modal === 'notice' || this.state.modal === 'upgrade' ? this.state.notice : this.state.modal === 'disconnect' ? tr("断开后将返回首页。") :
+        Text(this.state.modal === 'deleteGroup' ? tr("组内设备和连接记录将保留。") :
+          this.state.modal === 'notice' || this.state.modal === 'upgrade' ? this.state.notice : this.state.modal === 'disconnect' ? tr("断开后将返回首页。") :
           this.state.modal === 'previews' ? tr("预览可能包含远程设备上的敏感内容。仅保存在本机，从下一次连接起生效，可随时关闭并清除。") :
           this.state.modal === 'clearPreviews' ? tr("将清除此设备保存的所有远程画面预览，保留连接记录和访问密码。") :
           this.state.modal === 'revoke' ? tr("将停止远程连接、关闭画面预览保存并清除已有预览。连接记录和密码会保留，重新连接前需再次授权。") :

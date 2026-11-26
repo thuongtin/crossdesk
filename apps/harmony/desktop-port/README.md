@@ -8,7 +8,7 @@ Mục tiêu là dùng cùng giao diện và hành vi sản phẩm với Windows,
 
 ## Ràng buộc đồng nhất
 
-- Giao diện, bố trí, menu, xác nhận mật khẩu, lưu/hủy cài đặt, lịch sử, nhóm, Bức tường màn hình, thẻ phiên, máy trạng thái truyền tệp, đồng bộ bảng nhớ tạm và kết nối mạng đều từ mã máy tính chung. Thay đổi nghiệp vụ nên sửa trong mã chung, không được viết lại bộ hành vi riêng trong ArkTS.
+- Giao diện, bố trí, menu, xác nhận mật khẩu, lưu/hủy cài đặt, lịch sử, nhóm, Bức tường màn hình, cửa sổ phiên độc lập, máy trạng thái truyền tệp, đồng bộ bảng nhớ tạm và kết nối mạng đều từ mã máy tính chung. Thay đổi nghiệp vụ nên sửa trong mã chung, không được viết lại bộ hành vi riêng trong ArkTS.
 - ArkTS chỉ phụ trách cửa sổ hệ thống, XComponent, sự kiện phím/chuột, bộ gõ, bảng nhớ tạm, bộ chọn tệp, cấp quyền thư mục, khay hệ thống và mở liên kết.
 - Lớp nền tảng C++ triển khai cửa sổ/kết xuất, âm thanh, ghi màn hình và chèn nhập. `include/SDL3` riêng chỉ thích ứng dịch vụ SDL mà mã chung thực dùng, không phải bản chuyển SDL đầy đủ và không được dùng cho đích khác.
 - Tọa độ màn hình, cửa sổ và bộ gõ dùng màn hình thực, vùng làm việc và tỷ lệ từng cửa sổ của hệ thống. Thuộc tính không viền Slint ánh xạ trực tiếp sang cửa sổ gốc; thuộc tính luôn trên hiện chỉ bảo đảm thứ bậc cửa sổ con trong ứng dụng.

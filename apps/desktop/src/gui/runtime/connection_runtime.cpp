@@ -11,7 +11,6 @@
 
 #include <display_stream_id.h>
 #include "localization.h"
-#include "platform.h"
 #include "platform/video_renderer.h"
 #include "rd_log.h"
 #include "rendering/video_frame_diagnostics.h"
@@ -29,7 +28,12 @@ constexpr auto kPresenceRetryInterval = std::chrono::seconds(1);
 
 bool GuiRuntime::HasActiveSession() {
   if (lan_ && !lan_->Quiescent()) return true;
-  if (stream_window_inited_) return true;
+  {
+    std::shared_lock lock(remote_sessions_mutex_);
+    if (std::any_of(remote_sessions_.begin(), remote_sessions_.end(), [](const auto& entry) {
+          return entry.second->was_connected_ && !entry.second->closing_;
+        })) return true;
+  }
   std::shared_lock lock(connection_status_mutex_);
   return std::any_of(connection_status_.begin(), connection_status_.end(),
                      [](const auto& entry) {
@@ -193,7 +197,6 @@ void GuiRuntime::HandleServerControllerDisconnected(
     const std::string& remote_id, const char* reason) {
   if (auto events = ControllerEvents(remote_id))
     transfers_.Cancel(events.get(), remote_id);
-  preview_subscriptions_.Remove(remote_id);
   {
     std::lock_guard lock(display_resolution_commands_mutex_);
     initial_display_resolutions_.erase(remote_id);
@@ -204,6 +207,8 @@ void GuiRuntime::HandleServerControllerDisconnected(
   {
     std::unique_lock lock(connection_status_mutex_);
     connection_status_.erase(remote_id);
+    incoming_controllers_changed_ = true;
+    preview_subscriptions_.Remove(remote_id);
     disconnect_lock_.Disconnected(remote_id,
         config_center_->IsLockOnDisconnect() &&
         !(managed_host_frontend_ && remote_id.rfind("lan/", 0) != 0));
@@ -225,7 +230,11 @@ void GuiRuntime::HandleServerControllerDisconnected(
     windows_rdp_handoff_connected_->store(has_connected_controller,
                                           std::memory_order_relaxed);
 #endif
-    if (!has_connected_controller) ++display_resolution_epoch_;
+    if (!has_connected_controller) {
+      ++display_resolution_epoch_;
+      // Serialize recovery with privacy admission on a concurrent reconnect.
+      privacy_.Disconnected();
+    }
   }
   clipboard_.ForgetWeb(remote_id);
   if (has_connected_controller) {
@@ -235,36 +244,9 @@ void GuiRuntime::HandleServerControllerDisconnected(
 
   LOG_INFO("Last remote controller disconnected; recovering privacy, reason={}",
            reason ? reason : "unknown");
-  privacy_.Disconnected();
-
-  need_to_create_server_window_.store(false, std::memory_order_release);
-  need_to_destroy_server_window_.store(true, std::memory_order_release);
   is_server_mode_ = false;
-#if (defined(__linux__) && !defined(__OHOS__)) && !defined(__APPLE__)
-  if (IsWaylandSession()) {
-    // Keep Wayland capture session warm to avoid black screen on subsequent
-    // reconnects.
-    start_screen_capturer_ = true;
-    LOG_INFO(
-        "Keeping Wayland screen capturer running after disconnect to "
-        "preserve reconnect stability");
-  } else {
-    start_screen_capturer_ = false;
-  }
-#else
-  start_screen_capturer_ = false;
-#endif
   devices_.StopSpeakerCapturer();
   start_mouse_controller_ = false;
-  {
-    std::shared_lock lock(remote_sessions_mutex_);
-    start_keyboard_capturer_ = std::any_of(
-        remote_sessions_.begin(), remote_sessions_.end(), [](const auto& item) {
-          const auto& session = item.second;
-          return session && !session->closing_ &&
-                 session->connection_established_ && !session->wall_managed_;
-        });
-  }
   remote_client_id_.clear();
   audio_capture_ = false;
 }
@@ -359,7 +341,7 @@ void GuiRuntime::CloseRemoteSession(std::shared_ptr<RemoteSession> props) {
       video_height = props->thumbnail_height_;
     }
   }
-  auto* native_renderer = video_renderer_.get();
+  auto native_renderer = props->GetVideoRenderer();
   if (save_preview && (!frame_snapshot || frame_snapshot->empty()) &&
       native_renderer) {
     auto native_snapshot = std::make_shared<std::vector<unsigned char>>();
@@ -372,7 +354,7 @@ void GuiRuntime::CloseRemoteSession(std::shared_ptr<RemoteSession> props) {
 
   if (native_renderer) {
     native_renderer->DiscardStream(props->remote_id_);
-    video_frame_dirty_.store(true, std::memory_order_release);
+    NotifyVideoFrameReady(*props);
   }
 
   MiniRtcPeerPtr* peer = nullptr;
@@ -389,7 +371,7 @@ void GuiRuntime::CloseRemoteSession(std::shared_ptr<RemoteSession> props) {
   const auto queued_at = std::chrono::steady_clock::now();
   session_cleanup_tasks_[props->remote_id_] = session_cleanup_queue_.PostTask(
       [props, peer, frame_snapshot, video_width, video_height, platform,
-       thumbnail = thumbnail_, queued_at]() mutable {
+       thumbnail = props->history_store_, queued_at]() mutable {
         if (props->peer_events_) props->peer_events_->Deactivate();
         if (peer && !props->lan_session_) {
           LOG_INFO("Background leave connection");
@@ -402,17 +384,16 @@ void GuiRuntime::CloseRemoteSession(std::shared_ptr<RemoteSession> props) {
           const auto direct = props->lan_session_;
           const Thumbnail::LanTarget target =
               direct ? Thumbnail::LanTarget{direct->target.address,
-                                            direct->target.device_id,
                                             direct->target.port}
                      : Thumbnail::LanTarget{};
           const auto record_id = direct
-                                     ? Thumbnail::LanRecordId(target.device_id)
+                                     ? Thumbnail::LanRecordId(target.address, target.port)
                                      : props->remote_id_;
           if (thumbnail->SaveToThumbnail(
                   nv12, video_width, video_height, record_id,
                   props->remote_host_name_,
                   props->remember_password_ ? props->remote_password_ : "",
-                  platform, direct ? &target : nullptr) != 0) {
+                  platform, direct ? &target : nullptr, props->history_generation_) != 0) {
             LOG_ERROR("Failed to save recent connection");
           }
         }
@@ -627,7 +608,7 @@ std::shared_ptr<GuiRuntime::RemoteSession> GuiRuntime::FindRemoteSession(
     if (remote_id.rfind("lan-", 0) == 0)
       for (const auto& [_, props] : remote_sessions_)
         if (props->lan_session_ && !props->closing_ &&
-            Thumbnail::LanRecordId(props->lan_session_->target.device_id) ==
+            Thumbnail::LanRecordId(props->lan_session_->target.address, props->lan_session_->target.port) ==
                 remote_id)
           return props;
     return nullptr;
@@ -641,7 +622,7 @@ int GuiRuntime::ConnectTo(const std::string& remote_id, const char* password,
   // Do not recreate a failed peer or send another probe during a server cooldown.
   if (const auto current = FindRemoteSession(remote_id);
       current && current->connection_auth_.Get().retry_after > 0) {
-    if (!background) focused_remote_id_ = remote_id;
+    if (!background) connection_dialog_target_ = remote_id;
     if (!background) show_connection_status_window_ = true;
     current->rejoin_ = false;
     return 0;
@@ -669,9 +650,12 @@ int GuiRuntime::ConnectTo(const std::string& remote_id, const char* password,
     return -1;
   }
 
+  // A DeskHub request may bypass presence checks while a server switch is
+  // draining the old peer. Its connection template still points at that server.
+  if (!peer_) return -1;
   LOG_INFO("Connecting to remote device");
   LOG_DEBUG("Connect to [{}]", remote_id);
-  if (!background) focused_remote_id_ = remote_id;
+  if (!background) connection_dialog_target_ = remote_id;
 
   auto stale = FindRemoteSession(remote_id);
   bool exists = stale != nullptr;
@@ -718,10 +702,15 @@ int GuiRuntime::ConnectTo(const std::string& remote_id, const char* password,
       if (remote_sessions_.find(remote_id) == remote_sessions_.end()) {
         remote_sessions_[remote_id] = std::make_shared<RemoteSession>();
         auto props = remote_sessions_[remote_id];
+        props->history_store_ = thumbnail_;
+        props->history_generation_ = thumbnail_->RecordGeneration(remote_id);
         props->local_id_ = "C-" + std::string(client_id_);
         props->remote_id_ = remote_id;
+        props->device_preference_key_ = nlohmann::json::array({"signal",
+            config_center_->GetSignalServerHost(), config_center_->GetSignalServerPort(),
+            remote_id}).dump();
         props->wall_managed_ = background;
-        props->tab_opened_ = !background;
+        props->stream_window_open_ = !background;
         props->control_mouse_ = !background;
         props->enable_mouse_control_ = !background;
         props->audio_capture_button_pressed_ = !background;
@@ -729,7 +718,8 @@ int GuiRuntime::ConnectTo(const std::string& remote_id, const char* password,
         props->params_.user_id = props->local_id_.c_str();
         props->peer_events_ = std::make_shared<PeerEventHandler>(*this);
         props->params_.user_data = props->peer_events_.get();
-        props->peer_ = MiniRtcCreatePeer(&props->params_);
+        props->peer_ = MiniRtcCreatePeerWithVideoCodec(
+            &props->params_, dll_log_path_.c_str(), preferred_video_codec_);
 
         props->connection_status_.store(MiniRtcConnectionStatus::MiniRtcConnectionConnecting);
         if (!background) show_connection_status_window_ = true;
@@ -776,6 +766,8 @@ int GuiRuntime::ConnectTo(const std::string& remote_id, const char* password,
     // This also covers reusing a foreground connection that is awaiting auth.
     props->wall_managed_ = true;
     MuteRemoteAudio(props);
+  } else {
+    props->stream_window_open_ = true;
   }
   if (!props->connection_established_) {
     if (!background) show_connection_status_window_ = true;

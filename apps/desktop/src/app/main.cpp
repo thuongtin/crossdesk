@@ -30,6 +30,7 @@
 
 #include "config_center.h"
 #include "path_manager.h"
+#include "platform/autostart_backend.h"
 #include "platform/instance_activation.h"
 #include "platform/single_instance.h"
 #include "rd_log.h"
@@ -40,7 +41,6 @@
 
 #ifdef __linux__
 #include "SimpleIni.h"
-#include "platform/linux/autostart.h"
 #include "platform/linux/headless/headless_console.h"
 #include "platform/linux/headless/headless_session.h"
 #include "platform/linux/privacy/privacy_guard.h"
@@ -225,9 +225,9 @@ int HandleServiceCliCommand(const std::string& command) {
 }  // namespace
 #endif
 
-static bool IsDaemonChild(int argc, char* argv[]) {
+static bool HasArgument(int argc, char* argv[], const char* argument) {
   for (int i = 1; i < argc; ++i) {
-    if (std::strcmp(argv[i], "--child") == 0) return true;
+    if (std::strcmp(argv[i], argument) == 0) return true;
   }
   return false;
 }
@@ -264,28 +264,28 @@ static int ExitForExistingInstance(
   return result == crossdesk::platform::InstanceResult::kAlreadyRunning ? 0 : 1;
 }
 
-static int RunApplication(int argc, char* argv[]) {
+static int RunApplication(int argc, char* argv[], bool login_launch) {
   // The instance guards are held before any configuration or logger is opened.
   auto path_manager = std::make_unique<crossdesk::PathManager>("CrossDesk");
   crossdesk::InitLogger(path_manager->GetLogPath().string());
 
 #ifdef _WIN32
+#if CROSSDESK_PORTABLE
+  // The first configuration save runs before the GUI creates its cache.
+  path_manager->CreateDirectories(path_manager->GetCachePath());
+#endif
   crossdesk::get_logger()->info(
       "CrossDesk executable: {}",
       std::filesystem::path(crossdesk::platform::CurrentExecutablePath()).u8string());
 #endif
 
-  if (IsDaemonChild(argc, argv)) {
+  if (HasArgument(argc, argv, "--child")) {
     // Compatibility with a supervisor from an older, still-running build.
     crossdesk::Render render;
-    return render.Run();
+    return render.Run(login_launch);
   }
 
 #ifdef _WIN32
-  if (!crossdesk::CleanupLegacyServiceAutostart()) {
-    crossdesk::get_logger()->warn(
-        "Could not remove legacy Windows logon startup");
-  }
   TryStartManagedWindowsService();
 #endif
 
@@ -294,11 +294,10 @@ static int RunApplication(int argc, char* argv[]) {
     std::string cache_path = path_manager->GetCachePath().string();
     crossdesk::ConfigCenter config_center(cache_path + "/config.ini");
     enable_daemon = config_center.IsEnableDaemon();
-#ifdef __linux__
-    if (config_center.IsEnableAutostart() &&
-        !crossdesk::platform::MigrateLegacyAutostart("CrossDesk")) {
+#if defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
+    if (!config_center.MigrateAutostart()) {
       crossdesk::get_logger()->warn(
-          "Could not migrate the legacy Linux autostart entry");
+          "Could not migrate the legacy autostart entry");
     }
 #endif
   }
@@ -328,7 +327,7 @@ static int RunApplication(int argc, char* argv[]) {
   }
 #endif
   crossdesk::Render render;
-  const int result = render.Run();
+  const int result = render.Run(login_launch);
 #if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
   runtime_daemon.Shutdown(result != 0);
 #endif
@@ -336,6 +335,23 @@ static int RunApplication(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+#if defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
+  if (argc == 2 && std::strcmp(argv[1], "--autostart-migrate") == 0) {
+    crossdesk::PathManager paths("CrossDesk");
+    const auto config = paths.GetCachePath() / "config.ini";
+    std::error_code error;
+    if (!std::filesystem::exists(config, error))
+      return !error && crossdesk::platform::MigrateLegacyAutostart("CrossDesk") ? 0 : 1;
+    crossdesk::platform::SingleInstanceGuard client;
+    std::string reason;
+    const auto acquired = client.TryAcquire(crossdesk::platform::InstanceRole::kClient, reason);
+    if (acquired == crossdesk::platform::InstanceResult::kAlreadyRunning)
+      return crossdesk::ConfigCenter::MigrateAutostartWhileRunning(config.string()) ? 0 : 1;
+    if (acquired != crossdesk::platform::InstanceResult::kAcquired) return 1;
+    crossdesk::InitLogger(paths.GetLogPath().string(), "crossdesk-autostart-cli");
+    return crossdesk::ConfigCenter(config.string()).MigrateAutostart() ? 0 : 1;
+  }
+#endif
 #ifdef __APPLE__
   if (argc >= 2 &&
       std::strcmp(argv[1], crossdesk::platform::kMacDaemonArgument) == 0) {
@@ -413,7 +429,7 @@ int main(int argc, char* argv[]) {
                           "crossdesk-autostart-cli");
     const bool success =
         std::strcmp(argv[1], "--autostart-migrate") == 0
-            ? crossdesk::CleanupLegacyServiceAutostart()
+            ? crossdesk::MigrateServiceAutostart(false)
             : crossdesk::platform::RemoveInstalledAutostart("CrossDesk");
     return success ? 0 : 1;
   }
@@ -451,18 +467,20 @@ int main(int argc, char* argv[]) {
   using crossdesk::platform::InstanceRole;
   crossdesk::platform::SingleInstanceGuard launcher_instance;
   crossdesk::platform::SingleInstanceGuard client_instance;
-  if (!IsDaemonChild(argc, argv)) {
+  const bool login_launch = HasArgument(argc, argv, "--autostart");
+  const bool child = HasArgument(argc, argv, "--child");
+  if (!child) {
     const auto result = AcquireInstance(launcher_instance, InstanceRole::kLauncher);
     if (result != InstanceResult::kAcquired)
-      return ExitForExistingInstance(result, true);
+      return ExitForExistingInstance(result, !login_launch);
   }
   const auto result = AcquireInstance(client_instance, InstanceRole::kClient);
   if (result != InstanceResult::kAcquired)
-    return ExitForExistingInstance(result, !IsDaemonChild(argc, argv));
+    return ExitForExistingInstance(result, !child && !login_launch);
 
 #ifdef __linux__
   const int exit_code = crossdesk::RunWithLinuxDisplay(
-      argc, argv, [&] { return RunApplication(argc, argv); }, [&] {
+      argc, argv, [&] { return RunApplication(argc, argv, login_launch); }, [&] {
         crossdesk::PathManager paths("CrossDesk");
         if (console.Enable(paths.GetLogPath(), paths.GetCachePath() / "config.ini")) return true;
         std::cerr << "Không thể khởi tạo nhật ký hoặc bảng điều khiển, khởi động thất bại.\n";
@@ -475,6 +493,6 @@ int main(int argc, char* argv[]) {
   }
   return exit_code;
 #else
-  return RunApplication(argc, argv);
+  return RunApplication(argc, argv, login_launch);
 #endif
 }

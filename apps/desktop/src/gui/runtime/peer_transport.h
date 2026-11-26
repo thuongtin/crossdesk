@@ -27,7 +27,7 @@ int PeerSendVideoFrameToPeer(MiniRtcPeerPtr*, const MiniRtcVideoFrame*,
 int PeerSendSignalMessage(MiniRtcPeerPtr*, const char*, size_t);
 int PeerReconnectSignal(MiniRtcPeerPtr*);
 int PeerDisconnectPeerConnection(MiniRtcPeerPtr*, const char*, const char*);
-int PeerUpdateConnectionSettings(MiniRtcPeerPtr*, bool, bool, MiniRtcTurnMode);
+int PeerUpdateConnectionParams(MiniRtcPeerPtr* peer, const MiniRtcConnectionParams& params);
 
 }  // namespace crossdesk
 

@@ -55,6 +55,8 @@ final class AnnouncementInbox: ObservableObject {
         let request_id: String
         let summary_only: Bool
         let offset: Int
+        var detail_id: Int64? = nil
+        var revision: Int64? = nil
     }
 
     private struct LocalState: Codable {
@@ -79,7 +81,8 @@ final class AnnouncementInbox: ObservableObject {
     private var pageOffset = 0
     private var visibleLimit = 20
     private var summary = true
-    private var connected = false
+    private(set) var connected = false
+    private var localCatalog = false
     private var requestID: String?
     private var timeout: Timer?
 
@@ -132,6 +135,11 @@ final class AnnouncementInbox: ObservableObject {
         refresh()
     }
 
+    func catalogChanged(resetPages: Bool) {
+        if resetPages { pageIDs.removeAll(); pageBodies.removeAll() }
+        refresh()
+    }
+
     func refresh() {
         cancelRequest()
         pendingCatalog = [:]
@@ -149,10 +157,24 @@ final class AnnouncementInbox: ObservableObject {
     }
 
     func markRead(_ item: Announcement) {
-        guard state.items.contains(where: { $0.id == item.id && $0.revision == item.revision }),
-              reads[item.id] != item.revision else { return }
+        guard state.items.contains(where: { $0.id == item.id && $0.revision == item.revision }) else { return }
+        if item.body.isEmpty && connected { cancelRequest(); request(offset: 0, detail: item) }
+        guard reads[item.id] != item.revision else { return }
         var updated = reads
         updated[item.id] = item.revision
+        saveReads(updated)
+    }
+
+    func markAllRead() {
+        guard state.unread > 0 else { return }
+        var updated = reads
+        for (id, revision) in catalog where dismissed[id] != revision {
+            updated[id] = revision
+        }
+        saveReads(updated)
+    }
+
+    private func saveReads(_ updated: [Int64: Int64]) {
         guard saveLocalState(reads: updated, dismissed: dismissed) else {
             state.readSaveFailed = true
             return
@@ -196,6 +218,8 @@ final class AnnouncementInbox: ObservableObject {
     func receive(_ data: Data) {
         guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
               let id = object["request_id"] as? String, id == requestID else { return }
+        if object["pending_catalog"] as? Bool == true { cancelRequest(); state.loading = true; state.failed = false; return }
+        if object["body_ready"] as? Bool == true { catalogChanged(resetPages: true); return }
         let decoder = JSONDecoder()
         guard object["error"] == nil, let response = try? decoder.decode(Response.self, from: data) else {
             failed(requestID: id)
@@ -234,10 +258,12 @@ final class AnnouncementInbox: ObservableObject {
                 request(offset: pendingCatalog.count)
                 return
             }
-            if catalogRevision != pendingRevision {
+            let local = object["local_catalog"] as? Bool == true
+            if catalogRevision != pendingRevision || local != localCatalog {
                 pageIDs = [:]
                 pageBodies = [:]
             }
+            localCatalog = local
             catalog = pendingCatalog
             catalogRevision = pendingRevision
             reads = reads.filter { catalog[$0.key] != nil }
@@ -269,11 +295,11 @@ final class AnnouncementInbox: ObservableObject {
         state.loading = false
     }
 
-    private func request(offset: Int) {
+    private func request(offset: Int, detail: Announcement? = nil) {
         guard connected, !scope.isEmpty else { return }
         let id = UUID().uuidString
         guard let data = try? JSONEncoder().encode(Request(
-            request_id: id, summary_only: summary, offset: offset)) else { return }
+            request_id: id, summary_only: summary, offset: offset, detail_id: detail?.id, revision: detail?.revision)) else { return }
         requestID = id
         state.loading = true
         state.failed = false

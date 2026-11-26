@@ -40,18 +40,16 @@ void GuiRuntime::InitializeLan() {
     // Direct initialization must not depend on cloud login/configuration having
     // successfully populated the managed peer's MiniRtcParams snapshot.
     MiniRtcParams params{};
-    std::snprintf(params.log_path, sizeof(params.log_path), "%s",
-                  dll_log_path_.c_str());
     params.hardware_acceleration = true;
     params.native_video_output = true;
-    params.av1_encoding = config_center_->GetVideoEncodeFormat() ==
-                          ConfigCenter::VIDEO_ENCODE_FORMAT::AV1;
+    const auto codec = config_center_->GetVideoEncodeFormat();
     params.enable_srtp = true;
     params.turn_mode = MiniRtcTurnMode::MiniRtcTurnDisabled;
     params.direct_start_bitrate_bps = config_center_->GetDirectStartBitrateBps();
     params.relay_start_bitrate_bps = config_center_->GetRelayStartBitrateBps();
     params.disable_receiver_padding_probing =
         config_center_->IsReceiverPaddingProbingDisabled();
+    params.desktop_encoding_mode = config_center_->GetDesktopEncodingMode();
     params.video_content_type = MiniRtcVideoContentType::ScreenContent;
     params.video_quality = MiniRtcVideoQuality::MiniRtcVideoQualityHigh;
     params.video_frame_rate = 60;
@@ -67,14 +65,16 @@ void GuiRuntime::InitializeLan() {
     if (!session->incoming) {
       auto props = FindRemoteSession(session->key);
       if (!props) throw std::runtime_error("LAN session cancelled");
+      props->device_preference_key_ =
+          nlohmann::json::array({"lan", session->target.device_id}).dump();
       props->peer_events_ = events;
       props->local_id_ = session->local_id;
     }
-    return [this, session, events, params, displays] {
+    return [this, session, events, params, codec, displays, log_directory = dll_log_path_] {
       lan::SessionManager::Prepared result;
       result.callback_owner = events;
       result.drain_callbacks = [events] { events->Deactivate(); };
-      result.peer = MiniRtcCreatePeer(&params);
+      result.peer = MiniRtcCreatePeerWithVideoCodec(&params, log_directory.c_str(), codec);
       events->SetDirectPeer(result.peer);
       if (result.peer) RegisterStreams(result.peer, displays);
       return result;
@@ -160,6 +160,9 @@ void GuiRuntime::ConnectLan(const std::string& address, unsigned port,
       std::memcpy(props->remote_password_, password.data(), password.size());
     auto session = lan_->Connect(address, port, std::move(password));
     lan_connecting_ = session;
+    props->history_store_ = thumbnail_;
+    props->history_generation_ = thumbnail_->RecordGeneration(
+        Thumbnail::LanRecordId(session->target.address, session->target.port));
     props->lan_session_ = session;
     props->remote_id_ = session->key;
     props->connection_status_ = MiniRtcConnectionStatus::MiniRtcConnectionConnecting;
@@ -168,7 +171,7 @@ void GuiRuntime::ConnectLan(const std::string& address, unsigned port,
       std::unique_lock lock(remote_sessions_mutex_);
       remote_sessions_[session->key] = props;
     }
-    focused_remote_id_ = session->key;
+    connection_dialog_target_ = session->key;
     show_connection_status_window_ = false;
     lan_error_.clear();
   } catch (const std::exception& error) {

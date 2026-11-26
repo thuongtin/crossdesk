@@ -50,12 +50,14 @@ The eye button shows or hides the local password, the refresh button generates a
 
 ### Connect directly over LAN
 
-The direct IP entry is available in the regular Windows, macOS, and Linux desktop clients. The computers must have mutually reachable IPv4 or IPv6 addresses. Internet access is optional, and there is no need to wait for a signaling server connection. Browsers, mobile clients, the Windows pre-sign-in service, and the Linux headless console currently use the device ID workflow.
+The regular Windows, macOS, and Linux desktop clients can initiate and accept direct IP sessions. Android, iOS, and HarmonyOS phones and tablets can initiate them. The controller and desktop host need mutually reachable IPv4 or IPv6 addresses. A signaling server connection is optional.
 
-1. **Enable and switch.** On both computers, select **Enable direct IP** under **Settings → General → Network** and save (enabled by default). Use the top-left button to switch to **Direct IP mode**.
+**From a phone or tablet.** Enable direct IP on the computer and copy its displayed address. Paste it into **Device ID or IP address** on the mobile home screen, tap **Connect**, and enter the computer’s **Direct IP password**. On iOS, allow Local Network access when prompted.
+
+1. **Enable and switch.** On each desktop client, select **Enable direct IP** under **Settings → General → Network** and save (enabled by default). Use the top-left button to switch to **Direct IP mode**.
 2. **Get the host address.** Read **Local IP / Port** on the host. The copy button copies the full `IP:port`. If several addresses are available, choose one reachable from the controller.
 3. **Connect and verify.** Enter an address such as `192.168.1.20:52888` or `[2001:db8::20]:52888` under **Remote IP / Port**, click **Connect**, and enter the host's six-character password for this mode. Omitting the port uses **52888**. Numeric IPv4 and IPv6 addresses are supported; hostnames are not.
-4. **Save and reconnect.** Select **Remember password** in the password dialog if needed. Recent connections are separated by ID / IP mode. Device records are kept even without a saved password; you will be prompted next time. Cards let you reconnect, rename devices, or remove records.
+4. **Save and reconnect.** Select **Remember password** in the password dialog if needed. Desktop clients show separate recent connections for ID and IP modes. Device records are kept even without a saved password; you will be prompted next time. Cards let you reconnect, rename devices, or remove records.
 
 <p align="center">
   <img src="images/desktop-lan-password-en.png" width="720" alt="Direct IP password dialog with Remember password and demonstration LAN devices in the background" />
@@ -108,7 +110,7 @@ DeskHub connections are muted by default. Enable sound with **Select → More �
 
 ## Session controls
 
-Switch devices using session tabs. Expand the control bar if it is collapsed, and hover over icons to see their tooltips.
+Each connection opens its own control window. The first connection uses the default window size. Reconnecting restores the last windowed size for that device. You can view multiple devices at once. Focus a window to direct keyboard and mouse input to that device. Closing a control window disconnects that device and leaves the other connections running. If DeskHub is using the device, its preview stays connected. Expand the control bar if it is collapsed, and hover over icons to see their tooltips.
 
 | Control | Action |
 | --- | --- |
@@ -122,6 +124,8 @@ Switch devices using session tabs. Expand the control bar if it is collapsed, an
 | Privacy screen | Enable or disable the host's privacy screen; hover to see its status and available actions |
 | Fullscreen | Enter / exit fullscreen |
 | Disconnect | End the current remote session |
+
+When a controller connects, the host shows **Controlled** and the number of connected devices to the left of the **☰** menu in the upper-right corner of the main window. Select **Controlled** to open a dropdown listing the controllers. From there you can send a file or disconnect a session. Click outside the dropdown or press Esc to close it.
 
 Desktop clients synchronize text clipboard contents. Configure the receiving directory under **Settings → General → File Save Path**. Closing the main window hides it and keeps the app running; use the system tray or menu-bar exit command to quit completely.
 
@@ -137,7 +141,7 @@ If a manually deployed environment lacks FUSE, or container/system permissions p
 
 On macOS, paste into a local folder in Finder; existing files are preserved by adding a numbered suffix to conflicting names.
 
-On Windows, the main window and remote control window use separate taskbar buttons, so you can switch to or minimize either window independently. Closing the main window leaves the remote control window and its connections running; reopen the main window from the system tray. The remote control button appears only while the session window is present; use the main window's button to pin the application.
+On Windows, the main window and remote control windows use separate taskbar groups, so you can switch to or minimize either window independently. Closing the main window leaves the remote control window and its connections running; reopen the main window from the system tray. The remote control button appears only while the session window is present; use the main window's button to pin the application.
 
 On Linux, the main and remote control windows use different application grouping IDs on X11, XWayland, and native Wayland. Taskbar presentation depends on the desktop environment and its grouping settings. Closing the main window keeps remote connections running; reopen it from the system tray. Use the main application's launcher for pinning.
 
@@ -158,6 +162,8 @@ The task list shows transfer status and progress, with controls to cancel unfini
 ### Adjust video during a session
 
 After connecting, open **Video settings** (the sliders icon) in the toolbar. Choose low / medium / high quality, **30 / 60 fps**, and frame-rate priority / quality priority / balanced adaptation. Changes are sent to the current host without reconnecting; actual results depend on the network, device, and encoder. For older hosts that do not support live video settings, the menu explains the limitation and disables the options.
+
+Adjust horizontal and vertical scrolling under **Video settings → Scroll sensitivity**. The controller remembers the value for each host and restores it on reconnect. DeskHub group control uses each host’s own scroll sensitivity.
 
 For Windows, macOS, and Linux X11 hosts, **Video settings → Resolution** also lists supported desktop resolutions for the selected monitor. Changes take effect without reconnecting; when the last controller disconnects, the display mode from before the first change is restored. Linux requires X11 capture and a RandR-capable display server. Wayland, XWayland, and custom scaling or panning configurations are not supported. Choices come from the monitor or virtual display server; no additional modes are created for virtual screens that expose only one mode.
 
@@ -187,7 +193,7 @@ Open **☰ → Settings** in the top-right corner, choose **General / DeskHub**,
 | Save remote screen previews | On by default. When disabled, the thumbnail area shows the remote device’s platform and existing previews are cleared; connection records and passwords are preserved |
 | Privacy screen on connect | Automatically enable privacy when this computer is controlled remotely; the controller can toggle it from the session toolbar |
 | Self-Hosted Config | Click Edit to set the server address and signaling port, then enable the switch on the right |
-| Auto Start | Installed Windows Release builds use the same ID and password before and after sign-in, with the GUI attaching to the background service after login. Unavailable in portable and Debug Windows builds. Other desktop platforms start at desktop login |
+| Auto Start | Installed Windows Release builds use the same ID and password before and after sign-in, with the GUI attaching to the background service after login. Unavailable in portable and Debug Windows builds. With Auto Start enabled, CrossDesk starts in the system tray at desktop login. Open the main window from the tray. |
 | Enable Daemon | On Windows / macOS / Linux desktops, saving immediately enables or disables restart after an abnormal exit. Normal exit or logoff does not relaunch the app; headless console mode does not use the built-in daemon |
 | File Save Path | Choose where received files are saved |
 
@@ -310,7 +316,9 @@ These are development builds. Follow the [HarmonyOS build guide](../apps/harmony
 
 The installer registers an on-demand service by default. CrossDesk tries to start it on launch. Unless unattended mode is enabled, the service exits when no local CrossDesk client is running. Portable builds offer service installation in the prompt or **Settings → Lock Screen Service**, with administrator privileges.
 
-In installed Windows Release builds, **Auto Start** enables remote access before sign-in with the same ID and password. The interface opens after sign-in while the existing connection continues. Turning this off disables unattended startup. **Enable Daemon** separately controls recovery after an interface crash. Portable and Debug builds do not offer unattended Auto Start.
+In installed Windows Release builds, **Auto Start** enables remote access before sign-in with the same ID and password. After sign-in, the client starts in the system tray. Existing connections stay active. Turning this off disables unattended startup. **Enable Daemon** separately controls recovery after an interface crash. Portable and Debug builds do not offer unattended Auto Start.
+
+If Auto Start was enabled in the old version, the upgrade configures unattended access with the existing device ID, password, and paired devices. If the old credentials need conversion, the client finishes setup the next time it runs. A newer setting that explicitly disabled unattended startup takes precedence.
 
 <a id="windows-service-development-update"></a>
 

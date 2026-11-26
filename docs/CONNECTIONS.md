@@ -9,9 +9,9 @@ Tài liệu này giúp bạn chọn phương thức kết nối, quản lý thi�
 | Phương thức | Tình huống phù hợp | Cần chuẩn bị trước kết nối |
 | --- | --- | --- |
 | ID thiết bị | Truy cập qua các mạng khác nhau, hoặc kết nối từ trình duyệt, điện thoại, terminal | Máy tính được điều khiển trực tuyến, hai bên kết nối cùng máy chủ, chuẩn bị ID gồm 9 chữ số và mật khẩu |
-| IP trực tiếp | Hai máy tính truy cập được nhau trong mạng LAN hoặc VPN | Hai bên bật IP trực tiếp, chuẩn bị IP, cổng và mật khẩu của chế độ này trên máy tính được điều khiển |
+| IP trực tiếp | Máy tính, điện thoại hoặc máy tính bảng truy cập được máy tính được điều khiển qua mạng LAN hoặc VPN | Máy tính được điều khiển bật IP trực tiếp, chuẩn bị IP, cổng và mật khẩu của chế độ này trên máy đó |
 
-Kết nối ID tự thử truyền trực tiếp giữa các thiết bị; nếu không thể kết nối trực tiếp thì có thể dùng relay. IP trực tiếp không phụ thuộc signaling server, cũng không tự xuyên qua bộ định tuyến Internet. IP trực tiếp hiện dành cho ứng dụng máy tính thông thường Windows, macOS, Linux; thiết bị di động, Web và CLI terminal dùng kết nối ID.
+Kết nối ID tự thử truyền trực tiếp giữa các thiết bị; nếu không thể kết nối trực tiếp thì có thể dùng relay. IP trực tiếp không phụ thuộc signaling server, cũng không tự xuyên qua bộ định tuyến Internet. IP trực tiếp hiện dành cho ứng dụng máy tính thông thường Windows, macOS, Linux; ứng dụng di động Android, iOS và HarmonyOS cũng có thể làm máy điều khiển. Web và CLI terminal dùng kết nối ID.
 
 <a id="41-id-模式"></a>
 
@@ -31,9 +31,9 @@ Xem [cấu hình self-host](SELF_HOSTING.md) và [sao lưu danh tính](#backup).
 
 ## Kết nối IP trực tiếp
 
-1. Trên cả hai bên, bật **IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
+1. Trên ứng dụng máy tính, bật **IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
 2. Chuyển sang chế độ IP trực tiếp ở cửa sổ chính, sao chép `IP:cổng` hiển thị trên máy được điều khiển.
-3. Dán địa chỉ trên máy điều khiển và kết nối, nhập mật khẩu sáu ký tự của máy được điều khiển ở chế độ IP.
+3. Dán địa chỉ trên máy điều khiển và kết nối. Điện thoại hoặc máy tính bảng dùng ô **ID thiết bị hoặc địa chỉ IP** ở màn hình chính. Nhập mật khẩu sáu ký tự của máy được điều khiển ở chế độ IP.
 
 Cổng mặc định là `52888`; thực tế hãy căn cứ hiển thị trên máy được điều khiển. Hỗ trợ IPv4 và IPv6, không hỗ trợ tên máy; khi chỉ định cổng IPv6 dùng dấu ngoặc vuông, ví dụ `[2001:db8::20]:52888`. Mật khẩu ID và IP độc lập với nhau.
 
@@ -41,7 +41,7 @@ Mặc định lắng nghe mọi giao diện mạng, có thể truy cập qua đ�
 
 ## Xem trạng thái kết nối và mã hóa
 
-Sau khi kết nối, mở **Trạng thái mạng** trên thanh công cụ phiên để xem trực tiếp / relay và trạng thái mã hóa. Phía dưới DeskHub cũng có mục tương ứng.
+Sau khi kết nối, mở **Trạng thái mạng** trên thanh công cụ phiên để xem trực tiếp / relay và trạng thái mã hóa. Trên máy tính, di chuột lên nhãn **Trực tiếp** để xem IP và cổng mà máy này và máy từ xa đang dùng. Trên điện thoại hoặc máy tính bảng, chạm **Kết nối trực tiếp P2P** để mở danh sách địa chỉ, chạm lần nữa để thu gọn. Khi đi qua NAT, địa chỉ có thể là địa chỉ công cộng sau khi ánh xạ. Phía dưới DeskHub cũng có mục tương ứng.
 
 IP trực tiếp yêu cầu truyền mã hóa. Để tương thích ứng dụng cũ, kết nối ID native có thể dùng truyền không mã hóa hoặc chỉ mã hóa một phần; không chỉ dựa vào “Đã kết nối máy chủ” để xác định trạng thái mã hóa phiên điều khiển từ xa. Nên dùng các phiên bản gần đây tương thích trên cả hai bên; nếu chưa xác nhận trạng thái, kiểm tra phiên bản và thông tin mạng trước.
 

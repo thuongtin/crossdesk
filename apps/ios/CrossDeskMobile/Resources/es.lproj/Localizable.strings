@@ -29,6 +29,7 @@
 "信令连接已关闭" = "Conexión de señalización cerrada";
 "偏好模式" = "Modo de preferencia";
 "像触控板一样滑动光标，点击时操作当前光标位置。" = "Deslice el cursor como un trackpad y opere la posición actual del cursor cuando se haga clic.";
+"全部已读" = "Marcar todo como leído";
 "公告加载失败，请重试。" = "Error al cargar el anuncio, inténtelo de nuevo.";
 "公告详情" = "Detalles del anuncio";
 "共 %1$@ 条 · %2$@ 条未读" = "Total de elementos %1$@· Elementos no leídos %2$@";
@@ -212,6 +213,7 @@
 "网络连接已中断，请重新连接。" = "La conexión de red ha sido interrumpida, vuelva a conectarse.";
 "自定义" = "Personalizado";
 "虚拟鼠标" = "Ratón virtual";
+"拖动虚拟鼠标" = "Mover el ratón virtual";
 "被控端不支持直接输入中文，请更新 macOS 被控端；也可先复制文字，通过远控菜单的剪贴板发送后粘贴" = "El terminal controlado no admite la entrada directa de chino; actualice el terminal controlado por macOS; También puedes copiar el texto primero, enviarlo a través del portapapeles del menú del control remoto y luego pegarlo.";
 "被控端已通过组合键解除隐私屏。点击“锁定”将重新开启隐私屏，并禁止本机使用组合键解锁。" = "La pantalla de privacidad remota se desbloqueó usando el acceso directo local. Bloquéelo nuevamente para restaurar la privacidad y deshabilitar el desbloqueo de accesos directos locales.";
 "被控端平台：%1$@" = "Plataforma terminal controlada:%1$@";
@@ -351,3 +353,21 @@
 "选择桌面方案" = "Elegir entorno de escritorio";
 "选择桌面方案以加载系统预设" = "Elige un entorno para cargar los ajustes del sistema";
 "键盘上方常用栏" = "Favoritos sobre el teclado";
+"全部设备" = "Todos los dispositivos";
+"分组" = "Grupo";
+"修改名称" = "Cambiar nombre";
+"修改分组" = "Editar grupos";
+"未分组" = "Desagrupado";
+"新建分组（可选）" = "Nuevo grupo (opcional)";
+"该分组暂无近期连接" = "No hay conexiones recientes en este grupo.";
+"更多操作" = "Más acciones";
+"设备 ID 或 IP 地址" = "ID del dispositivo o dirección IP";
+"请输入设备 ID 或有效的 IP 地址" = "Introduce un ID de dispositivo o una dirección IP válida";
+"IP 直连密码" = "Contraseña de conexión IP directa";
+"IP 直连失败，请检查电脑的直连地址和网络。" = "Error de conexión IP directa. Comprueba la dirección, el puerto y la red del equipo.";
+"本端地址" = "Dirección local";
+"对端地址" = "Dirección remota";
+"删除分组" = "Eliminar grupo";
+"组内设备和连接记录将保留。" = "Se conservarán los dispositivos y el historial de conexiones.";
+"保存失败，请重试" = "No se pudo guardar; intentarlo de nuevo";
+"连接服务器后可获取最新公告。" = "Conéctese al servidor para obtener los últimos anuncios.";

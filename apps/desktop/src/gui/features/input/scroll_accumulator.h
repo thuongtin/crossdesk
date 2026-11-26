@@ -18,26 +18,42 @@ class ScrollAccumulator {
  public:
   using Clock = std::chrono::steady_clock;
 
-  int Consume(bool vertical, float delta, Clock::time_point now = Clock::now()) {
+  int Consume(bool vertical, float delta, int percent, Clock::time_point now = Clock::now()) {
     if (!std::isfinite(delta) || delta == 0) return 0;
 
-    auto& axis = vertical ? vertical_ : horizontal_;
-    // Give a short gesture one notch even if it ends after its first event.
-    if (!axis.last_event ||
-        now - *axis.last_event >= std::chrono::milliseconds(200)) {
-      axis.remainder = 0;
-      axis.last_event = now;
-      return delta > 0 ? 1 : -1;
+    if (percent != sensitivity_percent_) {
+      horizontal_ = {};
+      vertical_ = {};
+      sensitivity_percent_ = percent;
     }
-    axis.last_event = now;
-    if (axis.remainder * delta < 0) axis.remainder = 0;
-
-    // Slint's winit backend maps one line to 60 logical pixels. Cap large
-    // deltas to preserve the single notch sent for a conventional wheel event.
     constexpr float kPixelsPerNotch = 60;
-    axis.remainder += std::clamp(delta, -kPixelsPerNotch, kPixelsPerNotch);
-    const int steps = static_cast<int>(axis.remainder / kPixelsPerNotch);
-    axis.remainder -= steps * kPixelsPerNotch;
+    auto& axis = vertical ? vertical_ : horizontal_;
+    const bool new_gesture =
+        !axis.last_event ||
+        now - *axis.last_event >= std::chrono::milliseconds(200);
+    axis.last_event = now;
+    // Slint's winit backend represents a wheel notch as 60 logical pixels.
+#if defined(_WIN32) || defined(__APPLE__)
+    const bool whole_notch = std::abs(delta) >= kPixelsPerNotch;
+    delta = std::clamp(delta, -kPixelsPerNotch, kPixelsPerNotch);
+#if defined(__APPLE__)
+    if (new_gesture) delta = std::copysign(kPixelsPerNotch, delta);
+#endif
+#else
+    // These controllers historically send one notch per scroll event.
+    const bool whole_notch = true;
+    delta = std::copysign(kPixelsPerNotch, delta);
+#endif
+    // Retain fractional output between isolated physical clicks at low gain.
+    // Pixel gestures still start fresh after a pause.
+    const bool carry_notches = percent != 100 && whole_notch && axis.last_whole_notch;
+    if (axis.remainder * delta < 0 || (new_gesture && !carry_notches))
+      axis.remainder = 0;
+    axis.last_whole_notch = whole_notch;
+    constexpr double units_per_notch = kPixelsPerNotch * 100;
+    axis.remainder += static_cast<double>(delta) * percent;
+    const int steps = static_cast<int>(axis.remainder / units_per_notch);
+    axis.remainder -= steps * units_per_notch;
     return steps;
   }
 
@@ -45,7 +61,9 @@ class ScrollAccumulator {
   struct Axis {
     double remainder = 0;
     std::optional<Clock::time_point> last_event;
+    bool last_whole_notch = false;
   };
+  int sensitivity_percent_ = 100;
   Axis horizontal_;
   Axis vertical_;
 };

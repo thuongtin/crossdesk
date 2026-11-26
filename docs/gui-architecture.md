@@ -14,7 +14,7 @@ apps/desktop/src/gui/
 │   ├── gui_application.h            # Khai báo GuiApplication
 │   ├── gui_application.cpp          # Khởi tạo, callback UI, đồng bộ trạng thái và dọn dẹp
 │   ├── application_state.h          # Trạng thái cửa sổ, tương tác và UI
-│   ├── server_window_state.h        # Logic chọn máy điều khiển của cửa sổ máy được điều khiển
+│   ├── server_window_state.h        # Logic chọn máy điều khiển của danh sách kết nối đang được điều khiển
 │   └── window_geometry.h           # Tính vị trí cửa sổ
 ├── rendering/                       # Kết nối Slint với trình render video native
 │   └── slint_video_presenter.h/.cpp # Trình bày kết cấu video và thông báo render
@@ -38,8 +38,8 @@ apps/desktop/src/gui/
 │   ├── crossdesk_ui.slint           # Điểm xuất thành phần giao diện
 │   ├── common.slint                 # Điều khiển chung, cỡ chữ, màu và hình dạng biểu tượng
 │   ├── main_window.slint            # Cửa sổ chính, bảng, cài đặt và hộp thoại
-│   ├── stream_window.slint          # Cửa sổ luồng, thẻ và thanh điều khiển
-│   ├── server_window.slint          # Cửa sổ máy được điều khiển
+│   ├── stream_window.slint          # Cửa sổ luồng cho từng kết nối và thanh điều khiển
+│   ├── server_window.slint          # Bảng phiên đang được điều khiển trong cửa sổ chính
 │   ├── ui_localization.h           # Ánh xạ dữ liệu bản địa hóa sang thuộc tính Slint
 │   └── icons/                      # Tài nguyên biểu tượng SVG
 └── assets/                          # Phông nhúng và dữ liệu bản địa hóa
@@ -172,7 +172,7 @@ MainWindow::connect_requested
   → Tạo hoặc tái sử dụng RemoteSession
   → MiniRtcJoinConnection
   → PeerEventHandler nhận trạng thái kết nối
-  → SyncStreamWindow tạo cửa sổ luồng và bắt đầu trình bày video
+  → SyncStreamWindows tạo cửa sổ điều khiển và bộ dựng hình video cho phiên đó
 ```
 
 ### Thiết lập kết nối IP trực tiếp
@@ -229,8 +229,8 @@ Khi thêm mã, chọn thư mục theo các quy tắc sau:
 | Truyền tệp | `features/file_transfer/` |
 | Lưu bền cấu hình | `features/settings/` |
 | Vùng nhúng cửa sổ chính, cài đặt và hộp thoại | `ui/main_window.slint` |
-| Thẻ luồng, thanh điều khiển và bảng thống kê | `ui/stream_window.slint` |
-| Cửa sổ máy được điều khiển | `ui/server_window.slint` |
+| Cửa sổ luồng cho từng kết nối, thanh điều khiển và bảng thống kê | `ui/stream_window.slint` |
+| Bảng phiên đang được điều khiển trong cửa sổ chính | `ui/server_window.slint` |
 | Điều khiển chung, cỡ chữ, màu và hình dạng biểu tượng | `ui/common.slint` |
 | Khay hệ thống | `apps/desktop/src/platform/<os>/gui/tray/` |
 | Phông nhúng và dữ liệu bản địa hóa | `assets/` |

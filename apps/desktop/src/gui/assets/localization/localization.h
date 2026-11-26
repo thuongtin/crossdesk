@@ -82,6 +82,12 @@ inline const std::string& GetTranslatedText(const std::string& key, int language
 
 }  // namespace detail
 
+// Trả về mục ngôn ngữ ứng với chỉ số đã lưu. Tiếng Việt có chỉ số 11 nhưng nằm ở vị trí 10
+// của GetSupportedLanguages(), nên phải đi qua TranslationColumn thay vì index thẳng vào vector.
+inline const LanguageOption& SupportedLanguage(int language_index) {
+  return GetSupportedLanguages()[TranslationColumn(detail::ClampLanguageIndex(language_index))];
+}
+
 inline const std::string& Literal(const std::string& key, int language) {
   return detail::GetLiteralText(key, language);
 }
@@ -115,7 +121,7 @@ inline const wchar_t* GetWindowsLocalizedLabel(
     int language_index, const char* key, const wchar_t* fallback,
     std::vector<std::wstring>& cache) {
   const int normalized_index = detail::ClampLanguageIndex(language_index);
-  std::wstring& cached_text = cache[detail::TranslationColumn(normalized_index)];
+  std::wstring& cached_text = cache[TranslationColumn(normalized_index)];
   if (!cached_text.empty()) {
     return cached_text.c_str();
   }
