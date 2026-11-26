@@ -387,38 +387,34 @@ bool Thumbnail::DecodeImage(const std::filesystem::path& image_path,
   if (!pixels || source_width <= 0 || source_height <= 0)
     return false;
 
-  // Match image-fit: cover, cropping once from the original cached image.
-  int crop_width = source_width, crop_height = source_height;
-  if (int64_t(source_width) * target_height >
-      int64_t(source_height) * target_width)
-    crop_width = std::max(1, int(int64_t(source_height) * target_width /
-                                target_height));
-  else
-    crop_height = std::max(1, int(int64_t(source_width) * target_height /
-                                 target_width));
-  const double scale = std::min({1.0, double(crop_width) / target_width,
-                                double(crop_height) / target_height});
-  const int output_width = std::max(1, int(std::lround(target_width * scale)));
-  const int output_height = std::max(1, int(std::lround(target_height * scale)));
-  const auto* cropped = pixels.get() +
-      (size_t((source_height - crop_height) / 2) * source_width +
-       (source_width - crop_width) / 2) * 4;
+  // Fit the entire saved preview inside the viewport. The UI provides any
+  // letterboxing, and thumbnails smaller than the viewport are not upscaled.
+  const double scale = std::min({1.0, double(target_width) / source_width,
+                                double(target_height) / source_height});
+  const int output_width = std::max(1, int(std::lround(source_width * scale)));
+  const int output_height = std::max(1, int(std::lround(source_height * scale)));
+  if (output_width == source_width && output_height == source_height) {
+    rgba->assign(pixels.get(), pixels.get() + size_t(source_width) * source_height * 4);
+    *width = source_width;
+    *height = source_height;
+    return true;
+  }
 
   // ARGBScale falls back to bilinear for general box downsampling. Scale
   // separate color planes to get area filtering without another YUV conversion.
-  const size_t source_area = size_t(crop_width) * crop_height;
+  const size_t source_area = size_t(source_width) * source_height;
   const size_t output_area = size_t(output_width) * output_height;
   std::vector<uint8_t> source_planes(source_area * 4);
   std::vector<uint8_t> output_planes(output_area * 4);
-  libyuv::SplitARGBPlane(cropped, source_width * 4,
-                         source_planes.data(), crop_width,
-                         source_planes.data() + source_area, crop_width,
-                         source_planes.data() + source_area * 2, crop_width,
-                         source_planes.data() + source_area * 3, crop_width,
-                         crop_width, crop_height);
+  libyuv::SplitARGBPlane(pixels.get(), source_width * 4,
+                         source_planes.data(), source_width,
+                         source_planes.data() + source_area, source_width,
+                         source_planes.data() + source_area * 2, source_width,
+                         source_planes.data() + source_area * 3, source_width,
+                         source_width, source_height);
   for (size_t channel = 0; channel < 4; ++channel) {
     if (libyuv::ScalePlane(source_planes.data() + source_area * channel,
-                           crop_width, crop_width, crop_height,
+                           source_width, source_width, source_height,
                            output_planes.data() + output_area * channel,
                            output_width, output_width, output_height,
                            libyuv::kFilterBox) != 0)

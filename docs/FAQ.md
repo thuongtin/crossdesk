@@ -136,4 +136,4 @@ tccutil reset Accessibility cn.crossdesk.app
 
 Reopen CrossDesk and grant the requested permission in System Settings. If entries for older paths or builds remain, remove the old entry from the affected permission list and add the current app again.
 
-If the issue persists, [open an issue](https://github.com/kunkundi/crossdesk/issues) with both OS versions, client versions, connection mode, and reproduction steps. Remove passwords and private device information from logs or screenshots before sharing them.
+If the issue persists, export diagnostic logs from **Feedback & suggestions** and send the ZIP to your CrossDesk administrator with both OS versions, client versions, connection mode, and reproduction steps. Remove passwords and private device information from logs or screenshots before sharing them.

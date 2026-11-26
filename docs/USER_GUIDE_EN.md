@@ -185,7 +185,7 @@ Open **☰ → Settings** in the top-right corner, choose **General / DeskHub**,
 
 | Setting | Purpose |
 | --- | --- |
-| Language | Follow the system by default, or select Simplified / Traditional Chinese, English, Russian, Japanese, Korean, German, French, Spanish, or Brazilian Portuguese; see [localization](../localization/README.md) (Vietnamese) |
+| Language | New installs use English. You can select Simplified / Traditional Chinese, English, Russian, Japanese, Korean, German, French, Spanish, Brazilian Portuguese or Vietnamese, or follow the system; a language already saved in the settings is kept; see [localization](../localization/README.md) (Vietnamese) |
 | Capture Method (Windows) | Auto / DXGI / WGC / GDI; choose Auto for automatic headless adaptation |
 | Video Encode Format | H.264 / AV1; H.264 automatically prefers hardware codecs, with software fallback when unavailable or initialization fails; desktop AV1 uses software codecs |
 | Enable direct IP | Enabled by default; saving starts or stops direct IP immediately. Disabling disconnects IP sessions, stops listeners, and hides the mode button; the choice persists across restarts |
@@ -251,7 +251,7 @@ CrossDesk checks for new versions on startup. You can also open **Menu → About
 
 ### Feedback and diagnostic logs
 
-Open **☰ → Feedback & suggestions** in the main window. **Give feedback on GitHub** opens the issue page; **Export diagnostic logs** saves CrossDesk and MiniRTC logs with basic version information as a ZIP archive. After export, the panel shows the saved path. Attach the archive to a report with both systems, client versions, connection mode, and reproduction steps.
+Open **☰ → Feedback & suggestions** in the main window. **Export diagnostic logs** saves CrossDesk and MiniRTC logs with basic version information as a ZIP archive. After export, the panel shows the saved path. Send the archive to your CrossDesk administrator with both systems, client versions, connection mode, and reproduction steps. CrossDesk Postcard has no GitHub feedback button, so the screenshot below (taken from upstream) still shows it.
 
 <p align="center">
   <img src="images/desktop-feedback-en.png" width="720" alt="Feedback and suggestions with GitHub feedback and diagnostic log export buttons" />

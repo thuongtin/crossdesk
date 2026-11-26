@@ -10,7 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "rd_log.h"
-#include "linux_update_download.h"
+#include "updater/update_source.h"
 #ifndef __OHOS__
 #include "updater/update_core.h"
 #include "updater/update_platform.h"
@@ -104,77 +104,150 @@ void ConfigureLinuxCaCerts(httplib::Client* cli) {
 }
 #endif
 
+#ifndef __OHOS__
+// Mục gói thường cùng kiến trúc, dùng để tải thủ công khi PlatformKey không nhận ra gói cài.
+// Chỉ Linux cần: PlatformKey trên Windows và macOS không phụ thuộc vào dấu gói bên cạnh tệp chạy,
+// còn trên Linux nó bỏ qua cờ portable và trả về rỗng khi thiếu dấu `package-name`, kể cả bản
+// portable.
+std::string ManualUpdatePlatform() {
+#if defined(__linux__) && defined(__aarch64__)
+  return "linux-arm64";
+#elif defined(__linux__) && defined(__x86_64__)
+  return "linux-amd64";
+#else
+  return {};
+#endif
+}
+#endif
+
 }  // namespace
 
-std::optional<VersionInfo> CheckUpdate() {
-  httplib::Client cli("https://version.crossdesk.cn");
+#ifndef __OHOS__
+std::optional<VersionInfo> ParseSignedUpdateManifest(
+    const nlohmann::json& manifest, const std::string& platform,
+    const std::string& public_key) {
+  try {
+    const auto& download = manifest.at("downloads").at(platform);
+    const auto envelope = download.at("update").dump();
+    const auto artifact = updater::VerifyReleaseEnvelope(envelope, public_key, platform);
+    // Order by the signed version, never by unsigned top-level patch metadata.
+    auto info = ParseVersionInfo(download);
+    if (!info || info->version != artifact.version) return std::nullopt;
+    const auto notes = ParseVersionInfo(manifest);
+    if (notes && notes->version == artifact.version) {
+      info->release_name = notes->release_name;
+      info->release_notes = notes->release_notes;
+    }
+    info->patch = -1;
+    info->download_url = artifact.url;
+    info->update_envelope = envelope;
+    return info;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+#endif
 
+std::optional<VersionInfo> ParsePlatformUpdateManifest(
+    const nlohmann::json& manifest, const std::vector<std::string>& platforms) {
+  try {
+    const auto& downloads = manifest.at("downloads");
+    for (const auto& platform : platforms) {
+      if (platform.empty()) continue;
+      const auto entry = downloads.find(platform);
+      if (entry == downloads.end()) continue;
+      auto info = ParseVersionInfo(*entry);
+      if (!info) return std::nullopt;
+      // Ghi chú phát hành ở cấp cao nhất chỉ dùng khi chúng nói về đúng phiên bản này.
+      const auto notes = ParseVersionInfo(manifest);
+      if (notes && notes->version == info->version) {
+        info->release_name = notes->release_name;
+        info->release_notes = notes->release_notes;
+      }
+      return info;
+    }
+  } catch (const std::exception&) {
+  }
+  return std::nullopt;
+}
+
+#ifndef __OHOS__
+std::optional<VersionInfo> ParseDesktopUpdateManifest(
+    const nlohmann::json& manifest, const std::string& platform,
+    const std::string& public_key, const std::string& manual_platform) {
+  if (!public_key.empty() && !platform.empty())
+    return ParseSignedUpdateManifest(manifest, platform, public_key);
+  // Không có khoá công khai thì không xác minh được chữ ký; không nhận ra gói cài (ví dụ bản Linux
+  // tự biên dịch thiếu dấu `package-name`) thì không có nơi để cài. Cả hai trường hợp đều không tự
+  // cài: vẫn báo phiên bản mới của nền tảng này, nhưng chỉ mở trang Releases để tải thủ công.
+  auto info = ParsePlatformUpdateManifest(manifest, {platform, manual_platform});
+  if (info) info->download_url = updater::kReleasePage;
+  return info;
+}
+#endif
+
+std::optional<VersionInfo> CheckUpdate() {
+  httplib::Client cli(updater::kManifestOrigin);
   cli.set_connection_timeout(5);
   cli.set_read_timeout(5);
   cli.set_write_timeout(5);
   cli.set_max_timeout(15000);
-  cli.set_follow_location(true);
+  cli.set_follow_location(false);
 
 #if defined(CPPHTTPLIB_OPENSSL_SUPPORT) && defined(__linux__)
   ConfigureLinuxCaCerts(&cli);
 #endif
 
-  auto res = cli.Get("/version.json");
-  if (res) {
-    if (res->status == 200) {
-      try {
-        const auto manifest = nlohmann::json::parse(res->body);
-        auto info = ParseVersionInfo(manifest);
-        if (info) {
+  constexpr std::size_t kMaxManifestSize = 256 * 1024;
+  std::string body;
+  int status = 0;
+  const auto res = cli.Get(updater::kManifestPath,
+      [&](const httplib::Response& headers) {
+        status = headers.status;
+        return status == 200;
+      },
+      [&](const char* data, std::size_t length) {
+        if (length > kMaxManifestSize - body.size()) return false;
+        body.append(data, length);
+        return true;
+      });
+  if (!res || status != 200) {
+    if (status != 0 && status != 200)
+      LOG_WARN("Fork update manifest HTTP status={}", status);
+    else
+      LogHttpError(res);
+    return std::nullopt;
+  }
+  try {
+    const auto manifest = nlohmann::json::parse(body);
 #if defined(__OHOS__)
-          // A Linux package cannot be installed by Harmony's package manager.
-          // Until the manifest has a Harmony artifact, use the release website.
-          info->download_url = "https://crossdesk.cn";
-#elif defined(__linux__)
-          std::string architecture;
-#if defined(__x86_64__)
-          architecture = "amd64";
-#elif defined(__aarch64__)
-          architecture = "arm64";
-#endif
-          std::error_code error;
-          const auto executable = std::filesystem::read_symlink("/proc/self/exe", error);
-          info->download_url = LinuxUpdateDownloadUrl(
-              manifest, *info, architecture,
-              error ? std::filesystem::path{} : executable.parent_path());
-#endif
-#ifndef __OHOS__
-          const auto platform = updater::PlatformKey(updater::ExecutablePath(),
-#if CROSSDESK_PORTABLE
-                                                     true
+    // Bản HarmonyOS chỉ mở trang release, nên chỉ báo khi tag mới thật sự có gói HarmonyOS.
+    // Phiên bản cấp cao nhất có thể thuộc bản phát hành chỉ có gói macOS, Windows hay Linux.
+    auto info = ParsePlatformUpdateManifest(manifest, {kHarmonyUpdatePlatform});
+    if (info) info->download_url = updater::kReleasePage;
+#elif CROSSDESK_PORTABLE
+    // Bản portable không tự cài đặt mà chỉ mở trang release, nên chỉ báo khi tag mới thật sự có
+    // gói cho hệ điều hành và kiến trúc này. Bản fork chỉ phát hành gói cài đặt, vì vậy khi chưa
+    // có mục portable thì dùng mục gói cài đặt của cùng nền tảng. Bản Linux portable chạy ngoài
+    // gói `.deb` không có dấu `package-name`, nên cuối cùng dùng mục gói thường cùng kiến trúc.
+    const auto executable = updater::ExecutablePath();
+    auto info = ParsePlatformUpdateManifest(
+        manifest, {updater::PlatformKey(executable, true), updater::PlatformKey(executable),
+                   ManualUpdatePlatform()});
+    if (info) info->download_url = updater::kReleasePage;
 #else
-                                                     false
+    const auto platform = updater::PlatformKey(updater::ExecutablePath());
+    auto info = ParseDesktopUpdateManifest(manifest, platform, updater::PublicKey(),
+                                           ManualUpdatePlatform());
 #endif
-          );
-#if !defined(__linux__)
-          info->download_url = updater::DownloadUrl(manifest.dump(), platform, info->version);
-#endif
-#if !CROSSDESK_PORTABLE
-          if (updater::DownloadUrl(manifest.dump(), platform, info->version) != "https://crossdesk.cn")
-            info->update_envelope = updater::SignedDownload(manifest.dump(), platform);
-#endif
-#endif
-          LOG_INFO("Fetched version.json: latest_version={}, releaseDate={}, patch={}",
-                   info->version, info->release_date, info->patch);
-        } else {
-          LOG_WARN("version.json does not contain a valid version");
-        }
-        return info;
-      } catch (const std::exception& e) {
-        LOG_WARN("Failed to parse version.json: {}", e.what());
-        return std::nullopt;
-      }
+    if (info) {
+      LOG_INFO("Fetched fork update manifest: latest_version={}", info->version);
     } else {
-      LOG_WARN("Failed to fetch version.json: HTTP status={}", res->status);
-      return std::nullopt;
+      LOG_WARN("Fork update manifest contains no valid release for this installation");
     }
-  } else {
-    LogHttpError(res);
+    return info;
+  } catch (const std::exception& e) {
+    LOG_WARN("Failed to parse fork update manifest: {}", e.what());
     return std::nullopt;
   }
 }

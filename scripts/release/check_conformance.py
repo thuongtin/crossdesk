@@ -3,7 +3,8 @@
 
 Kiểm tra file thực thi trong từng gói đã build có trỏ đúng kênh của fork
 (feed cập nhật và đường dẫn release của thuongtin/crossdesk, signaling
-crossdesk.ecom.io.vn, khoá công khai Ed25519 của fork) và không còn địa chỉ cập nhật hay signaling của upstream.
+crossdesk.ecom.io.vn, khoá công khai Ed25519 của fork) và không còn địa chỉ cập nhật, signaling
+hay trang issue của upstream.
 Mặc định chỉ cảnh báo; với --strict thì thoát mã khác 0 khi có lỗi.
 """
 
@@ -25,6 +26,9 @@ RELEASE_PATH = "/thuongtin/crossdesk/releases"
 FORK_SIGNALING_HOST = "crossdesk.ecom.io.vn"
 UPSTREAM_SIGNALING_HOST = "api.crossdesk.cn"
 UPSTREAM_UPDATE_ORIGINS = ("https://version.crossdesk.cn", "https://downloads.crossdesk.cn")
+# Nút phản hồi của upstream mở trang issue này và nhắc đính kèm log chẩn đoán; bản fork không được
+# đưa người dùng tới đó. Liên kết mã nguồn kunkundi/crossdesk trong mục giới thiệu vẫn được giữ.
+UPSTREAM_ISSUE_PATH = "/kunkundi/crossdesk/issues"
 LINUX_PACKAGES = ("crossdesk", "crossdesk-virtual-desktop-xfce")
 
 
@@ -54,6 +58,8 @@ def check_binary(label, data, public_key, is_main):
             problems.append(f"{label}: default signaling host {FORK_SIGNALING_HOST} is missing")
         if contains(data, UPSTREAM_SIGNALING_HOST):
             problems.append(f"{label}: upstream signaling host {UPSTREAM_SIGNALING_HOST} is present")
+        if contains(data, UPSTREAM_ISSUE_PATH):
+            problems.append(f"{label}: upstream issue page {UPSTREAM_ISSUE_PATH} is present")
     return problems
 
 

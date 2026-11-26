@@ -298,15 +298,17 @@ APP_PATH="$(find "$VERIFY_DIR/expanded" -type d -name 'CrossDesk.app' -print -qu
 [[ -n "$APP_PATH" ]] || die "CrossDesk.app is missing from $PACKAGE"
 "${PACKAGE_ENV[@]}" bash ./apps/desktop/scripts/macos/verify_app.sh "$APP_PATH" arm64 2>&1 | redact
 
-# macOS Installer so phiên bản theo CFBundleVersion và pkg-ref, nên tag v<base>-<build>-<date>
-# phải thành <base>.<date>.<build> (giống bản 1.7.7.20261125.2 đã phát hành). Kiểm ngay sau
-# khi đóng gói để --publish dừng trước khi tải gì lên, thay vì đợi tới bước sinh feed.
+# macOS Installer so phiên bản theo CFBundleVersion và pkg-ref, mà Apple chỉ đọc tối đa ba số
+# nguyên. pkg_arm64.sh vì vậy ghi tag v<MAJOR>.<MINOR>.<PATCH>-<BUILD>-<ngày hoặc hậu tố> thành
+# <MAJOR>.<MINOR>.<PATCH*1000+BUILD> (v1.7.7-3-20261126 thành 1.7.7003), lớn hơn 1.7.7 mà macOS
+# đọc được từ CFBundleVersion 1.7.7.20261125.x của các bản fork cũ. Kiểm cả bản dry-run, và kiểm
+# ngay sau khi đóng gói để --publish dừng trước khi tải gì lên, thay vì đợi tới bước sinh feed.
 BUNDLE_VERSION="$(plutil -extract CFBundleVersion raw "$APP_PATH/Contents/Info.plist")"
 SHORT_VERSION="$(plutil -extract CFBundleShortVersionString raw "$APP_PATH/Contents/Info.plist")"
-BUNDLE_CHECK="skipped (dry-run version without a date)"
-if [[ "$VERSION" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)-([0-9]{8})$ ]]; then
-    EXPECTED_BUNDLE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[3]}.${BASH_REMATCH[2]}"
-    EXPECTED_SHORT_VERSION="${BASH_REMATCH[1]}"
+BUNDLE_CHECK="skipped (version outside v<MAJOR>.<MINOR>.<PATCH>-<BUILD>-<suffix>)"
+if [[ "$VERSION" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)-(0*[0-9]{1,3})-[0-9A-Za-z]+$ ]]; then
+    EXPECTED_BUNDLE_VERSION="$((10#${BASH_REMATCH[1]})).$((10#${BASH_REMATCH[2]})).$((10#${BASH_REMATCH[3]} * 1000 + 10#${BASH_REMATCH[4]}))"
+    EXPECTED_SHORT_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
     BUNDLE_CHECK="pass"
     if [[ "$BUNDLE_VERSION" != "$EXPECTED_BUNDLE_VERSION" || "$SHORT_VERSION" != "$EXPECTED_SHORT_VERSION" ]] ||
         ! grep -Fq "version=\"$EXPECTED_BUNDLE_VERSION\"" "$VERIFY_DIR/expanded/Distribution"; then

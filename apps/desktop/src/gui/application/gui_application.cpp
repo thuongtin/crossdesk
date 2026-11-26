@@ -104,6 +104,7 @@
 #include "ui/release_notes_text.h"
 #include "ui/ui_localization.h"
 #include "update_checker.h"
+#include "updater/update_source.h"
 #if CROSSDESK_HAS_UPDATER
 #include "updater/update_controller.h"
 #endif
@@ -2139,7 +2140,7 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
   main->on_open_manual_download([this] {
     const auto& latest = update_checker_->latest();
     OpenUrl(latest && !latest->download_url.empty() ? latest->download_url
-                                                   : "https://crossdesk.cn");
+                                                   : updater::kReleasePage);
   });
   main->on_open_download([this, main] {
 #if CROSSDESK_HAS_UPDATER
@@ -2177,24 +2178,8 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
     const std::string link(url);
     if (link.starts_with("https://")) OpenUrl(link);
   });
-  main->on_open_website([this] { OpenUrl("https://crossdesk.cn"); });
-  main->on_open_feedback_github([this, main] {
-    if (!OpenUrl("https://github.com/kunkundi/crossdesk/issues/new/choose")) {
-      main->set_feedback_succeeded(false);
-      main->set_feedback_status(UiText(localization::Literal(
-          "无法打开浏览器，请访问 GitHub 项目页面。", localization_language_index_)));
-    }
-  });
+  main->on_open_update_channel([this] { OpenUrl(updater::kReleasePage); });
   main->on_export_diagnostic_logs([this] { ExportDiagnosticLogs(); });
-  main->on_open_afdian_sponsor([this] {
-    OpenUrl("https://afdian.com/a/kunkundi");
-  });
-  main->on_open_github_sponsor([this] {
-    OpenUrl("https://github.com/sponsors/kunkundi");
-  });
-  main->on_open_kofi_sponsor([this] {
-    OpenUrl("https://ko-fi.com/kunkundi");
-  });
   main->on_dismiss_release_welcome([this] {
     ui_->main->set_release_welcome_open(false);
     // Retry if the initial write failed while the dialog was on screen.
@@ -5682,7 +5667,7 @@ void GuiApplication::PollDiagnosticExport() {
   const char* message = "无法保存诊断包，请选择其他位置重试。";
   switch (result.error) {
     case feedback::ExportError::none:
-      message = "诊断日志已导出，请将 ZIP 附到 GitHub Issue。"; break;
+      message = "诊断日志已导出，请将 ZIP 发送给 CrossDesk 管理员。"; break;
     case feedback::ExportError::no_logs:
       message = "没有找到可导出的日志。"; break;
     case feedback::ExportError::read_failed:

@@ -40,6 +40,7 @@ require_cmd() {
 
 # Kiểm tra chuỗi phiên bản. Bản publish phải đúng dạng v<base>-<build>-<YYYYMMDD>;
 # bản dry-run cho phép hậu tố chữ (ví dụ v1.7.7-3-dryrun) để không bị nhầm với bản thật.
+# BUILD tối đa 999 vì gói macOS gộp nó vào CFBundleVersion dạng <PATCH*1000+BUILD>.
 validate_version() {
     local version="$1" mode="$2"
     if [[ "$mode" == "publish" ]]; then
@@ -49,6 +50,8 @@ validate_version() {
         [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+-[0-9A-Za-z]+$ ]] ||
             die "Version must look like v1.7.7-3-20261126 or v1.7.7-3-dryrun, got: $version"
     fi
+    [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-0*[0-9]{1,3}- ]] ||
+        die "BUILD must be at most 999 to fit the macOS CFBundleVersion, got: $version"
 }
 
 # Tên asset trên GitHub release. Các tên này khớp với ExpectedFilename() trong

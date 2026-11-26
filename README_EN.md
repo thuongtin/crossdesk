@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="CrossDesk logo with the icon on the left and a two-tone wordmark on the right" />
   <p>A lightweight, cross-platform remote desktop for computers, browsers, mobile devices, and terminals, with DeskHub for viewing and controlling multiple desktops.</p>
-  <p><a href="https://www.crossdesk.cn/">Website</a> · <a href="https://github.com/kunkundi/crossdesk/releases">Download</a> · <a href="#build">Build guide</a> · <a href="https://web.crossdesk.cn/">Open Web Client</a> · <a href="README.md">Tiếng Việt</a> · <a href="README_ZH.md">中文</a></p>
+  <p><a href="https://www.crossdesk.cn/">Website</a> · <a href="https://github.com/thuongtin/crossdesk/releases">Download</a> · <a href="#build">Build guide</a> · <a href="https://web.crossdesk.cn/">Open Web Client</a> · <a href="README.md">Tiếng Việt</a> · <a href="README_ZH.md">中文</a></p>
 </div>
 
 <div align="center">
@@ -10,7 +10,7 @@
 
 [![Clients](https://img.shields.io/badge/client-Desktop%20%7C%20Mobile%20%7C%20Web%20%7C%20CLI-2ea44f?style=flat)](#download)
 
-[![Release](https://img.shields.io/github/v/release/kunkundi/crossdesk?style=flat)](https://github.com/kunkundi/crossdesk/releases)
+[![Release](https://img.shields.io/github/v/release/thuongtin/crossdesk?style=flat)](https://github.com/thuongtin/crossdesk/releases)
 [![npm](https://img.shields.io/npm/v/%40chunkdash%2Fcrossdesk-cli?style=flat)](https://www.npmjs.com/package/@chunkdash/crossdesk-cli)
 [![Build](https://img.shields.io/github/actions/workflow/status/kunkundi/crossdesk/build.yml?style=flat&label=build)](https://github.com/kunkundi/crossdesk/actions/workflows/build.yml)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat)](LICENSE)
@@ -68,7 +68,7 @@ CrossDesk connects your computers from desktop, browser, mobile, and terminal cl
 
 ## Download and platform support
 
-Get a package matching your OS and CPU architecture from the [website](https://www.crossdesk.cn/) or [GitHub Releases](https://github.com/kunkundi/crossdesk/releases), or open the [Web Client](https://web.crossdesk.cn/) directly.
+Download the CrossDesk Postcard desktop builds (macOS, Windows, Linux) from the [fork's Releases](https://github.com/thuongtin/crossdesk/releases) and pick the package matching your OS and CPU architecture. Do not install desktop packages from the upstream website or Releases: they replace the Postcard build and drop its internal signaling server. The mobile apps and the [Web Client](https://web.crossdesk.cn/) are still published by the upstream project on its [website](https://www.crossdesk.cn/).
 
 | Platform | Support and installation |
 | --- | --- |
@@ -344,7 +344,7 @@ Host your own signaling and TURN services, then enable them under **Settings →
 - [Architecture and integration](docs/README.md#biên-dịch-và-tích-hợp) (Vietnamese): GUI and connection architecture, CLI / MCP interfaces, and platform support.
 - [Versions and releases](docs/VERSIONING.md) (Vietnamese): component version synchronization, release numbering, and update manifests.
 
-Open **Feedback & suggestions** from the desktop main menu to export diagnostic logs and [report an issue](https://github.com/kunkundi/crossdesk/issues). Include both operating systems, client versions, connection mode, error message, and reproduction steps. Review logs and screenshots for private information before sharing. See [feedback and diagnostic logs](docs/USER_GUIDE_EN.md#feedback).
+Open **Feedback & suggestions** from the desktop main menu to export diagnostic logs, then send the ZIP to your CrossDesk administrator. Include both operating systems, client versions, connection mode, error message, and reproduction steps. Review logs and screenshots for private information before sharing. Do not post CrossDesk Postcard logs or screenshots on the upstream project's issue tracker. See [feedback and diagnostic logs](docs/USER_GUIDE_EN.md#feedback).
 
 <a id="sponsor"></a>
 

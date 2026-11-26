@@ -59,6 +59,22 @@ normalize_app_version() {
 
 APP_VERSION="$(normalize_app_version "$1")"
 
+# macOS Installer so phiên bản theo CFBundleVersion và pkg-ref, mà Apple chỉ đọc tối đa ba số
+# nguyên (số thứ tư trở đi bị bỏ qua). Vì vậy tag v<MAJOR>.<MINOR>.<PATCH>-<BUILD>[-<ngày hoặc
+# hậu tố>] thành <MAJOR>.<MINOR>.<PATCH*1000+BUILD>, ví dụ v1.7.7-3-20261126 thành 1.7.7003.
+# Thứ tự này giống trình cập nhật: so số phiên bản rồi tới BUILD, không xét ngày. BUILD tối đa
+# 999 để không lấn sang PATCH. Chuỗi hiển thị CFBundleShortVersionString chỉ là
+# <MAJOR>.<MINOR>.<PATCH>. Tag khác dạng (bản thử) giữ nguyên chuỗi nhưng bỏ tiền tố "v".
+APP_VERSION_BODY="${APP_VERSION#v}"
+BUNDLE_VERSION_PATTERN='^([0-9]+)\.([0-9]+)\.([0-9]+)-(0*[0-9]{1,3})(-[0-9A-Za-z]+)?$'
+if [[ "$APP_VERSION_BODY" =~ $BUNDLE_VERSION_PATTERN ]]; then
+    BUNDLE_VERSION="$((10#${BASH_REMATCH[1]})).$((10#${BASH_REMATCH[2]})).$((10#${BASH_REMATCH[3]} * 1000 + 10#${BASH_REMATCH[4]}))"
+    BUNDLE_SHORT_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+else
+    BUNDLE_VERSION="$APP_VERSION_BODY"
+    BUNDLE_SHORT_VERSION="$APP_VERSION_BODY"
+fi
+
 APP_BUNDLE="${APP_NAME_UPPER}.app"
 CONTENTS_DIR="${APP_BUNDLE}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
@@ -100,9 +116,9 @@ cat > "${CONTENTS_DIR}/Info.plist" <<EOF
     <key>CFBundleIdentifier</key>
     <string>${IDENTIFIER}</string>
     <key>CFBundleVersion</key>
-    <string>${APP_VERSION}</string>
+    <string>${BUNDLE_VERSION}</string>
     <key>CFBundleShortVersionString</key>
-    <string>${APP_VERSION}</string>
+    <string>${BUNDLE_SHORT_VERSION}</string>
     <key>CFBundleExecutable</key>
     <string>${APP_NAME_UPPER}</string>
     <key>CFBundlePackageType</key>
@@ -176,7 +192,7 @@ EOF
 echo "building pkg..."
 pkgbuild \
   --identifier "${IDENTIFIER}" \
-  --version "${APP_VERSION}" \
+  --version "${BUNDLE_VERSION}" \
   --install-location "/Applications" \
   --component "${APP_BUNDLE}" \
   --scripts build_pkg_scripts \
@@ -202,7 +218,7 @@ cat > build_pkg_temp/Distribution <<EOF
     <choice id="${IDENTIFIER}" title="${INSTALLER_TITLE}" visible="false">
         <pkg-ref id="${IDENTIFIER}"/>
     </choice>
-    <pkg-ref id="${IDENTIFIER}" version="${APP_VERSION}" onConclusion="none">crossdesk-component.pkg</pkg-ref>
+    <pkg-ref id="${IDENTIFIER}" version="${BUNDLE_VERSION}" onConclusion="none">crossdesk-component.pkg</pkg-ref>
 </installer-gui-script>
 EOF
 

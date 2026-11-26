@@ -1,6 +1,6 @@
 # Đồng bộ fork với upstream
 
-Tài liệu này mô tả cách đưa thay đổi mới của upstream `kunkundi/crossdesk` (nhánh `mcp`) vào fork `thuongtin/crossdesk` mà vẫn giữ bản Việt hóa: tiếng Việt là ngôn ngữ mặc định, catalog có cột `vi` đầy đủ, tài liệu chính viết bằng tiếng Việt.
+Tài liệu này mô tả cách đưa thay đổi mới của upstream `kunkundi/crossdesk` (nhánh `mcp`) vào fork `thuongtin/crossdesk` mà vẫn giữ bản Việt hóa: catalog có cột `vi` đầy đủ, tiếng Việt chọn được trong cài đặt (bản cài mới của desktop mặc định English), tài liệu chính viết bằng tiếng Việt.
 
 [Danh mục tài liệu](README.md) · [Bảo trì bản địa hóa](../localization/README.md#bảo-trì-tài-nguyên)
 
@@ -25,7 +25,8 @@ Những việc không được làm:
 - Không dùng nút "Sync fork" trên GitHub hay `gh repo sync`: hai cách này có thể bỏ commit riêng của fork. Luôn merge ở máy local.
 - Không force-push lên `origin/mcp`. Làm trên nhánh mới và chỉ push nhánh đó.
 - Mọi lệnh `gh` có ghi dữ liệu (PR, issue, comment) phải truyền rõ `-R thuongtin/crossdesk`.
-- Không tự merge PR đồng bộ; chủ dự án quyết định.
+- Không dùng GitHub Actions trên fork (tốn phí cho chủ dự án): các workflow đã bị tắt trong cài đặt repo. Không bật lại, không `gh workflow run`, không sửa tệp workflow để lách.
+- Chỉ merge PR đồng bộ khi chủ dự án đã giao việc merge và PR đã qua cổng ở [Quy tắc PR](#quy-tắc-pr).
 
 ## Xem trước bằng script
 
@@ -71,6 +72,34 @@ Lấy hành vi của upstream, rồi chỉ áp lại phần Việt hóa: chuỗi
 Với tệp merge sạch, vẫn rà chuỗi hiển thị mới mà upstream viết thẳng trong code. Chuỗi nào người dùng nhìn thấy thì phải đi qua `L10n.tr` hoặc cơ chế tương đương của nền tảng, và có trong catalog.
 
 Test riêng của fork (ví dụ `apps/android/test/localization_test.py`) có thể hỏng khi upstream đổi cấu trúc helper. Sửa assertion theo cấu trúc mới, giữ nguyên ý định kiểm tra.
+
+### Phần do fork sở hữu
+
+Các tệp và đoạn dưới đây là của fork CrossDesk Postcard. Khi upstream sửa cùng chỗ, lấy logic mới của upstream rồi áp lại phần của fork; tuyệt đối không để máy chủ của upstream (`api.crossdesk.cn`, `version.crossdesk.cn`, `downloads.crossdesk.cn`) hay kênh update của upstream quay lại bản build desktop.
+
+| Tệp | Phần fork giữ |
+| --- | --- |
+| `AGENTS.md` | Toàn bộ tệp: quy tắc cho agent làm việc trên fork. |
+| `apps/desktop/src/updater/update_source.h` | Toàn bộ tệp: manifest trên nhánh `desktop-updates`, trang release và URL asset `github.com/thuongtin/crossdesk/releases/download/v<version>/`, danh sách host redirect được phép. |
+| `apps/desktop/src/version_checker/version_checker.cpp`, `version_checker.h` | Đọc manifest qua `update_source.h`, không gọi `version.crossdesk.cn`. Bản portable (Linux portable thiếu dấu `package-name` dùng mục gói thường cùng kiến trúc, `ManualUpdatePlatform`) và giao diện máy tính trên HarmonyOS (mục `harmony-arm64`, `kHarmonyUpdatePlatform`) chỉ đọc phiên bản trong `downloads` của đúng nền tảng (`ParsePlatformUpdateManifest`), không dùng phiên bản cấp cao nhất. Bản cài đặt có khóa công khai chỉ nhận mục đã ký (`ParseSignedUpdateManifest`); bản tự biên dịch không có khóa, hoặc bản Linux thiếu dấu `package-name` (dùng mục gói thường cùng kiến trúc), cũng chỉ đọc mục của nền tảng đó và chỉ tải thủ công (`ParseDesktopUpdateManifest`). |
+| `apps/desktop/src/updater/update_core.cpp`, `update_core.h` | Chỉ tải gói từ release của fork, không dùng `downloads.crossdesk.cn`. Giữ thời gian tải tối đa 30 phút mỗi lượt như upstream. |
+| `apps/desktop/src/version_checker/linux_update_download.cpp` | Tên asset `.deb` lấy qua `updater::ReleaseAssetUrl`, khớp tên asset do `scripts/release` phát hành. |
+| `apps/desktop/src/config_center/config_center.h`, `config_center.cpp` | Signaling mặc định `crossdesk.ecom.io.vn` (hằng `kDefaultSignalServerHost` trong `.cpp`, giữ con trỏ `volatile` để chuỗi nằm liền trong binary Linux); cài đặt mới và giá trị ngôn ngữ hỏng mặc định English. |
+| `apps/desktop/src/gui/runtime/runtime_state.h` | Không có giá trị mặc định `api.crossdesk.cn` / `9099`. |
+| `apps/desktop/scripts/macos/pkg_arm64.sh` | Khối chuẩn hóa phiên bản: tag `v<MAJOR>.<MINOR>.<PATCH>-<BUILD>-<YYYYMMDD>` thành `CFBundleVersion` và `pkg-ref` dạng `<MAJOR>.<MINOR>.<PATCH*1000+BUILD>` (tối đa ba số nguyên, ví dụ `1.7.7003`), `CFBundleShortVersionString` là `<MAJOR>.<MINOR>.<PATCH>`. `scripts/release/build_macos.sh`, `make_release_feed.py` và `make_fork_update_manifest.py` kiểm cùng giá trị. |
+| `apps/desktop/scripts/macos/make_fork_update_manifest.py`, `apps/desktop/docs/fork-self-update.md` | Toàn bộ tệp: manifest ký Ed25519 và quy tắc kênh update của fork. |
+| Giao diện Postcard: `apps/desktop/src/gui/ui/postcard_controls.slint`, `main_window.slint`, `group_filter.slint`, `gallery_menu_button.slint`, `workbench_controls.slint` | Phong cách Postcard (`PostcardStyle`), tiêu đề "Kết nối với thiết bị", bố cục danh sách thiết bị. |
+| `apps/desktop/src/gui/ui/about_panel.slint`, `crossdesk_ui.slint`, `ui_localization.h`, `apps/desktop/src/gui/application/gui_application.cpp` | Không có dải tài trợ của upstream (`sponsor_strip.slint` đã xóa); liên kết "website" và tải thủ công mở trang release của fork. |
+| `apps/desktop/src/gui/ui/feedback_panel.slint`, `main_window.slint`, `ui_localization.h`, `gui_application.cpp` | Bảng phản hồi không có nút GitHub (upstream mở `kunkundi/crossdesk/issues`), chỉ giữ xuất nhật ký chẩn đoán; lời nhắc và thông báo xuất xong bảo người dùng gửi tệp ZIP cho quản trị viên CrossDesk (hai key mới trong `localization/catalog.json`). Cổng conformance trượt nếu binary còn đường dẫn issue của upstream. |
+| `README.md`, `README_EN.md`, `README_ZH.md`, `docs/FAQ.md`, `docs/UPDATER.md`, `localization/README.md`, `apps/mcp/README.md` | Liên kết tải bản máy tính và badge Release trỏ về Releases của fork; báo lỗi và gửi nhật ký cho quản trị viên CrossDesk, không có liên kết `kunkundi/crossdesk/issues`; `docs/UPDATER.md` mô tả nguồn cập nhật và origin tải gói của fork. |
+| `apps/cli/package.json` | Trường `bugs` trỏ tới mục tài liệu và phản hồi trong `README_EN.md` của fork (báo lỗi cho quản trị viên CrossDesk), không trỏ tới `kunkundi/crossdesk/issues`; `repository` và `homepage` vẫn ghi nguồn upstream. Gói npm của CLI chỉ phát hành từ upstream. |
+| `apps/desktop/src/thumbnail/thumbnail.cpp`, `thumbnail.h` | Ảnh xem trước giữ trọn khung hình (fit), không cắt (cover). |
+| `apps/desktop/tests/slint_popup_render_test.cpp`, `slint_ui_smoke_test.cpp`, `version_checker_test.cpp` | Test cho giao diện Postcard, việc không còn dải tài trợ và kênh update của fork. |
+| `localization/catalog.json` | Key `连接到设备`, bản `en` "This device" (`本桌面`) và "Recent Devices" (`近期连接`). Cột `vi` phải đầy đủ; English vẫn là mặc định cho bản cài mới của desktop. |
+| `scripts/release/*`, `docs/RELEASE.md` | Quy trình phát hành ba nền tảng, cổng `check_conformance.py` và public key ký manifest. |
+| `scripts/sync-upstream.sh`, `scripts/merge_localization_catalog.py`, tài liệu này | Công cụ và quy trình đồng bộ. |
+
+Sau mỗi lần đồng bộ, build desktop rồi chạy cổng `scripts/release/check_conformance.py` trên binary (xem `docs/RELEASE.md`): cổng này báo lỗi khi binary thiếu đường dẫn manifest hay signaling của fork, hoặc còn host hay trang issue của upstream.
 
 ### Catalog bản địa hóa
 
@@ -152,7 +181,7 @@ Quy tắc liên kết:
 
 - Quét ký tự Han trong các tệp đã đổi: mọi dòng còn chữ Han phải là key catalog, dữ liệu locale, fixture test hoặc tên thương hiệu, không phải chuỗi giao diện hay bình luận chưa dịch.
 - Kiểm tra liên kết và anchor Markdown trong các tệp tài liệu đã đổi.
-- Nếu máy có đủ công cụ, chạy bản build desktop bằng `xmake` (xem [Hướng dẫn biên dịch](BUILD.md)). Không có thì ghi rõ trong PR và dựa vào CI của fork.
+- Build desktop đầy đủ trên cả ba máy của dự án (macOS arm64, Windows x64, Linux x64 trong WSL), ví dụ bằng chế độ dry-run của `scripts/release/release.sh <version> --ref <commit>`, hoặc `xmake` theo [Hướng dẫn biên dịch](BUILD.md).
 
 ## Quy tắc PR
 
@@ -166,7 +195,11 @@ Quy tắc liên kết:
 
   `baseRepository` phải là `thuongtin/crossdesk`. PR mở nhầm lên `kunkundi/crossdesk` là lỗi nghiêm trọng, cần đóng ngay.
 - Tiêu đề viết bằng tiếng Anh. Phần mô tả nêu dải commit upstream, cách giải quyết từng nhóm xung đột, các chuỗi mới đã dịch, kết quả build và test, và những điểm còn chưa chắc chắn.
-- Theo dõi CI (`Build and Release`, `CLI native builds and npm packages`, `MCP package`, `Check component versions`) và review cho tới khi PR sẵn sàng. Không tự merge.
+- Cổng merge thay cho CI (check CI bị hủy là bình thường):
+  - Codex review sạch trên đúng head, không còn thread review chưa giải quyết;
+  - build desktop đầy đủ trên macOS arm64, Windows x64 và Linux x64 (WSL) cho đúng head sẽ merge;
+  - một comment trên PR liệt kê từng máy, commit và kết quả pass/fail, không kèm tên người, Team ID hay bí mật.
+- Merge bằng `gh pr merge <số PR> -R thuongtin/crossdesk --merge` (không squash), chỉ thêm `--admin` khi một check bắt buộc chặn merge.
 
 ## Lịch sử đồng bộ
 
