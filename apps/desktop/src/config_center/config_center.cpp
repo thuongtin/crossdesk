@@ -113,7 +113,8 @@ int ConfigCenter::Load() {
       ini_->GetLongValue(section_, "language", static_cast<long>(language_));
   if (language_value < static_cast<long>(LANGUAGE::CHINESE) ||
       language_value > static_cast<long>(LANGUAGE::VIETNAMESE)) {
-    language_ = LANGUAGE::VIETNAMESE;
+    // Giá trị hỏng hoặc ngoài phạm vi quay về English, như cài đặt mới.
+    language_ = LANGUAGE::ENGLISH;
   } else {
     language_ = static_cast<LANGUAGE>(language_value);
   }

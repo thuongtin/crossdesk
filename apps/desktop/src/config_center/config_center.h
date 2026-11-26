@@ -133,7 +133,8 @@ class ConfigCenter {
   std::unique_ptr<IniStorage> ini_;
   const char* section_ = "Settings";
 
-  LANGUAGE language_ = LANGUAGE::VIETNAMESE;
+  // Bản CrossDesk Postcard mặc định English cho cài đặt mới; tiếng Việt vẫn chọn được.
+  LANGUAGE language_ = LANGUAGE::ENGLISH;
   CONNECTION_MODE connection_mode_ = CONNECTION_MODE::DEVICE_ID;
   bool enable_ip_direct_ = true;
   std::atomic<bool> desktop_realtime_rate_control_{true};

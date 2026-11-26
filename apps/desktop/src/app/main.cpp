@@ -388,7 +388,9 @@ int main(int argc, char* argv[]) {
     CSimpleIniA config;
     config.SetUnicode(true);
     config.LoadFile((paths.GetCachePath() / "config.ini").string().c_str());
-    console.SetLanguage(static_cast<int>(config.GetLongValue("Settings", "language", 11)));
+    // Chưa có cấu hình thì in trợ giúp bằng English, giống mặc định của cài đặt mới.
+    console.SetLanguage(static_cast<int>(config.GetLongValue(
+        "Settings", "language", static_cast<long>(crossdesk::ConfigCenter::LANGUAGE::ENGLISH))));
     std::cout << console.Text("console_cli_help");
     return 0;
   }
