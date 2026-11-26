@@ -115,7 +115,7 @@ inline const wchar_t* GetWindowsLocalizedLabel(
     int language_index, const char* key, const wchar_t* fallback,
     std::vector<std::wstring>& cache) {
   const int normalized_index = detail::ClampLanguageIndex(language_index);
-  std::wstring& cached_text = cache[detail::TranslationColumn(normalized_index)];
+  std::wstring& cached_text = cache[TranslationColumn(normalized_index)];
   if (!cached_text.empty()) {
     return cached_text.c_str();
   }
