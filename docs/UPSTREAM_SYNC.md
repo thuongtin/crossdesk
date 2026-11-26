@@ -1,6 +1,6 @@
 # Đồng bộ fork với upstream
 
-Tài liệu này mô tả cách đưa thay đổi mới của upstream `kunkundi/crossdesk` (nhánh `mcp`) vào fork `thuongtin/crossdesk` mà vẫn giữ bản Việt hóa: tiếng Việt là ngôn ngữ mặc định, catalog có cột `vi` đầy đủ, tài liệu chính viết bằng tiếng Việt.
+Tài liệu này mô tả cách đưa thay đổi mới của upstream `kunkundi/crossdesk` (nhánh `mcp`) vào fork `thuongtin/crossdesk` mà vẫn giữ bản Việt hóa: catalog có cột `vi` đầy đủ, tiếng Việt chọn được trong cài đặt (bản cài mới của desktop mặc định English), tài liệu chính viết bằng tiếng Việt.
 
 [Danh mục tài liệu](README.md) · [Bảo trì bản địa hóa](../localization/README.md#bảo-trì-tài-nguyên)
 
@@ -92,7 +92,7 @@ Các tệp và đoạn dưới đây là của fork CrossDesk Postcard. Khi upst
 | `apps/desktop/src/gui/ui/about_panel.slint`, `crossdesk_ui.slint`, `ui_localization.h`, `apps/desktop/src/gui/application/gui_application.cpp` | Không có dải tài trợ của upstream (`sponsor_strip.slint` đã xóa); liên kết "website" và tải thủ công mở trang release của fork. |
 | `apps/desktop/src/thumbnail/thumbnail.cpp`, `thumbnail.h` | Ảnh xem trước giữ trọn khung hình (fit), không cắt (cover). |
 | `apps/desktop/tests/slint_popup_render_test.cpp`, `slint_ui_smoke_test.cpp`, `version_checker_test.cpp` | Test cho giao diện Postcard, việc không còn dải tài trợ và kênh update của fork. |
-| `localization/catalog.json` | Key `连接到设备`, bản `en` "This device" (`本桌面`) và "Recent Devices" (`近期连接`). Tiếng Việt vẫn là mặc định. |
+| `localization/catalog.json` | Key `连接到设备`, bản `en` "This device" (`本桌面`) và "Recent Devices" (`近期连接`). Cột `vi` phải đầy đủ; English vẫn là mặc định cho bản cài mới của desktop. |
 | `scripts/release/*`, `docs/RELEASE.md` | Quy trình phát hành ba nền tảng, cổng `check_conformance.py` và public key ký manifest. |
 | `scripts/sync-upstream.sh`, `scripts/merge_localization_catalog.py`, tài liệu này | Công cụ và quy trình đồng bộ. |
 

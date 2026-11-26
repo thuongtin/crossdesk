@@ -18,7 +18,7 @@
 
 ## Chọn ngôn ngữ
 
-- Bản cài đặt mới của ứng dụng máy tính phiên bản tiếng Việt mặc định chọn rõ tiếng Việt; bạn cũng có thể chỉ định ngôn ngữ hoặc “Theo hệ thống” trong cài đặt. Lựa chọn ngôn ngữ trong cấu hình hiện có được giữ: ý nghĩa 0–9 không đổi, 10 vẫn là “Theo hệ thống”, 11 là tiếng Việt (cột 10 trong bảng chuỗi, đếm từ 0).
+- Bản cài đặt mới của ứng dụng máy tính mặc định dùng tiếng Anh, kể cả khi giá trị ngôn ngữ đã lưu bị hỏng; tiếng Việt được dịch đầy đủ, bạn có thể chọn tiếng Việt, ngôn ngữ khác hoặc “Theo hệ thống” trong cài đặt. Lựa chọn ngôn ngữ trong cấu hình hiện có được giữ: ý nghĩa 0–9 không đổi, 10 vẫn là “Theo hệ thống”, 11 là tiếng Việt (cột 10 trong bảng chuỗi, đếm từ 0).
 - Thiết bị di động dùng ngôn ngữ hệ thống; Android và iOS cũng hỗ trợ cài đặt ngôn ngữ ứng dụng do hệ điều hành cung cấp.
 - Biến thể vùng khớp với ngôn ngữ tương ứng; tiếng Trung ưu tiên nhận diện `Hans` / `Hant`, Đài Loan, Hồng Kông, Ma Cao dùng phồn thể. Các biến thể vùng tiếng Bồ Đào Nha dùng chung bản dịch tiếng Bồ Đào Nha Brazil.
 - Nền tảng hỗ trợ danh sách ngôn ngữ ưu tiên của hệ thống dùng ngôn ngữ khả dụng trong danh sách; nếu không khớp thì dùng tiếng Việt. Tài nguyên mặc định Android là tiếng Việt, tiếng Anh dùng `values-en`; vùng phát triển iOS là `vi`; HarmonyOS cũng dùng tiếng Việt khi không cung cấp ngôn ngữ hoặc đọc thất bại. Mở lại ứng dụng sau khi đổi ngôn ngữ hệ thống để bảo đảm mọi trang và chuỗi trạng thái đều cập nhật.

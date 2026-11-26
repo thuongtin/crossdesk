@@ -185,7 +185,7 @@ Nhấn **☰ → Cài đặt** ở góc trên bên phải cửa sổ chính, chu
 
 | Cài đặt | Giải thích |
 | --- | --- |
-| Ngôn ngữ | Bản cài đặt mới của phiên bản này mặc định chọn Tiếng Việt. Bạn có thể chọn thủ công một trong 11 ngôn ngữ: tiếng Trung giản thể, tiếng Anh, tiếng Nga, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Đức, tiếng Pháp, tiếng Tây Ban Nha, tiếng Bồ Đào Nha Brazil và Tiếng Việt, hoặc chọn “Theo hệ thống”. Nếu không có ngôn ngữ hệ thống phù hợp, ứng dụng dùng tiếng Việt; lựa chọn trong cấu hình hiện có được giữ nguyên. Xem [tài liệu bản địa hóa](../localization/README.md) |
+| Ngôn ngữ | Bản cài đặt mới mặc định dùng tiếng Anh. Bạn có thể chọn thủ công một trong 11 ngôn ngữ: tiếng Trung giản thể, tiếng Anh, tiếng Nga, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Đức, tiếng Pháp, tiếng Tây Ban Nha, tiếng Bồ Đào Nha Brazil và Tiếng Việt, hoặc chọn “Theo hệ thống”. Ở chế độ “Theo hệ thống”, nếu không có ngôn ngữ hệ thống phù hợp, ứng dụng dùng tiếng Việt; lựa chọn trong cấu hình hiện có được giữ nguyên. Xem [tài liệu bản địa hóa](../localization/README.md) |
 | Codec video | H.264 / AV1; H.264 tự ưu tiên mã hóa và giải mã phần cứng, chuyển về phần mềm nếu không khả dụng hoặc khởi tạo thất bại; AV1 trên máy tính dùng mã hóa và giải mã phần mềm |
 | Bật kết nối IP | Mặc định bật; lưu sẽ bật/tắt IP trực tiếp ngay. Tắt sẽ ngắt phiên IP, dừng lắng nghe và ẩn nút chế độ cửa sổ chính, giữ trạng thái sau khi khởi động lại |
 | Buộc kết nối qua relay | Khi tắt, tự chọn phương thức kết nối, cho phép P2P và chuyển sang TURN relay khi cần; khi bật, chỉ kết nối qua relay |
