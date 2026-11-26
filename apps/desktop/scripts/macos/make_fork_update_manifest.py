@@ -22,14 +22,27 @@ SIGNER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SIGNER)
 
 
+def macos_bundle_version(version):
+    """CFBundleVersion mà pkg_arm64.sh ghi cho MAJOR.MINOR.PATCH-BUILD-YYYYMMDD.
+
+    Apple chỉ đọc tối đa ba số nguyên, nên BUILD gộp vào số cuối thành PATCH * 1000 + BUILD
+    (1.7.7-3-20261126 thành 1.7.7003). Giống trình cập nhật, thứ tự không xét ngày.
+    """
+    spec = SIGNER.version_fields(version)
+    parts = [int(part) for part in spec["base"].split(".")]
+    if len(parts) != 3 or not spec["patch"] or not spec["date"]:
+        raise ValueError("Expected a version of the form MAJOR.MINOR.PATCH-BUILD-YYYYMMDD")
+    build = int(spec["patch"])
+    if build > 999:
+        raise ValueError(f"BUILD {build} does not fit the macOS CFBundleVersion (at most 999)")
+    return f"{parts[0]}.{parts[1]}.{parts[2] * 1000 + build}"
+
+
 def check_package(package, version, public_key):
     expected = f"crossdesk-macos-arm64-v{version}.pkg"
     if package.name != expected:
         raise ValueError(f"Package must be named {expected}")
-    spec = SIGNER.version_fields(version)
-    if not spec["patch"] or not spec["date"]:
-        raise ValueError("Expected a version of the form MAJOR.MINOR.PATCH-BUILD-YYYYMMDD")
-    wanted_bundle_version = f'{spec["base"]}.{spec["date"]}.{spec["patch"]}'
+    wanted_bundle_version = macos_bundle_version(version)
     subprocess.run(["/usr/sbin/spctl", "--assess", "--type", "install", str(package)], check=True)
     subprocess.run(["xcrun", "stapler", "validate", str(package)], check=True, stdout=subprocess.DEVNULL)
     with tempfile.TemporaryDirectory(prefix="crossdesk-fork-update-") as directory:

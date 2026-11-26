@@ -151,12 +151,18 @@ dung khoá vào đây. Có thể trỏ tới file khác bằng `CROSSDESK_RELEAS
 - Tag và tên asset: `v<MAJOR.MINOR.PATCH>-<BUILD>-<YYYYMMDD>`, ví dụ `v1.7.7-3-20261126`.
 - Giữ nguyên phiên bản ngữ nghĩa thì **tăng `BUILD`** mỗi lần phát hành; đổi ngày đơn thuần
   không làm bản mới "mới hơn" với trình cập nhật. Không bao giờ dùng lại tag hay ghi đè asset đã
-  công bố, kể cả khi release lỗi: phát hành số build mới.
+  công bố, kể cả khi release lỗi: phát hành số build mới. `BUILD` tối đa 999 (xem
+  `CFBundleVersion` bên dưới); `release.sh` từ chối số lớn hơn.
 - Phiên bản nhúng trong app (`CROSSDESK_VERSION`) và phiên bản trong feed bỏ tiền tố `v`
   (`1.7.7-3-20261126`), giống các bản fork đã phát hành.
-- Gói macOS phải có `CFBundleVersion` dạng `<MAJOR.MINOR.PATCH>.<YYYYMMDD>.<BUILD>` (ví dụ
-  `1.7.7.20261125.2` của bản `v1.7.7-2-20261125`) để macOS Installer nâng cấp đúng và để
-  `make_release_feed.py` chấp nhận. `--publish` dừng trước khi tạo release nếu giá trị này sai.
+- Gói macOS phải có `CFBundleVersion` và `pkg-ref` dạng `<MAJOR>.<MINOR>.<PATCH*1000+BUILD>`
+  (ví dụ `1.7.7003` của bản `v1.7.7-3-20261126`), còn `CFBundleShortVersionString` là
+  `<MAJOR.MINOR.PATCH>`. Apple chỉ đọc tối đa ba số nguyên của `CFBundleVersion`, nên giá trị
+  này mã hoá đúng thứ tự của trình cập nhật (số phiên bản rồi tới `BUILD`, không xét ngày) để
+  macOS Installer nâng cấp đúng. `v1.7.7-1` và `v1.7.7-2` từng ghi `1.7.7.20261125.<BUILD>`,
+  mà macOS chỉ đọc thành `1.7.7`, nhỏ hơn `1.7.7003`. `make_release_feed.py` và
+  `make_fork_update_manifest.py` kiểm giá trị này; `--publish` dừng trước khi tạo release nếu
+  giá trị sai.
 - Dry-run có thể dùng chữ thay cho ngày, ví dụ `v1.7.7-3-dryrun`; dạng này không bao giờ được
   publish (trình cập nhật chỉ chấp nhận phiên bản gồm chữ số, dấu chấm và gạch ngang).
 
@@ -204,8 +210,8 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
   đợi.
 - `gate/macos-signing.txt`: trạng thái ký (kèm identity còn thiếu), kết quả kiểm Team ID,
   notarize và cách notarize, `CFBundleVersion`, `CFBundleShortVersionString` và kết quả kiểm
-  bundle version (bỏ qua với phiên bản dry-run không có ngày; trượt khi `--publish` thì dừng ngay
-  sau khi đóng gói). Không chứa họ tên hay Team ID.
+  bundle version (kiểm cả bản dry-run, vì hậu tố ngày hay chữ không ảnh hưởng tới giá trị mong
+  đợi; trượt khi `--publish` thì dừng ngay sau khi đóng gói). Không chứa họ tên hay Team ID.
 - `gate/windows-signing.txt`: trạng thái ký gói Windows.
 - `gate/linux/apt-simulate-*.txt`: kết quả giả lập cài đặt trên Ubuntu 20.04.
 - `logs/<platform>.log`: log đầy đủ từng nền tảng. `FAILED_PLATFORMS.txt` xuất hiện nếu có nền
