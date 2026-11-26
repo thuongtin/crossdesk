@@ -15,7 +15,8 @@
   `v1.7.7-3` thủ công một lần, sau đó update tự động chạy lại bình thường.
 - Bản phát hành ba nền tảng (macOS arm64, Windows x64, Linux amd64) và manifest nhiều nền tảng được
   tạo bằng `scripts/release/release.sh`, xem `docs/RELEASE.md`. Tài liệu này giữ các quy tắc nền của
-  kênh update; quy trình thủ công bên dưới chỉ dùng khi cần phát hành riêng macOS.
+  kênh update. Cần phát hành riêng macOS thì ưu tiên `scripts/release/release.sh <version> --platforms macos`;
+  quy trình thủ công bên dưới chỉ là dự phòng.
 - Bản .6 hoặc cũ hơn phải cài bootstrap có kênh mới một lần. Từ đó, app kiểm tra theo kênh fork,
   chỉ chấp nhận package đúng nền tảng, đúng phiên bản, chữ ký Ed25519, kích thước và SHA-256.
   macOS vẫn yêu cầu người dùng xác nhận nâng cấp và có thể hỏi quyền quản trị.
@@ -25,11 +26,13 @@
 1. Build bản mới với phiên bản trong app dạng `MAJOR.MINOR.PATCH-BUILD-YYYYMMDD` và public key cố
    định. Số `BUILD` phải tăng nếu giữ cùng phiên bản ngữ nghĩa; đổi ngày đơn thuần không tăng version.
    Ký Developer ID, notarize và staple gói. Giữ signaling mặc định `crossdesk.ecom.io.vn:9099`.
-2. Sinh manifest trên máy ký, không truyền nội dung private key trên command line:
+2. Sinh manifest trên máy ký, không truyền nội dung private key trên command line. `$CURRENT_FEED` là
+   bản `crossdesk-desktop-update.json` đang có trên nhánh `desktop-updates`: script chỉ thay mục
+   `macos-arm64`, giữ nguyên mục Windows và Linux, và từ chối phiên bản không mới hơn feed hiện tại.
 
    ```bash
    python3 apps/desktop/scripts/macos/make_fork_update_manifest.py \
-     --package "$PACKAGE" --tag "$TAG" --notes "$RELEASE_NOTES" \
+     --package "$PACKAGE" --tag "$TAG" --notes "$RELEASE_NOTES" --current "$CURRENT_FEED" \
      --public-key "$PUBLIC_KEY_FILE" --private-key "$PRIVATE_KEY_FILE" \
      --output crossdesk-desktop-update.json
    ```

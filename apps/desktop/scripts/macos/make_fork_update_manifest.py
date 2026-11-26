@@ -61,11 +61,25 @@ def check_package(package, version, public_key):
                 raise ValueError("Package fork channel or default signaling hostname is wrong")
 
 
+def load_current_feed(path, version):
+    """Đọc feed đang phát hành để giữ mục của Windows và Linux, và chặn phát hành lùi phiên bản."""
+    current = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(current, dict) or not isinstance(current.get("downloads"), dict):
+        raise ValueError("Current feed must contain a downloads object")
+    current_order = SIGNER.release_order(current)
+    if current_order is not None and SIGNER.release_order(SIGNER.version_info(version)) <= current_order:
+        raise ValueError(f"v{version} is not newer than the published feed version "
+                         f"{current.get('latest_version') or current.get('version')}")
+    return current
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", required=True, type=Path)
     parser.add_argument("--tag", required=True)
     parser.add_argument("--notes", required=True, type=Path)
+    parser.add_argument("--current", required=True, type=Path,
+                        help="current crossdesk-desktop-update.json from the desktop-updates branch")
     parser.add_argument("--public-key", required=True, type=Path)
     parser.add_argument("--private-key", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
@@ -79,6 +93,7 @@ def main():
     if not args.tag.startswith("v") or args.tag.startswith("vv"):
         parser.error("Expected a tag in the form v<version>")
     version = args.tag[1:]
+    current = load_current_feed(args.current, version)
     package = args.package.resolve()
     check_package(package, version, public_key)
     with package.open("rb") as source:
@@ -92,18 +107,23 @@ def main():
         json.dumps(payload, sort_keys=True, separators=(",", ":")),
         args.private_key.read_text(), public_key)
     info = SIGNER.version_info(version)
+    # Feed dùng chung cho mọi nền tảng: chỉ ghi đè mục macOS, giữ nguyên mục Windows và Linux đang có.
+    downloads = dict(current["downloads"])
+    downloads[PLATFORM] = {
+        "version": version, "releaseDate": info["releaseDate"],
+        "filename": payload["filename"], "url": payload["url"],
+        "update": signed,
+    }
     manifest = dict(info, releaseName=f"CrossDesk {args.tag}",
                     releaseNotes=args.notes.read_text(),
                     tagName=args.tag,
-                    downloads={PLATFORM: {
-                        "version": version, "releaseDate": info["releaseDate"],
-                        "filename": payload["filename"], "url": payload["url"],
-                        "update": signed,
-                    }})
+                    downloads=downloads)
     with args.output.open("x", encoding="utf-8") as destination:
         json.dump(manifest, destination, ensure_ascii=False, indent=2)
         destination.write("\n")
-    print(f"Prepared {args.output.name}: {args.tag} {PLATFORM} SHA256={digest}")
+    kept = sorted(set(downloads) - {PLATFORM})
+    print(f"Prepared {args.output.name}: {args.tag} {PLATFORM} SHA256={digest}; "
+          f"kept previous entries: {', '.join(kept) or 'none'}")
 
 
 if __name__ == "__main__":
