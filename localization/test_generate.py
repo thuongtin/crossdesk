@@ -137,6 +137,12 @@ int main() {
   assert(Literal("连接", 1) == "Connect");
   assert(Literal("unknown", 11).empty());
   assert(GetSupportedLanguages().back().display_name == "Tiếng Việt");
+  assert(SupportedLanguage(kVietnameseLanguage).code == "vi");
+  assert(SupportedLanguage(-1).code == "vi");
+  assert(SupportedLanguage(100).code == "vi");
+  assert(SupportedLanguage(1).code == "en-US");
+  assert(SupportedLanguage(9).code == "pt-BR");
+  assert(SupportedLanguage(kSystemLanguage).code == SupportedLanguage(SystemLanguage()).code);
 }
 '''
         with tempfile.TemporaryDirectory() as directory:
@@ -150,6 +156,44 @@ int main() {
             subprocess.run([compiler, '-std=c++17', '-I' + str(generate.ROOT / 'apps/desktop/src/gui/assets/localization'),
                             str(harness), '-o', str(executable), *frameworks], check=True)
             subprocess.run([str(executable)], check=True)
+
+    def test_desktop_windows_branch_compiles(self):
+        # Nhánh `_WIN32` của header chỉ được biên dịch trên Windows; dựng một Windows.h tối thiểu
+        # để bắt lỗi tra cứu tên (ví dụ gọi nhầm `detail::TranslationColumn`) trên mọi nền tảng.
+        stub = r"""
+#pragma once
+typedef unsigned long ULONG;
+typedef unsigned long DWORD;
+#define MUI_LANGUAGE_NAME 0x8
+#define CP_UTF8 65001
+int GetUserPreferredUILanguages(DWORD flags, ULONG* count, wchar_t* buffer, ULONG* length);
+int MultiByteToWideChar(unsigned code_page, DWORD flags, const char* source, int source_length,
+                        wchar_t* target, int target_length);
+"""
+        source = r"""
+#include <cstddef>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#define _WIN32 1
+#include "localization.h"
+int main() {
+  using namespace crossdesk::localization;
+  return GetExitProgramLabel(kVietnameseLanguage) && GetSettingsLabel(kSystemLanguage) &&
+         GetShowMainWindowLabel(1) ? 0 : 1;
+}
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            (directory / 'Windows.h').write_text(stub, encoding='utf-8')
+            harness = directory / 'windows_branch.cpp'
+            harness.write_text(source, encoding='utf-8')
+            compiler = shutil.which('clang++') or shutil.which('g++')
+            subprocess.run([compiler, '-std=c++17', '-fsyntax-only', '-I' + str(directory),
+                            '-I' + str(generate.ROOT / 'apps/desktop/src/gui/assets/localization'),
+                            str(harness)], check=True)
 
 
 if __name__ == '__main__':

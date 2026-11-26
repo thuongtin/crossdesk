@@ -145,6 +145,13 @@ def main():
 
     base_ref = args.base or git('merge-base', args.ours, args.theirs).strip()
     base, ours, theirs = (load_catalog(ref) for ref in (base_ref, args.ours, args.theirs))
+    # Script chỉ biết merge năm section này; section mới ở bất kỳ phía nào sẽ bị bỏ mất âm thầm
+    # nếu không dừng lại ở đây, nên phải kiểm tra trên catalog nguồn chứ không phải bản đã merge.
+    known_sections = {'languages', 'strings', 'desktop', 'slint', 'platforms'}
+    for side, catalog in (('base', base), ('ours', ours), ('theirs', theirs)):
+        unknown_sections = sorted(set(catalog) - known_sections)
+        if unknown_sections:
+            raise SystemExit(f'unknown catalog section in {side}: {", ".join(unknown_sections)}')
 
     conflicts = []
     string_keys = merge_sequence(list(base['strings']), list(ours['strings']), list(theirs['strings']))
@@ -164,8 +171,6 @@ def main():
             for name in merge_sequence(list(base['platforms']), list(ours['platforms']), list(theirs['platforms']))
         },
     }
-    for key in [k for k in merged if k not in ('languages', 'strings', 'desktop', 'slint', 'platforms')]:
-        raise SystemExit(f'unknown catalog section: {key}')
 
     referenced = set(merged['slint']) | set(merged['desktop'].values())
     for keys in merged['platforms'].values():

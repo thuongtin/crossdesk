@@ -3396,7 +3396,7 @@ void GuiApplication::UpdateLocalization() {
         : "开机自启需要安装版 Release；便携版和 Debug 不支持无人值守服务。", language)));
   }
 #endif
-  about::SetInstalledReleaseNotes(ui_->main, localization::GetSupportedLanguages()[language].code);
+  about::SetInstalledReleaseNotes(ui_->main, localization::SupportedLanguage(language).code);
   ui_localization::ApplyMainWindowStrings(ui_->main, language);
   ui_localization::ApplyServerStrings(ui_->main, language);
   ui_localization::ApplyStreamWindowStrings(ui_->main, language);
