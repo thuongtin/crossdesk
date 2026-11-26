@@ -84,7 +84,7 @@ Các tệp và đoạn dưới đây là của fork CrossDesk Postcard. Khi upst
 | `apps/desktop/src/version_checker/version_checker.cpp`, `version_checker.h` | Đọc manifest qua `update_source.h`, không gọi `version.crossdesk.cn`. |
 | `apps/desktop/src/updater/update_core.cpp`, `update_core.h` | Chỉ tải gói từ release của fork, không dùng `downloads.crossdesk.cn`. |
 | `apps/desktop/src/version_checker/linux_update_download.cpp` | Tên asset `.deb` lấy qua `updater::ReleaseAssetUrl`, khớp tên asset do `scripts/release` phát hành. |
-| `apps/desktop/src/config_center/config_center.h` | Signaling mặc định `crossdesk.ecom.io.vn`. |
+| `apps/desktop/src/config_center/config_center.h`, `config_center.cpp` | Signaling mặc định `crossdesk.ecom.io.vn` (hằng `kDefaultSignalServerHost` trong `.cpp`, giữ con trỏ `volatile` để chuỗi nằm liền trong binary Linux); cài đặt mới và giá trị ngôn ngữ hỏng mặc định English. |
 | `apps/desktop/src/gui/runtime/runtime_state.h` | Không có giá trị mặc định `api.crossdesk.cn` / `9099`. |
 | `apps/desktop/scripts/macos/pkg_arm64.sh` | Khối chuẩn hóa phiên bản: tag `v<base>-<build>-<YYYYMMDD>` thành `CFBundleVersion` và `pkg-ref` dạng `<base>.<YYYYMMDD>.<build>`, `CFBundleShortVersionString` là `<base>`. |
 | `apps/desktop/scripts/macos/make_fork_update_manifest.py`, `apps/desktop/docs/fork-self-update.md` | Toàn bộ tệp: manifest ký Ed25519 và quy tắc kênh update của fork. |

@@ -37,6 +37,11 @@ struct ConfigCenter::IniStorage : CSimpleIniA {
 
 namespace {
 
+// Host signaling mặc định của bản CrossDesk Postcard. Con trỏ volatile buộc trình biên dịch giữ
+// nguyên chuỗi liền mạch trong binary: GCC dựng std::string 20 byte từ literal bằng nhiều lệnh ghi
+// tức thời, khi đó scripts/release/check_conformance.py không thấy host trong bản Linux.
+const char* const volatile kDefaultSignalServerHost = "crossdesk.ecom.io.vn";
+
 bool IsValidTurnModeValue(long value) {
   return value >= static_cast<long>(ConfigCenter::TURN_MODE::DISABLED) &&
          value <= static_cast<long>(ConfigCenter::TURN_MODE::FORCE_TCP);
@@ -839,7 +844,7 @@ std::string ConfigCenter::GetSignalServerHost() const {
 int ConfigCenter::GetSignalServerPort() const { return signal_server_port_; }
 
 std::string ConfigCenter::GetDefaultServerHost() const {
-  return signal_server_host_default_;
+  return kDefaultSignalServerHost;
 }
 
 int ConfigCenter::GetDefaultSignalServerPort() const {
