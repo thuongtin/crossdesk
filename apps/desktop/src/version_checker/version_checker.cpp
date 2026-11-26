@@ -104,9 +104,11 @@ void ConfigureLinuxCaCerts(httplib::Client* cli) {
 }
 #endif
 
-#if !defined(__OHOS__) && !CROSSDESK_PORTABLE
+#ifndef __OHOS__
 // Mục gói thường cùng kiến trúc, dùng để tải thủ công khi PlatformKey không nhận ra gói cài.
-// Chỉ Linux cần: PlatformKey trên Windows và macOS không phụ thuộc vào dấu gói bên cạnh tệp chạy.
+// Chỉ Linux cần: PlatformKey trên Windows và macOS không phụ thuộc vào dấu gói bên cạnh tệp chạy,
+// còn trên Linux nó bỏ qua cờ portable và trả về rỗng khi thiếu dấu `package-name`, kể cả bản
+// portable.
 std::string ManualUpdatePlatform() {
 #if defined(__linux__) && defined(__aarch64__)
   return "linux-arm64";
@@ -226,10 +228,12 @@ std::optional<VersionInfo> CheckUpdate() {
 #elif CROSSDESK_PORTABLE
     // Bản portable không tự cài đặt mà chỉ mở trang release, nên chỉ báo khi tag mới thật sự có
     // gói cho hệ điều hành và kiến trúc này. Bản fork chỉ phát hành gói cài đặt, vì vậy khi chưa
-    // có mục portable thì dùng mục gói cài đặt của cùng nền tảng.
+    // có mục portable thì dùng mục gói cài đặt của cùng nền tảng. Bản Linux portable chạy ngoài
+    // gói `.deb` không có dấu `package-name`, nên cuối cùng dùng mục gói thường cùng kiến trúc.
     const auto executable = updater::ExecutablePath();
     auto info = ParsePlatformUpdateManifest(
-        manifest, {updater::PlatformKey(executable, true), updater::PlatformKey(executable)});
+        manifest, {updater::PlatformKey(executable, true), updater::PlatformKey(executable),
+                   ManualUpdatePlatform()});
     if (info) info->download_url = updater::kReleasePage;
 #else
     const auto platform = updater::PlatformKey(updater::ExecutablePath());

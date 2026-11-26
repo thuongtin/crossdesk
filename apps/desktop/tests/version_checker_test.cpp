@@ -239,6 +239,11 @@ int main(int argc, char** argv) {
               linux_manual->download_url == kReleasePage && linux_manual->update_envelope.empty(),
           true);
     }
+    // Bản Linux portable chạy ngoài gói `.deb`: cả hai khoá PlatformKey đều rỗng.
+    const auto portable_linux =
+        crossdesk::ParsePlatformUpdateManifest(with_linux, {"", "", "linux-amd64"});
+    ok &= ExpectEqual("portable Linux build without a marker uses its architecture entry",
+        portable_linux && portable_linux->version == "1.7.7-3-20261126", true);
     with_linux["downloads"]["linux-amd64-virtual-desktop-xfce"] = {
         {"version", "1.7.7-4-20261127"}};
     const auto package_first = crossdesk::ParseDesktopUpdateManifest(
