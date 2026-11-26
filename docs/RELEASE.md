@@ -164,7 +164,9 @@ dung khoá vào đây. Có thể trỏ tới file khác bằng `CROSSDESK_RELEAS
 
 ### Bước 1: Chọn phiên bản và chuẩn bị commit
 
-1. Mọi thay đổi cần phát hành đã merge vào `mcp` của fork, CI trên `mcp` xanh.
+1. Mọi thay đổi cần phát hành đã merge vào `mcp` của fork qua cổng merge của fork (Codex review
+   sạch, build local trên ba máy, xem [Đồng bộ upstream](UPSTREAM_SYNC.md#quy-tắc-pr)). GitHub
+   Actions trên fork đã tắt, nên không chờ CI.
 2. Xem release gần nhất để chọn số build tiếp theo:
 
    ```bash
