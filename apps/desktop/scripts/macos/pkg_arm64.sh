@@ -59,6 +59,19 @@ normalize_app_version() {
 
 APP_VERSION="$(normalize_app_version "$1")"
 
+# macOS Installer và trình cập nhật so phiên bản theo CFBundleVersion và pkg-ref, nên tag
+# v<base>-<build>-<YYYYMMDD> phải thành <base>.<YYYYMMDD>.<build> (ví dụ 1.7.7.20261125.2),
+# còn chuỗi hiển thị CFBundleShortVersionString chỉ là <base>. Tag không có ngày (bản thử)
+# giữ nguyên chuỗi nhưng bỏ tiền tố "v".
+APP_VERSION_BODY="${APP_VERSION#v}"
+if [[ "$APP_VERSION_BODY" =~ ^([0-9]+(\.[0-9]+){1,3})-([0-9]+)-([0-9]{8})$ ]]; then
+    BUNDLE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[4]}.${BASH_REMATCH[3]}"
+    BUNDLE_SHORT_VERSION="${BASH_REMATCH[1]}"
+else
+    BUNDLE_VERSION="$APP_VERSION_BODY"
+    BUNDLE_SHORT_VERSION="$APP_VERSION_BODY"
+fi
+
 APP_BUNDLE="${APP_NAME_UPPER}.app"
 CONTENTS_DIR="${APP_BUNDLE}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
@@ -100,9 +113,9 @@ cat > "${CONTENTS_DIR}/Info.plist" <<EOF
     <key>CFBundleIdentifier</key>
     <string>${IDENTIFIER}</string>
     <key>CFBundleVersion</key>
-    <string>${APP_VERSION}</string>
+    <string>${BUNDLE_VERSION}</string>
     <key>CFBundleShortVersionString</key>
-    <string>${APP_VERSION}</string>
+    <string>${BUNDLE_SHORT_VERSION}</string>
     <key>CFBundleExecutable</key>
     <string>${APP_NAME_UPPER}</string>
     <key>CFBundlePackageType</key>
@@ -178,7 +191,7 @@ EOF
 echo "building pkg..."
 pkgbuild \
   --identifier "${IDENTIFIER}" \
-  --version "${APP_VERSION}" \
+  --version "${BUNDLE_VERSION}" \
   --install-location "/Applications" \
   --component "${APP_BUNDLE}" \
   ${PKG_SCRIPT_ARGS[@]+"${PKG_SCRIPT_ARGS[@]}"} \
@@ -204,7 +217,7 @@ cat > build_pkg_temp/Distribution <<EOF
     <choice id="${IDENTIFIER}" title="${INSTALLER_TITLE}" visible="false">
         <pkg-ref id="${IDENTIFIER}"/>
     </choice>
-    <pkg-ref id="${IDENTIFIER}" version="${APP_VERSION}" onConclusion="none">crossdesk-component.pkg</pkg-ref>
+    <pkg-ref id="${IDENTIFIER}" version="${BUNDLE_VERSION}" onConclusion="none">crossdesk-component.pkg</pkg-ref>
 </installer-gui-script>
 EOF
 
