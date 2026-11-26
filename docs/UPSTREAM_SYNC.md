@@ -90,13 +90,14 @@ Các tệp và đoạn dưới đây là của fork CrossDesk Postcard. Khi upst
 | `apps/desktop/scripts/macos/make_fork_update_manifest.py`, `apps/desktop/docs/fork-self-update.md` | Toàn bộ tệp: manifest ký Ed25519 và quy tắc kênh update của fork. |
 | Giao diện Postcard: `apps/desktop/src/gui/ui/postcard_controls.slint`, `main_window.slint`, `group_filter.slint`, `gallery_menu_button.slint`, `workbench_controls.slint` | Phong cách Postcard (`PostcardStyle`), tiêu đề "Kết nối với thiết bị", bố cục danh sách thiết bị. |
 | `apps/desktop/src/gui/ui/about_panel.slint`, `crossdesk_ui.slint`, `ui_localization.h`, `apps/desktop/src/gui/application/gui_application.cpp` | Không có dải tài trợ của upstream (`sponsor_strip.slint` đã xóa); liên kết "website" và tải thủ công mở trang release của fork. |
+| `apps/desktop/src/gui/ui/feedback_panel.slint`, `main_window.slint`, `ui_localization.h`, `gui_application.cpp` | Bảng phản hồi không có nút GitHub (upstream mở `kunkundi/crossdesk/issues`), chỉ giữ xuất nhật ký chẩn đoán; lời nhắc và thông báo xuất xong bảo người dùng gửi tệp ZIP cho quản trị viên CrossDesk (hai key mới trong `localization/catalog.json`). Cổng conformance trượt nếu binary còn đường dẫn issue của upstream. |
 | `apps/desktop/src/thumbnail/thumbnail.cpp`, `thumbnail.h` | Ảnh xem trước giữ trọn khung hình (fit), không cắt (cover). |
 | `apps/desktop/tests/slint_popup_render_test.cpp`, `slint_ui_smoke_test.cpp`, `version_checker_test.cpp` | Test cho giao diện Postcard, việc không còn dải tài trợ và kênh update của fork. |
 | `localization/catalog.json` | Key `连接到设备`, bản `en` "This device" (`本桌面`) và "Recent Devices" (`近期连接`). Cột `vi` phải đầy đủ; English vẫn là mặc định cho bản cài mới của desktop. |
 | `scripts/release/*`, `docs/RELEASE.md` | Quy trình phát hành ba nền tảng, cổng `check_conformance.py` và public key ký manifest. |
 | `scripts/sync-upstream.sh`, `scripts/merge_localization_catalog.py`, tài liệu này | Công cụ và quy trình đồng bộ. |
 
-Sau mỗi lần đồng bộ, build desktop rồi chạy cổng `scripts/release/check_conformance.py` trên binary (xem `docs/RELEASE.md`): cổng này báo lỗi khi binary thiếu đường dẫn manifest hay signaling của fork, hoặc còn host của upstream.
+Sau mỗi lần đồng bộ, build desktop rồi chạy cổng `scripts/release/check_conformance.py` trên binary (xem `docs/RELEASE.md`): cổng này báo lỗi khi binary thiếu đường dẫn manifest hay signaling của fork, hoặc còn host hay trang issue của upstream.
 
 ### Catalog bản địa hóa
 

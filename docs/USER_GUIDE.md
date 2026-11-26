@@ -254,7 +254,7 @@ Thiết bị hỗ trợ đăng ký xem trước có thể tạm dừng truyền 
 
 ### Phản hồi và nhật ký chẩn đoán
 
-Mở **☰ → Phản hồi và góp ý** trong cửa sổ chính, nhấn **Gửi phản hồi trên GitHub** để gửi sự cố hoặc góp ý; nhấn **Xuất nhật ký chẩn đoán** để lưu nhật ký CrossDesk, MiniRTC và thông tin phiên bản cơ bản thành tệp ZIP. Sau khi xuất thành công, giao diện hiển thị vị trí lưu; bạn có thể đính kèm gói nhật ký vào báo cáo, nêu hệ điều hành hai bên, phiên bản, phương thức kết nối và các bước tái hiện.
+Mở **☰ → Phản hồi và góp ý** trong cửa sổ chính, nhấn **Xuất nhật ký chẩn đoán** để lưu nhật ký CrossDesk, MiniRTC và thông tin phiên bản cơ bản thành tệp ZIP. Sau khi xuất thành công, giao diện hiển thị vị trí lưu; hãy gửi gói nhật ký cho quản trị viên CrossDesk, kèm hệ điều hành hai bên, phiên bản, phương thức kết nối và các bước tái hiện. Bản CrossDesk Postcard không có nút gửi phản hồi trên GitHub, nên ảnh minh họa bên dưới (chụp từ bản upstream) còn nút đó.
 
 <p align="center">
   <img src="images/desktop-feedback-zh.png" width="720" alt="Phản hồi và góp ý: liên kết phản hồi GitHub và nút xuất nhật ký chẩn đoán" />

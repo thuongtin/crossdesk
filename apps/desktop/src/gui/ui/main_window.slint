@@ -853,7 +853,6 @@ export component MainWindow inherits Window {
     in property <string> about-source-url;
     in property <string> about-build-url;
     callback open-about-link(string);
-    callback open-feedback-github;
     callback export-diagnostic-logs;
     in-out property <bool> feedback-open: false;
     in property <bool> feedback-exporting: false;
@@ -2532,7 +2531,6 @@ export component MainWindow inherits Window {
             status: root.feedback-status;
             succeeded: root.feedback-succeeded;
             saved-path: root.feedback-saved-path;
-            open-github => { root.open-feedback-github(); }
             export-logs => { root.export-diagnostic-logs(); }
             close => { root.feedback-open = false; }
         }

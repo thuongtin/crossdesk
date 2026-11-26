@@ -194,7 +194,8 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
     mà feed ký), và không chứa `https://version.crossdesk.cn` hay `https://downloads.crossdesk.cn`;
   - file thực thi chính chứa đường dẫn feed
     `/thuongtin/crossdesk/desktop-updates/crossdesk-desktop-update.json` và signaling mặc định
-    `crossdesk.ecom.io.vn`, không chứa `api.crossdesk.cn`.
+    `crossdesk.ecom.io.vn`, không chứa `api.crossdesk.cn` và trang issue `/kunkundi/crossdesk/issues`
+    của upstream (nút phản hồi GitHub đã bỏ khỏi bản fork).
 
   Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
   thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork

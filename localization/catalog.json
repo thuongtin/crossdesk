@@ -12025,6 +12025,19 @@
       "pt-BR": "Logs de diagnóstico exportados. Anexe o ZIP à sua issue do GitHub.",
       "vi": "Đã xuất nhật ký chẩn đoán, hãy đính kèm tệp ZIP vào GitHub Issue."
     },
+    "诊断日志已导出，请将 ZIP 发送给 CrossDesk 管理员。": {
+      "zh-Hans": "诊断日志已导出，请将 ZIP 发送给 CrossDesk 管理员。",
+      "en": "Diagnostic logs exported. Send the ZIP to your CrossDesk administrator.",
+      "ru": "Журналы диагностики экспортированы. Отправьте ZIP-файл администратору CrossDesk.",
+      "zh-Hant": "診斷日誌已匯出，請將 ZIP 傳送給 CrossDesk 管理員。",
+      "ja": "診断ログをエクスポートしました。ZIP を CrossDesk の管理者に送信してください。",
+      "ko": "진단 로그를 내보냈습니다. ZIP을 CrossDesk 관리자에게 보내세요.",
+      "de": "Diagnoseprotokolle exportiert. Senden Sie die ZIP-Datei an Ihren CrossDesk-Administrator.",
+      "fr": "Journaux de diagnostic exportés. Envoyez le ZIP à votre administrateur CrossDesk.",
+      "es": "Registros de diagnóstico exportados. Envía el ZIP a tu administrador de CrossDesk.",
+      "pt-BR": "Logs de diagnóstico exportados. Envie o ZIP ao administrador do CrossDesk.",
+      "vi": "Đã xuất nhật ký chẩn đoán, hãy gửi tệp ZIP cho quản trị viên CrossDesk."
+    },
     "请在 GitHub Issue 中附上导出的 ZIP 日志包，便于排查问题。": {
       "zh-Hans": "请在 GitHub Issue 中附上导出的 ZIP 日志包，便于排查问题。",
       "en": "Attach the exported ZIP log archive to your GitHub issue to help us investigate.",
@@ -12037,6 +12050,19 @@
       "es": "Adjunta el archivo ZIP de los registros exportados a tu issue de GitHub para ayudarnos a investigar el problema.",
       "pt-BR": "Anexe o arquivo ZIP dos logs exportados à sua issue do GitHub para nos ajudar a investigar o problema.",
       "vi": "Hãy đính kèm gói nhật ký ZIP đã xuất vào GitHub Issue để giúp chẩn đoán sự cố."
+    },
+    "请将导出的 ZIP 日志包发送给 CrossDesk 管理员，便于排查问题。": {
+      "zh-Hans": "请将导出的 ZIP 日志包发送给 CrossDesk 管理员，便于排查问题。",
+      "en": "Send the exported ZIP log archive to your CrossDesk administrator to help investigate the problem.",
+      "ru": "Отправьте экспортированный ZIP-архив журналов администратору CrossDesk, чтобы помочь разобраться в проблеме.",
+      "zh-Hant": "請將匯出的 ZIP 日誌封存檔傳送給 CrossDesk 管理員，便於排查問題。",
+      "ja": "問題の調査のため、エクスポートしたログの ZIP ファイルを CrossDesk の管理者に送信してください。",
+      "ko": "문제 조사에 도움이 되도록 내보낸 ZIP 로그 파일을 CrossDesk 관리자에게 보내 주세요.",
+      "de": "Senden Sie das exportierte ZIP-Archiv mit den Protokollen an Ihren CrossDesk-Administrator, damit das Problem untersucht werden kann.",
+      "fr": "Envoyez l’archive ZIP des journaux exportés à votre administrateur CrossDesk pour l’aider à analyser le problème.",
+      "es": "Envía el archivo ZIP de los registros exportados a tu administrador de CrossDesk para ayudar a investigar el problema.",
+      "pt-BR": "Envie o arquivo ZIP dos logs exportados ao administrador do CrossDesk para ajudar a investigar o problema.",
+      "vi": "Hãy gửi gói nhật ký ZIP đã xuất cho quản trị viên CrossDesk để giúp chẩn đoán sự cố."
     },
     "被控端分辨率": {
       "zh-Hans": "被控端分辨率",
@@ -15087,7 +15113,9 @@
       "正在导出…",
       "没有找到可导出的日志。",
       "诊断日志已导出，请将 ZIP 附到 GitHub Issue。",
+      "诊断日志已导出，请将 ZIP 发送给 CrossDesk 管理员。",
       "请在 GitHub Issue 中附上导出的 ZIP 日志包，便于排查问题。",
+      "请将导出的 ZIP 日志包发送给 CrossDesk 管理员，便于排查问题。",
       "正在接收剪贴板文件",
       "剪贴板文件接收完成",
       "剪贴板文件接收失败",
