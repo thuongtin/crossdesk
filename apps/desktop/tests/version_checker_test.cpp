@@ -215,6 +215,18 @@ int main(int argc, char** argv) {
         crossdesk::ParsePlatformUpdateManifest({{"version", "9.0.0"}}, {"windows-x64"})
             .has_value(),
         false);
+    // Bản tự biên dịch không có khoá công khai vẫn thấy bản mới, nhưng chỉ tải thủ công.
+    const auto manual = crossdesk::ParseDesktopUpdateManifest(feed, "windows-x64", "");
+    ok &= ExpectEqual("build without a key still offers a manual download",
+        manual && manual->version == "1.7.7-3-20261126" &&
+            manual->download_url == kReleasePage && manual->update_envelope.empty(),
+        true);
+    ok &= ExpectEqual("build without a key ignores other platforms",
+        crossdesk::ParseDesktopUpdateManifest(feed, "linux-amd64", "").has_value(), false);
+    ok &= ExpectEqual("build with a key requires a signed entry",
+        crossdesk::ParseDesktopUpdateManifest(feed, "windows-x64", std::string(64, 'a'))
+            .has_value(),
+        false);
   }
   if (argc == 3 && std::string(argv[1]) == "--live") {
     try {

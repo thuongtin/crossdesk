@@ -155,6 +155,19 @@ std::optional<VersionInfo> ParsePlatformUpdateManifest(
   return std::nullopt;
 }
 
+#ifndef __OHOS__
+std::optional<VersionInfo> ParseDesktopUpdateManifest(
+    const nlohmann::json& manifest, const std::string& platform,
+    const std::string& public_key) {
+  if (!public_key.empty()) return ParseSignedUpdateManifest(manifest, platform, public_key);
+  // Bản tự biên dịch không nhúng khoá công khai thì không xác minh được chữ ký nên không tự cài:
+  // vẫn báo phiên bản mới của đúng nền tảng, nhưng chỉ mở trang Releases để tải thủ công.
+  auto info = ParsePlatformUpdateManifest(manifest, {platform});
+  if (info) info->download_url = updater::kReleasePage;
+  return info;
+}
+#endif
+
 std::optional<VersionInfo> CheckUpdate() {
   httplib::Client cli(updater::kManifestOrigin);
   cli.set_connection_timeout(5);
@@ -204,7 +217,7 @@ std::optional<VersionInfo> CheckUpdate() {
     if (info) info->download_url = updater::kReleasePage;
 #else
     const auto platform = updater::PlatformKey(updater::ExecutablePath());
-    auto info = ParseSignedUpdateManifest(manifest, platform, updater::PublicKey());
+    auto info = ParseDesktopUpdateManifest(manifest, platform, updater::PublicKey());
 #endif
     if (info) {
       LOG_INFO("Fetched fork update manifest: latest_version={}", info->version);

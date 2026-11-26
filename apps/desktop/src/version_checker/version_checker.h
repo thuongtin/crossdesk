@@ -28,6 +28,11 @@ std::optional<VersionInfo> ParseSignedUpdateManifest(
 // mới hơn: phiên bản đó có thể thuộc một bản phát hành chỉ có gói của nền tảng khác.
 std::optional<VersionInfo> ParsePlatformUpdateManifest(
     const nlohmann::json& manifest, const std::vector<std::string>& platforms);
+// Bản cài đặt có khoá công khai chỉ nhận mục đã ký. Không có khoá thì chỉ báo phiên bản của đúng
+// nền tảng để tải thủ công, không kèm phong bì cập nhật nên không thể tự cài.
+std::optional<VersionInfo> ParseDesktopUpdateManifest(
+    const nlohmann::json& manifest, const std::string& platform,
+    const std::string& public_key);
 std::optional<VersionInfo> CheckUpdate();
 
 }  // namespace crossdesk
