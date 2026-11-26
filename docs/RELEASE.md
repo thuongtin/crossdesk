@@ -51,11 +51,18 @@ Tên asset và khoá feed phải khớp `ExpectedFilename()` và `PlatformKey()`
 - Trong keychain đăng nhập (hoặc keychain riêng, khai báo qua `CROSSDESK_MACOS_KEYCHAIN`):
   - `Developer ID Application: <Tên> (<TEAMID>)` để ký app.
   - `Developer ID Installer: <Tên> (<TEAMID>)` để ký gói `.pkg`. Hai identity phải cùng Team ID.
-- Profile notarytool, do chủ tài khoản tự tạo (lệnh hỏi mật khẩu ứng dụng, không lưu vào repo):
+- Profile notarytool tên `crossdesk-notary` trong keychain, do chủ tài khoản tự tạo, không lưu
+  vào repo. Một trong hai cách:
 
   ```bash
+  # Khoá API App Store Connect (file .p8 nằm ngoài repo); Issuer ID lấy ở App Store Connect.
+  xcrun notarytool store-credentials crossdesk-notary \
+      --key <đường-dẫn>/AuthKey_<KEYID>.p8 --key-id <KEYID> --issuer <ISSUER_ID>
+  # Hoặc Apple ID kèm mật khẩu ứng dụng (lệnh tự hỏi mật khẩu).
   xcrun notarytool store-credentials crossdesk-notary --apple-id <apple-id> --team-id <TEAMID>
   ```
+
+  Kiểm tra profile bằng `xcrun notarytool history --keychain-profile crossdesk-notary`.
 
 - Khoá bí mật Ed25519 của kênh cập nhật fork (PEM), khớp khoá công khai nhúng trong
   `scripts/release/lib.sh`. Đặt ngoài repo, `chmod 600`. Mất hoặc đổi khoá nghĩa là mọi bản đã cài
