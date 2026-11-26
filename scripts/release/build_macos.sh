@@ -25,7 +25,7 @@ INSTALLER_PREFIX="Developer ID Installer: "
 [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] ||
     die "The macOS arm64 build must run on an Apple Silicon Mac"
 # pkg-config phải có sẵn như trên runner GitHub: meson của gói libsoup dùng nó để tìm glib.
-require_cmd git xmake xcrun pkgutil productbuild codesign security pkg-config plutil file awk
+require_cmd git xmake xcrun pkgutil pkgbuild productbuild codesign security pkg-config plutil file awk
 
 # Thông tin notarize chỉ cần trong shell này, không truyền xuống xmake hay pkg_arm64.sh.
 export -n CROSSDESK_MACOS_NOTARY_KEY CROSSDESK_MACOS_NOTARY_KEY_ID CROSSDESK_MACOS_NOTARY_ISSUER \
@@ -232,6 +232,25 @@ if [[ "$SIGNED" == 1 ]]; then
         die "Developer ID signing probe failed"
     fi
     log "Developer ID signing probe passed"
+    # Khoá Installer có quyền truy cập riêng: lần đầu một công cụ dùng nó, macOS có thể bật hộp
+    # thoại xin quyền thay vì báo lỗi. Ký thử một gói rỗng bằng đúng productbuild mà pkg_arm64.sh
+    # dùng, cũng dừng sau 90 giây, để không treo giữa lúc đóng gói sau khi đã build xong.
+    installer_probe_dir="$(mktemp -d "${TMPDIR:-/tmp}/crossdesk-installer-probe.XXXXXX")"
+    installer_probe_status=0
+    installer_probe_output="$(pkgbuild --nopayload --identifier io.crossdesk.release.probe --version 0 \
+        "$installer_probe_dir/component.pkg" 2>&1 &&
+        perl -e 'alarm shift; exec @ARGV' 90 productbuild --sign "$INSTALLER_IDENTITY" --timestamp \
+            ${probe_keychain[@]+"${probe_keychain[@]}"} --package "$installer_probe_dir/component.pkg" \
+            "$installer_probe_dir/probe.pkg" 2>&1 &&
+        pkgutil --check-signature "$installer_probe_dir/probe.pkg" 2>&1)" || installer_probe_status=$?
+    rm -rf "$installer_probe_dir"
+    [[ "$installer_probe_status" -ne 142 ]] ||
+        die "productbuild timed out waiting for access to the Developer ID Installer key: the owner must choose Always Allow in the dialog (or dismiss it), then rerun"
+    if [[ "$installer_probe_status" -ne 0 ]]; then
+        printf '%s\n' "$installer_probe_output" | redact >&2
+        die "Developer ID Installer signing probe failed"
+    fi
+    log "Developer ID Installer signing probe passed"
     if [[ "$NOTARY_METHOD" != "none" ]]; then
         xcrun notarytool history "${NOTARY_ARGS[@]}" --output-format json >/dev/null 2>&1 ||
             die "notarytool rejected the $NOTARY_METHOD credentials"
