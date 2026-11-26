@@ -44,5 +44,6 @@
 | Phiên bản thành phần và phát hành npm | [Quản lý phiên bản](VERSIONING.md) · [Phân phối CLI](../apps/cli/docs/npm-distribution.md#tạo-gói) · [Phát hành MCP](../apps/mcp/DEVELOPMENT.md#phát-hành-lên-npm-qua-github-actions) |
 | Chữ ký cập nhật, manifest và quy trình nâng cấp | [Biên dịch và phát hành trình nâng cấp](UPDATER.md#biên-dịch-và-phát-hành-trình-nâng-cấp) |
 | Tài nguyên dịch và ảnh chụp màn hình | [Bảo trì bản địa hóa](../localization/README.md#bảo-trì-tài-nguyên) · [Tạo ảnh chụp màn hình](images/REGENERATE.md) |
+| Đồng bộ fork với upstream mà vẫn giữ bản Việt hóa | [Quy trình đồng bộ upstream](UPSTREAM_SYNC.md) |
 
 Các tính năng bản phát triển có thể chưa nằm trong gói đã phát hành; hãy căn cứ vào tài liệu và giao diện của phiên bản bạn dùng. Khi báo cáo sự cố, cung cấp hệ điều hành hai bên, phiên bản, phương thức kết nối và các bước tái hiện; trên máy tính, bạn có thể xuất nhật ký chẩn đoán qua **Menu chính → Phản hồi và góp ý**.
