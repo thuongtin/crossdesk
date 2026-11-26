@@ -73,10 +73,7 @@ Tên asset và khoá feed phải khớp `ExpectedFilename()` và `PlatformKey()`
 - Trước khi gửi Apple, `build_macos.sh` kiểm mọi Mach-O trong app mang Team ID của identity và có
   Hardened Runtime (log chỉ ghi `ok`/`MISMATCH`). `sign_app.sh` ký từ trong ra ngoài, không dùng
   `codesign --deep` để ký.
-
-- Khoá bí mật Ed25519 của kênh cập nhật fork (PEM), khớp khoá công khai nhúng trong
-  `scripts/release/lib.sh`. Đặt ngoài repo, `chmod 600`. Mất hoặc đổi khoá nghĩa là mọi bản đã cài
-  không nhận cập nhật nữa và phải cài lại bằng tay.
+- Khoá bí mật Ed25519 ký feed cập nhật cũng nằm trên máy này (xem mục 2.5).
 
 ### 2.2. Máy Windows x64
 
@@ -118,6 +115,36 @@ chmod 600 ~/.config/crossdesk/release.env
 
 File cấu hình chỉ chứa tên host, đường dẫn và tên identity. Không đưa mật khẩu, token hay nội
 dung khoá vào đây. Có thể trỏ tới file khác bằng `CROSSDESK_RELEASE_CONFIG=<path>`.
+
+### 2.5. Khoá ký feed cập nhật (Ed25519)
+
+- Khoá bí mật ở `~/.private_keys/crossdesk-update-ed25519.pem` trên máy macOS phát hành,
+  `chmod 600`, nằm ngoài mọi repo. Khai báo qua `CROSSDESK_UPDATE_PRIVATE_KEY_FILE` trong
+  `release.env`. Không in, không chép, không commit file này. Chỉ `make_release_feed.py` đọc nó
+  để ký và không bao giờ in nội dung.
+- Khoá công khai (32 byte, hex) nằm ở `FORK_UPDATE_PUBLIC_KEY` trong `scripts/release/lib.sh`.
+  Ba bản build nhúng nó qua `CROSSDESK_UPDATE_PUBLIC_KEY`, gate kiểm nó có mặt trong mọi file thực
+  thi, và `make_release_feed.py` dùng nó để tự kiểm từng chữ ký vừa tạo.
+- Kiểm khoá bí mật khớp khoá công khai mà không in khoá bí mật: lệnh sau phải in đúng giá trị
+  trong `lib.sh`.
+
+  ```bash
+  openssl pkey -in ~/.private_keys/crossdesk-update-ed25519.pem -pubout -outform DER | tail -c 32 | xxd -p -c 64
+  ```
+
+- **Đổi khoá ngày 26.11.2026, có hiệu lực từ v1.7.7-3.** Khoá cũ ký feed của v1.7.7-1 và v1.7.7-2
+  không còn trên máy phát hành nên đã tạo cặp khoá mới. Hệ quả:
+  - Máy đang chạy v1.7.7-1 hoặc v1.7.7-2 nhúng khoá công khai cũ, nên không kiểm được chữ ký của
+    feed mới và không tự cập nhật lên v1.7.7-3. Những máy đó phải tải và cài v1.7.7-3 bằng tay
+    **một lần**. Từ v1.7.7-3 trở đi cập nhật qua app bình thường.
+  - Release notes của v1.7.7-3 phải ghi rõ điều này. Bản nháp do `release.sh` sinh đã có sẵn câu
+    nhắc trong phần `## Downloads`; giữ câu đó ở các bản sau.
+  - Bản đầu tiên ký bằng khoá mới nên build đủ ba nền tảng để mọi mục trong feed mang chữ ký mới.
+    Mục của nền tảng không build được giữ nguyên với chữ ký cũ, chỉ máy bản cũ đọc được mục đó.
+- Nếu khoá bí mật bị mất hoặc lộ: tạo cặp mới bằng
+  `( umask 077; set -C; openssl genpkey -algorithm ED25519 -out ~/.private_keys/crossdesk-update-ed25519.pem )`
+  (đổi tên hoặc chuyển khoá cũ đi trước), cập nhật `FORK_UPDATE_PUBLIC_KEY`, rồi coi mọi bản đã cài
+  như ở trên: phải cài tay một lần. Chủ máy tự quyết định việc sao lưu khoá bí mật ra nơi an toàn.
 
 ## 3. Quy ước phiên bản
 
@@ -169,7 +196,9 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
 
   Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
   thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork
-  Postcard (xem `docs/UPSTREAM_SYNC.md`). Bản `v1.7.7-2-20261125` đã phát hành qua gate strict.
+  Postcard (xem `docs/UPSTREAM_SYNC.md`). Bản `v1.7.7-2-20261125` đã qua gate strict với khoá cập
+  nhật cũ; từ đợt đổi khoá (mục 2.5) gate chạy trên gói đó báo thiếu khoá công khai, đúng như mong
+  đợi.
 - `gate/macos-signing.txt`: trạng thái ký (kèm identity còn thiếu), kết quả kiểm Team ID,
   notarize và cách notarize, `CFBundleVersion`, `CFBundleShortVersionString` và kết quả kiểm
   bundle version (bỏ qua với phiên bản dry-run không có ngày; trượt khi `--publish` thì dừng ngay
@@ -189,6 +218,8 @@ build) rồi sửa. Giữ hai phần như các bản trước:
 
 - `## Downloads`: từng nền tảng, yêu cầu hệ điều hành, tình trạng ký, nhắc `SHA256SUMS.txt`.
 - `## Changes`: thay đổi chính so với bản trước, ghi rõ nền tảng mới (ví dụ bản Linux đầu tiên).
+
+Giữ câu nhắc máy đang chạy v1.7.7-1 hoặc v1.7.7-2 phải cài tay một lần (mục 2.5).
 
 Nội dung này vừa là mô tả GitHub release vừa là `releaseNotes` trong feed mà app hiển thị.
 

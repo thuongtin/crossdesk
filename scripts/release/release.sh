@@ -158,10 +158,11 @@ elif [[ ! -f "$DIST_DIR/RELEASE_NOTES.md" ]]; then
     cat >"$DIST_DIR/RELEASE_NOTES.md" <<'EOF'
 ## Downloads
 
-- macOS 14 or later, Apple Silicon: signed, notarized, stapled Developer ID installer. Existing fork builds can update from the app.
+- macOS 14 or later, Apple Silicon: signed, notarized, stapled Developer ID installer.
 - Windows x64 installer.
 - Linux amd64 (Ubuntu 20.04 or later): `crossdesk` and `crossdesk-virtual-desktop-xfce` .deb packages.
 - Use `SHA256SUMS.txt` to verify the downloads.
+- Installs of v1.7.7-1 or v1.7.7-2 must download and install this release manually once: the update signing key changed in v1.7.7-3, so those builds cannot verify the new update feed. Builds from v1.7.7-3 on update from the app.
 
 ## Changes
 

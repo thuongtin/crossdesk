@@ -11,7 +11,7 @@ FEED_FILE="crossdesk-desktop-update.json"
 
 # Khoá công khai Ed25519 của kênh cập nhật fork, được nhúng vào mọi bản build.
 # Khoá bí mật tương ứng không bao giờ nằm trong repo.
-FORK_UPDATE_PUBLIC_KEY="48f5a72e6310045ced34bbf325ebfd282d515067bcd7c58e5ab8c139a185012d"
+FORK_UPDATE_PUBLIC_KEY="aa5341bb765ec11272be71979248b0816a9ddf15215e56a9fa34e900d54df87c"
 
 # Image build Linux của upstream (Ubuntu 20.04, glibc 2.31, CUDA 12.6.3, xmake 3.1.1).
 # Ghim theo digest của manifest linux/amd64 để bản build lặp lại được.
