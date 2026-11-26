@@ -44,6 +44,8 @@ Tên asset và khoá feed phải khớp `ExpectedFilename()` và `PlatformKey()`
 
 - Xcode (có `xcrun`, `productbuild`, `notarytool`, `stapler`), Homebrew, `xmake`, `gh` đã
   `gh auth login` với quyền ghi vào `thuongtin/crossdesk`.
+- `pkg-config` trên `PATH` (`brew install pkgconf`). Runner macOS của GitHub có sẵn, máy Mac
+  thường thì không; thiếu nó thì meson của gói libsoup không tìm thấy glib và build dừng.
 - OpenSSL 3 trở lên đứng trước trên `PATH` (`brew install openssl@3`). `/usr/bin/openssl` của
   macOS là LibreSSL, không có `pkeyutl -rawin` nên không ký feed được.
 - Trong keychain đăng nhập (hoặc keychain riêng, khai báo qua `CROSSDESK_MACOS_KEYCHAIN`):

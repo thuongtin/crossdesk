@@ -17,7 +17,8 @@ SRC_DIR="$BUILD_ROOT/src"
 
 [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] ||
     die "The macOS arm64 build must run on an Apple Silicon Mac"
-require_cmd git xmake xcrun pkgutil productbuild codesign security
+# pkg-config phải có sẵn như trên runner GitHub: meson của gói libsoup dùng nó để tìm glib.
+require_cmd git xmake xcrun pkgutil productbuild codesign security pkg-config
 
 SIGNED=0
 NOTARIZED=0
