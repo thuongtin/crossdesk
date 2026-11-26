@@ -138,11 +138,14 @@ void PeerEventHandler::OnReceiveDataBuffer(
       runtime->HandleDeviceTrustMessage(remote_id, handler, data, size)) return;
   const auto viewer = runtime->FindRemoteSession(remote_id);
   if (viewer && viewer->peer_events_.get() != handler) return;
-  if (!viewer && !runtime->TrustedControllerAllowed(remote_id)) return;
+  if (!viewer) {
+    const bool trusted = runtime->TrustedControllerAllowed(remote_id);
 #ifdef _WIN32
-  if (runtime->unattended_host_ && !viewer &&
-      runtime->ForwardUserSessionData(remote_id, source_id, data, size)) return;
+    if (runtime->unattended_host_ &&
+        runtime->ForwardUserSessionData(remote_id, source_id, data, size, trusted)) return;
 #endif
+    if (!trusted) return;
+  }
   // The service-owned host runs as SYSTEM. Do not expose filesystem or
   // clipboard operations in that security context.
   if (runtime->unattended_host_ &&
@@ -293,7 +296,7 @@ void PeerEventHandler::OnReceiveDataBuffer(
       std::lock_guard lock(props->display_resolution_mutex_);
       if (props->display_resolution_.Complete(remote_action.resolution_change,
               std::move(remote_action.display_resolutions)) &&
-          !runtime->remote_resolutions_.Remember(props->resolution_preference_key_,
+          !runtime->remote_resolutions_.Remember(props->device_preference_key_,
               {remote_action.resolution_change.display_key,
                remote_action.resolution_change.resolution}))
         LOG_WARN("Could not save remote display resolution");
@@ -555,6 +558,7 @@ void PeerEventHandler::OnReceiveDataBuffer(
       {
         std::unique_lock lock(runtime->connection_status_mutex_);
         runtime->connection_host_names_[remote_id] = host_name;
+        runtime->incoming_controllers_changed_ = true;
         if (source_id == runtime->control_data_label_) {
           if (remote_action.i.supports_video_codec_status)
             runtime->codec_status_controllers_.insert(remote_id);

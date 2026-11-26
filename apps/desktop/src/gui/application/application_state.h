@@ -23,7 +23,6 @@ struct MainWindowState {
 struct InteractionState {
   bool start_mouse_controller_ = false;
   bool mouse_controller_is_started_ = false;
-  bool start_screen_capturer_ = false;
   bool screen_capturer_is_started_ = false;
   bool start_keyboard_capturer_ = false;
   bool keyboard_capturer_is_started_ = false;
@@ -41,7 +40,7 @@ struct InteractionState {
   std::chrono::steady_clock::time_point last_rejoin_check_time_ =
       std::chrono::steady_clock::now();
   std::string controlled_remote_id_;
-  std::string focused_remote_id_;
+  std::string connection_dialog_target_;
   std::string remote_client_id_;
 };
 
@@ -53,31 +52,13 @@ struct UpdateState {
   std::string release_date_;
 };
 
-struct StreamWindowState {
-  bool need_to_create_stream_window_ = false;
-  bool stream_window_created_ = false;
-  bool stream_window_inited_ = false;
-  bool control_mouse_ = false;
-};
-
-struct ServerWindowState {
-  // Transport callbacks run outside the UI thread. Keep the two lifecycle
-  // requests atomic so a disconnect cannot be lost while the Slint timer is
-  // deciding whether to create or destroy the controlled-side window.
-  std::atomic<bool> need_to_create_server_window_{false};
-  std::atomic<bool> need_to_destroy_server_window_{false};
-  bool server_window_created_ = false;
-  bool server_window_inited_ = false;
-  bool server_window_collapsed_ = false;
-};
-
 struct UiState {
   bool rejoin_ = false;
   bool show_password_ = true;
   bool show_connection_status_window_ = false;
-  bool fullscreen_button_pressed_ = false;
   bool is_client_mode_ = false;
   std::atomic<bool> is_server_mode_{false};
+  std::atomic<bool> incoming_controllers_changed_{false};
   bool reload_recent_connections_ = true;
   bool show_offline_warning_window_ = false;
   std::string offline_warning_text_;
@@ -87,8 +68,6 @@ struct UiState {
 struct ApplicationState : MainWindowState,
                           InteractionState,
                           UpdateState,
-                          StreamWindowState,
-                          ServerWindowState,
                           UiState {};
 
 }  // namespace crossdesk::gui_detail

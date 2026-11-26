@@ -131,7 +131,7 @@ void PeerEventHandler::OnSignalMessage(const char* message, size_t size,
     const auto props = runtime->FindRemoteSession(j["transmission_id"].get<std::string>());
     if (props && !props->closing_) props->connection_auth_.Rejected(j);
   } else if (type == "announcements_changed") {
-    runtime->announcements_.Refresh();
+    runtime->announcements_.Refresh(j.contains("reset_pages") && j["reset_pages"] == true);
   } else if (type == "announcements") {
     runtime->announcements_.Receive(j);
   } else if (type == "presence") {
@@ -317,9 +317,13 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
   GuiRuntime* runtime = &handler->owner_;
 
   std::string remote_id = handler->ConnectionKey(user_id, user_id_size);
-  if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected) runtime->transfers_.Connected(handler, remote_id);
-  else if (status == MiniRtcConnectionStatus::MiniRtcConnectionDisconnected || status == MiniRtcConnectionStatus::MiniRtcConnectionFailed ||
-           status == MiniRtcConnectionStatus::MiniRtcConnectionClosed) runtime->transfers_.Cancel(handler, remote_id);
+  const bool disconnected = status == MiniRtcConnectionStatus::MiniRtcConnectionDisconnected ||
+                            status == MiniRtcConnectionStatus::MiniRtcConnectionFailed ||
+                            status == MiniRtcConnectionStatus::MiniRtcConnectionClosed;
+  if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected)
+    runtime->transfers_.Connected(handler, remote_id);
+  else if (disconnected)
+    runtime->transfers_.Cancel(handler, remote_id);
   std::shared_ptr<GuiRuntime::RemoteSession> props;
   {
     std::shared_lock lock(runtime->remote_sessions_mutex_);
@@ -344,12 +348,16 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
 #ifdef _WIN32
     if (runtime->unattended_host_) {
       std::lock_guard lock(runtime->local_host_state_mutex_);
-      if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
+      if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnecting ||
+          status == MiniRtcConnectionStatus::MiniRtcConnectionGathering) {
+        // Keep early host info across negotiation callbacks. A new negotiation
+        // for an admitted ID must discard the previous session's capabilities.
+        auto& info = runtime->local_controller_info_[remote_id];
+        if (info.contains("epoch")) info.clear();
+      } else if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
         auto& info = runtime->local_controller_info_[remote_id];
         if (!info.contains("epoch")) info["epoch"] = ++runtime->next_controller_epoch_;
-      } else if (status == MiniRtcConnectionStatus::MiniRtcConnectionClosed ||
-                 status == MiniRtcConnectionStatus::MiniRtcConnectionFailed ||
-                 status == MiniRtcConnectionStatus::MiniRtcConnectionDisconnected) {
+      } else if (disconnected) {
         runtime->local_controller_info_.erase(remote_id);
       }
     }
@@ -358,7 +366,6 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
 
   if (props) {
     runtime->is_client_mode_ = true;
-    if (!props->wall_managed_) runtime->show_connection_status_window_ = true;
     props->connection_status_.store(status);
     if (status != MiniRtcConnectionStatus::MiniRtcConnectionConnecting && status != MiniRtcConnectionStatus::MiniRtcConnectionGathering)
       props->connection_auth_.Complete();
@@ -373,19 +380,8 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
           props->cursor_presentation_ = {};
         }
         {
-          // Snapshot the server namespace for this session. Direct connections
-          // use the authenticated device identity, not a random LAN session key.
-          const auto preference_key = props->lan_session_
-              ? nlohmann::json::array({"lan", props->lan_session_->target.device_id}).dump()
-              : nlohmann::json::array({"signal",
-                  runtime->config_center_->GetSignalServerHost(),
-                  runtime->config_center_->GetSignalServerPort(), remote_id}).dump();
-          {
-            std::lock_guard lock(props->display_resolution_mutex_);
-            props->resolution_preference_key_ = preference_key;
-          }
           const auto msg = runtime->BuildHostInformation(true,
-              runtime->remote_resolutions_.Get(preference_key));
+              runtime->remote_resolutions_.Get(props->device_preference_key_));
           const int ret =
               MiniRtcSendReliableDataFrame(props->peer_, msg.data(), msg.size(),
                                     runtime->control_data_label_.c_str());
@@ -394,13 +390,9 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
           }
         }
 
-        if (!props->wall_managed_ && !runtime->need_to_create_stream_window_) {
-          runtime->need_to_create_stream_window_ = true;
-        }
         props->connection_established_ = true;
         props->was_connected_ = true;
         props->recent_connection_dirty_ = true;
-        if (!props->wall_managed_) runtime->start_keyboard_capturer_ = true;
         break;
       }
       case MiniRtcConnectionStatus::MiniRtcConnectionDisconnected:
@@ -463,7 +455,7 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
         }
         if (needs_native_snapshot &&
             runtime->config_center_->IsSaveRemotePreviews()) {
-          auto* native_renderer = runtime->video_renderer_.get();
+          auto native_renderer = props->GetVideoRenderer();
           auto snapshot = std::make_shared<std::vector<unsigned char>>();
           if (native_renderer &&
               native_renderer->CopyLatestNv12(remote_id, snapshot.get(),
@@ -490,13 +482,11 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
           props->render_rect_dirty_ = true;
           props->stream_cleanup_pending_ = true;
         }
-        auto* native_renderer = runtime->video_renderer_.get();
+        auto native_renderer = props->GetVideoRenderer();
         if (native_renderer) {
           native_renderer->DiscardStream(remote_id);
-          runtime->video_frame_dirty_.store(true, std::memory_order_release);
         }
-
-        runtime->focus_on_stream_window_ = false;
+        runtime->NotifyVideoFrameReady(*props);
 
         if (status == MiniRtcConnectionStatus::MiniRtcConnectionClosed) {
           props->remote_close_pending_.store(true, std::memory_order_release);
@@ -509,10 +499,14 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
     }
   } else {
     runtime->is_client_mode_ = false;
-    runtime->show_connection_status_window_ = true;
+    if (disconnected) {
+      runtime->HandleServerControllerDisconnected(remote_id, "connection_closed");
+      return;
+    }
     {
       std::unique_lock lock(runtime->connection_status_mutex_);
       if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
+        runtime->preview_subscriptions_.Remove(remote_id);
         runtime->disconnect_lock_.Connected(remote_id);
         // Local privacy requires explicit desktop capability. Host info may
         // arrive before Connected; consume that saved capability here.
@@ -521,6 +515,7 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
         runtime->ApplyPrivacyAdmission(automatic_enable);
       }
       runtime->connection_status_[remote_id] = status;
+      runtime->incoming_controllers_changed_ = true;
       if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected)
         runtime->remote_input_.Connect(remote_id);
 #if _WIN32
@@ -532,38 +527,18 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
       runtime->devices_.OnControllerConnectionsChanged();
     }
 
-    switch (status) {
-      case MiniRtcConnectionStatus::MiniRtcConnectionConnected: {
-        runtime->preview_subscriptions_.Remove(remote_id);
+    if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
 #if _WIN32
-        runtime->last_windows_service_status_tick_ = 0;
+      runtime->last_windows_service_status_tick_ = 0;
 #endif
-        if (!runtime->managed_host_frontend_ || handler->IsDirect())
-          runtime->AnnounceHostCapabilities(remote_id);
+      if (!runtime->managed_host_frontend_ || handler->IsDirect())
+        runtime->AnnounceHostCapabilities(remote_id);
 
-        runtime->need_to_destroy_server_window_.store(
-            false, std::memory_order_release);
-        runtime->need_to_create_server_window_.store(true,
-                                                     std::memory_order_release);
-        runtime->is_server_mode_ = true;
-        if (!runtime->managed_host_frontend_ || handler->IsDirect())
-          runtime->start_screen_capturer_ = true;
-        runtime->devices_.StartSpeakerCapturer();
-        runtime->remote_client_id_ = remote_id;
-        if (!runtime->managed_host_frontend_ || handler->IsDirect())
-          runtime->start_mouse_controller_ = true;
-
-        break;
-      }
-      case MiniRtcConnectionStatus::MiniRtcConnectionDisconnected:
-      case MiniRtcConnectionStatus::MiniRtcConnectionFailed:
-      case MiniRtcConnectionStatus::MiniRtcConnectionClosed: {
-        runtime->HandleServerControllerDisconnected(remote_id,
-                                                    "connection_closed");
-        break;
-      }
-      default:
-        break;
+      runtime->is_server_mode_ = true;
+      runtime->devices_.StartSpeakerCapturer();
+      runtime->remote_client_id_ = remote_id;
+      if (!runtime->managed_host_frontend_ || handler->IsDirect())
+        runtime->start_mouse_controller_ = true;
     }
   }
 }

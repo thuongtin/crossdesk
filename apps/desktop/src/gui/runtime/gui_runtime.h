@@ -43,8 +43,6 @@
 
 namespace crossdesk {
 
-class VideoRenderer;
-
 // Shared GUI runtime. It owns subsystem controllers and cross-cutting session
 // state, but no window lifecycle, UI view, or transport callback methods.
 class GuiRuntime : protected gui_detail::GuiState {
@@ -108,6 +106,7 @@ class GuiRuntime : protected gui_detail::GuiState {
   int ForceSignalReconnect();
 
   void HandleRecentConnections();
+  void ReloadRecentConnections();
   void HandleConnectionStatusChange();
   void HandlePendingRejoins();
   void CancelPendingConnection(const std::string& remote_id);
@@ -119,6 +118,7 @@ class GuiRuntime : protected gui_detail::GuiState {
   void HandleWindowsServiceIntegration();
   void ProcessAutomationRequests();
   void HandlePrivacy();
+  void SyncPrivacyScreenSettings();
   void HandleScreenLock();
   bool IsAuthorizedController(const std::string& remote_id);
   void InitializeTrustedDevices(const std::filesystem::path& directory);
@@ -179,7 +179,7 @@ class GuiRuntime : protected gui_detail::GuiState {
       const std::string& remote_id);
   // UI thread: send mapped mouse/keyboard input to the current control target,
   // or every connected session while that target leads DeskHub group control.
-  void SendRemoteInput(const RemoteAction& action);
+  void SendRemoteInput(const RemoteAction& action, float wheel_delta = 0);
   InputOutcome ApplyRemoteInput(const std::string& remote_id, const RemoteAction& action);
   void HandleAutomation(const std::string& remote_id, const nlohmann::json& request);
   DesktopAutomation desktop_automation_;
@@ -247,7 +247,7 @@ class GuiRuntime : protected gui_detail::GuiState {
   bool host_cursor_default_ = true, host_cursor_preference_ = true;
   std::atomic<uint64_t> host_capture_tick_{0};
   bool ForwardUserSessionData(const std::string& id, const std::string& stream,
-                              const char* data, size_t size);
+                              const char* data, size_t size, bool trusted);
   void PublishLocalHostStatus();
   bool SendLocalHostCommand(nlohmann::json message);
 #endif
@@ -297,19 +297,17 @@ class GuiRuntime : protected gui_detail::GuiState {
   KeyboardController keyboard_;
   RemoteInputDispatcher remote_input_;
   std::shared_ptr<PeerEventHandler> peer_events_;
-  std::atomic<bool> video_frame_dirty_{false};
-#if defined(__APPLE__)
+  // Wakes the UI thread so a decoded frame is presented immediately instead of
+  // waiting for the next fallback timer tick. Set once by the application shell
+  // (macOS uses its display scheduler, other platforms post to the Slint event
+  // loop) and cleared during shutdown.
   std::shared_ptr<const std::function<void()>> video_frame_wakeup_;
-#endif
-  void NotifyVideoFrameReady() {
-    video_frame_dirty_.store(true, std::memory_order_release);
-#if defined(__APPLE__)
-    if (auto wake = std::atomic_load_explicit(
-            &video_frame_wakeup_, std::memory_order_acquire))
+  void NotifyVideoFrameReady(RemoteSession& session) {
+    session.frame_dirty_ = true;
+    if (auto wake = std::atomic_load_explicit(&video_frame_wakeup_,
+                                              std::memory_order_acquire))
       (*wake)();
-#endif
   }
-  std::unique_ptr<VideoRenderer> video_renderer_;
 
  private:
   friend class ClipboardController;

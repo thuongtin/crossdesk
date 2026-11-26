@@ -29,6 +29,7 @@
 "信令连接已关闭" = "Kết nối signaling đã đóng";
 "偏好模式" = "Chế độ ưu tiên";
 "像触控板一样滑动光标，点击时操作当前光标位置。" = "Vuốt để di chuyển con trỏ như bàn di chuột; chạm để thao tác tại vị trí con trỏ hiện tại.";
+"全部已读" = "Đánh dấu tất cả đã đọc";
 "公告加载失败，请重试。" = "Không thể tải thông báo, vui lòng thử lại.";
 "公告详情" = "Chi tiết thông báo";
 "共 %1$@ 条 · %2$@ 条未读" = "Tổng %1$@ mục · %2$@ mục chưa đọc";
@@ -212,6 +213,7 @@
 "网络连接已中断，请重新连接。" = "Kết nối mạng bị gián đoạn, hãy kết nối lại.";
 "自定义" = "Tùy chỉnh";
 "虚拟鼠标" = "Chuột ảo";
+"拖动虚拟鼠标" = "Kéo chuột ảo";
 "被控端不支持直接输入中文，请更新 macOS 被控端；也可先复制文字，通过远控菜单的剪贴板发送后粘贴" = "Máy được điều khiển không hỗ trợ nhập trực tiếp tiếng Trung, hãy cập nhật máy macOS được điều khiển; hoặc sao chép văn bản, gửi qua clipboard trong menu điều khiển từ xa rồi dán";
 "被控端已通过组合键解除隐私屏。点击“锁定”将重新开启隐私屏，并禁止本机使用组合键解锁。" = "Máy được điều khiển đã tắt chế độ riêng tư bằng tổ hợp phím. Nhấn “Khóa” để bật lại và cấm mở khóa bằng tổ hợp phím trên máy đó.";
 "被控端平台：%1$@" = "Nền tảng máy được điều khiển: %1$@";
@@ -351,3 +353,21 @@
 "选择桌面方案" = "Chọn môi trường desktop";
 "选择桌面方案以加载系统预设" = "Chọn môi trường desktop để tải bộ phím tắt có sẵn (preset) của hệ thống";
 "键盘上方常用栏" = "Thanh thường dùng phía trên bàn phím";
+"全部设备" = "Tất cả thiết bị";
+"分组" = "Nhóm";
+"修改名称" = "Đổi tên";
+"修改分组" = "Chỉnh sửa nhóm";
+"未分组" = "Chưa phân nhóm";
+"新建分组（可选）" = "Nhóm mới (tùy chọn)";
+"该分组暂无近期连接" = "Nhóm này chưa có kết nối gần đây";
+"更多操作" = "Thao tác khác";
+"设备 ID 或 IP 地址" = "ID thiết bị hoặc địa chỉ IP";
+"请输入设备 ID 或有效的 IP 地址" = "Nhập ID thiết bị hoặc địa chỉ IP hợp lệ";
+"IP 直连密码" = "Mật khẩu kết nối IP trực tiếp";
+"IP 直连失败，请检查电脑的直连地址和网络。" = "Kết nối IP trực tiếp thất bại, hãy kiểm tra địa chỉ kết nối trực tiếp của máy tính và mạng.";
+"本端地址" = "Địa chỉ máy này";
+"对端地址" = "Địa chỉ máy từ xa";
+"删除分组" = "Xóa nhóm";
+"组内设备和连接记录将保留。" = "Thiết bị và lịch sử kết nối trong nhóm vẫn được giữ lại.";
+"保存失败，请重试" = "Không thể lưu, hãy thử lại";
+"连接服务器后可获取最新公告。" = "Kết nối máy chủ để nhận thông báo mới nhất.";

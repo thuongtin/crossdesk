@@ -1,7 +1,7 @@
 import { SurfaceSeparator, FlatSurface, UiSurface } from "ui_surface.slint";
 import { UiRadius } from "ui_radius.slint";
 import { GalleryStrings } from "device_strings.slint";
-import { RemoteCursor } from "remote_cursor.slint";
+import { RemoteCursor, AdjustedPointer } from "remote_cursor.slint";
 import { DeviceCardActions, DeviceCardStyle } from "device_card_actions.slint";
 import { GalleryMenuButton } from "gallery_menu_button.slint";
 import { GroupFilter } from "group_filter.slint";
@@ -148,6 +148,7 @@ export component GalleryView inherits Rectangle {
     in property <[GalleryTile]> tiles;
     in property <[string]> groups;
     in-out property <int> group-index: 0;
+    callback delete-group-requested(string);
     // Pagination and rendering share the same fixed-aspect cell geometry.
     out property <int> columns: max(1, floor(grid.width / root.card-width));
     out property <int> rows: max(1, floor(grid.height / root.card-height));
@@ -192,6 +193,7 @@ export component GalleryView inherits Rectangle {
         root.device-tooltip-id = tile.id;
     }
     public function reset-transient() {
+        group-filter.close-menu();
         root.resizing = false;
         root.focus-resizing = false;
         root.cancel-device-drag();
@@ -286,7 +288,9 @@ export component GalleryView inherits Rectangle {
         HorizontalLayout {
             x: 0px; y: 0px; width: parent.width - selection-toggle.width - 6px; height: parent.height;
             visible: !root.batch; spacing: 6px;
-            GroupFilter { width: 155px; height: 24px; system-count: 1; model: root.groups; current-index <=> root.group-index;
+            group-filter := GroupFilter { width: 155px; height: 24px; system-count: 1; model: root.groups; current-index <=> root.group-index;
+                delete-label: GalleryStrings.texts[217];
+                delete-requested(name) => { root.delete-group-requested(name); }
                 selected(index) => { root.action("group", index); }
             }
             Text {
@@ -629,9 +633,11 @@ export component GalleryView inherits Rectangle {
                         if root.controlling && !root.input-suspended { root.key-input(event.text, false, event.modifiers.control, event.modifiers.alt, event.modifiers.shift, event.modifiers.meta); }
                         accept
                     }
-                    TouchArea {
+                    video-pointer := TouchArea {
                         mouse-cursor: root.controlling && !root.input-suspended
-                            ? RemoteCursor.shape(root.remote-cursor-shape) : MouseCursor.default;
+                            ? (RemoteCursor.adjusted ? MouseCursor.none : RemoteCursor.shape(root.remote-cursor-shape))
+                            : MouseCursor.default;
+                        changed has-hover => { if !self.has-hover && !self.pressed { RemoteCursor.reset(); } }
                         pointer-event(event) => {
                             if !root.input-suspended {
                                 if event.kind == PointerEventKind.down { video-focus.focus(); }
@@ -643,6 +649,9 @@ export component GalleryView inherits Rectangle {
                             accept
                         }
                     }
+                }
+                if video-pointer.has-hover && root.controlling && !root.input-suspended: AdjustedPointer {
+                    shape: root.remote-cursor-shape;
                 }
                 if !root.focused.has-frame || root.focused.stale || !root.focused.connected: Text { text: root.focused.status; color: root.focused.online ? white : DeviceCardStyle.offline-placeholder; horizontal-alignment: center; vertical-alignment: center; }
             }

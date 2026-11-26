@@ -1,4 +1,5 @@
 #include <jni.h>
+#include <filesystem>
 #include <android/native_window_jni.h>
 #include <libyuv.h>
 #include <minirtc.h>
@@ -17,6 +18,7 @@
 #include <stdexcept>
 #include <vector>
 #include "controller_protocol.h"
+#include "mobile_direct_connection.h"
 #include "../../../libs/controller/include/mobile_device_trust.h"
 #include "file_transfer_session.h"
 #include "latest_frame_worker.h"
@@ -51,6 +53,7 @@ struct CallbackContext { Session* owner; bool controller; };
 struct Session {
   jobject owner = nullptr;
   jmethodID event_method, audio_method, frame_method;
+  mobile_controller::DirectConnection direct;
   MiniRtcPeerPtr* identity = nullptr;
   MiniRtcPeerPtr* controller = nullptr;
   CallbackContext identity_context{this, false}, controller_context{this, true};
@@ -133,7 +136,8 @@ struct Session {
     stopping = true;
     renderer.Stop();
     if (controller) {
-      MiniRtcLeaveConnection(controller, remote.c_str());
+      if (remote.find(':') != std::string::npos) direct.Stop();
+      else MiniRtcLeaveConnection(controller, remote.c_str());
       MiniRtcDestroyPeer(&controller);
     }
     if (identity) MiniRtcDestroyPeer(&identity);
@@ -173,7 +177,7 @@ void SignalMessage(const char* data, size_t size, void* user) {
 }
 void Connection(MiniRtcConnectionStatus status, const char*, size_t, void* user) {
   auto* ctx = static_cast<CallbackContext*>(user);
-  if (ctx->controller) ctx->owner->Event(2, {{"status", status}});
+  if (ctx->controller && !ctx->owner->direct.Status(status)) ctx->owner->Event(2, {{"status", status}});
 }
 void Network(const char* id, size_t size, MiniRtcTraversalMode mode,
              const MiniRtcNetTrafficStats* stats, const char*, size_t, void* user) {
@@ -348,7 +352,7 @@ extern "C" JNIEXPORT jstring JNICALL JNI_METHOD(nCheckMobileUpdate)(
 }
 extern "C" JNIEXPORT jlong JNICALL JNI_METHOD(nCreate)(
     JNIEnv* env, jclass, jobject owner, jstring host, jint port, jstring identity,
-    jstring log_path, jstring certificates, jstring trust_key) {
+    jstring log_path, jstring certificates, jstring trust_key, jboolean controller_only) {
   try {
     auto s = std::make_unique<Session>();
     s->owner = env->NewGlobalRef(owner);
@@ -367,17 +371,25 @@ extern "C" JNIEXPORT jlong JNICALL JNI_METHOD(nCreate)(
     // loads this path: OpenSSL's default loader ignores SSL_CERT_FILE in an
     // Android app process (AT_SECURE=1). Chain and hostname checks stay enabled.
     const auto bundle = String(env, certificates);
-    if (bundle.empty() || setenv("SSL_CERT_FILE", bundle.c_str(), 1) != 0)
+    // An ID-based controller starts after the identity peer has configured TLS.
+    if (!controller_only && (bundle.empty() || setenv("SSL_CERT_FILE", bundle.c_str(), 1) != 0))
       throw std::runtime_error("Unable to configure Android trust bundle");
     // MiniRTC's diagnostic log includes login identities. Keep credentials
     // solely in Keystore-backed storage; do not persist its session logging.
     if (MiniRtcConfigureLogging(MiniRtcLogOff, nullptr, nullptr) != 0)
       throw std::runtime_error("Unable to configure MiniRTC logging");
+    if (controller_only) return reinterpret_cast<jlong>(s.release());
     auto params = Parameters(s.get(), false);
     s->identity = MiniRtcCreatePeer(&params);
+    const auto announcement_cache = std::filesystem::path(s->log_path).parent_path() / "announcement_catalog";
+    MiniRtcSetAnnouncementCacheDirectory(s->identity, announcement_cache.c_str());
     if (!s->identity || MiniRtcInit(s->identity) != 0) return 0;
     return reinterpret_cast<jlong>(s.release());
   } catch (const std::exception&) { return 0; }
+}
+extern "C" JNIEXPORT jstring JNICALL JNI_METHOD(directEndpoint)(JNIEnv* env, jclass, jstring input) {
+  auto endpoint = mobile_controller::DirectConnection::Endpoint(String(env, input));
+  return env->NewStringUTF(endpoint.c_str());
 }
 extern "C" JNIEXPORT jboolean JNICALL JNI_METHOD(nConnect)(
     JNIEnv* env, jclass, jlong handle, jstring identity, jstring remote, jstring password) {
@@ -392,6 +404,10 @@ extern "C" JNIEXPORT jboolean JNICALL JNI_METHOD(nConnect)(
   MiniRtcAddDataStream(s->controller, kDataStream, false);
   for (const char* name : {kMouseStream, kKeyboardStream, kControlStream,
                           kClipboardStream, kFileStream, kFileFeedbackStream}) MiniRtcAddDataStream(s->controller, name, true);
+  if (s->remote.find(':') != std::string::npos) {
+    return s->direct.Start(s->controller, s->remote, String(env, password),
+        [s](MiniRtcConnectionStatus status) { s->Event(2, {{"status", status}}); });
+  }
   if (MiniRtcInit(s->controller) != 0) return false;
   const auto join = s->remote + "@" + String(env, password);
   return MiniRtcJoinConnection(s->controller, join.c_str()) == 0;
@@ -532,14 +548,18 @@ extern "C" JNIEXPORT jboolean JNICALL JNI_METHOD(nPresenceRequest)(
       !message.contains("subscribe") || message["subscribe"] != true) return false;
   return MiniRtcSendSignalMessage(s->identity, bytes.data(), bytes.size()) == 0;
 }
-extern "C" JNIEXPORT void JNICALL JNI_METHOD(nClipboard)(
+extern "C" JNIEXPORT jboolean JNICALL JNI_METHOD(nClipboard)(
     JNIEnv* env, jclass, jlong handle, jbyteArray data) {
-  auto* s = From(handle); if (!s || !data) return;
+  auto* s = From(handle);
+  if (!s || !s->controller || s->stopping || !data) return false;
   const auto size = env->GetArrayLength(data);
-  if (!size || size > static_cast<int>(kMaxClipboardBytes)) return;
+  if (!size || size > static_cast<int>(kMaxClipboardBytes)) return false;
   std::string bytes(size, '\0');
   env->GetByteArrayRegion(data, 0, size, reinterpret_cast<jbyte*>(bytes.data()));
-  s->Send(kClipboardStream, bytes);
+  if (env->ExceptionCheck() || bytes.find('\0') != std::string::npos) return false;
+  const auto id = s->remote.find(':') == std::string::npos ? s->remote : s->direct.RemotePeerId();
+  return !id.empty() && MiniRtcSendReliableDataFrameToPeer(
+      s->controller, bytes.data(), bytes.size(), kClipboardStream, id.data(), id.size()) == 0;
 }
 extern "C" JNIEXPORT void JNICALL JNI_METHOD(nSurface)(JNIEnv* env, jclass, jlong handle, jobject surface) {
   if (auto* s = From(handle)) {

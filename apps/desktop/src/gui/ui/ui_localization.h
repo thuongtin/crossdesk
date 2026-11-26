@@ -35,7 +35,10 @@ template <typename Component>
 void ApplyServerStrings(const Component& component, int language_index) {
   const int language = localization::detail::ClampLanguageIndex(language_index);
   auto& strings = component->template global<ui::ServerStrings>();
-  strings.set_controlled(Text(localization::server_controlled[language]));
+  const auto& badge = localization::Literal("被控中 · {0} 台", language);
+  const auto count = badge.find("{0}");
+  strings.set_controlled_prefix(Text(badge.substr(0, count)));
+  strings.set_controlled_suffix(Text(count == std::string::npos ? "" : badge.substr(count + 3)));
   strings.set_heading(Text(localization::server_heading[language]));
   strings.set_connected(Text(localization::server_connected[language]));
   strings.set_send_file(Text(localization::server_send_file[language]));
@@ -109,6 +112,7 @@ inline int ApplyMainWindowStrings(
   messages.set_read_all(Text(localization::message_read_all[language]));
   messages.set_empty(Text(localization::message_empty[language]));
   messages.set_select_message(Text(localization::message_select[language]));
+  messages.set_retry(Text(localization::Literal("重试", language)));
   messages.set_loading(Text(localization::message_loading[language]));
   messages.set_read_save_error(Text(localization::message_read_save_error[language]));
   messages.set_close(Text(localization::message_close[language]));
@@ -135,8 +139,6 @@ inline int ApplyMainWindowStrings(
   strings.set_settings(Text(localization::settings[language]));
   strings.set_about(Text(localization::about[language]));
   strings.set_sponsorship_title(Text(localization::sponsorship_title[language]));
-  strings.set_sponsorship_message(Text(localization::sponsorship_message[language]));
-  strings.set_sponsorship_dismiss_hint(Text(localization::sponsorship_dismiss_hint[language]));
   strings.set_sponsor_via_afdian(Text(localization::sponsor_via_afdian[language]));
   strings.set_ok(Text(localization::ok[language]));
   strings.set_cancel(Text(localization::cancel[language]));
@@ -150,6 +152,8 @@ inline int ApplyMainWindowStrings(
       Text(localization::confirm_delete_connection[language]));
   strings.set_language(Text(localization::language[language]));
   strings.set_codec(Text(localization::video_encode_format[language]));
+  strings.set_desktop_rate_control(Text(localization::desktop_rate_control[language]));
+  strings.set_desktop_rate_control_hint(Text(localization::desktop_rate_control_hint[language]));
   strings.set_pause_video_when_minimized(
       Text(localization::pause_video_when_minimized[language]));
   strings.set_pause_video_when_minimized_hint(
@@ -162,6 +166,7 @@ inline int ApplyMainWindowStrings(
   strings.set_save_remote_previews(Text(localization::save_remote_previews[language]));
   strings.set_unknown_platform(Text(localization::unknown_platform[language]));
   strings.set_privacy_local_unlock(Text(localization::privacy_local_unlock[language]));
+  strings.set_privacy_black_screen(Text(localization::privacy_black_screen[language]));
   strings.set_privacy_on_connect(Text(localization::privacy_on_connect[language]));
   strings.set_lock_on_disconnect(Text(localization::lock_on_disconnect[language]));
   strings.set_file_save_path(
@@ -278,7 +283,9 @@ inline int ApplyStreamWindowStrings(
   strings.set_privacy_disable(Text(localization::privacy_disable[language]));
   strings.set_control_mouse(Text(localization::control_mouse[language]));
   strings.set_release_mouse(Text(localization::release_mouse[language]));
-  strings.set_video_settings(Text(localization::video_settings[language]));
+  strings.set_settings(Text(localization::settings[language]));
+  strings.set_mouse_sensitivity(Text(localization::mouse_sensitivity[language]));
+  strings.set_wheel_sensitivity(Text(localization::wheel_sensitivity[language]));
   strings.set_video_settings_unavailable(
       Text(localization::video_settings_unavailable[language]));
   strings.set_video_quality(Text(localization::video_quality[language]));
@@ -324,6 +331,8 @@ inline int ApplyStreamWindowStrings(
   strings.set_stats_connection_latency(Text(localization::connection_latency[language]));
   strings.set_stats_connection_mode(
       Text(localization::connection_mode[language]));
+  strings.set_stats_local_endpoint(Text(localization::Literal("本端地址", language)));
+  strings.set_stats_remote_endpoint(Text(localization::Literal("对端地址", language)));
   strings.set_stats_encoder(Text(localization::remote_video_encoder[language]));
   strings.set_stats_decoder(Text(localization::local_video_decoder[language]));
   strings.set_stats_encryption(

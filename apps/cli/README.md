@@ -4,9 +4,16 @@
 
 ## Xem trước hình ảnh
 
-| Hình ảnh ký tự ANSI | Hình ảnh pixel giao thức Kitty |
-| --- | --- |
-| <img src="../../docs/images/cli-ansi-overview.png" width="480" alt="Đầu ra toàn cảnh ANSI của CrossDesk CLI, gồm thanh trạng thái chỉ đọc và gợi ý phím tắt" /> | <img src="../../docs/images/cli-kitty-overview.png" width="480" alt="Đầu ra toàn cảnh pixel Kitty của CrossDesk CLI, hiển thị cùng màn hình từ xa" /> |
+<table>
+  <tr>
+    <th width="50%">Hình ảnh ký tự ANSI</th>
+    <th width="50%">Hình ảnh pixel giao thức Kitty</th>
+  </tr>
+  <tr>
+    <td><img src="../../docs/images/cli-ansi-overview.png" width="480" alt="Đầu ra toàn cảnh ANSI của CrossDesk CLI, gồm thanh trạng thái chỉ đọc và gợi ý phím tắt" /></td>
+    <td><img src="../../docs/images/cli-kitty-overview.png" width="480" alt="Đầu ra toàn cảnh pixel Kitty của CrossDesk CLI, hiển thị cùng màn hình từ xa" /></td>
+  </tr>
+</table>
 
 Hiệu quả hiển thị tùy terminal và kích thước cửa sổ. Mặc định `auto` lần lượt chọn Kitty, Sixel, ANSI; terminal thông thường có thể dùng `--renderer ansi`, terminal hỗ trợ giao thức tương ứng có thể dùng `--renderer kitty` hoặc `--renderer sixel`. Chế độ pixel chỉ định tường minh cần vượt qua kiểm tra khả năng; thêm đầu ra Sixel không có nghĩa mọi phiên bản Xshell đều hiển thị ảnh, bản thân terminal cũng phải hỗ trợ giao thức này. Toàn cảnh ANSI phù hợp xem bố cục màn hình; để đọc chữ nhỏ, cần vào chế độ chi tiết.
 

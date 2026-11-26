@@ -5,6 +5,7 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/CABase.h>
 #import <QuartzCore/CAMetalLayer.h>
+#import <QuartzCore/CATransaction.h>
 
 #include <algorithm>
 #include <array>
@@ -18,38 +19,80 @@
 #include "platform/window_drag.h"
 #include "rd_log.h"
 
-@interface CrossDeskMetalVideoView : NSView
+// Input belongs to the Slint surface and the native window frame.
+@interface CrossDeskDecorationView : NSView
 @end
 
-@interface CrossDeskStreamTitleView : NSView
+@implementation CrossDeskDecorationView
+- (NSView*)hitTest:(NSPoint)point {
+  return nil;
+}
+@end
+
+@interface CrossDeskMetalVideoView : CrossDeskDecorationView
+@property(nonatomic, readonly) CAMetalLayer* surface;
+- (NSSize)updateViewport;
+@end
+
+@interface CrossDeskStreamTitleView : CrossDeskDecorationView
 @property(nonatomic, copy) BOOL (^windowLayoutHandler)(NSWindow* window);
 @property(nonatomic, copy) void (^surfaceInvalidationHandler)(void);
+@property(nonatomic, copy) void (^resizeVideoHandler)(NSWindow*);
 @property(nonatomic) BOOL windowLayoutPending;
-- (instancetype)initWithTitle:(NSString*)title;
+- (instancetype)initWithWindow:(NSWindow*)window;
 @end
 
 @implementation CrossDeskMetalVideoView
 
-- (CALayer*)makeBackingLayer {
-  return [CAMetalLayer layer];
+- (instancetype)initWithFrame:(NSRect)frame {
+  self = [super initWithFrame:frame];
+  if (self) {
+    self.wantsLayer = YES;
+    self.layer.backgroundColor = NSColor.blackColor.CGColor;
+    self.layer.masksToBounds = YES;
+    _surface = [CAMetalLayer layer];
+    _surface.contentsGravity = kCAGravityResizeAspect;
+    [self.layer addSublayer:_surface];
+  }
+  return self;
+}
+
+- (void)layout {
+  [super layout];
+  [self updateViewport];
+}
+
+- (NSSize)updateViewport {
+  const NSSize content = self.window.contentView.bounds.size;
+  bool transitioning = false;
+  const CGFloat inset = crossdesk::StreamWindowVideoTransitionInset(
+      (__bridge void*)self, content.width, content.height, &transitioning);
+  NSRect viewport = self.bounds;
+  viewport.size.height = std::max<CGFloat>(1, NSHeight(viewport) - inset);
+  if (!NSEqualRects(_surface.frame, viewport)) {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    _surface.frame = viewport;
+    [CATransaction commit];
+  }
+  // Use one raster size throughout the zoom, including when no new video arrives.
+  return transitioning && self.window.screen ? self.window.screen.frame.size : viewport.size;
 }
 
 - (BOOL)isOpaque {
   return YES;
 }
 
-- (NSView*)hitTest:(NSPoint)point {
-  (void)point;
-  return nil;
-}
-
 @end
 
 @implementation CrossDeskStreamTitleView {
   NSTextField* _titleLabel;
+  NSView* _titlebarBackground;
+  __weak NSWindow* _streamWindow;
 }
 
-- (instancetype)initWithTitle:(NSString*)title {
+- (instancetype)initWithWindow:(NSWindow*)window {
+  NSString* title = window.title.length > 0 ? window.title : @"CrossDesk";
   NSFont* font = [NSFont boldSystemFontOfSize:13.0];
   const CGFloat text_width =
       ceil([title sizeWithAttributes:@{NSFontAttributeName : font}].width);
@@ -60,60 +103,58 @@
     _titleLabel.lineBreakMode = NSLineBreakByClipping;
     _titleLabel.maximumNumberOfLines = 1;
     [self addSubview:_titleLabel];
+
+    // Keep the white fill inside the titlebar. AppKit can expose the window
+    // backing behind the floating controls while it composites two Space sizes.
+    NSView* content = window.contentView;
+    NSView* frame = content.superview;
+    _titlebarBackground = [[CrossDeskDecorationView alloc] initWithFrame:NSZeroRect];
+    _titlebarBackground.wantsLayer = YES;
+    _titlebarBackground.layer.backgroundColor = NSColor.whiteColor.CGColor;
+    _titlebarBackground.translatesAutoresizingMaskIntoConstraints = NO;
+    _titlebarBackground.alphaValue =
+        (window.styleMask & NSWindowStyleMaskFullScreen) ? 0 : 1;
+    [frame addSubview:_titlebarBackground positioned:NSWindowBelow relativeTo:nil];
+    [NSLayoutConstraint activateConstraints:@[
+        [_titlebarBackground.leadingAnchor constraintEqualToAnchor:frame.leadingAnchor],
+        [_titlebarBackground.trailingAnchor constraintEqualToAnchor:frame.trailingAnchor],
+        [_titlebarBackground.topAnchor constraintEqualToAnchor:frame.topAnchor],
+        [_titlebarBackground.bottomAnchor constraintEqualToAnchor:content.topAnchor],
+    ]];
+
+    // AppKit can move the title accessory to a toolbar window in fullscreen.
+    // Keep observing the window that owns the video surface.
+    _streamWindow = window;
+    self.windowLayoutPending = YES;
+    NSNotificationCenter* center = NSNotificationCenter.defaultCenter;
+    [center addObserver:self selector:@selector(windowActivationChanged:)
+                   name:NSWindowDidBecomeKeyNotification object:window];
+    [center addObserver:self selector:@selector(windowActivationChanged:)
+                   name:NSWindowDidResignKeyNotification object:window];
+    [center addObserver:self selector:@selector(windowDidResize:)
+                   name:NSWindowDidResizeNotification object:window];
+    [center addObserver:self selector:@selector(windowDidUpdate:)
+                   name:NSWindowDidUpdateNotification object:window];
+    [center addObserver:self selector:@selector(windowBackingPropertiesChanged:)
+                   name:NSWindowDidChangeBackingPropertiesNotification object:window];
+    [center addObserver:self selector:@selector(windowDidToggleFullscreen:)
+                   name:NSWindowDidEnterFullScreenNotification object:window];
+    [center addObserver:self selector:@selector(windowWillExitFullscreen:)
+                   name:NSWindowWillExitFullScreenNotification object:window];
+    [center addObserver:self selector:@selector(windowDidToggleFullscreen:)
+                   name:NSWindowDidExitFullScreenNotification object:window];
   }
   return self;
 }
 
+- (BOOL)applyWindowLayout {
+  NSWindow* window = _streamWindow;
+  return window && self.windowLayoutHandler && self.windowLayoutHandler(window);
+}
+
 - (void)viewDidMoveToWindow {
   [super viewDidMoveToWindow];
-  [[NSNotificationCenter defaultCenter]
-      removeObserver:self
-                name:NSWindowDidBecomeKeyNotification
-              object:nil];
-  [[NSNotificationCenter defaultCenter]
-      removeObserver:self
-                name:NSWindowDidResignKeyNotification
-              object:nil];
-  [[NSNotificationCenter defaultCenter]
-      removeObserver:self
-                name:NSWindowDidResizeNotification
-              object:nil];
-  [[NSNotificationCenter defaultCenter]
-      removeObserver:self
-                name:NSWindowDidUpdateNotification
-              object:nil];
-  [[NSNotificationCenter defaultCenter]
-      removeObserver:self
-                name:NSWindowDidChangeBackingPropertiesNotification
-              object:nil];
-  if (self.window != nil) {
-    self.windowLayoutPending = YES;
-    [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(windowActivationChanged:)
-               name:NSWindowDidBecomeKeyNotification
-             object:self.window];
-    [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(windowActivationChanged:)
-               name:NSWindowDidResignKeyNotification
-             object:self.window];
-    [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(windowDidResize:)
-               name:NSWindowDidResizeNotification
-             object:self.window];
-    [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(windowDidUpdate:)
-               name:NSWindowDidUpdateNotification
-             object:self.window];
-    [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(windowBackingPropertiesChanged:)
-               name:NSWindowDidChangeBackingPropertiesNotification
-             object:self.window];
-  }
+  self.windowLayoutPending = YES;
   [self invalidateVideoSurface];
   [self updateTitleColor];
 }
@@ -122,10 +163,7 @@
   [super viewDidChangeEffectiveAppearance];
   [self updateTitleColor];
   [self invalidateVideoSurface];
-  self.windowLayoutPending = YES;
-  if (self.windowLayoutHandler != nil && self.window != nil) {
-    self.windowLayoutPending = !self.windowLayoutHandler(self.window);
-  }
+  self.windowLayoutPending = ![self applyWindowLayout];
 }
 
 - (void)windowActivationChanged:(NSNotification*)notification {
@@ -134,12 +172,30 @@
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
+  if (self.resizeVideoHandler) self.resizeVideoHandler(notification.object);
+  // The compositor scales the existing image during the Space animation.
+  // The titlebar and cached frame only need refreshing at its final size.
+  if (crossdesk::IsStreamWindowFullscreenTransitioning(
+          (__bridge void*)_streamWindow.contentView)) return;
   [self invalidateVideoSurface];
   self.windowLayoutPending = YES;
-  if (self.windowLayoutHandler != nil &&
-      [notification.object isKindOfClass:NSWindow.class]) {
-    self.windowLayoutHandler(static_cast<NSWindow*>(notification.object));
-  }
+  [self applyWindowLayout];
+}
+
+- (void)windowWillExitFullscreen:(NSNotification*)notification {
+  // Restore the titlebar fill as the control window shrinks into place.
+  _titlebarBackground.alphaValue = 0;
+  [NSAnimationContext runAnimationGroup:^(NSAnimationContext* context) {
+    context.duration = 0.16;
+    _titlebarBackground.animator.alphaValue = 1;
+  } completionHandler:nil];
+}
+
+- (void)windowDidToggleFullscreen:(NSNotification*)notification {
+  _titlebarBackground.alphaValue =
+      (_streamWindow.styleMask & NSWindowStyleMaskFullScreen) ? 0 : 1;
+  [self invalidateVideoSurface];
+  self.windowLayoutPending = ![self applyWindowLayout];
 }
 
 - (void)windowBackingPropertiesChanged:(NSNotification*)notification {
@@ -148,12 +204,14 @@
 }
 
 - (void)windowDidUpdate:(NSNotification*)notification {
-  if (!self.windowLayoutPending || self.windowLayoutHandler == nil ||
-      ![notification.object isKindOfClass:NSWindow.class]) {
-    return;
+  NSString *title = _streamWindow.title;
+  if (title && ![_titleLabel.stringValue isEqualToString:title]) {
+    _titleLabel.stringValue = title;
+    [self setFrameSize:NSMakeSize(_titleLabel.fittingSize.width + 10, self.frame.size.height)];
+    self.needsLayout = YES;
   }
-  self.windowLayoutPending =
-      !self.windowLayoutHandler(static_cast<NSWindow*>(notification.object));
+  if (!self.windowLayoutPending) return;
+  self.windowLayoutPending = ![self applyWindowLayout];
   [self invalidateVideoSurface];
 }
 
@@ -164,9 +222,15 @@
 }
 
 - (void)updateTitleColor {
-  _titleLabel.textColor = self.window.isKeyWindow
-                              ? NSColor.blackColor
-                              : [NSColor colorWithWhite:0.45 alpha:1.0];
+  // When the fullscreen titlebar is revealed, AppKit hosts the accessory
+  // in a separate window with the system toolbar appearance.
+  if (self.window && self.window != _streamWindow) {
+    _titleLabel.textColor = NSColor.labelColor;
+  } else {
+    _titleLabel.textColor = _streamWindow.isKeyWindow
+                                ? NSColor.blackColor
+                                : [NSColor colorWithWhite:0.45 alpha:1.0];
+  }
 }
 
 - (void)layout {
@@ -177,17 +241,13 @@
       title_size.width, title_size.height);
 }
 
-- (NSView*)hitTest:(NSPoint)point {
-  (void)point;
-  return nil;
-}
-
 - (BOOL)mouseDownCanMoveWindow {
   return YES;
 }
 
 - (void)dealloc {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
+  [_titlebarBackground removeFromSuperview];
 }
 
 @end
@@ -267,8 +327,7 @@ const MiniRtcNativeVideoFrame* GetMacNativeFrame(
 
 // Slint's winit backend creates AppKit windows with transparent backing so
 // transparent Slint items can be composited. Keep the content out of the
-// titlebar and choose whether AppKit's material or the semantic window color
-// is visible behind the native titlebar controls.
+// titlebar. The stream uses a black backing under its video and titlebar views.
 bool ConfigureNativeWindowChrome(NSWindow* window,
                                  BOOL titlebar_transparent) {
   if (window == nil ||
@@ -286,7 +345,8 @@ bool ConfigureNativeWindowChrome(NSWindow* window,
     layout_changed = true;
   }
   window.opaque = YES;
-  window.backgroundColor = NSColor.windowBackgroundColor;
+  window.backgroundColor =
+      titlebar_transparent ? NSColor.blackColor : NSColor.windowBackgroundColor;
 
   // Removing FullSizeContentView changes the titlebar's layout guide. Commit
   // the public titlebar-accessory layout before the next frame is presented.
@@ -305,14 +365,11 @@ bool RestoreNativeWindowChrome(NSWindow* window) {
 }
 
 bool ConfigureStreamWindowChrome(NSWindow* window) {
-  // Keep the stream titlebar pure white in every system appearance. Its
-  // transparent native titlebar exposes this fixed window backing color while
-  // the Slint and Metal content continues to follow the selected theme.
-  const bool configured = ConfigureNativeWindowChrome(window, YES);
-  if (window != nil) {
-    window.backgroundColor = NSColor.whiteColor;
+  if (window.styleMask & NSWindowStyleMaskFullScreen) {
+    window.backgroundColor = NSColor.blackColor;
+    return true;
   }
-  return configured;
+  return ConfigureNativeWindowChrome(window, YES);
 }
 
 size_t AlignUp(size_t value, size_t alignment) {
@@ -328,7 +385,13 @@ enum class SlotUse {
   in_flight,
 };
 
+struct Nv12Color {
+  uint32_t full_range = 0;
+  uint32_t bt709 = 0;
+};
+
 struct FrameSlot {
+  Nv12Color color;
   id<MTLBuffer> y_buffer = nil;
   id<MTLBuffer> uv_buffer = nil;
   id<MTLTexture> y_texture = nil;
@@ -358,6 +421,7 @@ struct FrameSlot {
       uv_cv_texture = nullptr;
     }
     native_frame.Reset();
+    color = {};
     y_buffer = nil;
     uv_buffer = nil;
     y_stride = 0;
@@ -463,22 +527,28 @@ vertex RasterData nv12_vertex(uint vertex_id [[vertex_id]]) {
   return out;
 }
 
+struct Nv12Color {
+  uint full_range;
+  uint bt709;
+};
+
 fragment half4 nv12_fragment(
     RasterData in [[stage_in]],
     texture2d<float, access::sample> y_texture [[texture(0)]],
-    texture2d<float, access::sample> uv_texture [[texture(1)]]) {
+    texture2d<float, access::sample> uv_texture [[texture(1)]],
+    constant Nv12Color& color [[buffer(0)]]) {
   constexpr sampler video_sampler(coord::normalized,
                                   address::clamp_to_edge,
                                   filter::linear);
-  const float y = 1.16438356 * (y_texture.sample(video_sampler, in.texcoord).r
-                                - 16.0 / 255.0);
-  const float2 uv = uv_texture.sample(video_sampler, in.texcoord).rg - 0.5;
-  // BT.601 limited-range NV12, matching the previous libyuv NV12ToABGR/RAW
-  // path. MiniRTC's current MiniRtcVideoFrame API does not carry color metadata, so
-  // retaining the established matrix avoids a platform-only color change.
-  const float3 rgb = float3(y + 1.59602678 * uv.y,
-                            y - 0.39176229 * uv.x - 0.81296764 * uv.y,
-                            y + 2.01723214 * uv.x);
+  float y = y_texture.sample(video_sampler, in.texcoord).r;
+  float2 uv = uv_texture.sample(video_sampler, in.texcoord).rg - 128.0 / 255.0;
+  if (!color.full_range) {
+    y = (y - 16.0 / 255.0) * (255.0 / 219.0);
+    uv *= 255.0 / 224.0;
+  }
+  const float3 rgb = color.bt709
+      ? float3(y + 1.5748 * uv.y, y - .187324 * uv.x - .468124 * uv.y, y + 1.8556 * uv.x)
+      : float3(y + 1.402 * uv.y, y - .344136 * uv.x - .714136 * uv.y, y + 1.772 * uv.x);
   return half4(half3(saturate(rgb)), 1.0h);
 }
 )metal";
@@ -495,8 +565,16 @@ struct MacMetalVideoRenderer::Impl {
       std::make_shared<SharedFrameState>();
   NSView* slint_view = nil;
   CrossDeskMetalVideoView* video_view = nil;
+  NSLayoutConstraint* video_top = nil;
   NSTitlebarAccessoryViewController* title_accessory_controller = nil;
   CAMetalLayer* metal_layer = nil;
+  struct DrawableRequest {
+    id<CAMetalDrawable> drawable = nil;
+    double wait_ms = 0;
+    bool complete = false;
+  };
+  std::shared_ptr<DrawableRequest> drawable_request;
+  std::function<void()> drawable_ready;
   std::atomic<bool> attached{false};
   std::string rendered_stream;
   uint64_t rendered_content_generation = 0;
@@ -570,10 +648,53 @@ struct MacMetalVideoRenderer::Impl {
     return device != nil && command_queue != nil && pipeline != nil;
   }
 
+  // WindowServer can hold both drawables during a fullscreen Space change.
+  // Keep the window thread free to animate and leave the latest frame queued.
+  id<CAMetalDrawable> TakeTransitionDrawable(double& wait_ms) {
+    if (drawable_request) {
+      if (!drawable_request->complete) return nil;
+      auto ready = std::move(drawable_request);
+      id<CAMetalDrawable> drawable = ready->drawable;
+      const CGSize size = metal_layer.drawableSize;
+      if (drawable && drawable.texture.width == size.width &&
+          drawable.texture.height == size.height) {
+        wait_ms = ready->wait_ms;
+        return drawable;
+      }
+    }
+    drawable_request = std::make_shared<DrawableRequest>();
+    std::weak_ptr<DrawableRequest> weak_request = drawable_request;
+    CAMetalLayer* layer = metal_layer;
+    const auto notify = drawable_ready;
+    const auto dirty = native_surface_needs_redraw;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0), ^{
+      @autoreleasepool {
+        const auto start = VideoLatencyFrame::Clock::now();
+        id<CAMetalDrawable> drawable = [layer nextDrawable];
+        const double elapsed = std::chrono::duration<double, std::milli>(
+            VideoLatencyFrame::Clock::now() - start).count();
+        dispatch_async(dispatch_get_main_queue(), ^{
+          // Detaching cancels this request, including a queued UI wakeup.
+          if (auto request = weak_request.lock()) {
+            request->drawable = drawable;
+            request->wait_ms = elapsed;
+            request->complete = true;
+            dirty->store(true, std::memory_order_release);
+            if (drawable && notify) notify();
+          }
+        });
+      }
+    });
+    return nil;
+  }
+
   void DetachViews() {
     @autoreleasepool {
       attached.store(false, std::memory_order_release);
+      drawable_request.reset();
+      drawable_ready = {};
       NSWindow* window = slint_view.window;
+      ((CrossDeskStreamTitleView*)title_accessory_controller.view).resizeVideoHandler = nil;
       if (video_view != nil) {
         [video_view removeFromSuperview];
       }
@@ -585,13 +706,14 @@ struct MacMetalVideoRenderer::Impl {
         }
       }
       title_accessory_controller = nil;
-      if (window != nil && !IsStreamWindowFullscreen()) {
+      if (window != nil && !IsStreamWindowFullscreen((__bridge void *)slint_view)) {
         RestoreNativeWindowChrome(window);
         window.titleVisibility = NSWindowTitleVisible;
         NSView* frame_view = window.contentView.superview;
         frame_view.needsLayout = YES;
         [frame_view layoutSubtreeIfNeeded];
       }
+      video_top = nil;
       video_view = nil;
       slint_view = nil;
       metal_layer = nil;
@@ -636,58 +758,28 @@ struct MacMetalVideoRenderer::Impl {
     native_surface_needs_redraw->store(true, std::memory_order_release);
   }
 
-  void UpdateVideoGeometry(double top_inset_points,
-                           bool native_titlebar_visible) {
+  CGSize UpdateVideoGeometry(double top_inset_points) {
     if (slint_view == nil || video_view == nil || metal_layer == nil) {
-      return;
+      return CGSizeZero;
     }
     NSView* parent = slint_view.superview;
     if (parent == nil) {
-      return;
+      return CGSizeZero;
     }
     RestoreVideoViewOrder();
 
-    NSRect frame = slint_view.frame;
-    NSWindow* window = slint_view.window;
-    if (title_accessory_controller != nil) {
-      title_accessory_controller.view.hidden = !native_titlebar_visible;
-    }
-    if (native_titlebar_visible && window != nil &&
-        (window.styleMask & NSWindowStyleMaskTitled) != 0 &&
-        parent.window == window) {
-      // Winit may use NSWindowStyleMaskFullSizeContentView, in which case its
-      // NSView extends behind the native titlebar. contentLayoutRect is the
-      // AppKit-owned, non-obscured content area in window coordinates.
-      const NSRect content_layout_in_parent =
-          [parent convertRect:window.contentLayoutRect fromView:nil];
-      const NSRect visible_content =
-          NSIntersectionRect(frame, content_layout_in_parent);
-      if (!NSIsEmptyRect(visible_content)) {
-        frame = visible_content;
-      }
-    }
     const CGFloat inset = std::clamp<CGFloat>(
-        static_cast<CGFloat>(top_inset_points), 0.0, frame.size.height);
-    if (parent.isFlipped) {
-      frame.origin.y += inset;
-    }
-    frame.size.height = std::max<CGFloat>(0.0, frame.size.height - inset);
-    if (!NSEqualRects(video_view.frame, frame)) {
-      video_view.frame = frame;
-      native_surface_needs_redraw->store(true, std::memory_order_release);
+        top_inset_points, 0.0, NSHeight(slint_view.bounds));
+    if (video_top.constant != inset) {
+      video_top.constant = inset;
+      [parent layoutSubtreeIfNeeded];
     }
 
     const CGFloat scale = std::max<CGFloat>(
         1.0, slint_view.window ? slint_view.window.backingScaleFactor : 1.0);
     metal_layer.contentsScale = scale;
-    const CGSize drawable_size =
-        CGSizeMake(std::max<CGFloat>(1.0, video_view.bounds.size.width * scale),
-                   std::max<CGFloat>(1.0,
-                                     video_view.bounds.size.height * scale));
-    if (!CGSizeEqualToSize(metal_layer.drawableSize, drawable_size)) {
-      metal_layer.drawableSize = drawable_size;
-      native_surface_needs_redraw->store(true, std::memory_order_release);
-    }
+    const NSSize limit = [video_view updateViewport];
+    return CGSizeMake(limit.width * scale, limit.height * scale);
   }
 };
 
@@ -882,6 +974,10 @@ MacMetalVideoRenderer::SubmitResult MacMetalVideoRenderer::SubmitNativeFrame(
   target->y_texture = y_texture;
   target->uv_texture = uv_texture;
   target->native_frame = std::move(retained);
+  CFTypeRef matrix = CVBufferCopyAttachment(pixel_buffer, kCVImageBufferYCbCrMatrixKey, nullptr);
+  target->color = {pixel_format == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+                   matrix && CFEqual(matrix, kCVImageBufferYCbCrMatrix_ITU_R_709_2)};
+  if (matrix) CFRelease(matrix);
   target->width = width;
   target->height = height;
   target->remote_id.assign(remote_id);
@@ -989,7 +1085,8 @@ MacMetalVideoRenderer::SubmitResult MacMetalVideoRenderer::SubmitNv12Internal(
   return SubmitResult::submitted;
 }
 
-bool MacMetalVideoRenderer::Attach(void* opaque_slint_view) {
+bool MacMetalVideoRenderer::Attach(void* opaque_slint_view,
+                                   std::function<void()> drawable_ready) {
   if (!IsReady() || opaque_slint_view == nullptr) {
     return false;
   }
@@ -997,10 +1094,9 @@ bool MacMetalVideoRenderer::Attach(void* opaque_slint_view) {
     NSView* requested_view = (__bridge NSView*)opaque_slint_view;
     if (impl_->slint_view == requested_view && impl_->video_view != nil &&
         impl_->video_view.superview != nil) {
-      if (!IsStreamWindowFullscreen()) {
+      if (!IsStreamWindowFullscreen(opaque_slint_view)) {
         ConfigureStreamWindowChrome(requested_view.window);
         requested_view.window.titleVisibility = NSWindowTitleHidden;
-        impl_->title_accessory_controller.view.hidden = NO;
       }
       return true;
     }
@@ -1010,6 +1106,7 @@ bool MacMetalVideoRenderer::Attach(void* opaque_slint_view) {
     }
 
     impl_->DetachViews();
+    impl_->drawable_ready = std::move(drawable_ready);
     ConfigureStreamWindowChrome(window);
     impl_->slint_view = requested_view;
     impl_->slint_view.wantsLayer = YES;
@@ -1018,30 +1115,50 @@ bool MacMetalVideoRenderer::Attach(void* opaque_slint_view) {
 
     impl_->video_view =
         [[CrossDeskMetalVideoView alloc] initWithFrame:requested_view.frame];
-    impl_->video_view.wantsLayer = YES;
-    impl_->metal_layer =
-        static_cast<CAMetalLayer*>(impl_->video_view.layer);
+    impl_->video_view.translatesAutoresizingMaskIntoConstraints = NO;
+    impl_->metal_layer = impl_->video_view.surface;
     impl_->metal_layer.device = impl_->device;
     impl_->metal_layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     impl_->metal_layer.framebufferOnly = YES;
     impl_->metal_layer.opaque = YES;
     impl_->metal_layer.backgroundColor = NSColor.blackColor.CGColor;
-    impl_->metal_layer.maximumDrawableCount = 3;
+    // Two drawables keep one frame in the compositor while the next renders.
+    // The default of three lets a slow GPU frame sit an extra display interval
+    // before it reaches the screen, which is pure added latency for live video.
+    impl_->metal_layer.maximumDrawableCount = 2;
     impl_->metal_layer.displaySyncEnabled = YES;
 
     [requested_view.superview addSubview:impl_->video_view
                                positioned:NSWindowBelow
                                relativeTo:requested_view];
+    // The clipping view always covers the same content area as the Slint overlay.
+    NSView* video = impl_->video_view;
+    impl_->video_top =
+        [video.topAnchor constraintEqualToAnchor:requested_view.topAnchor];
+    [NSLayoutConstraint activateConstraints:@[
+        impl_->video_top,
+        [video.bottomAnchor constraintEqualToAnchor:requested_view.bottomAnchor],
+        [video.leadingAnchor constraintEqualToAnchor:requested_view.leadingAnchor],
+        [video.trailingAnchor constraintEqualToAnchor:requested_view.trailingAnchor],
+    ]];
+
     impl_->title_accessory_controller =
         [[NSTitlebarAccessoryViewController alloc] init];
     impl_->title_accessory_controller.layoutAttribute =
         NSLayoutAttributeLeading;
-    NSString* title = window.title.length > 0 ? window.title : @"CrossDesk";
     CrossDeskStreamTitleView* title_view =
-        [[CrossDeskStreamTitleView alloc] initWithTitle:title];
+        [[CrossDeskStreamTitleView alloc] initWithWindow:window];
     const auto surface_dirty_flag = impl_->native_surface_needs_redraw;
     title_view.surfaceInvalidationHandler = ^{
       surface_dirty_flag->store(true, std::memory_order_release);
+    };
+    title_view.resizeVideoHandler = ^(NSWindow* resized_window) {
+      // Native zoom runs a nested AppKit loop. Resize notifications continue
+      // while the usual main-queue wakeup for a decoded frame is waiting.
+      if (impl_->rendered_stream.empty() || resized_window.isMiniaturized ||
+          !(resized_window.occlusionState & NSWindowOcclusionStateVisible)) return;
+      const CGSize size = impl_->metal_layer.drawableSize;
+      DrawFrame(impl_->rendered_stream, size.width, size.height, false);
     };
     impl_->title_accessory_controller.view = title_view;
     [window addTitlebarAccessoryViewController:
@@ -1056,19 +1173,14 @@ bool MacMetalVideoRenderer::Attach(void* opaque_slint_view) {
     [frame_view layoutSubtreeIfNeeded];
     impl_->RestoreVideoViewOrder();
 
-    __weak NSTitlebarAccessoryViewController* title_accessory =
-        impl_->title_accessory_controller;
+    // Let AppKit move the accessory together with the standard window
+    // buttons, including when the user reveals the fullscreen titlebar.
     title_view.windowLayoutHandler = ^BOOL(NSWindow* window) {
-      const bool fullscreen = IsStreamWindowFullscreen();
-      title_accessory.view.hidden = fullscreen;
-      if (fullscreen) {
-        return YES;
-      }
       const bool restored = ConfigureStreamWindowChrome(window);
       window.titleVisibility = NSWindowTitleHidden;
       return restored && window.titleVisibility == NSWindowTitleHidden;
     };
-    impl_->UpdateVideoGeometry(0.0, true);
+    impl_->UpdateVideoGeometry(0.0);
     impl_->native_surface_needs_redraw->store(true,
                                               std::memory_order_release);
     const bool attached = impl_->video_view.superview != nil;
@@ -1104,21 +1216,22 @@ bool MacMetalVideoRenderer::NeedsSurfaceRedraw() const {
 }
 
 MacMetalVideoRenderer::RenderOutcome MacMetalVideoRenderer::RenderLatest(
-    std::string_view remote_id, double top_inset_points,
-    bool native_titlebar_visible) {
+    std::string_view remote_id, double top_inset_points) {
   if (!IsReady() || !IsAttached()) {
     return {RenderResult::failed};
   }
 
   @autoreleasepool {
-    impl_->UpdateVideoGeometry(top_inset_points, native_titlebar_visible);
-    if (impl_->metal_layer.drawableSize.width <= 0 ||
-        impl_->metal_layer.drawableSize.height <= 0) {
-      impl_->native_surface_needs_redraw->store(true,
-                                                std::memory_order_release);
-      return {RenderResult::idle};
-    }
+    const CGSize raster_limit = impl_->UpdateVideoGeometry(top_inset_points);
+    return DrawFrame(remote_id, raster_limit.width, raster_limit.height, true);
+  }
+}
 
+MacMetalVideoRenderer::RenderOutcome MacMetalVideoRenderer::DrawFrame(
+    std::string_view remote_id, double raster_width, double raster_height,
+    bool allow_cached_frame) {
+  if (raster_width <= 0 || raster_height <= 0) return {RenderResult::idle};
+  @autoreleasepool {
     const bool stream_changed = impl_->rendered_stream != remote_id;
     size_t slot_index = kFrameSlotCount;
     uint64_t sequence = 0;
@@ -1162,25 +1275,46 @@ MacMetalVideoRenderer::RenderOutcome MacMetalVideoRenderer::RenderLatest(
         return {RenderResult::idle};
       }
       content_generation = impl_->frames->content_generation;
-      redraw_cached_frame = stream_changed ||
+      redraw_cached_frame = allow_cached_frame && (stream_changed ||
           impl_->native_surface_needs_redraw->load(std::memory_order_acquire) ||
-          impl_->rendered_content_generation != content_generation;
+          impl_->rendered_content_generation != content_generation);
       select_latest();
       if (slot_index == kFrameSlotCount && !redraw_cached_frame) {
         return {RenderResult::idle};
       }
+      if (slot_index != kFrameSlotCount) {
+        source_width = impl_->frames->slots[slot_index].width;
+        source_height = impl_->frames->slots[slot_index].height;
+      }
     }
 
-    const auto drawable_started = VideoLatencyFrame::Clock::now();
-    id<CAMetalDrawable> drawable = [impl_->metal_layer nextDrawable];
-    const double drawable_wait_ms = std::chrono::duration<double, std::milli>(
-        VideoLatencyFrame::Clock::now() - drawable_started).count();
-    if (drawable == nil) {
-      return {impl_->MissingDrawableResult()};
+    // Keep letterboxing in the compositor. It can scale the last presented
+    // image with the window even while the remote desktop is idle.
+    if (source_width > 0 && source_height > 0) {
+      const CGFloat scale = std::min<CGFloat>({1, raster_width / source_width,
+                                               raster_height / source_height});
+      const CGSize size = CGSizeMake(std::max<CGFloat>(1, std::round(source_width * scale)),
+                                     std::max<CGFloat>(1, std::round(source_height * scale)));
+      if (!CGSizeEqualToSize(impl_->metal_layer.drawableSize, size))
+        impl_->metal_layer.drawableSize = size;
+    }
+    double drawable_wait_ms = 0;
+    id<CAMetalDrawable> drawable = nil;
+    if (impl_->drawable_request ||
+        IsStreamWindowFullscreenTransitioning((__bridge void*)impl_->slint_view)) {
+      drawable = impl_->TakeTransitionDrawable(drawable_wait_ms);
+      if (!drawable) return {RenderResult::idle};
+    } else {
+      const auto start = VideoLatencyFrame::Clock::now();
+      drawable = [impl_->metal_layer nextDrawable];
+      drawable_wait_ms = std::chrono::duration<double, std::milli>(
+          VideoLatencyFrame::Clock::now() - start).count();
+      if (!drawable) return {impl_->MissingDrawableResult()};
     }
 
     id<MTLTexture> y_texture = nil;
     id<MTLTexture> uv_texture = nil;
+    Nv12Color color;
     VideoLatencyFrame timing;
     {
       std::lock_guard lock(impl_->frames->mutex);
@@ -1195,13 +1329,15 @@ MacMetalVideoRenderer::RenderOutcome MacMetalVideoRenderer::RenderLatest(
       select_latest();
       if (slot_index != kFrameSlotCount) {
         auto& slot = impl_->frames->slots[slot_index];
+        if (slot.width != source_width || slot.height != source_height) {
+          impl_->native_surface_needs_redraw->store(true, std::memory_order_release);
+          return {RenderResult::idle};
+        }
         slot.use = SlotUse::in_flight;
-        // All metadata and retained textures must come from this new selection.
-        source_width = slot.width;
-        source_height = slot.height;
         y_texture = slot.y_texture;
         uv_texture = slot.uv_texture;
         timing = slot.timing;
+        color = slot.color;
       }
     }
     if (slot_index == kFrameSlotCount) {
@@ -1252,26 +1388,8 @@ MacMetalVideoRenderer::RenderOutcome MacMetalVideoRenderer::RenderLatest(
       return {RenderResult::failed};
     }
 
-    const double target_width = drawable.texture.width;
-    const double target_height = drawable.texture.height;
-    const double source_aspect =
-        static_cast<double>(source_width) / source_height;
-    const double target_aspect = target_width / target_height;
-    double viewport_width = target_width;
-    double viewport_height = target_height;
-    double viewport_x = 0.0;
-    double viewport_y = 0.0;
-    if (source_aspect > target_aspect) {
-      viewport_height = target_width / source_aspect;
-      viewport_y = (target_height - viewport_height) * 0.5;
-    } else {
-      viewport_width = target_height * source_aspect;
-      viewport_x = (target_width - viewport_width) * 0.5;
-    }
-
     [encoder setRenderPipelineState:impl_->pipeline];
-    [encoder setViewport:MTLViewport{viewport_x, viewport_y, viewport_width,
-                                     viewport_height, 0.0, 1.0}];
+    [encoder setFragmentBytes:&color length:sizeof(color) atIndex:0];
     [encoder setFragmentTexture:y_texture atIndex:0];
     [encoder setFragmentTexture:uv_texture atIndex:1];
     [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip

@@ -29,6 +29,7 @@
 "信令连接已关闭" = "Conexão de sinalização fechada";
 "偏好模式" = "Modo de preferência";
 "像触控板一样滑动光标，点击时操作当前光标位置。" = "Deslize o cursor como um trackpad e opere a posição atual do cursor quando clicado.";
+"全部已读" = "Marcar tudo como lido";
 "公告加载失败，请重试。" = "Falha ao carregar o anúncio. Tente novamente.";
 "公告详情" = "Detalhes do anúncio";
 "共 %1$@ 条 · %2$@ 条未读" = "Total de itens %1$@· Itens não lidos %2$@";
@@ -212,6 +213,7 @@
 "网络连接已中断，请重新连接。" = "A conexão de rede foi interrompida, reconecte.";
 "自定义" = "Personalizado";
 "虚拟鼠标" = "Rato virtual";
+"拖动虚拟鼠标" = "Mover o mouse virtual";
 "被控端不支持直接输入中文，请更新 macOS 被控端；也可先复制文字，通过远控菜单的剪贴板发送后粘贴" = "O terminal controlado não suporta entrada direta de chinês. Atualize o terminal controlado pelo macOS; você também pode copiar o texto primeiro, enviá-lo pela área de transferência do menu do controle remoto e depois colá-lo";
 "被控端已通过组合键解除隐私屏。点击“锁定”将重新开启隐私屏，并禁止本机使用组合键解锁。" = "A tela de privacidade remota foi desbloqueada usando o atalho local. Bloqueie-o novamente para restaurar a privacidade e desativar o desbloqueio de atalhos locais.";
 "被控端平台：%1$@" = "Plataforma de terminal controlada:%1$@";
@@ -351,3 +353,21 @@
 "选择桌面方案" = "Escolher ambiente de trabalho";
 "选择桌面方案以加载系统预设" = "Escolha um ambiente para carregar as predefinições do sistema";
 "键盘上方常用栏" = "Favoritos acima do teclado";
+"全部设备" = "Todos os dispositivos";
+"分组" = "Grupo";
+"修改名称" = "Renomear";
+"修改分组" = "Editar grupos";
+"未分组" = "Desagrupado";
+"新建分组（可选）" = "Novo grupo (opcional)";
+"该分组暂无近期连接" = "Nenhuma conexão recente neste grupo";
+"更多操作" = "Mais ações";
+"设备 ID 或 IP 地址" = "ID do dispositivo ou endereço IP";
+"请输入设备 ID 或有效的 IP 地址" = "Insira um ID de dispositivo ou um endereço IP válido";
+"IP 直连密码" = "Senha de conexão IP direta";
+"IP 直连失败，请检查电脑的直连地址和网络。" = "Falha na conexão IP direta. Verifique o endereço, a porta e a rede do computador.";
+"本端地址" = "Endereço local";
+"对端地址" = "Endereço remoto";
+"删除分组" = "Excluir grupo";
+"组内设备和连接记录将保留。" = "Os dispositivos e o histórico de conexões serão mantidos.";
+"保存失败，请重试" = "Não foi possível salvar; tente novamente";
+"连接服务器后可获取最新公告。" = "Conecte-se ao servidor para obter os anúncios mais recentes.";

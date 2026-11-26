@@ -191,6 +191,9 @@ private struct ConnectionHomeView: View {
     @State private var promptRemoteID = ""
     @State private var promptPassword = ""
     @State private var promptRememberPassword = false
+    @State private var groupFilter: String?
+    @State private var groupDevice: RecentConnection?
+    @State private var groupToDelete: (name: String, history: ConnectionHistory)?
 
     private let connectionAccent = Color(red: 0.18, green: 0.48, blue: 0.86)
     private let connectionAccentEnd = Color(red: 0.12, green: 0.38, blue: 0.78)
@@ -203,7 +206,7 @@ private struct ConnectionHomeView: View {
         Binding(
             get: { formatRemoteID(session.remoteID) },
             set: { value in
-                session.remoteID = String(value.filter { $0.isNumber }.prefix(9))
+                session.remoteID = String(value.replacingOccurrences(of: " ", with: "").prefix(160))
             }
         )
     }
@@ -233,8 +236,16 @@ private struct ConnectionHomeView: View {
         ]
     }
 
+    private var recentGroups: [String] {
+        Set(session.recentConnections.flatMap(\.groups)).sorted()
+    }
+
     private var orderedRecentConnections: [RecentConnection] {
         session.recentConnections.enumerated()
+            .filter { entry in
+                guard let groupFilter else { return true }
+                return groupFilter.isEmpty ? entry.element.groups.isEmpty : entry.element.groups.contains(groupFilter)
+            }
             .sorted { lhs, rhs in
                 let lhsOnline = session.isRecentConnectionOnline(lhs.element)
                 let rhsOnline = session.isRecentConnectionOnline(rhs.element)
@@ -261,6 +272,18 @@ private struct ConnectionHomeView: View {
                         remoteConnectionPanel
                             .frame(width: isWide ? 360 : nil)
                         recentConnectionsPanel(windowWidth: proxy.size.width)
+                            .id(session.history.key)
+                            .alert(NSLocalizedString("删除分组", comment: ""),
+                                   isPresented: Binding(get: { groupToDelete != nil },
+                                                        set: { if !$0 { groupToDelete = nil } }),
+                                   presenting: groupToDelete) { group in
+                                Button(NSLocalizedString("删除", comment: ""), role: .destructive) {
+                                    session.deleteGroup(group.name, in: group.history)
+                                }
+                                Button(NSLocalizedString("取消", comment: ""), role: .cancel) {}
+                            } message: { group in
+                                Text(verbatim: group.name + "\n" + NSLocalizedString("组内设备和连接记录将保留。", comment: ""))
+                            }
                             .frame(maxHeight: .infinity)
                     }
                     .frame(maxWidth: MobileLayout.homeMaximumWidth)
@@ -298,6 +321,7 @@ private struct ConnectionHomeView: View {
             PasswordPromptView(remoteID: promptRemoteID,
                                password: $promptPassword,
                                rememberPassword: $promptRememberPassword) {
+                guard passwordPromptVisible, session.canStartConnection else { return }
                 passwordPromptVisible = false
                 session.remoteID = promptRemoteID
                 session.connect(password: promptPassword,
@@ -305,6 +329,26 @@ private struct ConnectionHomeView: View {
             }
             .presentationDetents([.height(340)])
             .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $groupDevice) { device in
+            RecentGroupEditor(device: device, groups: recentGroups) { groups in
+                session.editRecentConnection(device.id, groups: groups)
+            }
+            .presentationDetents([.medium, .large])
+        }
+        .onValueChange(of: session.history) { _ in
+            passwordPromptVisible = false
+            promptRemoteID = ""
+            promptPassword = ""
+            promptRememberPassword = false
+            groupFilter = nil
+            groupDevice = nil
+            groupToDelete = nil
+        }
+        .onValueChange(of: recentGroups) { groups in
+            if let groupFilter, !groupFilter.isEmpty, !groups.contains(groupFilter) {
+                self.groupFilter = nil
+            }
         }
         .alert(NSLocalizedString("设备离线", comment: ""), isPresented: Binding(
             get: { session.deviceOfflineAlertVisible },
@@ -314,12 +358,6 @@ private struct ConnectionHomeView: View {
         )) {
             Button(NSLocalizedString("确定", comment: "")) {
                 session.dismissDeviceOfflineAlert()
-            }
-        }
-        .onValueChange(of: session.remoteID) { value in
-            let formatted = String(value.filter { $0.isNumber }.prefix(9))
-            if formatted != value {
-                session.remoteID = formatted
             }
         }
         .onDisappear { remoteIDFocused = false }
@@ -343,7 +381,7 @@ private struct ConnectionHomeView: View {
                 .accessibilityHint(NSLocalizedString("打开隐私政策", comment: ""))
             }
         }
-        ToolbarItem(placement: .navigationBarTrailing) {
+        ToolbarItem(placement: announcementPlacement) {
             NavigationLink(value: HomeDestination.announcements) {
                 AnnouncementBadge(inbox: session.announcements)
             }
@@ -374,6 +412,11 @@ private struct ConnectionHomeView: View {
             .disabled(session.isConnecting)
             .accessibilityLabel(appUpdates.updateAvailable ? NSLocalizedString("设置，有新版本", comment: "") : NSLocalizedString("设置", comment: ""))
         }
+    }
+
+    private var announcementPlacement: ToolbarItemPlacement {
+        if #available(iOS 27.0, *) { return .topBarPinnedTrailing }
+        return .navigationBarTrailing
     }
 
     private var signalStatusBadge: some View {
@@ -407,8 +450,8 @@ private struct ConnectionHomeView: View {
             }
 
             HStack(spacing: 10) {
-                TextField(NSLocalizedString("对端 ID", comment: ""), text: groupedRemoteID)
-                    .keyboardType(.numberPad)
+                TextField(NSLocalizedString("设备 ID 或 IP 地址", comment: ""), text: groupedRemoteID)
+                    .keyboardType(.asciiCapable)
                     .textContentType(.username)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -465,17 +508,70 @@ private struct ConnectionHomeView: View {
         .shadow(color: .black.opacity(0.055), radius: 14, y: 5)
     }
 
+    private var recentGroupPicker: some View {
+        let all = NSLocalizedString("全部设备", comment: "")
+        let ungrouped = NSLocalizedString("未分组", comment: "")
+        let selected = groupFilter.map { $0.isEmpty ? ungrouped : $0 } ?? all
+        return Menu {
+            Picker(NSLocalizedString("分组", comment: ""), selection: $groupFilter) {
+                Text(all).tag(nil as String?)
+                Text(ungrouped).tag(Optional(""))
+                ForEach(recentGroups, id: \.self) { group in
+                    Text(verbatim: group).tag(Optional(group))
+                }
+            }
+            .pickerStyle(.inline)
+            if !recentGroups.isEmpty {
+                Divider()
+                Menu {
+                    ForEach(recentGroups, id: \.self) { name in
+                        Button { groupToDelete = (name, session.history) } label: { Text(verbatim: name) }
+                    }
+                } label: {
+                    Label(NSLocalizedString("删除分组", comment: ""), systemImage: "trash")
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(verbatim: selected).lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+            }
+            .font(.subheadline)
+            .foregroundStyle(.tint)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel(NSLocalizedString("分组", comment: ""))
+        .accessibilityValue(Text(verbatim: selected))
+    }
+
     @ViewBuilder
     private func recentConnectionsPanel(windowWidth: CGFloat) -> some View {
+        let connections = orderedRecentConnections
+        let title = Text(NSLocalizedString("最近连接", comment: "")).font(.title3.bold())
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(NSLocalizedString("最近连接", comment: ""))
-                    .font(.title3.bold())
-                Spacer()
-                if !session.recentConnections.isEmpty {
-                    Text(String(format: NSLocalizedString("%1$@ 台设备", comment: ""), String(describing: session.recentConnections.count)))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            if session.recentConnections.isEmpty {
+                title
+            } else {
+                let count = Text(String(format: NSLocalizedString("%1$@ 台设备", comment: ""), String(connections.count)))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline) {
+                        title
+                        Spacer(minLength: 8)
+                        count
+                        recentGroupPicker
+                    }
+                    VStack(alignment: .trailing, spacing: 4) {
+                        HStack(alignment: .firstTextBaseline) {
+                            title
+                            Spacer(minLength: 8)
+                            count
+                        }
+                        recentGroupPicker
+                    }
                 }
             }
 
@@ -492,10 +588,14 @@ private struct ConnectionHomeView: View {
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if connections.isEmpty {
+                Text(NSLocalizedString("该分组暂无近期连接", comment: ""))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(.vertical) {
                     LazyVGrid(columns: recentConnectionColumns(windowWidth: windowWidth), spacing: 12) {
-                        ForEach(orderedRecentConnections) { connection in
+                        ForEach(connections) { connection in
                             RecentConnectionCard(
                                 connection: connection,
                                 thumbnail: session.thumbnailImage(for: connection),
@@ -503,6 +603,8 @@ private struct ConnectionHomeView: View {
                                 connect: {
                                     connectRecent(connection)
                                 },
+                                rename: { session.editRecentConnection(connection.id, alias: $0) },
+                                editGroups: { groupDevice = connection },
                                 delete: {
                                     session.removeRecentConnection(connection)
                                 }
@@ -577,6 +679,7 @@ private struct ConnectionHomeView: View {
     }
 
     private func presentPasswordPrompt(for identifier: String) {
+        guard !passwordPromptVisible, session.canStartConnection else { return }
         guard session.hasNetworkConsent else {
             remoteIDFocused = false
             session.showPrivacyNotice()
@@ -588,14 +691,16 @@ private struct ConnectionHomeView: View {
             return
         }
         remoteIDFocused = false
-        promptRemoteID = trimmed
-        promptPassword = session.savedPassword(for: trimmed)
-        promptRememberPassword = session.remembersPassword(for: trimmed)
+        guard let target = session.connectionTarget(trimmed) else { return }
+        promptRemoteID = target
+        promptPassword = session.savedPassword(for: target)
+        promptRememberPassword = session.remembersPassword(for: target)
         passwordPromptVisible = true
     }
 
     private func formatRemoteID(_ value: String) -> String {
-        let digits = Array(value.filter { $0.isNumber }.prefix(9))
+        guard value.count <= 9, value.allSatisfy({ $0.isNumber }) else { return value }
+        let digits = Array(value)
         return stride(from: 0, to: digits.count, by: 3)
             .map { start in
                 String(digits[start..<min(start + 3, digits.count)])
@@ -604,6 +709,7 @@ private struct ConnectionHomeView: View {
     }
 
     private func connectRecent(_ connection: RecentConnection) {
+        guard !passwordPromptVisible, session.canStartConnection else { return }
         session.remoteID = connection.remoteID
         remoteIDFocused = false
 
@@ -621,7 +727,11 @@ private struct RecentConnectionCard: View {
     let thumbnail: UIImage?
     let online: Bool
     let connect: () -> Void
+    let rename: (String) -> Void
+    let editGroups: () -> Void
     let delete: () -> Void
+    @State private var renaming = false
+    @State private var nameDraft = ""
 
     private var platformColors: [Color] {
         switch connection.platform {
@@ -673,8 +783,14 @@ private struct RecentConnectionCard: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
+                    if !connection.groups.isEmpty {
+                        Text(connection.groups.joined(separator: " · "))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                     HStack(spacing: 5) {
-                        Text("ID \(connection.remoteID)")
+                        Text(connection.remoteID.contains(":") ? connection.remoteID : "ID \(connection.remoteID)")
                             .font(.caption2.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -685,10 +801,10 @@ private struct RecentConnectionCard: View {
                                 .foregroundStyle(.secondary)
                                 .accessibilityLabel(NSLocalizedString("已保存密码", comment: ""))
                         }
-                        Text(online ? NSLocalizedString("在线", comment: "") : NSLocalizedString("离线", comment: ""))
+                        Text(connection.remoteID.contains(":") ? "IP" : online ? NSLocalizedString("在线", comment: "") : NSLocalizedString("离线", comment: ""))
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(online ? Color.green : Color.secondary)
-                            .accessibilityLabel(online ? NSLocalizedString("在线", comment: "") : NSLocalizedString("离线", comment: ""))
+                            .accessibilityLabel(connection.remoteID.contains(":") ? "IP" : online ? NSLocalizedString("在线", comment: "") : NSLocalizedString("离线", comment: ""))
                     }
                 }
                 .padding(9)
@@ -701,16 +817,103 @@ private struct RecentConnectionCard: View {
             }
         }
         .buttonStyle(.plain)
-        .contextMenu {
-            Button(action: connect) {
-                Text(NSLocalizedString("连接", comment: ""))
+        .contextMenu { actions }
+        .overlay(alignment: .topTrailing) {
+            Menu { actions } label: {
+                Image(systemName: "ellipsis")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color(uiColor: .label))
+                    .padding(.horizontal, 6)
+                    .frame(minWidth: 26, minHeight: 17)
+                    .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
+                    .overlay {
+                        Capsule().strokeBorder(Color(uiColor: .separator), lineWidth: 0.75)
+                    }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
-            Button(role: .destructive, action: delete) {
-                Label(NSLocalizedString("删除记录", comment: ""), systemImage: "trash")
-            }
+            .accessibilityLabel(NSLocalizedString("更多操作", comment: ""))
+        }
+        .alert(NSLocalizedString("修改名称", comment: ""), isPresented: $renaming) {
+            TextField(connection.hostName, text: $nameDraft)
+            Button(NSLocalizedString("取消", comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("保存", comment: "")) { rename(nameDraft) }
+        } message: {
+            Text(connection.remoteID.contains(":") ? connection.remoteID : "ID \(connection.remoteID)")
         }
     }
 
+    @ViewBuilder private var actions: some View {
+        Button(action: connect) { Label(NSLocalizedString("连接", comment: ""), systemImage: "arrow.right") }
+        Button {
+            nameDraft = connection.displayName
+            renaming = true
+        } label: { Label(NSLocalizedString("修改名称", comment: ""), systemImage: "pencil") }
+        Button(action: editGroups) { Label(NSLocalizedString("修改分组", comment: ""), systemImage: "folder") }
+        Button(role: .destructive, action: delete) {
+            Label(NSLocalizedString("删除记录", comment: ""), systemImage: "trash")
+        }
+    }
+}
+
+private struct RecentGroupEditor: View {
+    let device: RecentConnection
+    let groups: [String]
+    let save: ([String]) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var selected: Set<String>
+    @State private var newGroup = ""
+
+    init(device: RecentConnection, groups: [String], save: @escaping ([String]) -> Void) {
+        self.device = device
+        self.groups = groups
+        self.save = save
+        _selected = State(initialValue: Set(device.groups))
+    }
+
+    private var trimmedGroup: String { newGroup.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    ForEach([""] + groups, id: \.self) { group in
+                        let checked = group.isEmpty ? selected.isEmpty && trimmedGroup.isEmpty : selected.contains(group)
+                        Button {
+                            if group.isEmpty { selected.removeAll(); newGroup = "" }
+                            else if selected.contains(group) { selected.remove(group) }
+                            else { selected.insert(group) }
+                        } label: {
+                            HStack {
+                                Text(group.isEmpty ? NSLocalizedString("未分组", comment: "") : group)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if checked { Image(systemName: "checkmark") }
+                            }
+                        }
+                        .accessibilityAddTraits(checked ? .isSelected : [])
+                    }
+                    TextField(NSLocalizedString("新建分组（可选）", comment: ""), text: $newGroup)
+                } header: {
+                    Text("\(device.displayName) · ID \(device.id)").textCase(nil)
+                }
+            }
+            .navigationTitle(NSLocalizedString("修改分组", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(NSLocalizedString("取消", comment: "")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(NSLocalizedString("保存", comment: "")) {
+                        if !trimmedGroup.isEmpty { selected.insert(trimmedGroup) }
+                        save(Array(selected))
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
 }
 
 private struct PasswordPromptView: View {
@@ -729,7 +932,7 @@ private struct PasswordPromptView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(NSLocalizedString("连接远程桌面", comment: ""))
                         .font(.title2.bold())
-                    Text(String(format: NSLocalizedString("对端 ID  %1$@", comment: ""), String(describing: remoteID)))
+                    Text(remoteID.contains(":") ? remoteID : String(format: NSLocalizedString("对端 ID  %1$@", comment: ""), remoteID))
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
@@ -747,9 +950,9 @@ private struct PasswordPromptView: View {
             HStack(spacing: 10) {
                 Group {
                     if passwordVisible {
-                        TextField(NSLocalizedString("访问密码", comment: ""), text: $password)
+                        TextField(NSLocalizedString(remoteID.contains(":") ? "IP 直连密码" : "访问密码", comment: ""), text: $password)
                     } else {
-                        SecureField(NSLocalizedString("访问密码", comment: ""), text: $password)
+                        SecureField(NSLocalizedString(remoteID.contains(":") ? "IP 直连密码" : "访问密码", comment: ""), text: $password)
                     }
                 }
                 .keyboardType(.asciiCapable)
@@ -792,6 +995,7 @@ private struct PasswordPromptView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
             }
+            .disabled(remoteID.contains(":") && password.range(of: "^[A-Za-z0-9]{6}$", options: .regularExpression) == nil)
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.roundedRectangle(radius: 10))
         }
@@ -851,10 +1055,10 @@ private struct ServerSettingsView: View {
 
     init(session: RemoteSessionModel) {
         self.session = session
-        let isCustom = !session.usesOfficialServer
-        _usesCustomServer = State(initialValue: isCustom)
-        _customServerHost = State(initialValue: isCustom ? session.signalHost : "")
-        _customServerPort = State(initialValue: isCustom ? session.signalPort : "")
+        let server = session.customServer
+        _usesCustomServer = State(initialValue: server != nil)
+        _customServerHost = State(initialValue: server?.host ?? "")
+        _customServerPort = State(initialValue: server.map { String($0.signalPort) } ?? "")
     }
 
     var body: some View {
@@ -996,9 +1200,7 @@ private struct ServerSettingsView: View {
         focusedServerField = nil
         customServerHost = ""
         customServerPort = ""
-        guard !session.usesOfficialServer else { return }
-        session.restoreOfficialServerConfiguration()
-        session.configureBridge()
+        session.setCustomServer(nil)
     }
 
     private func validateAndApplyServerConfiguration() {
@@ -1016,10 +1218,6 @@ private struct ServerSettingsView: View {
         serverConfigurationError = nil
         customServerHost = host
         customServerPort = String(portNumber)
-        if session.signalHost != host || session.signalPort != customServerPort {
-            session.signalHost = host
-            session.signalPort = customServerPort
-            session.configureBridge()
-        }
+        session.setCustomServer(SignalServerConfiguration(host: host, signalPort: portNumber))
     }
 }

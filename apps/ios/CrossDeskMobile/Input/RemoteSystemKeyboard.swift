@@ -73,6 +73,7 @@ private struct RemoteKeyboardHost: UIViewControllerRepresentable {
         controller.editor.applyEdit = edit
         inputContext?.editor = controller.editor
         controller.geometry = geometry
+        geometry?.systemInputBar = controller.inputBar
         controller.animatePresentation = animatePresentation
         controller.didPresent = didPresent
         controller.editor.key = key
@@ -255,6 +256,25 @@ final class RemoteKeyboardController: UIViewController, ObservableObject {
 /// after the text field resigns first responder during a keyboard switch.
 final class RemoteKeyboardGeometry: ObservableObject {
     private var heights: [String: CGFloat] = [:]
+    weak var systemInputBar: UIView?
+    weak var computerPanel: UIView?
+
+    func visibleHeight(in surface: UIView, at point: CGPoint? = nil) -> CGFloat {
+        guard let window = surface.window else { return surface.bounds.height }
+        var height = surface.bounds.height
+        for case let panel? in [systemInputBar, computerPanel] where panel.window === window {
+            let frame = panel.convert(panel.bounds, to: surface)
+            guard !frame.isEmpty, frame.maxY > 0 else { continue }
+            if let point, point.x < frame.minX || point.x > frame.maxX { continue }
+            height = min(height, max(0, frame.minY))
+        }
+        // On iPad the native keyboard can float independently of the docked toolbar.
+        guard systemInputBar?.window === window else { return height }
+        let frame = surface.keyboardLayoutGuide.layoutFrame
+        guard !frame.isEmpty, frame.minY > 0 else { return height }
+        if let point, point.x < frame.minX || point.x > frame.maxX || point.y >= frame.maxY { return height }
+        return min(height, frame.minY)
+    }
 
     private func key(for size: CGSize) -> String {
         "\(Int(size.width.rounded()))-\(size.width > size.height)"
@@ -274,6 +294,20 @@ final class RemoteKeyboardGeometry: ObservableObject {
             (fallback + bottomInset + RemoteKeyboardInputBar.barHeight)
         return min(height, size.height)
     }
+}
+
+/// Gives the touch surface the docked panel's actual frame in its own coordinates.
+struct RemoteKeyboardPanelFrame: UIViewRepresentable {
+    let geometry: RemoteKeyboardGeometry
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        geometry.computerPanel = view
+        return view
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {}
 }
 
 private final class RemoteKeyboardHostView: UIView {
@@ -513,6 +547,7 @@ final class RemoteTextInputView: UITextField, UITextFieldDelegate {
     private(set) var acceptingInput = true
     var automaticallyFocus = true
     private var sentText = ""
+    private var committedText = ""
     private var changeScheduled = false
     private var resetting = false
     private var generation: UInt64 = 0
@@ -569,6 +604,8 @@ final class RemoteTextInputView: UITextField, UITextFieldDelegate {
 
     override func setMarkedText(_ markedText: String?, selectedRange: NSRange) {
         guard acceptingInput else { return }
+        // Preserve the last commit even if the next preedit starts in this run-loop turn.
+        if markedTextRange == nil { committedText = text ?? "" }
         super.setMarkedText(markedText, selectedRange: selectedRange)
         scheduleTextChange()
     }
@@ -613,9 +650,20 @@ final class RemoteTextInputView: UITextField, UITextFieldDelegate {
 
     @discardableResult
     func synchronizeText() -> Bool {
-        guard acceptingInput, !resetting, markedTextRange == nil else { return false }
-        let current = text ?? ""
-        guard current != sentText else { return true }
+        guard acceptingInput, !resetting else { return false }
+        let marked = markedTextRange
+        if let marked {
+            // Some IMEs confirm a prefix by moving the start of the marked range.
+            // Keep the committed tail if an existing word was marked for correction.
+            if let range = textRange(from: beginningOfDocument, to: marked.start),
+               let prefix = text(in: range), prefix.hasPrefix(committedText) {
+                committedText = prefix
+            }
+        } else {
+            committedText = text ?? ""
+        }
+        let current = committedText
+        guard current != sentText else { return marked == nil }
         let prefixCount = zip(sentText, current).prefix(while: { $0 == $1 }).count
         let deleteCount = sentText.count - prefixCount
         let insertion = String(current.dropFirst(prefixCount))
@@ -625,7 +673,7 @@ final class RemoteTextInputView: UITextField, UITextFieldDelegate {
             return false
         }
         sentText = current
-        return true
+        return marked == nil
     }
 
     func finishInputContext() {
@@ -642,6 +690,8 @@ final class RemoteTextInputView: UITextField, UITextFieldDelegate {
     }
 
     func stop() {
+        guard acceptingInput else { return }
+        _ = synchronizeText()
         acceptingInput = false
         applyEdit = nil
         key = nil
@@ -655,6 +705,7 @@ final class RemoteTextInputView: UITextField, UITextFieldDelegate {
         super.unmarkText()
         text = ""
         sentText = ""
+        committedText = ""
         resetting = false
     }
 }

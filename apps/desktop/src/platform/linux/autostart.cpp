@@ -1,5 +1,4 @@
 #include "platform/autostart_backend.h"
-#include "platform/linux/autostart.h"
 
 #include <limits.h>
 #include <unistd.h>
@@ -15,6 +14,23 @@ namespace {
 
 constexpr const char* kInstalledExecutable = "/usr/lib/crossdesk/crossdesk-bin";
 constexpr const char* kInstalledLauncher = "/usr/bin/crossdesk";
+
+std::string LoginCommand(const std::string& executable) {
+  std::string command = "Exec=\"";
+  for (char c : executable) {
+    // Desktop files unescape string values before parsing quoted Exec arguments.
+    switch (c) {
+      case '\\': command += "\\\\\\\\"; break;
+      case '"': case '$': case '`': command += "\\\\"; command += c; break;
+      case '%': command += "%%"; break;
+      case '\n': command += "\\n"; break;
+      case '\r': command += "\\r"; break;
+      case '\t': command += "\\t"; break;
+      default: command += c;
+    }
+  }
+  return command + "\" --autostart";
+}
 
 std::filesystem::path AutostartPath(const std::string& app_name) {
   const char* config = std::getenv("XDG_CONFIG_HOME");
@@ -71,8 +87,7 @@ bool EnableAutostart(const std::string& app_name,
 
   return WriteDesktopEntry(path,
       "[Desktop Entry]\n"
-      "Type=Application\n"
-      "Exec=" + executable_path + "\n"
+      "Type=Application\n" + LoginCommand(executable_path) + "\n"
       "Hidden=false\n"
       "NoDisplay=false\n"
       "X-GNOME-Autostart-enabled=true\n"
@@ -82,14 +97,14 @@ bool EnableAutostart(const std::string& app_name,
 }
 
 bool MigrateLegacyAutostart(const std::string& app_name) {
-  // Development/standalone copies must not take over an installed entry.
-  if (GetAutostartExecutablePath() != kInstalledLauncher) return true;
+  const auto launcher = GetAutostartExecutablePath();
+  if (launcher.empty()) return false;
   const std::filesystem::path path = AutostartPath(app_name);
   if (path.empty()) return false;
   std::error_code error;
   const bool exists = std::filesystem::exists(path, error);
   if (error) return false;
-  if (!exists) return true;  // Do not recreate entries removed by the user.
+  if (!exists) return true;
   if (!std::filesystem::is_regular_file(path, error) || error) return false;
 
   std::ifstream file(path);
@@ -107,15 +122,20 @@ bool MigrateLegacyAutostart(const std::string& app_name) {
     const std::string line = contents.substr(start, line_end - start);
     if (!line.empty() && line.front() == '[')
       desktop_entry = line == "[Desktop Entry]";
-    if (desktop_entry && line == std::string("Exec=") + kInstalledExecutable) {
-      // Preserve Hidden, desktop restrictions and all other user settings.
-      contents.replace(start, line_end - start,
-                       std::string("Exec=") + kInstalledLauncher);
-      return WriteDesktopEntry(path, contents);
+    if (desktop_entry && line.rfind("Exec=", 0) == 0) {
+      const std::string command = "Exec=" + launcher;
+      const std::string marked = LoginCommand(launcher);
+      if (line == marked) return true;
+      if (line == command ||
+          (launcher == kInstalledLauncher && line == std::string("Exec=") + kInstalledExecutable)) {
+        // Preserve Hidden, desktop restrictions and all other user settings.
+        contents.replace(start, line_end - start, marked);
+        return WriteDesktopEntry(path, contents);
+      }
     }
     start = end == contents.size() ? end : end + 1;
   }
-  return true;
+  return true;  // Leave custom commands and other installations alone.
 }
 
 bool DisableAutostart(const std::string& app_name) {

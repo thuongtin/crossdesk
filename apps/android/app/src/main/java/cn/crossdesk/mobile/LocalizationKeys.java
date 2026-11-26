@@ -35,6 +35,7 @@ final class LocalizationKeys {
         IDS.put("保存远程画面预览", R.string.text_3bcdcd330bb3044c);
         IDS.put("保存远程画面预览？", R.string.text_0f197074373e38fd);
         IDS.put("信令连接中断，请重新连接", R.string.text_71ca53f95a8484da);
+        IDS.put("全部已读", R.string.text_231cbc4337c5a60c);
         IDS.put("公告加载失败，请重试。", R.string.text_789f22a8b1b34797);
         IDS.put("公告详情", R.string.text_00554b17c432937e);
         IDS.put("共 ", R.string.text_2428420e407fe2e8);
@@ -53,6 +54,7 @@ final class LocalizationKeys {
         IDS.put("删除这条公告？", R.string.text_d087671ca7df7f0f);
         IDS.put("刷新公告", R.string.text_33e7584cd5c252d7);
         IDS.put("剪贴板", R.string.text_8c10e2c1728ddf8e);
+        IDS.put("剪贴板中没有文本", R.string.text_517405bc78cc0f2f);
         IDS.put("加载中…", R.string.text_4927a53bcc886afb);
         IDS.put("加载更多", R.string.text_af90a08fec8ee28d);
         IDS.put("升级提示", R.string.text_a739f24a9fd8a5d9);
@@ -97,6 +99,7 @@ final class LocalizationKeys {
         IDS.put("已保存密码无法读取，请重新输入", R.string.text_1cbd391383283924);
         IDS.put("已保存的密码未能保留，请重新输入一次", R.string.text_6792b9f341380c68);
         IDS.put("已发送 Ctrl+Alt+Del", R.string.text_74d3f0927d465047);
+        IDS.put("已发送，请在远端粘贴", R.string.text_8051ec2a0f80d127);
         IDS.put("已启用后台保活，切换应用可继续保持连接", R.string.text_c28d86acbedba3b6);
         IDS.put("已启用后台保活，可从连接通知返回或断开", R.string.text_506409ec08cb2a79);
         IDS.put("已授权", R.string.text_521e65ffc7d0ff2d);
@@ -221,6 +224,7 @@ final class LocalizationKeys {
         IDS.put("网络状态", R.string.text_872428a7210d5e0c);
         IDS.put("自定义", R.string.text_4eafa9e925b30bcd);
         IDS.put("虚拟鼠标", R.string.text_dffd0c12b8f27247);
+        IDS.put("拖动虚拟鼠标", R.string.text_537f1d58c460e682);
         IDS.put("被控端已通过组合键解除隐私屏。点击“锁定”将重新开启隐私屏，并禁止本机使用组合键解锁。", R.string.text_62c199f37bf95869);
         IDS.put("被控端版本过低，请升级到最新版本。", R.string.text_a569ce729c1d6e19);
         IDS.put("被控端编码器", R.string.text_d814476826827b78);
@@ -320,6 +324,7 @@ final class LocalizationKeys {
         IDS.put("复制配对信息", R.string.text_3aab57c59aba6543);
         IDS.put("配对信息已复制。", R.string.text_cbacf1eafbca53e0);
         IDS.put("无法复制配对信息，请重试。", R.string.text_cde42ccdeacbbbd9);
+        IDS.put("无法访问剪贴板，请重试。", R.string.text_0a12799632baaddb);
         IDS.put("安全存储不可用，请解锁设备后重试", R.string.text_7383b2ae09252c59);
         IDS.put("上一页", R.string.text_c9b9ae7a61444ab7);
         IDS.put("下一页", R.string.text_8a8542f6964852dc);
@@ -376,6 +381,23 @@ final class LocalizationKeys {
         IDS.put("选择桌面方案", R.string.text_4bdabfba3368869d);
         IDS.put("选择桌面方案以加载系统预设", R.string.text_4fa28857c6f253cc);
         IDS.put("键盘上方常用栏", R.string.text_fc5f6f7462e8557a);
+        IDS.put("全部设备", R.string.text_67943ba6d0038222);
+        IDS.put("分组", R.string.text_399ee69347726cee);
+        IDS.put("修改名称", R.string.text_88f4625eade235b7);
+        IDS.put("修改分组", R.string.text_663ba1c006b1f12b);
+        IDS.put("未分组", R.string.text_e86ea3f280d920a2);
+        IDS.put("新建分组（可选）", R.string.text_1e5709f1b7a405da);
+        IDS.put("该分组暂无近期连接", R.string.text_24c9c756f833ce88);
+        IDS.put("更多操作", R.string.text_9f07d2ce4115f575);
+        IDS.put("设备 ID 或 IP 地址", R.string.text_a598bc68e2440131);
+        IDS.put("请输入设备 ID 或有效的 IP 地址", R.string.text_1be1c81002d880d1);
+        IDS.put("IP 直连密码", R.string.text_288a9a63177b76a1);
+        IDS.put("IP 直连失败，请检查电脑的直连地址和网络。", R.string.text_53b856ab7ac9d8e2);
+        IDS.put("本端地址", R.string.text_3a940622a8012b31);
+        IDS.put("对端地址", R.string.text_2c5e32d2c5de5c2b);
+        IDS.put("删除分组", R.string.text_7605c1d82eed69a5);
+        IDS.put("组内设备和连接记录将保留。", R.string.text_b113e4e040b875a8);
+        IDS.put("保存失败，请重试", R.string.text_f42a1238b44a4858);
     }
     private LocalizationKeys() {}
 }

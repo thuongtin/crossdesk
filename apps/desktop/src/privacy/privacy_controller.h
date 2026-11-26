@@ -38,6 +38,8 @@ class PrivacyController {
   // Includes automatic privacy suspended until the user desktop recovers.
   bool Requested() const;
   void CaptureChanged(bool running);
+  // A recoverable source change leaves the local privacy covers in place.
+  void CaptureDisplayLost();
 
  private:
   void Run(Factory factory);

@@ -19,6 +19,7 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 final class NativeSession implements AutoCloseable {
+    static final int MAX_CLIPBOARD_BYTES = 128 * 1024;
     static { System.loadLibrary("crossdesk_android"); }
     interface Listener {
         void status(String message);
@@ -33,6 +34,7 @@ final class NativeSession implements AutoCloseable {
         default void privacyChanged() { }
         default void displayResolutionFailed(long requestId) { }
         default void signaling(int state, String deviceId) { }
+        default void signalingEnded(String reason) { ended(reason); }
         default void presence(JSONObject message) { }
         default void announcement(JSONObject message) { }
         default void announcementFailed(String requestId) { }
@@ -46,7 +48,8 @@ final class NativeSession implements AutoCloseable {
     private final SecretStore secrets;
     private final RemoteResolutionStore resolutionStore;
     private final String host, scope;
-    private volatile String remote;
+    private final boolean direct;
+    private final String remote;
     private String password, identity = "";
     private final int port;
     private long handle;
@@ -72,13 +75,14 @@ final class NativeSession implements AutoCloseable {
         listener.statistics(networkStatistics.snapshot(RemoteNetworkStatistics.now()));
         if(!closed)main.postDelayed(this,1000);
     }};
-    private final Runnable timeout = () -> fail(remote.isEmpty()
-            ? L10n.tr("服务器连接超时，请检查服务器地址和网络")
-            : L10n.tr("连接超时，请检查设备 ID、服务器及远端在线状态"));
+    private final Runnable timeout;
 
     NativeSession(Context context, String host, int port, String remote, String password, Listener listener) {
         this.context = context.getApplicationContext(); this.listener = listener;
         this.host = host; this.port = port; this.remote = remote; this.password = password;
+        timeout = () -> fail(remote.isEmpty() ? L10n.tr("服务器连接超时，请检查服务器地址和网络")
+                : L10n.tr("连接超时，请检查设备 ID、服务器及远端在线状态"));
+        direct = remote.contains(":");
         scope = host.toLowerCase(java.util.Locale.ROOT) + ":" + port;
         secrets = new SecretStore(this.context);
         resolutionStore = new RemoteResolutionStore(this.context);
@@ -90,30 +94,21 @@ final class NativeSession implements AutoCloseable {
         main.postDelayed(timeout, 40000);
         execute(() -> {
             try {
-                identity = secrets.get(scope);
-                File certificates = exportTrust();
+                boolean controllerOnly = !remote.isEmpty();
+                identity = controllerOnly ? "" : secrets.get(scope);
+                String certificates = controllerOnly ? "" : exportTrust().getAbsolutePath();
                 File logs = new File(context.getNoBackupFilesDir(), "logs");
                 if (!logs.isDirectory() && !logs.mkdirs()) throw new IllegalStateException("Log directory unavailable");
-                handle = nCreate(this, host, port, identity, logs.getAbsolutePath(), certificates.getAbsolutePath(), trustKey(context));
+                handle = nCreate(this, host, port, identity, logs.getAbsolutePath(), certificates, trustKey(context), controllerOnly);
                 if (handle == 0) { fail(L10n.tr("原生连接初始化失败")); return; }
                 nFileDirectory(handle,new File(documents.directory,"received").getAbsolutePath());
+                if (direct) join("");
                 if (surface != null && surface.isValid()) nSurface(handle, surface);
             } catch (Exception error) { fail(L10n.tr("安全存储或证书初始化失败，请重试或清除应用数据")); }
         });
     }
-    /** Promote the already registered identity peer to an outgoing desktop session. */
-    void connect(String remoteId, String secret) {
-        execute(() -> {
-            if (joining || connected) return;
-            remote = remoteId;
-            password = secret;
-            // Serialize arming with identity callbacks, which cancel the idle
-            // login timeout. Otherwise a just-completed login can cancel this
-            // outgoing connection's timeout before tryJoin runs.
-            main.removeCallbacks(timeout);
-            main.postDelayed(timeout, 40000);
-            tryJoin();
-        });
+    void connectAs(String deviceId) {
+        if (!direct && !remote.isEmpty() && !deviceId.isEmpty()) execute(() -> join(deviceId));
     }
     boolean isClosed() { return closed; }
     // Called only on RTC, shared by every foreground/background session and UI export.
@@ -172,12 +167,17 @@ final class NativeSession implements AutoCloseable {
     }
     private void execute(Runnable task) { RTC.execute(() -> { if (!closed) task.run(); }); }
     private void ui(Runnable task) { main.post(() -> { if (!closed) task.run(); }); }
-    private void fail(String reason) { ui(() -> { listener.ended(reason); close(); }); }
-    private void tryJoin() {
-        if (handle == 0 || joining || remote.isEmpty() || !signalReady || identity.isEmpty()) return;
+    private void fail(String reason) {
+        ui(() -> {
+            if (remote.isEmpty()) listener.signalingEnded(reason);
+            else listener.ended(reason);
+            close();
+        });
+    }
+    private void join(String deviceId) {
+        if (handle == 0 || joining) return;
         joining = true;
-        String base = identity.split("@", 2)[0];
-        if (!nConnect(handle, base, remote, password)) fail(L10n.tr("无法发起远程连接"));
+        if (!nConnect(handle, deviceId, remote, password)) fail(L10n.tr("无法发起远程连接"));
         password = "";
     }
     // Called on arbitrary native callback threads; borrowed payloads were copied by JNI.
@@ -190,7 +190,7 @@ final class NativeSession implements AutoCloseable {
                         identity = value;
                         secrets.put(scope, identity);
                     } else if (!identity.startsWith(value + "@")) identity = value;
-                    publishSignaling(); tryJoin(); return;
+                    publishSignaling(); return;
                 }
                 if (type == 6) { ui(() -> listener.clipboard(value)); return; }
                 JSONObject event = new JSONObject(value);
@@ -203,12 +203,11 @@ final class NativeSession implements AutoCloseable {
                         signalReady = status == 1;
                         if (signalReady && remote.isEmpty()) main.removeCallbacks(timeout);
                         publishSignaling();
-                        tryJoin();
                     }
                     if (status == 6) fail(L10n.tr("服务器 TLS 证书校验失败"));
                     else if (status == 2) fail(L10n.tr("服务器登录失败，请检查服务器地址和网络"));
                     else if (status >= 3 && connected) fail(L10n.tr("信令连接中断，请重新连接"));
-                    else if (status == 0 || status == 4) ui(() -> listener.status(L10n.tr("正在连接信令服务器…")));
+                    else if (!remote.isEmpty() && (status == 0 || status == 4)) ui(() -> listener.status(L10n.tr("正在连接信令服务器…")));
                 } else if (type == 2) {
                     int status = event.getInt("status");
                     if (status == 1) {
@@ -223,7 +222,8 @@ final class NativeSession implements AutoCloseable {
                     else {
                         String[] reasons = {"", "", "", L10n.tr("连接已断开"), L10n.tr("连接失败"), L10n.tr("远端已关闭连接"),
                                 L10n.tr("远端密码错误"), L10n.tr("找不到该设备 ID"), L10n.tr("远端当前不可用")};
-                        fail(status >= 0 && status < reasons.length ? reasons[status] : L10n.tr("连接已结束"));
+                        if (direct && status == 4) fail(L10n.tr("IP 直连失败，请检查电脑的直连地址和网络。"));
+                        else fail(status >= 0 && status < reasons.length ? reasons[status] : L10n.tr("连接已结束"));
                     }
                 } else if (type == 4) {
                     if(event.optInt("type",-1)==14){
@@ -342,10 +342,11 @@ final class NativeSession implements AutoCloseable {
             privacyScreen.failed(request);listener.privacyChanged();
         });});
     }
-    void clipboard(String value) {
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        if (bytes.length == 0 || bytes.length > 128 * 1024) return;
-        execute(() -> { if (connected) nClipboard(handle, bytes); });
+    void sendClipboard(byte[] bytes) {
+        execute(() -> {
+            boolean sent = connected && nClipboard(handle, bytes);
+            ui(() -> listener.controlFeedback(sent ? L10n.tr("已发送，请在远端粘贴") : L10n.tr("指令发送失败，请重试")));
+        });
     }
     void secureAttention(){execute(()->{
         boolean sent=connected&&nSecureAttention(handle);
@@ -383,9 +384,10 @@ final class NativeSession implements AutoCloseable {
     static native boolean nValidAppVersion(String version);
     static native boolean nHasAppUpdate(String version, byte[] releaseJson);
     static native String nCheckMobileUpdate(String version, byte[] releaseJson);
-    private static native long nCreate(NativeSession owner, String host, int port, String identity, String logs, String roots, String trustKey);
+    private static native long nCreate(NativeSession owner, String host, int port, String identity, String logs, String roots, String trustKey, boolean controllerOnly);
     private static native String nGenerateTrustKey();
     private static native String nTrustInfo(String seed, String deviceId);
+    static native String directEndpoint(String input);
     private static native boolean nConnect(long handle, String identity, String remote, String password);
     private static native void nReady(long handle,byte[] displayResolutions);
     private static native void nPointer(long handle, float x, float y, int flag, int wheel);
@@ -396,7 +398,7 @@ final class NativeSession implements AutoCloseable {
     private static native boolean nVideoSettings(long handle,int quality,int frameRate,int preference,long requestId);
     private static native boolean nAnnouncementRequest(long handle,byte[] data);
     private static native boolean nPresenceRequest(long handle,byte[] data);
-    private static native void nClipboard(long handle, byte[] data);
+    private static native boolean nClipboard(long handle, byte[] data);
     private static native boolean nSecureAttention(long handle);
     private static native boolean nPrivacy(long handle,int flag,boolean blockLocalInput);
     private static native void nFileDirectory(long handle,String directory);

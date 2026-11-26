@@ -262,6 +262,9 @@ the available space. Settings and reading pages are limited to 720 points.
 Resizing preserves the connection fields and active session. iPhone retains its
 portrait home screen and two-column recent-connection grid.
 
+On iPhone, connecting hides the status bar and lets the Home indicator fade.
+Leaving the session restores the system bars.
+
 On iPhone, Settings → Screen orientation (Hướng màn hình) → Lock landscape after connecting
 (Khóa hướng ngang sau khi kết nối) is disabled by default and saved locally. When enabled, the session
 enters and stays in landscape; when disabled, it follows the device orientation.
@@ -380,14 +383,14 @@ version manifest.
 ## Announcements
 
 The home toolbar's bell opens **Thông báo chung** and shows the unread count (capped
-at `99+` on the badge). The persistent identity peer fetches announcements after
-signaling connects, so a remote desktop session is not required. Opening the
-inbox, returning to the foreground, reconnecting, and `announcements_changed`
-events refresh the catalog. Pull to refresh or use the refresh button to retry.
-
-The iOS inbox follows the desktop `announcements_list` protocol: summaries load
-in batches of 200 to count all unread announcements, while full bodies load in
-batches of 20 as the list scrolls. Opening a detail marks that revision read.
+at `99+` on the badge). The identity peer sends its cached catalog ID and revision at login.
+A matching catalog needs no additional network request. For a missing or
+changed catalog, the server sends paced pages of titles, timestamps, IDs and
+revisions. The app installs the complete catalog atomically and uses it to
+compute unread counts. Opening a detail fetches just the missing body for that
+revision. The system caches directory holds the catalog and previously opened
+bodies per endpoint and device. Older servers use the existing paged list.
+Opening a detail marks that revision read.
 Swipe or long-press a row to delete it after confirmation. Read and deleted
 revisions persist only on this device, scoped by server, port and device ID;
 updating an announcement makes its new revision visible and unread again.
@@ -524,23 +527,25 @@ outside the image, in either pointer mode. A pinch also follows the fingers'
 midpoint movement when it starts in a margin. Held virtual mouse buttons still
 prevent viewport gestures.
 
-In relative mouse mode, continuing to move outward at the top or bottom of the
-visible image pans the video vertically in the opposite direction. Moving
-down-left at the bottom edge pans upward without shifting the video horizontally;
-left and right edges do not trigger panning.
-This also works at 1× scale and while dragging a held virtual mouse button.
+When zoomed in, moving the relative mouse toward any screen edge pans the video
+to keep the cursor visible. Moving into a corner pans both axes. The same
+behavior applies when dragging a held virtual mouse button. At 1×, continuing
+outward at the top or bottom of the image still pans it vertically.
+With the keyboard open, move the cursor toward the top of the keyboard toolbar
+to bring the desktop underneath it into view. This works at any zoom level,
+including while dragging with a virtual mouse button held.
 Panning stops with the pointer movement and retains its position after release.
 At the vertical limit, the visible image occupies at least 20% of the viewport
 height regardless of zoom. If the entire image is shorter than that, its full
-height remains visible. The bounds account for letterboxing. Ending a pinch,
-including returning to 1×, preserves the translated position within those bounds
-instead of recentering it. Switching displays restores the centered view.
+height remains visible. The bounds account for letterboxing. Pinching back to
+1× or switching displays restores the centered view.
 
 ## Touch controls and device validation
 
-The floating control menu includes **Chuột ảo** (virtual mouse), a 140 × 48 pt
-horizontal left-button / wheel / right-button bar attached to the status orb.
-Drag the orb to reposition it, or use **Ẩn chuột** to hide it. The bar overlays
+The 140 × 68 pt virtual mouse appears in the lower-right corner when the first
+remote frame arrives. Drag anywhere along its top strip to reposition it.
+Use **Ẩn chuột** in the floating menu to hide the bar. Opening it again in the
+same session restores its position. The bar overlays
 the video without resizing it and avoids the computer keyboard. Hold either mouse
 button and drag the same finger, including beyond the key bounds, to drag at the
 remote cursor; lifting the finger releases that button. Moving another finger on

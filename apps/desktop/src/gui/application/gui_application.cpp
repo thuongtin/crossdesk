@@ -48,6 +48,7 @@
 #include "features/gallery/gallery_workspace.h"
 #include "features/gallery/preview_bandwidth.h"
 #include "features/gallery/preview_resolution.h"
+#include "features/input/pointer_motion.h"
 #include "features/input/stream_keyboard_focus.h"
 #include "filesystem_utf8.h"
 #include "localization.h"
@@ -72,7 +73,6 @@
 #include "platform/windows/service/interactive_desktop.h"
 #include "platform/windows/service/unattended_config.h"
 #elif defined(__APPLE__)
-#include "features/input/scroll_accumulator.h"
 #include "platform/macos/gui/tray/mac_tray.h"
 #include "platform/macos/gui/video_frame_scheduler.h"
 #include "platform/window_drag.h"
@@ -312,8 +312,22 @@ bool X11WindowMatches(Display* display, ::Window x11_window,
              kGeometryTolerance;
 }
 
-bool X11ActivateWindow(Display* display, const slint::Window& target,
-                      bool gallery_window) {
+std::string X11WindowTitle(Display* display, ::Window window) {
+  if (!display || !window) return {};
+  unsigned char* name = nullptr;
+  unsigned long length = 0, remaining = 0;
+  Atom type = None;
+  int format = 0;
+  XGetWindowProperty(display, window, XInternAtom(display, "_NET_WM_NAME", False),
+                     0, 1024, False, XInternAtom(display, "UTF8_STRING", False),
+                     &type, &format, &length, &remaining, &name);
+  const std::string title = name && format == 8
+      ? std::string(reinterpret_cast<char*>(name), length) : std::string{};
+  if (name) XFree(name);
+  return title;
+}
+
+bool X11ActivateWindow(Display* display, std::string_view title) {
   if (!display) return false;
   Atom type = None;
   int format = 0;
@@ -332,21 +346,7 @@ bool X11ActivateWindow(Display* display, const slint::Window& target,
     for (unsigned long i = 0; i < count; ++i) {
       if (X11GetWindowProcessId(display, windows[i]) !=
           static_cast<unsigned long>(getpid())) continue;
-      if (!gallery_window && !X11WindowMatches(display, windows[i], target)) continue;
-      unsigned char* name = nullptr;
-      unsigned long length = 0;
-      Atom name_type = None;
-      int name_format = 0;
-      XGetWindowProperty(display, windows[i], XInternAtom(display, "_NET_WM_NAME", False),
-                         0, 256, False, XInternAtom(display, "UTF8_STRING", False),
-                         &name_type, &name_format, &length, &remaining, &name);
-      const std::string_view title = name && name_format == 8
-          ? std::string_view(reinterpret_cast<char*>(name), length)
-          : std::string_view{};
-      const bool matches = gallery_window ? title.starts_with("CrossDesk ")
-                                          : title == "CrossDesk";
-      if (name) XFree(name);
-      if (!matches) continue;
+      if (X11WindowTitle(display, windows[i]) != title) continue;
       XEvent event{};
       event.xclient.type = ClientMessage;
       event.xclient.window = windows[i];
@@ -745,7 +745,7 @@ struct WindowDragState {
   slint::Timer pointer_timer;
 #endif
 
-  bool ReadGlobalPointer(float* x, float* y, bool* left_pressed = nullptr) {
+  bool ReadGlobalPointer(float* x, float* y) {
 #if (defined(__linux__) && !defined(__OHOS__)) && !defined(__APPLE__)
     const char* driver = SDL_GetCurrentVideoDriver();
     if (driver && std::strcmp(driver, "x11") == 0) {
@@ -766,14 +766,12 @@ struct WindowDragState {
                          &buttons)) {
         return false;
       }
-      if (left_pressed) *left_pressed = (buttons & Button1Mask) != 0;
       *x = static_cast<float>(root_x);
       *y = static_cast<float>(root_y);
       return true;
     }
 #endif
-    const auto buttons = SDL_GetGlobalMouseState(x, y);
-    if (left_pressed) *left_pressed = (buttons & SDL_BUTTON_LMASK) != 0;
+    SDL_GetGlobalMouseState(x, y);
     return true;
   }
 };
@@ -792,14 +790,52 @@ bool CanUseGlobalPointerPosition() {
 #endif
 }
 
-constexpr float kStreamWindowLogicalWidth = 1280.0f;
-constexpr float kStreamWindowLogicalHeight = 720.0f;
-constexpr float kWaylandTitlebarLogicalHeight = 32.0f;
-
-float StreamWindowLogicalHeight(bool custom_titlebar) {
-  return kStreamWindowLogicalHeight +
-         (custom_titlebar ? kWaylandTitlebarLogicalHeight : 0.0f);
+// Place the native cursor in the stream's client area so Slint hit-tests its
+// ordinary controls at the same position as the scaled video cursor.
+bool PlaceStreamControlPointer(const slint::Window& window, float x, float y) {
+#if defined(_WIN32)
+  const HWND hwnd = window.win32_hwnd();
+  if (!hwnd || GetForegroundWindow() != hwnd) return false;
+  RECT client{};
+  POINT current{};
+  if (!GetClientRect(hwnd, &client) || IsRectEmpty(&client) || !GetCursorPos(&current) ||
+      GetAncestor(WindowFromPoint(current), GA_ROOT) != hwnd ||
+      !ScreenToClient(hwnd, &current) || !PtInRect(&client, current)) return false;
+  const float scale = window.scale_factor();
+  POINT target{std::clamp(std::lround(x * scale), client.left, client.right - 1),
+               std::clamp(std::lround(y * scale), client.top, client.bottom - 1)};
+  return ClientToScreen(hwnd, &target) && GetAncestor(WindowFromPoint(target), GA_ROOT) == hwnd &&
+         SetCursorPos(target.x, target.y) && GetCursorPos(&current) &&
+         current.x == target.x && current.y == target.y;
+#elif defined(__APPLE__)
+  const float scale = window.scale_factor();
+  return PlaceMacStreamControlPointer(window.appkit_view(), x * scale, y * scale);
+#elif defined(__linux__) && !defined(__OHOS__)
+  if (window.wayland_surface()) return false;
+  std::unique_ptr<Display, decltype(&XCloseDisplay)> display(XOpenDisplay(nullptr), XCloseDisplay);
+  if (!display) return false;
+  const auto active = X11GetActiveWindow(display.get());
+  if (!X11WindowMatches(display.get(), active, window) ||
+      X11GetWindowProcessId(display.get(), active) != static_cast<unsigned long>(getpid()))
+    return false;
+  const auto size = window.size();
+  if (!size.width || !size.height) return false;
+  const float scale = window.scale_factor();
+  const int px = std::clamp<long>(std::lround(x * scale), 0, size.width - 1);
+  const int py = std::clamp<long>(std::lround(y * scale), 0, size.height - 1);
+  // Specifying the source window also limits the warp to its visible area.
+  XWarpPointer(display.get(), active, active, 0, 0, 0, 0, px, py);
+  ::Window root, child;
+  int root_x, root_y, client_x, client_y;
+  unsigned int buttons;
+  return XQueryPointer(display.get(), active, &root, &child, &root_x, &root_y,
+                       &client_x, &client_y, &buttons) && client_x == px && client_y == py;
+#else
+  return false;
+#endif
 }
+
+constexpr int kWaylandTitlebarLogicalHeight = 32;
 
 SDL_DisplayID DisplayForSlintWindow(const slint::Window& window) {
   const auto position = window.position();
@@ -856,10 +892,10 @@ bool PositionWindowAtCenter(slint::Window& window, const slint::Window& anchor,
 #if defined(__APPLE__)
   const float target_x =
       static_cast<float>(usable_bounds.x) +
-      (static_cast<float>(usable_bounds.w) - logical_width) / 2.0f;
+      std::max(0.0f, (usable_bounds.w - logical_width) / 2.0f);
   const float target_y =
       static_cast<float>(usable_bounds.y) +
-      (static_cast<float>(usable_bounds.h) - logical_height) / 2.0f;
+      std::max(0.0f, (usable_bounds.h - logical_height) / 2.0f);
   window.set_position(
       slint::LogicalPosition(slint::Point<float>{target_x, target_y}));
 #else
@@ -871,23 +907,6 @@ bool PositionWindowAtCenter(slint::Window& window, const slint::Window& anchor,
 #endif
   return true;
 }
-
-#if _WIN32
-bool ConfigureWindowsServerWindow(slint::Window& window) {
-  const HWND hwnd = window.win32_hwnd();
-  if (!hwnd) {
-    return false;
-  }
-
-  LONG_PTR ex_style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-  ex_style |= WS_EX_TOOLWINDOW;
-  ex_style &= ~WS_EX_APPWINDOW;
-  SetWindowLongPtr(hwnd, GWL_EXSTYLE, ex_style);
-  return SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-                      SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED |
-                          SWP_NOACTIVATE) != FALSE;
-}
-#endif
 
 template <typename WindowHandle>
 void DragWindow(WindowHandle& component, int phase, float mouse_x,
@@ -991,6 +1010,75 @@ void DragWindow(WindowHandle& component, int phase, float mouse_x,
 
 }  // namespace
 
+struct GuiApplication::StreamView {
+  explicit StreamView(std::shared_ptr<RemoteSession> props)
+      : session(std::move(props)), renderer(CreateVideoRenderer()),
+        presenter(renderer, session->remote_id_) {}
+
+  std::shared_ptr<RemoteSession> session;
+  std::shared_ptr<VideoRenderer> renderer;
+  SlintVideoPresenter presenter;
+  std::shared_ptr<slint::VectorModel<slint::SharedString>> display_model =
+      std::make_shared<slint::VectorModel<slint::SharedString>>();
+  std::shared_ptr<slint::VectorModel<slint::SharedString>> resolution_model =
+      std::make_shared<slint::VectorModel<slint::SharedString>>();
+  DisplayResolutionInfo resolution_choices;
+  std::shared_ptr<slint::VectorModel<ui::NetworkStatsRow>> stats_model =
+      std::make_shared<slint::VectorModel<ui::NetworkStatsRow>>();
+  WindowDragState drag;
+  std::string endpoint;
+  unsigned endpoint_window_number = 1;
+  ConfigCenter::StreamWindowSize normal_size{1280, 720};
+  int position_attempts = 2;
+#if defined(__APPLE__)
+  int chrome_attempts = 30;
+#endif
+  bool was_visible = false;
+  slint::ComponentHandle<ui::StreamWindow> window = ui::StreamWindow::create();
+
+  bool Visible() const {
+    return window->window().is_visible() && !window->window().is_minimized();
+  }
+
+  bool Fullscreen() const {
+#if defined(__APPLE__)
+    return IsStreamWindowFullscreen(window->window().appkit_view());
+#else
+    return window->window().is_fullscreen();
+#endif
+  }
+
+  void ObserveWindowState() {
+    const auto& native = window->window();
+    const bool fullscreen = Fullscreen();
+    const bool maximized = native.is_maximized();
+    window->set_fullscreen_enabled(fullscreen);
+    window->set_window_maximized(maximized);
+    if (position_attempts > 0 || !Visible() || fullscreen || maximized) return;
+    const auto size = native.size();
+    const float scale = native.scale_factor();
+    if (!(scale > 0)) return;
+    // Save logical client dimensions so moving between displays with different
+    // backing scales does not change the apparent size on the next connection.
+    const int width = std::lround(size.width / scale);
+    const int height = std::lround(size.height / scale);
+    if (width >= 640 && height >= 360) normal_size = {width, height};
+  }
+
+  void SaveSize(ConfigCenter& config) {
+    if (position_attempts > 0) return;  // The window closed before its first show.
+    ObserveWindowState();
+    if (config.SetStreamWindowSize(session->device_preference_key_, normal_size) != 0)
+      LOG_WARN("Could not save control window size");
+  }
+
+  ~StreamView() {
+    session->SetVideoRenderer(nullptr);
+    presenter.Detach();
+    window->hide();
+  }
+};
+
 struct GuiApplication::SlintUi {
 #if _WIN32
   SessionEndObserver session_end;
@@ -1055,9 +1143,7 @@ struct GuiApplication::SlintUi {
       std::make_shared<slint::VectorModel<ui::GalleryActionDevice>>();
   float pointer_x = 0, pointer_y = 0;
   std::set<int> pressed_mouse_buttons;
-#if defined(__APPLE__)
-  ScrollAccumulator scroll;
-#endif
+  PointerMotion pointer_motion;
   uint64_t announcement_version = UINT64_MAX;
   std::string announcement_selected_id, announcement_selected_revision;
   // Share the window shell and dialogs, but keep each component's UI state and
@@ -1068,18 +1154,11 @@ struct GuiApplication::SlintUi {
   std::shared_ptr<slint::VectorModel<ui::ReleaseNoteBlock>>
       release_note_blocks_model =
           std::make_shared<slint::VectorModel<ui::ReleaseNoteBlock>>();
-  std::optional<slint::ComponentHandle<ui::StreamWindow>> stream;
-  std::optional<slint::ComponentHandle<ui::ServerWindow>> server;
-  std::optional<slint::ComponentHandle<ui::ServerStatusBar>> server_bar;
+  std::map<std::string, StreamView> streams;
+  bool releasing_input = false;
+  bool gallery_previous_mouse_control = false;
   std::shared_ptr<slint::VectorModel<ui::RecentConnection>> recent_model =
       std::make_shared<slint::VectorModel<ui::RecentConnection>>();
-  std::shared_ptr<slint::VectorModel<ui::StreamTab>> tab_model =
-      std::make_shared<slint::VectorModel<ui::StreamTab>>();
-  std::shared_ptr<slint::VectorModel<slint::SharedString>> display_model =
-      std::make_shared<slint::VectorModel<slint::SharedString>>();
-  std::shared_ptr<slint::VectorModel<slint::SharedString>> resolution_model =
-      std::make_shared<slint::VectorModel<slint::SharedString>>();
-  DisplayResolutionInfo resolution_choices;
   struct TransferNotification {
     std::optional<slint::ComponentHandle<ui::FileTransferNotification>> window;
     RemoteSession::FileTransferInfo info;
@@ -1091,16 +1170,9 @@ struct GuiApplication::SlintUi {
   SDL_DisplayID clipboard_notification_display = 0;
   std::map<std::string, std::unique_ptr<FileBrowserWindow>> file_browsers;
   SDL_DisplayID transfer_display = 0;
-  std::shared_ptr<slint::VectorModel<ui::NetworkStatsRow>> stats_model =
-      std::make_shared<slint::VectorModel<ui::NetworkStatsRow>>();
   std::shared_ptr<slint::VectorModel<ui::ControllerEntry>> controller_model =
       std::make_shared<slint::VectorModel<ui::ControllerEntry>>();
-  std::unique_ptr<SlintVideoPresenter> video_presenter;
-  std::vector<std::string> tab_order;
-  std::vector<std::string> tab_ids;
-  std::string tab_model_signature;
   std::vector<std::string> controller_ids;
-  std::string controller_model_signature;
   std::string trusted_device_signature;
   std::shared_ptr<slint::VectorModel<ui::TrustedDeviceEntry>> trusted_device_model =
       std::make_shared<slint::VectorModel<ui::TrustedDeviceEntry>>();
@@ -1110,7 +1182,6 @@ struct GuiApplication::SlintUi {
   bool connection_password_initialized = false;
   bool connection_dialog_gallery = false;
   bool portable_service_dialog_initialized = false;
-  bool sponsorship_prompt_pending = false;
   std::string recent_model_signature;
   gallery::PreviewResolutionDebouncer recent_preview_resolution;
   gallery::PreviewResolution recent_preview_size;
@@ -1118,26 +1189,13 @@ struct GuiApplication::SlintUi {
   std::optional<std::string> recent_group_filter;
   std::vector<std::string> recent_filter_groups;
   slint::Timer timer;
-  slint::Timer server_file_dialog_timer;
   std::shared_ptr<void> file_dialog_lifetime = std::make_shared<int>(0);
   bool file_dialog_open = false;
   std::future<feedback::ExportResult> diagnostic_export;
   std::string diagnostic_saved_path;
   WindowDragState main_drag, gallery_drag;
-  WindowDragState stream_drag;
-  WindowDragState server_drag;
   int main_native_titlebar_attempts = 30;
   int gallery_native_titlebar_attempts = 0;
-  int stream_live_resize_configuration_attempts = 0;
-  int stream_initial_position_attempts = 0;
-  SDL_DisplayID server_display = 0;
-  float server_anchor = 0.3f;
-  float server_drag_anchor = 0.3f;
-  bool server_drag_moved = false;
-  bool server_pointer_pressed = false;
-  bool server_file_dialog_open = false;
-  bool server_suspended_for_dialog = false;
-  server_window_state::EdgeLayout server_layout{};
   int localized_language = -1;
   std::chrono::steady_clock::time_point last_clipboard_poll{};
   slint::Timer video_timer;
@@ -1173,7 +1231,7 @@ struct GuiApplication::SlintUi {
 GuiApplication::GuiApplication() = default;
 GuiApplication::~GuiApplication() = default;
 
-int GuiApplication::Run() {
+int GuiApplication::Run(bool login_launch) {
 #ifndef __OHOS__
   // Publish the GUI endpoint before configuration/media initialization, so a
   // second launch can queue activation even while this window is starting.
@@ -1226,16 +1284,18 @@ int GuiApplication::Run() {
 
 #if defined(__linux__) && !defined(__OHOS__)
   try {
-    InitializeSettings();
+    if (!InitializeSettings()) return -1;
   } catch (const std::system_error&) {
     // Credential I/O errors are logged by SettingsManager. Exit cleanly rather
     // than initializing a new identity or crashing with an uncaught exception.
     return -1;
   }
 #else
-  InitializeSettings();
+  if (!InitializeSettings()) return -1;
 #endif
 #ifdef _WIN32
+  // Older credential caches and trust stores are available after settings initialization.
+  MigrateServiceAutostart(true);
   // Upgrade an already-enabled standalone host before the GUI opens its peer.
   // Until an identity is attached the GUI can still run on its own identity,
   // e.g. before its first connection has obtained a device ID.
@@ -1254,6 +1314,9 @@ int GuiApplication::Run() {
       }, [this](SettingEffect effect) {
         ApplySettingsFromConfig(effect == SettingEffect::reconnect);
       });
+#endif
+#ifdef __APPLE__
+  if (login_launch) SDL_SetHint(SDL_HINT_MAC_BACKGROUND_APP, "1");
 #endif
   if (!InitializeSDL()) {
     return -1;
@@ -1286,13 +1349,15 @@ int GuiApplication::Run() {
   // The native tray icon is managed outside Slint, so Slint cannot count it
   // when deciding whether the last hidden window should stop the event loop.
   // Keep the loop alive until the tray's explicit Exit action requests quit.
-  ui_->main->show();
+  if (!login_launch || !MinimizeMainWindowToTray()) {
+    ui_->main->show();
 #if _WIN32
-  ConfigureWindowsWindowIcons(ui_->main->window().win32_hwnd());
+    ConfigureWindowsWindowIcons(ui_->main->window().win32_hwnd());
 #elif defined(__APPLE__)
-  ConfigureMainWindowChrome(ui_->main->window().appkit_view());
-  PrepareNativeFileDialog();
+    ConfigureMainWindowChrome(ui_->main->window().appkit_view());
+    PrepareNativeFileDialog();
 #endif
+  }
   slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
   Cleanup();
   return 0;
@@ -1300,12 +1365,12 @@ int GuiApplication::Run() {
 
 void GuiApplication::InitializeLogger() { InitLogger(exec_log_path_); }
 
-void GuiApplication::InitializeSettings() {
+bool GuiApplication::InitializeSettings() {
   settings_.Load();
-  if (thumbnail_->SetSavePreviews(config_center_->IsSaveRemotePreviews()) != 0) {
-    LOG_ERROR("Failed to clear saved remote previews");
-  }
-  settings_.LoadRecentConnectionAliases();
+  if (!settings_.UpgradeHistory()) return false;
+  settings_.SelectHistoryServer();
+  settings_.ApplyPreviewPreference();
+  ReloadRecentConnections();
   if (!remote_resolutions_.Load(
           std::filesystem::path(cache_path_) / "remote_display_resolutions.json"))
     LOG_WARN("Could not load remembered remote display resolutions");
@@ -1313,8 +1378,8 @@ void GuiApplication::InitializeSettings() {
       localization::detail::ClampLanguageIndex(language_button_value_);
   localization_language_ =
       static_cast<ConfigCenter::LANGUAGE>(language_button_value_);
-  privacy_.SetText({
-      localization::privacy_screen_unlock_hint[localization_language_index_]});
+  SyncPrivacyScreenSettings();
+  return true;
 }
 
 bool GuiApplication::InitializeSDL() {
@@ -1341,7 +1406,9 @@ bool GuiApplication::InitializeSDL() {
 #endif
   // SDL disables the screensaver by default. A background remote desktop app
   // should leave automatic display sleep under the user's system settings.
+#ifndef __OHOS__
   SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
+#endif
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
     LOG_ERROR("SDL initialization failed: {}", SDL_GetError());
     return false;
@@ -1367,9 +1434,6 @@ void GuiApplication::InitializeModules() {
   if (modules_inited_) {
     return;
   }
-  // Renderer construction can log device, shader, or pipeline failures.
-  // Initialize it after Run() has selected the application's log directory.
-  video_renderer_ = CreateVideoRenderer();
   devices_.Initialize();
   CreateConnectionPeer();
   modules_inited_ = true;
@@ -1417,22 +1481,27 @@ void GuiApplication::InitializeUi() {
 #if _WIN32
   ui_->session_end.Start();
 #endif
-  ui_->sponsorship_prompt_pending =
-      config_center_->GetSponsorshipPromptDismissedVersion() != CROSSDESK_VERSION;
-  ui_->video_presenter =
-      std::make_unique<SlintVideoPresenter>(*video_renderer_);
+  const auto last_presented = config_center_->GetLastPresentedRelease();
+  ui_->main->set_release_welcome_pending(
+      last_presented.empty() || IsNewerVersion(last_presented, CROSSDESK_VERSION));
 #if defined(__APPLE__)
   ui_->video_scheduler.Start([this](double queued_ms) {
-    if (!ui_ || !ui_->stream || !ui_->gallery_control_id.empty() ||
-        !(*ui_->stream)->window().is_visible() ||
-        (*ui_->stream)->window().is_minimized()) return;
-    if (const auto props = SelectedSession())
-      props->video_latency_->RecordFrameWake(queued_ms);
-    PresentPendingVideoFrame(0);
+    for (auto& [_, view] : ui_->streams)
+      if (view.Visible() && view.session->frame_dirty_)
+        view.session->video_latency_->RecordFrameWake(queued_ms);
+    PresentPendingVideoFrame();
   });
   std::atomic_store_explicit(&video_frame_wakeup_,
       std::make_shared<const std::function<void()>>(
           ui_->video_scheduler.Notifier()), std::memory_order_release);
+#elif !defined(__OHOS__)
+  // Windows/Linux have no display-link equivalent, so a decoded frame used to
+  // wait for the next fallback timer tick (up to a full 60 Hz interval) before
+  // it was submitted. Wake the event loop directly and keep the timer only as
+  // a safety net.
+  std::atomic_store_explicit(&video_frame_wakeup_,
+      std::make_shared<const std::function<void()>>(
+          [this] { RequestVideoPresent(); }), std::memory_order_release);
 #endif
 #if _WIN32
   ui_->main->set_custom_titlebar(true);
@@ -1445,9 +1514,7 @@ void GuiApplication::InitializeUi() {
   ui_->main->set_release_note_blocks(ui_->release_note_blocks_model);
   RegisterFontAwesome(ui_->main->window());
   ui_->main->set_recent_connections(ui_->recent_model);
-  ui_->gallery_path = std::filesystem::path(cache_path_) / "deskhub.json";
-  if (!ui_->gallery.Load(ui_->gallery_path))
-    LOG_WARN("Could not load DeskHub workspace; original file retained");
+  LoadHistoryWorkspace();
   ui_->wall->set_gallery_tiles(ui_->gallery_model);
   ui_->wall->set_gallery_selected_devices(ui_->gallery_selected_model);
   ui_->wall->set_gallery_network_devices(ui_->gallery_network_model);
@@ -1466,7 +1533,7 @@ void GuiApplication::InitializeUi() {
 #endif
   ui_->gallery_window.wall_size = default_gallery_size;
   try {
-    std::ifstream file(ui_->gallery_path.string() + ".window");
+    std::ifstream file(std::filesystem::path(cache_path_) / "deskhub.json.window");
     if (file) {
       const auto saved = nlohmann::json::parse(file);
       const float scale = std::max(ui_->main->window().scale_factor(), 1.0f);
@@ -1510,6 +1577,21 @@ void GuiApplication::InitializeUi() {
   }
   ResetSettingsUi();
   ResetSettingsUi(true);
+  ui_->main->set_controllers(ui_->controller_model);
+  ui_->main->on_controller_selected([this](int index) {
+    if (index >= 0 && index < static_cast<int>(ui_->controller_ids.size()))
+      selected_server_remote_id_ = ui_->controller_ids[index];
+  });
+  ui_->main->on_send_controller_file([this](slint::SharedString id) {
+    OpenFileManager(std::string(id));
+  });
+  ui_->main->on_disconnect_controller([this](slint::SharedString id) {
+    CloseServerController(std::string(id));
+  });
+  ui_->main->on_disconnect_all_controllers([this] {
+    const auto ids = ui_->controller_ids;
+    for (const auto& id : ids) CloseServerController(id);
+  });
   BindMainCallbacks();
   BindMainCallbacks(true);
   InitializeSystemTray();
@@ -1593,13 +1675,7 @@ bool GuiApplication::MinimizeMainWindowToTray() {
   if (!ui_) {
     return false;
   }
-#if _WIN32 || defined(__APPLE__)
-  if (!ui_->tray) {
-    return false;
-  }
-  ui_->tray->MinimizeToTray();
-  return true;
-#elif defined(__linux__)
+#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
   return ui_->tray && ui_->tray->MinimizeToTray();
 #else
   return false;
@@ -1645,10 +1721,15 @@ void GuiApplication::ResetSettingsUi(bool gallery_window) {
 #endif
   main->set_daemon_enabled(enable_daemon_);
   main->set_save_remote_previews(config_center_->IsSaveRemotePreviews());
+  main->set_desktop_realtime_rate_control(config_center_->IsDesktopRealtimeRateControlEnabled());
   main->set_pause_video_when_minimized(config_center_->IsPauseVideoWhenMinimized());
   main->set_privacy_on_connect_enabled(
       config_center_->IsEnablePrivacyScreen());
   main->set_privacy_local_unlock_allowed(config_center_->IsPrivacyLocalUnlockAllowed());
+#if defined(_WIN32) || defined(__APPLE__)
+  main->set_privacy_black_screen_available(true);
+  main->set_privacy_black_screen(config_center_->IsPrivacyBlackScreen());
+#endif
   main->set_lock_on_disconnect_enabled(config_center_->IsLockOnDisconnect());
   main->set_trusted_devices_only(config_center_->IsTrustedDevicesOnly());
 #if defined(_WIN32) || defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
@@ -1749,6 +1830,9 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
       ui_->recent_group_filter = ui_->recent_filter_groups[index - 2];
     else ui_->recent_group_filter.reset();
     SyncMainWindow();
+  });
+  main->on_delete_group([this](slint::SharedString name) {
+    return DeleteGroup(std::string(name));
   });
   main->on_delete_announcement([this](slint::SharedString id,
                                           slint::SharedString revision) {
@@ -1933,7 +2017,7 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
       // History is newest first. Match both address and port, and only use
       // the latest matching record when an endpoint has been reused.
       for (const auto& [_, recent] : recent_connections_) {
-        if (recent.lan.device_id.empty() || recent.lan.address != address ||
+        if (recent.lan.address != address ||
             recent.lan.port != port)
           continue;
         if (recent.remember_password && lan::ValidPassword(recent.password)) {
@@ -1980,7 +2064,7 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
     if (auto props = FindRemoteSession(remote_id);
         props && props->connection_status_ == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
         !props->closing_) {
-      CloseStreamTab(props->remote_id_);
+      DisconnectSession(props->remote_id_);
       SyncMainWindow();
     }
   });
@@ -2003,7 +2087,12 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
         recent_connections_.begin(), recent_connections_.end(),
         [&](const auto& entry) { return entry.second.remote_id == remote_id; });
     if (connection != recent_connections_.end()) {
-      thumbnail_->DeleteThumbnail(connection->first);
+      if (thumbnail_->DeleteThumbnail(connection->first) != 0) return;
+      if (ui_->gallery.HasAssignments(remote_id) && !ui_->gallery.Contains(remote_id)) {
+        auto updated = ui_->gallery;
+        updated.Forget(remote_id);
+        if (updated.Save(ui_->gallery_path)) ui_->gallery = std::move(updated);
+      }
       settings_.EraseRecentConnectionAlias(remote_id);
       settings_.SaveRecentConnectionAliases();
       reload_recent_connections_ = true;
@@ -2106,11 +2195,12 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
   main->on_open_kofi_sponsor([this] {
     OpenUrl("https://ko-fi.com/kunkundi");
   });
-  main->on_dismiss_sponsorship([this, main] {
-    main->set_sponsorship_open(false);
-    ui_->sponsorship_prompt_pending = false;
-    if (config_center_->SetSponsorshipPromptDismissedVersion(CROSSDESK_VERSION) != 0) {
-      LOG_WARN("Could not save sponsorship prompt dismissal");
+  main->on_dismiss_release_welcome([this] {
+    ui_->main->set_release_welcome_open(false);
+    // Retry if the initial write failed while the dialog was on screen.
+    if (config_center_->GetLastPresentedRelease() != CROSSDESK_VERSION &&
+        config_center_->SetLastPresentedRelease(CROSSDESK_VERSION) != 0) {
+      LOG_WARN("Could not persist the displayed release version");
     }
   });
   main->on_check_for_updates([this] {
@@ -2123,7 +2213,7 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
       show_connection_status_window_ = false;
       return;
     }
-    CloseStreamTab(props->remote_id_);
+    DisconnectSession(props->remote_id_);
     re_enter_remote_id_ = true;
     show_connection_status_window_ = false;
   });
@@ -2133,7 +2223,7 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
       const MiniRtcConnectionStatus status = props->connection_status_.load();
       if (status == MiniRtcConnectionStatus::MiniRtcConnectionNoSuchTransmissionId ||
           status == MiniRtcConnectionStatus::MiniRtcConnectionRemoteUnavailable) {
-        CloseStreamTab(props->remote_id_);
+        DisconnectSession(props->remote_id_);
         re_enter_remote_id_ = true;
       }
     }
@@ -2242,81 +2332,89 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
   });
 }
 
-void GuiApplication::BindStreamCallbacks() {
-  if (!ui_->stream) {
-    return;
-  }
-  auto& stream = *ui_->stream;
-  stream->on_dismiss_remote_update([this] {
-    if (auto props = SelectedSession()) {
-      std::lock_guard lock(props->remote_version_mutex_);
-      props->remote_update_dismissed_ = true;
-    }
+void GuiApplication::BindStreamCallbacks(StreamView& view) {
+  auto& stream = view.window;
+#if defined(__APPLE__)
+  stream->on_fullscreen_video_inset([&view](float width, float height) {
+    return StreamWindowVideoTransitionInset(view.window->window().appkit_view(), width, height);
   });
-  auto close_stream_sessions = [this] {
-    std::vector<std::string> ids;
-    {
-      std::shared_lock lock(remote_sessions_mutex_);
-      for (const auto& [id, _] : remote_sessions_) {
-        if (!_->wall_managed_)
-          ids.push_back(id);
-        else
-          _->tab_opened_ = false;
-      }
-    }
-    ReleaseControl();
-    for (const auto& id : ids) {
-      CloseStreamTab(id);
-    }
-    if (ui_ && ui_->stream) {
-      (*ui_->stream)->hide();
-    }
-  };
-  stream->window().on_close_requested([close_stream_sessions] {
-    close_stream_sessions();
-    return slint::CloseRequestResponse::HideWindow;
+#endif
+  stream->on_place_control_pointer([&view](float x, float y) {
+    return PlaceStreamControlPointer(view.window->window(), x, y);
   });
-  stream->on_stream_title_drag([this](int phase, float x, float y) {
-    if (ui_ && ui_->stream) {
-      DragWindow(*ui_->stream, phase, x, y, ui_->stream_drag);
-    }
-  });
-  stream->on_minimize_stream_window([this] {
-    if (ui_ && ui_->stream) {
-      (*ui_->stream)->window().set_minimized(true);
-    }
-  });
-  stream->on_toggle_maximize_stream_window([this] {
-    if (!ui_ || !ui_->stream) {
+  stream->set_mouse_sensitivity_percent(config_center_->GetMouseSensitivityPercent());
+  stream->set_wheel_sensitivity_percent(
+      config_center_->GetWheelSensitivityPercent(view.session->device_preference_key_));
+  stream->on_save_input_sensitivity([this, &view](int mouse, int wheel) {
+    auto& window = view.window;
+    const int old_mouse = config_center_->GetMouseSensitivityPercent();
+    const auto& device = view.session->device_preference_key_;
+    const int old_wheel = config_center_->GetWheelSensitivityPercent(device);
+    if (mouse == old_mouse && wheel == old_wheel) return;
+    if (config_center_->SetInputSensitivity(device, mouse, wheel) != 0) {
+      window->set_mouse_sensitivity_percent(old_mouse);
+      window->set_wheel_sensitivity_percent(old_wheel);
+      window->set_sensitivity_error(UiText(localization::Literal(
+          "保存失败，请重试", localization_language_index_)));
       return;
     }
-    auto& stream = *ui_->stream;
-    auto& window = stream->window();
+    for (auto& [_, other] : ui_->streams) {
+      if (mouse != old_mouse) other.window->set_mouse_sensitivity_percent(mouse);
+      if (other.session->device_preference_key_ == device) {
+        other.window->set_wheel_sensitivity_percent(wheel);
+        other.window->set_sensitivity_error("");
+      }
+    }
+    if (mouse != old_mouse) ResetPointerMotion();
+  });
+  stream->on_dismiss_remote_update([&view] {
+    std::lock_guard lock(view.session->remote_version_mutex_);
+    view.session->remote_update_dismissed_ = true;
+  });
+  const auto close_window = [this, &view] {
+    const auto& props = view.session;
+    if (props->wall_managed_) {
+      if (ui_->gallery_control_id.empty() && controlled_remote_id_ == props->remote_id_)
+        ReleaseControl();
+      props->stream_window_open_ = false;
+    } else if (FindRemoteSession(props->remote_id_) == props) {
+      DisconnectSession(props->remote_id_);
+    }
+  };
+  stream->window().on_close_requested([close_window] {
+    close_window();
+    // The next UI tick detaches the renderer and native chrome before hiding.
+    return slint::CloseRequestResponse::KeepWindowShown;
+  });
+  stream->on_close_stream_window(close_window);
+  stream->on_stream_title_drag([&view](int phase, float x, float y) {
+    DragWindow(view.window, phase, x, y, view.drag);
+  });
+  stream->on_minimize_stream_window([&view] {
+    view.ObserveWindowState();
+#if defined(__APPLE__)
+    MinimizeMacStreamWindow(view.window->window().appkit_view());
+#else
+    view.window->window().set_minimized(true);
+#endif
+  });
+  stream->on_toggle_maximize_stream_window([&view] {
+    view.ObserveWindowState();
+    auto& window = view.window->window();
     const bool maximize = !window.is_maximized();
-    stream->set_window_maximized(maximize);
+    view.window->set_window_maximized(maximize);
     window.set_maximized(maximize);
   });
-  stream->on_close_stream_window(close_stream_sessions);
-  stream->on_select_tab([this](int index) { SelectStreamTab(index); });
-  stream->on_reorder_tab([this](int from, float drop_x, float tab_width) {
-    ReorderStreamTab(from, drop_x, tab_width);
-  });
-  stream->on_close_tab([this](slint::SharedString id) {
-    auto props = FindRemoteSession(std::string(id));
-    if (props && props->wall_managed_) {
-      ReleaseControl();
-      props->tab_opened_ = false;
-    } else
-      CloseStreamTab(std::string(id));
-  });
-  stream->on_switch_display([this](int index) {
-    auto props = SelectedSession();
-    if (!props || !props->peer_ || index < 0) return;
+  stream->on_switch_display([this, &view](int index) {
+    const auto& props = view.session;
+    if (!props->peer_ || index < 0) return;
     {
       std::lock_guard lock(props->remote_version_mutex_);
       if (index >= static_cast<int>(props->display_info_list_.size())) return;
     }
     props->selected_display_ = index;
+    view.window->global<ui::RemoteCursor>().invoke_reset();
+    if (controlled_remote_id_ == props->remote_id_) ui_->pointer_motion = {};
     {
       std::lock_guard lock(props->remote_cursor_state_mutex_);
       props->cursor_presentation_ = {};
@@ -2328,9 +2426,9 @@ void GuiApplication::BindStreamCallbacks() {
     MiniRtcSendReliableDataFrame(props->peer_, message.c_str(), message.size(),
                           props->control_data_label_.c_str());
   });
-  stream->on_send_shortcut([this](slint::SharedString shortcut) {
-    auto props = SelectedSession();
-    if (!props || !props->peer_ || !props->control_mouse_ ||
+  stream->on_send_shortcut([&view](slint::SharedString shortcut) {
+    const auto& props = view.session;
+    if (!props->peer_ || !props->control_mouse_ ||
         props->connection_status_.load() != MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
       return;
     }
@@ -2349,9 +2447,9 @@ void GuiApplication::BindStreamCallbacks() {
     MiniRtcSendReliableDataFrame(props->peer_, message.c_str(), message.size(),
                           props->control_data_label_.c_str());
   });
-  const auto send_privacy = [this](bool relock) {
-    auto props = SelectedSession();
-    if (!props || !props->peer_ || (!relock && !props->control_mouse_) ||
+  const auto send_privacy = [&view](bool relock) {
+    const auto& props = view.session;
+    if (!props->peer_ || (!relock && !props->control_mouse_) ||
         props->connection_status_.load() != MiniRtcConnectionStatus::MiniRtcConnectionConnected) return;
     RemoteAction action{};
     action.type = ControlType::privacy_command;
@@ -2384,26 +2482,23 @@ void GuiApplication::BindStreamCallbacks() {
   };
   stream->on_toggle_privacy([send_privacy] { send_privacy(false); });
   stream->on_lock_privacy([send_privacy] { send_privacy(true); });
-  stream->on_dismiss_privacy_unlock([this] {
-    if (auto props = SelectedSession()) {
-      std::lock_guard lock(props->privacy_status_mutex_);
-      props->privacy_unlock_notice_ = false;
-    }
+  stream->on_dismiss_privacy_unlock([&view] {
+    std::lock_guard lock(view.session->privacy_status_mutex_);
+    view.session->privacy_unlock_notice_ = false;
   });
-  stream->on_toggle_mouse_control([this] {
-    auto props = SelectedSession();
-    if (!props || !props->connection_established_) {
+  stream->on_toggle_mouse_control([this, &view] {
+    const auto& props = view.session;
+    if (!props->connection_established_) {
       return;
     }
     props->control_mouse_ = !props->control_mouse_;
     props->enable_mouse_control_ = props->control_mouse_;
-    start_keyboard_capturer_ = props->control_mouse_;
-    if (!props->control_mouse_) ReleaseControl();
+    SetStreamKeyboardFocus(view, true);
   });
-  stream->on_change_video_settings([this](int quality, int frame_rate_index,
+  stream->on_change_video_settings([&view](int quality, int frame_rate_index,
                                           int preference) {
-    auto props = SelectedSession();
-    if (!props || !props->peer_ ||
+    const auto& props = view.session;
+    if (!props->peer_ ||
         props->connection_status_.load() != MiniRtcConnectionStatus::MiniRtcConnectionConnected)
       return;
     RemoteAction action{};
@@ -2426,26 +2521,26 @@ void GuiApplication::BindStreamCallbacks() {
       props->video_settings_request_tick_ = SDL_GetTicks();
     }
   });
-  stream->on_change_remote_resolution([this](int index) {
-    auto props = SelectedSession();
-    if (!props || !props->peer_ || props->closing_ || index < 0 ||
+  stream->on_change_remote_resolution([this, &view](int index) {
+    const auto& props = view.session;
+    if (!props->peer_ || props->closing_ || index < 0 ||
         props->connection_status_ != MiniRtcConnectionStatus::MiniRtcConnectionConnected ||
-        ui_->resolution_choices.display_id != props->selected_display_ ||
-        index >= int(ui_->resolution_choices.modes.size())) return;
+        view.resolution_choices.display_id != props->selected_display_ ||
+        index >= int(view.resolution_choices.modes.size())) return;
     RemoteAction action;
     action.type = ControlType::display_resolution;
     {
       std::lock_guard lock(props->display_resolution_mutex_);
       auto& state = props->display_resolution_;
       const DisplayResolutionChange selection{props->selected_display_,
-          ui_->resolution_choices.display_key, ui_->resolution_choices.modes[index]};
+          view.resolution_choices.display_key, view.resolution_choices.modes[index]};
       // Explicitly choosing the current mode also establishes a preference.
       if (!state.pending && std::any_of(state.displays.begin(), state.displays.end(),
           [&](const auto& display) {
             return SupportsDisplayResolution(display, selection) &&
                    display.current == selection.resolution;
           })) {
-        if (!remote_resolutions_.Remember(props->resolution_preference_key_,
+        if (!remote_resolutions_.Remember(props->device_preference_key_,
                 {selection.display_key, selection.resolution}))
           LOG_WARN("Could not save remote display resolution");
         return;
@@ -2463,9 +2558,9 @@ void GuiApplication::BindStreamCallbacks() {
       }
     }
   });
-  stream->on_toggle_audio([this] {
-    auto props = SelectedSession();
-    if (!props || !props->connection_established_) {
+  stream->on_toggle_audio([this, &view] {
+    const auto& props = view.session;
+    if (!props->connection_established_) {
       return;
     }
     if (props->audio_capture_button_pressed_)
@@ -2474,15 +2569,15 @@ void GuiApplication::BindStreamCallbacks() {
       UnmuteRemoteAudio(props);
     SyncAudioPlayback();
   });
-  stream->on_select_file([this] {
-    if (auto props = SelectedSession()) OpenFileManager(props->remote_id_);
+  stream->on_select_file([this, &view] {
+    OpenFileManager(view.session->remote_id_);
   });
   stream->on_can_drop_file(
       [](const slint::DataTransfer& data) { return data.has_plain_text(); });
-  stream->on_file_dropped([this](const slint::DataTransfer& data) {
+  stream->on_file_dropped([this, &view](const slint::DataTransfer& data) {
     const auto text = data.plain_text();
-    auto props = SelectedSession();
-    if (!text || !props) {
+    const auto& props = view.session;
+    if (!text) {
       return;
     }
     const std::string path = DecodeDroppedPath(std::string(*text));
@@ -2491,112 +2586,43 @@ void GuiApplication::BindStreamCallbacks() {
                                      props->remote_id_);
     }
   });
-  stream->on_toggle_stats([this] {
-    if (auto props = SelectedSession()) {
-      props->net_traffic_stats_button_pressed_ =
-          !props->net_traffic_stats_button_pressed_;
-    }
+  stream->on_toggle_stats([&view] {
+    view.session->net_traffic_stats_button_pressed_ =
+        !view.session->net_traffic_stats_button_pressed_;
   });
-  stream->on_toggle_fullscreen([this] {
-    auto& stream = *ui_->stream;
-#if defined(__APPLE__)
-    const bool enter_fullscreen = !IsStreamWindowFullscreen();
-    // Update Slint's fullscreen layout before AppKit applies the new frame so
-    // the first fullscreen draw cannot briefly contain the windowed tab strip.
+  stream->on_toggle_fullscreen([this, &view] {
+    auto& stream = view.window;
+    view.ObserveWindowState();
+    const bool enter_fullscreen = !stream->get_fullscreen_enabled();
     stream->set_fullscreen_enabled(enter_fullscreen);
-    if (!SetStreamWindowFullscreen(enter_fullscreen)) {
-      stream->set_fullscreen_enabled(!enter_fullscreen);
-      return;
-    }
-#else
     auto& window = stream->window();
-    const bool enter_fullscreen = !window.is_fullscreen();
-#endif
-    fullscreen_button_pressed_ = enter_fullscreen;
-
-#if defined(__APPLE__)
-    video_frame_dirty_.store(true, std::memory_order_release);
-#else
-    stream->set_fullscreen_enabled(enter_fullscreen);
     window.request_redraw();
     window.set_fullscreen(enter_fullscreen);
+#if defined(__APPLE__)
+    NotifyVideoFrameReady(*view.session);
 #endif
   });
-  stream->on_disconnect([this] {
-    if (auto props = SelectedSession()) {
-      CloseStreamTab(props->remote_id_);
-    }
+  stream->on_disconnect([this, &view] {
+    if (FindRemoteSession(view.session->remote_id_) == view.session)
+      DisconnectSession(view.session->remote_id_);
   });
-  stream->on_pointer_input([this](slint::PointerEventButton button,
+  stream->on_pointer_input([this, &view](slint::PointerEventButton button,
                                   slint::PointerEventKind kind, float x,
                                   float y) {
+    if (!AcceptStreamInput(view)) return;
     SendPointerInput(static_cast<int>(button), static_cast<int>(kind), x, y);
   });
-  stream->on_scroll_input([this](float dx, float dy, float x, float y) {
+  stream->on_scroll_input([this, &view](float dx, float dy, float x, float y) {
+    if (!AcceptStreamInput(view)) return;
     SendScrollInput(dx, dy, x, y);
   });
-  stream->on_key_input([this](slint::SharedString text, bool pressed,
+  stream->on_key_input([this, &view](slint::SharedString text, bool pressed,
                               bool control, bool alt, bool shift, bool meta) {
+    if (!AcceptStreamInput(view)) return;
     SendKeyInput(std::string(text), pressed, control, alt, shift, meta);
   });
-  stream->on_keyboard_focus_changed([this](bool focused) {
-    if (ui_->gallery_control_id.empty()) SetStreamKeyboardFocus(focused);
-  });
-}
-
-void GuiApplication::BindServerCallbacks() {
-  if (!ui_->server) {
-    return;
-  }
-  auto& server = *ui_->server;
-  auto& bar = *ui_->server_bar;
-  bar->on_title_drag([this](int phase, float, float) {
-    auto& drag = ui_->server_drag;
-    if (phase == 1) {
-      ui_->server_drag_moved = false;
-      (*ui_->server_bar)->set_dragged(false);
-      drag.active = CanUseGlobalPointerPosition() &&
-          drag.ReadGlobalPointer(&drag.pointer_start_x, &drag.pointer_start_y);
-      ui_->server_drag_anchor = ui_->server_anchor;
-    } else if (phase == 0) {
-      PositionServerWindows();
-      drag.active = false;
-    }
-  });
-  bar->on_toggle_panel([this] {
-    SetServerPanelExpanded(server_window_collapsed_);
-  });
-  bar->on_move_anchor([this](float delta) {
-    ui_->server_anchor = std::clamp(ui_->server_anchor + delta, 0.0f, 1.0f);
-    PositionServerWindows();
-  });
-  const auto dismiss = [this] { SetServerPanelExpanded(false); };
-  bar->on_dismiss_panel(dismiss);
-  server->on_dismiss_panel(dismiss);
-  server->window().on_close_requested([dismiss] {
-    dismiss();
-    return slint::CloseRequestResponse::KeepWindowShown;
-  });
-  bar->window().on_close_requested([dismiss] {
-    dismiss();
-    return slint::CloseRequestResponse::KeepWindowShown;
-  });
-  server->on_controller_selected([this](int index) {
-    if (index < 0 || index >= static_cast<int>(ui_->controller_ids.size())) {
-      return;
-    }
-    selected_server_remote_id_ = ui_->controller_ids[index];
-  });
-  server->on_select_file([this] {
-    if (!selected_server_remote_id_.empty()) OpenFileManager(selected_server_remote_id_);
-  });
-  server->on_disconnect_controller([this](slint::SharedString id) {
-    CloseServerController(std::string(id));
-  });
-  server->on_disconnect_all([this] {
-    // Work from the confirmed UI snapshot; a later arrival is a new session.
-    const auto ids = ui_->controller_ids;
-    for (const auto& id : ids) CloseServerController(id);
+  stream->on_keyboard_focus_changed([this, &view](bool focused) {
+    SetStreamKeyboardFocus(view, focused);
   });
 }
 
@@ -2708,7 +2734,7 @@ void GuiApplication::Tick() {
                                 : lan_->ListenerError(display_address)));
     // Show failures one address at a time, without interrupting edits or another
     // dialog. A working listener must not clear another address's error.
-    if (ui_->main->get_lan_mode() && ui_->main->get_can_show_sponsorship() &&
+    if (ui_->main->get_lan_mode() && ui_->main->get_can_show_release_welcome() &&
         !ui_->main->get_lan_port_editing() && !ui_->main->get_lan_port_dirty()) {
       if (auto issue = lan_->TakeListenerWarning()) {
         ui_->main->set_lan_access_warning_endpoint(
@@ -2756,7 +2782,12 @@ void GuiApplication::Tick() {
     if (event.type == SDL_EVENT_QUIT) {
       exit_ = true;
     } else if (event.type == SDL_EVENT_CLIPBOARD_UPDATE) {
+#ifdef __OHOS__
+      // Harmony's pasteboard reports content changes without an SDL owner.
+      clipboard_.HandleLocalUpdate();
+#else
       clipboard_.HandleLocalUpdate(!event.clipboard.owner);
+#endif
     }
   }
   clipboard_.ApplyPendingRemoteText();
@@ -2780,7 +2811,7 @@ void GuiApplication::Tick() {
         ui_->main_activation_attempts = 0;
     } else {
       if (!ui_->x11_focus_display) ui_->x11_focus_display = XOpenDisplay(nullptr);
-      if (X11ActivateWindow(ui_->x11_focus_display, window, false))
+      if (X11ActivateWindow(ui_->x11_focus_display, "CrossDesk"))
         ui_->main_activation_attempts = 0;
     }
     if (ui_->main_activation_attempts == 0) ui_->main_activation_token.clear();
@@ -2826,34 +2857,36 @@ void GuiApplication::Tick() {
   if (!ui_->gallery_control_id.empty()) keyboard_.SendHeartbeat(false);
   ShareLocalCursorState();
 
-  CloseRemoteClosedTabs();
+  CloseDisconnectedSessions();
   UpdateLocalization();
   SyncMainWindow();
   SyncGallery();
   SyncConnectionDialog();
   SyncPlatformDialogs();
-  // Wait for startup notices and user interactions to finish. Once shown,
-  // never reopen it during this run, even if saving the dismissal fails.
-  if (ui_->sponsorship_prompt_pending &&
+  // A background or obstructed launch must not consume the first presentation.
+  if (ui_->main->get_release_welcome_pending() &&
       ui_->main->window().is_visible() &&
       !ui_->main->window().is_minimized() &&
-      ui_->main->get_can_show_sponsorship() &&
+      ui_->main->get_can_show_release_welcome() &&
       !ui_->file_dialog_open && !HasActiveSession()) {
-    ui_->sponsorship_prompt_pending = false;
-    ui_->main->set_sponsorship_open(true);
+    ui_->main->set_release_welcome_open(true);
+    ui_->main->set_release_welcome_pending(false);
+    if (config_center_->SetLastPresentedRelease(CROSSDESK_VERSION) != 0) {
+      LOG_WARN("Could not persist the displayed release version");
+    }
   }
-  SyncStreamWindow();
+  SyncStreamWindows();
   SyncVideoFrameGapStats();
 #if defined(__APPLE__)
   UpdateVideoFrameScheduler();
 #endif
-  SyncServerWindow();
+  SyncIncomingControllers();
   SyncTrustedDevices();
   for (auto it = ui_->file_browsers.begin(); it != ui_->file_browsers.end();) {
     if (!it->second->Tick()) it = ui_->file_browsers.erase(it);
     else {
       if (it->second->Visible())
-        it->second->SetPeerName(FileManagerPeerName(it->first));
+        it->second->SetPeerName(SessionDisplayName(it->first));
       ++it;
     }
   }
@@ -3363,13 +3396,14 @@ void GuiApplication::UpdateLocalization() {
         : "开机自启需要安装版 Release；便携版和 Debug 不支持无人值守服务。", language)));
   }
 #endif
+  about::SetInstalledReleaseNotes(ui_->main, localization::GetSupportedLanguages()[language].code);
   ui_localization::ApplyMainWindowStrings(ui_->main, language);
+  ui_localization::ApplyServerStrings(ui_->main, language);
   ui_localization::ApplyStreamWindowStrings(ui_->main, language);
   ui_localization::ApplyMainWindowStrings(ui_->wall, language);
   ui_localization::ApplyStreamWindowStrings(ui_->wall, language);
-  if (ui_->stream) {
-    ui_localization::ApplyStreamWindowStrings(*ui_->stream, language);
-  }
+  for (auto& [_, view] : ui_->streams)
+    ui_localization::ApplyStreamWindowStrings(view.window, language);
   for (auto& [_, browser] : ui_->file_browsers)
     browser->UpdateActionLabels(language);
   ui_->localized_language = language;
@@ -3611,7 +3645,7 @@ void GuiApplication::SyncMainWindow() {
   std::vector<ui::RecentConnection> model;
   model.reserve(recent_connections_.size());
   for (const auto& [_, connection] : recent_connections_) {
-    if (lan_mode != !connection.lan.device_id.empty()) continue;
+    if (lan_mode != !connection.lan.address.empty()) continue;
     if (!lan_mode &&
         !ui_->gallery.MatchesGroup(connection.remote_id, ui_->recent_group_filter))
       continue;
@@ -3623,7 +3657,7 @@ void GuiApplication::SyncMainWindow() {
     item.group_names = UiText(group_labels[connection.remote_id]);
     item.display_name =
         UiText(settings_.RecentConnectionDisplayName(connection));
-    item.lan = !connection.lan.device_id.empty();
+    item.lan = !connection.lan.address.empty();
     item.endpoint =
         UiText(item.lan ? lan::FormatEndpoint(connection.lan.address,
                                               connection.lan.port)
@@ -3664,41 +3698,31 @@ void GuiApplication::SyncMainWindow() {
 }
 
 void GuiApplication::SyncConnectionDialog() {
-  if (!ui_ || !show_connection_status_window_) {
-    if (ui_) {
-      ui_->main->set_connection_dialog_open(false);
-      ui_->wall->set_connection_dialog_open(false);
-      ui_->connection_password_initialized = false;
+  const bool gallery_dialog = !ui_->gallery_auth_id.empty();
+  const auto props = show_connection_status_window_
+      ? FindRemoteSession(gallery_dialog ? ui_->gallery_auth_id : connection_dialog_target_)
+      : nullptr;
+  if (!props || props->connection_status_ == MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
+    if (props) ui_->gallery_auth_id.clear();
+    show_connection_status_window_ = false;
+    for (const auto& window : {ui_->main, ui_->wall}) {
+      window->set_connection_pending(false);
+      window->set_connection_dialog_open(false);
     }
+    ui_->connection_password_initialized = false;
     return;
   }
 
-  const bool gallery_dialog = !ui_->gallery_auth_id.empty();
-  if (ui_->connection_dialog_gallery != gallery_dialog)
+  if (ui_->connection_dialog_gallery != gallery_dialog ||
+      ui_->connection_dialog_remote_id != props->remote_id_)
     ui_->connection_password_initialized = false;
   ui_->connection_dialog_gallery = gallery_dialog;
-  auto& dialog = ui_->Window(gallery_dialog);
-  ui_->Window(!gallery_dialog)->set_connection_dialog_open(false);
-  auto props = FindRemoteSession(
-      ui_->gallery_auth_id.empty() ? focused_remote_id_ : ui_->gallery_auth_id);
-  if (!props) {
-    ui_->main->set_connection_dialog_open(false);
-    ui_->wall->set_connection_dialog_open(false);
-    return;
-  }
-
-  if (ui_->connection_dialog_remote_id != props->remote_id_) {
-    ui_->connection_password_initialized = false;
-  }
   ui_->connection_dialog_remote_id = props->remote_id_;
+  auto& dialog = ui_->Window(gallery_dialog);
+  auto& other = ui_->Window(!gallery_dialog);
+  other->set_connection_pending(false);
+  other->set_connection_dialog_open(false);
   const MiniRtcConnectionStatus status = props->connection_status_.load();
-  if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected && !ui_->gallery_auth_id.empty()) {
-    ui_->gallery_auth_id.clear();
-    show_connection_status_window_ = false;
-    ui_->main->set_connection_dialog_open(false);
-    ui_->wall->set_connection_dialog_open(false);
-    return;
-  }
   const auto auth = props->connection_auth_.Get();
   const bool password_required = auth.password_required ||
       (status == MiniRtcConnectionStatus::MiniRtcConnectionIncorrectPassword && auth.validating);
@@ -3822,7 +3846,8 @@ void GuiApplication::SyncPlatformDialogs() {
 
 #if (defined(__linux__) && !defined(__OHOS__)) && !defined(__APPLE__)
 void GuiApplication::SyncXWaylandWindowActivation() {
-  if (!ui_ || !use_xwayland_gui_) {
+  if (!use_xwayland_gui_) {
+    SyncStreamKeyboardFocus();
     return;
   }
 
@@ -3837,268 +3862,195 @@ void GuiApplication::SyncXWaylandWindowActivation() {
   }
   Display* display = ui_->x11_focus_display;
   const ::Window active_window = X11GetActiveWindow(display);
-  if (!active_window) {
-    if (!ui_->gallery_control_id.empty())
-      ReleaseControl();
-    SetStreamKeyboardFocus(false);
-    return;
-  }
-
-  if (const auto process_id = X11GetWindowProcessId(display, active_window);
-      process_id && *process_id != static_cast<unsigned long>(getpid())) {
-    if (!ui_->gallery_control_id.empty())
-      ReleaseControl();
-    ui_->main->set_window_active(false);
-    ui_->wall->set_window_active(false);
-    if (ui_->stream) {
-      (*ui_->stream)->set_window_active(false);
-    }
-    SetStreamKeyboardFocus(false);
-    return;
-  }
-
-  ui_->main->set_window_active(
-      X11WindowMatches(display, active_window, ui_->main->window()));
-  ui_->wall->set_window_active(
-      X11WindowMatches(display, active_window, ui_->wall->window()));
-  if (!ui_->gallery_control_id.empty()) {
-    if (!X11WindowMatches(display, active_window, ui_->wall->window()))
-      ReleaseControl();
-    return;
-  }
-  if (ui_->stream) {
-    const bool stream_active =
-        X11WindowMatches(display, active_window, (*ui_->stream)->window());
-    (*ui_->stream)->set_window_active(stream_active);
-    SetStreamKeyboardFocus(stream_active);
-  } else {
-    SetStreamKeyboardFocus(false);
+  const auto pid = active_window ? X11GetWindowProcessId(display, active_window) : std::nullopt;
+  const auto title = active_window && (!pid || *pid == static_cast<unsigned long>(getpid()))
+                         ? X11WindowTitle(display, active_window) : std::string{};
+  ui_->main->set_window_active(title == "CrossDesk");
+  const bool wall_active = title == std::string(ui_->wall->get_window_title());
+  ui_->wall->set_window_active(wall_active);
+  if (!wall_active && !ui_->gallery_control_id.empty()) ReleaseControl();
+  for (auto& [_, view] : ui_->streams) {
+    const bool active = view.Visible() && title == std::string(view.window->get_session_title());
+    view.window->set_window_active(active);
+    SetStreamKeyboardFocus(view, active);
   }
 }
 #endif
 
-void GuiApplication::SetStreamKeyboardFocus(bool focused) {
-  const bool local_input_active = ui_ && ui_->stream &&
-      (*ui_->stream)->get_local_input_active();
-  UpdateStreamKeyboardFocus(focused, local_input_active, focus_on_stream_window_,
-      [this](bool preserve_local_ui) { ReleaseControl(preserve_local_ui); });
+void GuiApplication::SetStreamKeyboardFocus(StreamView& view, bool focused) {
+  if (ui_->releasing_input) return;
+  const auto& props = view.session;
+  const auto& id = props->remote_id_;
+  const bool local_ui = view.window->get_local_input_active();
+  focused = focused && view.Visible() && props->stream_window_open_ &&
+      !props->closing_ && !local_ui &&
+      props->connection_status_ == MiniRtcConnectionStatus::MiniRtcConnectionConnected;
+#if defined(__APPLE__)
+  focused = focused && IsStreamWindowActive(view.window->window().appkit_view());
+#elif defined(_WIN32)
+  focused = focused && GetForegroundWindow() == view.window->window().win32_hwnd();
+#elif defined(__OHOS__)
+  focused = focused && IsHarmonyWindowActive(view.window->window());
+#else
+  focused = focused && view.window->get_video_input_focused();
+#endif
+  if (!focused) {
+    if (ui_->gallery_control_id.empty() && controlled_remote_id_ == id) {
+      UpdateStreamKeyboardFocus(false, local_ui, focus_on_stream_window_,
+          [this](bool preserve_local_ui) { ReleaseControl(preserve_local_ui); });
+    }
+    return;
+  }
+  if (focus_on_stream_window_ && controlled_remote_id_ == id &&
+      start_keyboard_capturer_ == props->control_mouse_) return;
+  if (!controlled_remote_id_.empty()) ReleaseControl();
+  controlled_remote_id_ = id;
+  focus_on_stream_window_ = true;
+  start_keyboard_capturer_ = props->control_mouse_;
+  {
+    std::unique_lock lock(remote_sessions_mutex_);
+    for (const auto& [_, session] : remote_sessions_)
+      session->last_focused_stream_ = session == props;
+    props->clipboard_allowed_ = props->control_mouse_;
+  }
+  if (props->control_mouse_) clipboard_.HandleLocalUpdate();
+  SyncAudioPlayback();
+}
+
+bool GuiApplication::AcceptStreamInput(StreamView& view) {
+  SetStreamKeyboardFocus(view, true);
+  return !ui_->releasing_input && focus_on_stream_window_ && view.session->control_mouse_ &&
+         controlled_remote_id_ == view.session->remote_id_;
 }
 
 void GuiApplication::SyncStreamKeyboardFocus() {
 #if defined(__OHOS__)
-  if (ui_) {
-    ui_->main->set_window_active(IsHarmonyWindowActive(ui_->main->window()));
-    ui_->wall->set_window_active(IsHarmonyWindowActive(ui_->wall->window()));
-  }
+  ui_->main->set_window_active(IsHarmonyWindowActive(ui_->main->window()));
+  ui_->wall->set_window_active(IsHarmonyWindowActive(ui_->wall->window()));
 #endif
-  if (ui_ && !ui_->gallery_control_id.empty()) {
+  if (!ui_->gallery_control_id.empty()) {
 #if defined(__APPLE__)
     if (!IsGalleryWindowActive()) ReleaseControl();
 #elif defined(_WIN32)
-    if (GetForegroundWindow() != ui_->wall->window().win32_hwnd())
-      ReleaseControl();
+    if (GetForegroundWindow() != ui_->wall->window().win32_hwnd()) ReleaseControl();
 #elif defined(__OHOS__)
     if (!IsHarmonyWindowActive(ui_->wall->window())) ReleaseControl();
 #endif
-    return;
   }
-  if (!ui_ || !ui_->stream || !(*ui_->stream)->window().is_visible()) {
-    SetStreamKeyboardFocus(false);
-    return;
-  }
-
-#if _WIN32
-  const HWND stream_hwnd = (*ui_->stream)->window().win32_hwnd();
-  SetStreamKeyboardFocus(stream_hwnd != nullptr &&
-                         GetForegroundWindow() == stream_hwnd);
-#elif defined(__APPLE__)
-  SetStreamKeyboardFocus(IsStreamWindowActive());
-#elif defined(__OHOS__)
-  const bool active = IsHarmonyWindowActive((*ui_->stream)->window());
-  (*ui_->stream)->set_window_active(active);
-  SetStreamKeyboardFocus(active);
+  for (auto& [_, view] : ui_->streams) {
+#if defined(__OHOS__)
+    view.window->set_window_active(IsHarmonyWindowActive(view.window->window()));
 #endif
+    SetStreamKeyboardFocus(view, true);
+  }
 }
 
-void GuiApplication::SyncStreamWindow() {
-  if (!ui_->gallery_control_id.empty()) return;
-  bool has_sessions = false;
+GuiApplication::StreamView* GuiApplication::FindStreamView(const std::string& id) {
+  if (!ui_) return nullptr;
+  auto it = ui_->streams.find(id);
+  return it == ui_->streams.end() ? nullptr : &it->second;
+}
+
+void GuiApplication::SyncStreamWindows() {
+  std::map<std::string, std::shared_ptr<RemoteSession>> open;
   {
     std::shared_lock lock(remote_sessions_mutex_);
-    has_sessions = std::any_of(remote_sessions_.begin(), remote_sessions_.end(),
-                               [](const auto& item) {
-                                 return item.second && item.second->tab_opened_;
-                               });
+    for (const auto& [id, session] : remote_sessions_)
+      if (!session->closing_ && session->stream_window_open_ && session->was_connected_)
+        open.emplace(id, session);
   }
-  if (!has_sessions) need_to_create_stream_window_ = false;
-  if (need_to_create_stream_window_ && !ui_->stream) {
-    ui_->stream.emplace(ui::StreamWindow::create());
+  for (auto it = ui_->streams.begin(); it != ui_->streams.end();) {
+    auto session = open.find(it->first);
+    if (session != open.end() && session->second == it->second.session) {
+      ++it;
+      continue;
+    }
+    if (ui_->gallery_control_id.empty() && controlled_remote_id_ == it->first)
+      ReleaseControl();
+    it->second.SaveSize(*config_center_);
+    it = ui_->streams.erase(it);
+  }
+  for (const auto& [id, session] : open) {
+    auto [it, created] = ui_->streams.try_emplace(id, session);
+    if (created) InitializeStreamWindow(it->second);
+    SyncStreamWindow(it->second);
+  }
+}
+
+void GuiApplication::InitializeStreamWindow(StreamView& view) {
+  auto& stream = view.window;
+  if (const auto& direct = view.session->lan_session_) {
+    view.endpoint = lan::FormatEndpoint(direct->target.address, direct->target.port);
+    // LAN permits simultaneous connections to the same address. Give each
+    // window a stable title even when the other connection closes first.
+    for (const auto& [_, other] : ui_->streams)
+      if (&view != &other && other.endpoint == view.endpoint)
+        view.endpoint_window_number = std::max(view.endpoint_window_number,
+                                               other.endpoint_window_number + 1);
+  } else {
+    view.endpoint = FormatPeerId(view.session->remote_id_.c_str());
+  }
 #if defined(__linux__) && !defined(__OHOS__)
-    // Set a per-window identity before Slint asynchronously creates the native
-    // window. The override survives hide/show and native handle recreation.
-    (*ui_->stream)->window().set_xdg_app_id("crossdesk-remote-control");
+  stream->window().set_xdg_app_id("crossdesk-remote-control");
+  stream->set_custom_titlebar(use_xwayland_gui_);
 #endif
-    (*ui_->stream)->set_control_hand_cursor_supported(
-        SupportsControlHandCursor(ui_->main->window()));
-#if (defined(__linux__) && !defined(__OHOS__))
-    (*ui_->stream)->set_custom_titlebar(use_xwayland_gui_);
-#endif
-    RegisterFontAwesome((*ui_->stream)->window());
-    ConfigureStreamVideoRenderer();
-    // Slint globals belong to a component tree. Force the next localization
-    // pass to initialize the newly-created, independent stream window tree.
-    ui_->localized_language = -1;
-    (*ui_->stream)->set_tabs(ui_->tab_model);
-    (*ui_->stream)->set_displays(ui_->display_model);
-    (*ui_->stream)->set_remote_resolutions(ui_->resolution_model);
-    (*ui_->stream)->set_stats_rows(ui_->stats_model);
-    BindStreamCallbacks();
-    (*ui_->stream)->window().set_size(slint::LogicalSize({
-        kStreamWindowLogicalWidth,
-        StreamWindowLogicalHeight((*ui_->stream)->get_custom_titlebar())}));
-    // Resolve placement and any display-DPI change while still hidden.
-    ui_->stream_initial_position_attempts = 2;
-#if defined(__APPLE__)
-    ui_->stream_live_resize_configuration_attempts = 30;
-#endif
-    stream_window_created_ = true;
-    stream_window_inited_ = true;
-    need_to_create_stream_window_ = false;
-  }
-  if (!ui_->stream) {
-    return;
-  }
-  // Assign the window's taskbar group before its first show or restoration.
-  // Reapply when Slint recreates the HWND; the helper skips configured handles.
-#if _WIN32
-  ConfigureWindowsStreamTaskbar((*ui_->stream)->window().win32_hwnd());
-#endif
-  // A wall takeover hides an existing stream window without destroying it.
-  // Opening a recent device must also restore that existing window.
-  if (need_to_create_stream_window_) {
-    if (ui_->stream_initial_position_attempts == 0) {
-      (*ui_->stream)->window().set_minimized(false);
-      (*ui_->stream)->show();
-    }
-    need_to_create_stream_window_ = false;
-  }
-#if _WIN32
-  ConfigureWindowsWindowIcons((*ui_->stream)->window().win32_hwnd());
-#endif
-  (*ui_->stream)->set_window_maximized((*ui_->stream)->window().is_maximized());
-#if defined(__APPLE__)
-  if (ui_->stream_live_resize_configuration_attempts > 0) {
-    if (ConfigureStreamWindowLiveResize(
-            (*ui_->stream)->window().appkit_view())) {
-      ui_->stream_live_resize_configuration_attempts = 0;
-    } else {
-      --ui_->stream_live_resize_configuration_attempts;
-    }
-  }
-#endif
-  if (ui_->video_presenter && ui_->video_presenter->EnsureAttached()) {
-    video_frame_dirty_.store(true, std::memory_order_release);
-  }
-  if (has_sessions && ui_->stream_initial_position_attempts > 0 &&
-      NativeWindowReady((*ui_->stream)->window())) {
-    if (PositionWindowAtCenter(
-            (*ui_->stream)->window(), ui_->main->window(),
-            kStreamWindowLogicalWidth,
-            StreamWindowLogicalHeight((*ui_->stream)->get_custom_titlebar()))) {
-      --ui_->stream_initial_position_attempts;
-    } else {
-      ui_->stream_initial_position_attempts = 0;
-    }
-    if (ui_->stream_initial_position_attempts == 0) (*ui_->stream)->show();
-  }
-  if (!has_sessions) {
-    SetStreamKeyboardFocus(false);
-#if defined(__APPLE__)
-    void* stream_view = (*ui_->stream)->window().appkit_view();
-    SetStreamWindowFullscreen(false);
-    UnregisterStreamWindow(stream_view);
-#endif
-    if (ui_->video_presenter) {
-      ui_->video_presenter->Detach();
-    }
-    (*ui_->stream)->hide();
-    ui_->stream.reset();
-    stream_window_created_ = false;
-    stream_window_inited_ = false;
-    ui_->stream_initial_position_attempts = 0;
-    ui_->stream_live_resize_configuration_attempts = 0;
-    focused_remote_id_.clear();
-    controlled_remote_id_.clear();
-    ui_->tab_order.clear();
-    ui_->tab_ids.clear();
-    ui_->tab_model_signature.clear();
-    return;
-  }
-
-  std::vector<ui::StreamTab> tabs;
-  std::unordered_map<std::string, ui::StreamTab> tabs_by_id;
-  {
-    std::shared_lock lock(remote_sessions_mutex_);
-    tabs_by_id.reserve(remote_sessions_.size());
-    for (const auto& [id, props] : remote_sessions_) {
-      if (!props || !props->tab_opened_) {
-        continue;
-      }
-      ui::StreamTab tab;
-      tab.remote_id = UiText(id);
-      tab.title = UiText(
-          props->remote_host_name_.empty() ? id : props->remote_host_name_);
-      tab.connected =
-          props->connection_status_.load() == MiniRtcConnectionStatus::MiniRtcConnectionConnected;
-      tabs_by_id.emplace(id, std::move(tab));
-    }
-  }
-  std::erase_if(ui_->tab_order, [&tabs_by_id](const std::string& id) {
-    return !tabs_by_id.contains(id);
+  stream->set_control_hand_cursor_supported(SupportsControlHandCursor(ui_->main->window()));
+  RegisterFontAwesome(stream->window());
+  ui_localization::ApplyStreamWindowStrings(stream, localization_language_index_);
+  stream->set_displays(view.display_model);
+  stream->set_remote_resolutions(view.resolution_model);
+  stream->set_stats_rows(view.stats_model);
+  BindStreamCallbacks(view);
+  view.presenter.PrepareWindow(stream, [this, &view] {
+    NotifyVideoFrameReady(*view.session);
   });
-  for (const auto& [id, _] : tabs_by_id) {
-    if (std::find(ui_->tab_order.begin(), ui_->tab_order.end(), id) ==
-        ui_->tab_order.end()) {
-      ui_->tab_order.push_back(id);
+  view.session->SetVideoRenderer(view.renderer);
+  if (stream->get_custom_titlebar()) view.normal_size.height += kWaylandTitlebarLogicalHeight;
+  if (auto saved = config_center_->GetStreamWindowSize(view.session->device_preference_key_))
+    view.normal_size = *saved;
+  stream->window().set_size(slint::LogicalSize({
+      static_cast<float>(view.normal_size.width), static_cast<float>(view.normal_size.height)}));
+}
+
+void GuiApplication::SyncStreamWindow(StreamView& view) {
+  auto& stream = view.window;
+  const auto& props = view.session;
+  const auto name = SessionDisplayName(props->remote_id_);
+  auto title = "CrossDesk — " + (name.empty() ? view.endpoint : name + " (" + view.endpoint + ")");
+  if (view.endpoint_window_number > 1) title += " #" + std::to_string(view.endpoint_window_number);
+  stream->set_session_title(UiText(title));
+#if _WIN32
+  ConfigureWindowsStreamTaskbar(stream->window().win32_hwnd());
+  ConfigureWindowsWindowIcons(stream->window().win32_hwnd());
+#elif defined(__APPLE__)
+  if (view.chrome_attempts > 0) {
+    if (ConfigureStreamWindowLiveResize(stream->window().appkit_view(),
+            [weak = slint::ComponentWeakHandle(stream)](bool active) {
+              if (auto handle = weak.lock()) {
+                (*handle)->set_fullscreen_transitioning(active);
+                return (*handle)->get_native_video_enabled();
+              }
+              return false;
+            })) {
+      view.chrome_attempts = 0;
+    } else {
+      --view.chrome_attempts;
     }
   }
-  ui_->tab_ids = ui_->tab_order;
-  tabs.reserve(ui_->tab_ids.size());
-  std::ostringstream tab_signature_builder;
-  for (const auto& id : ui_->tab_ids) {
-    if (auto found = tabs_by_id.find(id); found != tabs_by_id.end()) {
-      tab_signature_builder << id << '\0' << std::string(found->second.title)
-                            << '\0' << found->second.connected << '\n';
-      tabs.push_back(std::move(found->second));
-    }
-  }
-  const std::string tab_signature = tab_signature_builder.str();
-  if (ui_->tab_model_signature != tab_signature) {
-    ui_->tab_model_signature = tab_signature;
-    ui_->tab_model->set_vector(std::move(tabs));
-#if defined(__APPLE__)
-    // Adding or removing a tab changes the native video's top inset.
-    video_frame_dirty_.store(true, std::memory_order_release);
 #endif
+  if (view.position_attempts > 0 && NativeWindowReady(stream->window())) {
+    if (PositionWindowAtCenter(stream->window(), ui_->main->window(),
+            view.normal_size.width, view.normal_size.height))
+      --view.position_attempts;
+    else
+      view.position_attempts = 0;
+    if (view.position_attempts == 0) stream->show();
   }
-
-  int selected_index = 0;
-  if (focused_remote_id_.empty() && !ui_->tab_ids.empty()) {
-    focused_remote_id_ = ui_->tab_ids.front();
+  const bool visible = view.Visible();
+  if (view.presenter.EnsureAttached() || (visible && !view.was_visible)) {
+    NotifyVideoFrameReady(*props);
   }
-  for (int i = 0; i < static_cast<int>(ui_->tab_ids.size()); ++i) {
-    if (ui_->tab_ids[i] == focused_remote_id_) {
-      selected_index = i;
-      break;
-    }
-  }
-  (*ui_->stream)->set_selected_tab(selected_index);
-  SelectStreamTab(selected_index);
-
-  auto props = SelectedSession();
-  if (!props) {
-    return;
-  }
+  view.was_visible = visible;
   const MiniRtcConnectionStatus status = props->connection_status_.load();
   bool remote_update_available = false;
   HostPlatform remote_platform = HostPlatform::Unknown;
@@ -4113,34 +4065,29 @@ void GuiApplication::SyncStreamWindow() {
                               *update_checker_->latest()).has_value());
     }
   }
-  (*ui_->stream)->set_remote_update_visible(remote_update_available);
-  (*ui_->stream)->set_secure_attention_supported(remote_platform == HostPlatform::Windows);
-  (*ui_->stream)->set_service_warning(UiText(
+  stream->set_remote_update_visible(remote_update_available);
+  stream->set_secure_attention_supported(remote_platform == HostPlatform::Windows);
+  stream->set_service_warning(UiText(
       status == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
               remote_platform == HostPlatform::Windows &&
               GetRemoteUnlockState(*props) == RemoteUnlockState::service_unavailable
           ? localization::remote_service_unavailable_message[localization_language_index_]
           : std::string{}));
-  if (remote_update_available) {
-    SetStreamKeyboardFocus(false);
-  }
   const bool waiting_for_frame =
       status == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
-      !(*ui_->stream)->get_has_frame();
+      !stream->get_has_frame();
   // Once the peer is connected, the frame-waiting hint replaces the
   // connection status. Keeping these states mutually exclusive also avoids a
   // transient overlap when both properties are synchronized in one tick.
-  (*ui_->stream)
-      ->set_status_text(UiText(
+  stream->set_status_text(UiText(
           status == MiniRtcConnectionStatus::MiniRtcConnectionConnected
               ? std::string{}
               : ConnectionStatusText(status, localization_language_index_)));
-  (*ui_->stream)
-      ->set_receiving_text(UiText(
+  stream->set_receiving_text(UiText(
           waiting_for_frame
               ? localization::receiving_screen[localization_language_index_]
               : std::string{}));
-  (*ui_->stream)->set_mouse_control_enabled(props->control_mouse_);
+  stream->set_mouse_control_enabled(props->control_mouse_);
   {
     std::lock_guard lock(props->privacy_status_mutex_);
     const auto& status = props->privacy_status_;
@@ -4150,16 +4097,16 @@ void GuiApplication::SyncStreamWindow() {
         now - props->privacy_status_tick_, now - props->privacy_command_tick_);
     const bool connected =
         props->connection_status_.load() == MiniRtcConnectionStatus::MiniRtcConnectionConnected;
-    (*ui_->stream)->set_privacy_unlock_visible(connected && props->privacy_unlock_notice_);
-    (*ui_->stream)->set_privacy_can_lock(connected && props->privacy_desktop_available_ &&
+    stream->set_privacy_unlock_visible(connected && props->privacy_unlock_notice_);
+    stream->set_privacy_can_lock(connected && props->privacy_desktop_available_ &&
         props->privacy_status_received_ && status.supported &&
         now - props->privacy_status_tick_ <= 5000 &&
         (!props->privacy_command_pending_ || now - props->privacy_command_tick_ >= 15000));
-    (*ui_->stream)->set_privacy_active(controls.active);
-    (*ui_->stream)->set_privacy_off(connected && controls.off);
-    (*ui_->stream)->set_privacy_unsupported(controls.unsupported);
-    (*ui_->stream)->set_privacy_visible(props->privacy_desktop_available_);
-    (*ui_->stream)->set_privacy_can_toggle(
+    stream->set_privacy_active(controls.active);
+    stream->set_privacy_off(connected && controls.off);
+    stream->set_privacy_unsupported(controls.unsupported);
+    stream->set_privacy_visible(props->privacy_desktop_available_);
+    stream->set_privacy_can_toggle(
         props->privacy_desktop_available_ && props->control_mouse_ &&
         connected && controls.can_toggle);
     const int language = localization_language_index_;
@@ -4169,7 +4116,7 @@ void GuiApplication::SyncStreamWindow() {
         : controls.enabled ? localization::privacy_on[language]
         : controls.off ? localization::privacy_off[language]
         : localization::privacy_screen[language];
-    (*ui_->stream)->set_privacy_status_text(UiText(text));
+    stream->set_privacy_status_text(UiText(text));
   }
   int remote_cursor_shape =
       static_cast<int>(RemoteCursorShape::default_cursor);
@@ -4184,9 +4131,9 @@ void GuiApplication::SyncStreamWindow() {
           props->cursor_presentation_.Resolve(SDL_GetTicks(), remote_platform));
     }
   }
-  (*ui_->stream)->set_remote_cursor_active(remote_cursor_active);
-  (*ui_->stream)->set_remote_cursor_shape(remote_cursor_shape);
-  (*ui_->stream)->set_audio_enabled(props->audio_capture_button_pressed_);
+  stream->set_remote_cursor_active(remote_cursor_active);
+  stream->set_remote_cursor_shape(remote_cursor_shape);
+  stream->set_audio_enabled(props->audio_capture_button_pressed_);
   {
     std::lock_guard lock(props->video_settings_mutex_);
     if (props->video_settings_pending_ &&
@@ -4197,30 +4144,17 @@ void GuiApplication::SyncStreamWindow() {
       props->video_settings_ = props->applied_video_settings_;
       props->video_settings_.request_id = request_id;
     }
-    (*ui_->stream)
-        ->set_video_settings_enabled(status == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
+    stream->set_video_settings_enabled(status == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
                                      props->video_settings_supported_);
-    (*ui_->stream)
-        ->set_video_settings_feedback(UiText(
-            props->video_settings_failed_ ? localization::video_settings_failed
-                                                [localization_language_index_]
-            : props->video_settings_pending_
-                ? localization::video_settings_pending
-                      [localization_language_index_]
-                : ""));
-    (*ui_->stream)->set_video_quality_index(props->video_settings_.quality);
-    (*ui_->stream)
-        ->set_frame_rate_index(props->video_settings_.frame_rate == 30 ? 0 : 1);
-    (*ui_->stream)
-        ->set_adaptation_policy_index(props->video_settings_.preference);
+    stream->set_video_settings_feedback(UiText(
+        props->video_settings_failed_
+            ? localization::video_settings_failed[localization_language_index_] : ""));
+    stream->set_video_quality_index(props->video_settings_.quality);
+    stream->set_frame_rate_index(props->video_settings_.frame_rate == 30 ? 0 : 1);
+    stream->set_adaptation_policy_index(props->video_settings_.preference);
   }
-#if defined(__APPLE__)
-  fullscreen_button_pressed_ = IsStreamWindowFullscreen();
-#else
-  fullscreen_button_pressed_ = (*ui_->stream)->window().is_fullscreen();
-#endif
-  (*ui_->stream)->set_fullscreen_enabled(fullscreen_button_pressed_);
-  (*ui_->stream)->set_stats_visible(props->net_traffic_stats_button_pressed_);
+  view.ObserveWindowState();
+  stream->set_stats_visible(props->net_traffic_stats_button_pressed_);
 
   std::vector<slint::SharedString> displays;
   {
@@ -4233,18 +4167,18 @@ void GuiApplication::SyncStreamWindow() {
     }
     if (props->selected_display_ >= int(displays.size())) props->selected_display_ = 0;
   }
-  ui::UpdateModelRows(*ui_->display_model, std::move(displays));
-  (*ui_->stream)->set_selected_display(props->selected_display_);
+  ui::UpdateModelRows(*view.display_model, std::move(displays));
+  stream->set_selected_display(props->selected_display_);
   {
     std::lock_guard lock(props->display_resolution_mutex_);
     auto& state = props->display_resolution_;
     state.Expire(SDL_GetTicks());
-    ui_->resolution_choices = {};
+    view.resolution_choices = {};
     int selected = -1;
     std::vector<slint::SharedString> resolutions;
     for (const auto& display : state.displays) {
       if (display.display_id != props->selected_display_) continue;
-      ui_->resolution_choices = display;
+      view.resolution_choices = display;
       for (const auto& mode : display.modes) {
         if (mode == display.current) selected = int(resolutions.size());
         resolutions.emplace_back(UiText(FormatResolution(mode.width, mode.height)));
@@ -4253,24 +4187,23 @@ void GuiApplication::SyncStreamWindow() {
     }
     const bool visible = status == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
                          !resolutions.empty();
-    ui::UpdateModelRows(*ui_->resolution_model, std::move(resolutions));
-    (*ui_->stream)->set_remote_resolution_visible(visible);
-    (*ui_->stream)->set_remote_resolution_enabled(visible && !state.pending);
-    (*ui_->stream)->set_remote_resolution_index(selected);
-    (*ui_->stream)->set_remote_resolution_feedback(UiText(
-        state.failed ? localization::video_settings_failed[localization_language_index_]
-        : state.pending ? localization::video_settings_pending[localization_language_index_] : ""));
+    ui::UpdateModelRows(*view.resolution_model, std::move(resolutions));
+    stream->set_remote_resolution_visible(visible);
+    stream->set_remote_resolution_enabled(visible && !state.pending);
+    stream->set_remote_resolution_index(selected);
+    stream->set_remote_resolution_feedback(UiText(
+        state.failed ? localization::video_settings_failed[localization_language_index_] : ""));
   }
 
   const auto net = props->net_traffic_stats_.Load();
   const auto codecs = props->net_traffic_stats_.LoadVideoCodecs();
-  (*ui_->stream)->set_stats_encoder(UiText(
+  stream->set_stats_encoder(UiText(
       status == MiniRtcConnectionStatus::MiniRtcConnectionConnected && !codecs.remote_encoder.empty()
           ? codecs.remote_encoder : "—"));
-  (*ui_->stream)->set_stats_decoder(UiText(
+  stream->set_stats_decoder(UiText(
       status == MiniRtcConnectionStatus::MiniRtcConnectionConnected && !codecs.local_decoder.empty()
           ? codecs.local_decoder : "—"));
-  (*ui_->stream)->set_stats_encryption_enabled(
+  stream->set_stats_encryption_enabled(
       status == MiniRtcConnectionStatus::MiniRtcConnectionConnected && net.srtp_active);
   std::vector<ui::NetworkStatsRow> stats_rows;
   stats_rows.reserve(4);
@@ -4291,17 +4224,20 @@ void GuiApplication::SyncStreamWindow() {
                    net.data_inbound_stats, net.data_outbound_stats);
   append_stats_row(localization::total[localization_language_index_],
                    net.total_inbound_stats, net.total_outbound_stats);
-  ui::UpdateModelRows(*ui_->stats_model, std::move(stats_rows));
-  (*ui_->stream)
-      ->set_stats_resolution(UiText(FormatResolution(props->video_width_,
-                                                     props->video_height_)));
-  (*ui_->stream)
-      ->set_stats_connection_mode(
-          UiText(props->traversal_mode_ == MiniRtcTraversalMode::MiniRtcTraversalP2P
-                     ? localization::connection_mode_direct
-                           [localization_language_index_]
-                     : localization::connection_mode_relay
-                           [localization_language_index_]));
+  ui::UpdateModelRows(*view.stats_model, std::move(stats_rows));
+  {
+    std::lock_guard lock(props->video_frame_mutex_);
+    stream->set_stats_resolution(UiText(FormatResolution(props->video_width_, props->video_height_)));
+  }
+  const auto mode = props->traversal_mode_.load();
+  const bool direct = mode == MiniRtcTraversalP2P &&
+                      status == MiniRtcConnectionConnected;
+  stream->set_stats_connection_mode(UiText(mode == MiniRtcTraversalP2P
+      ? localization::connection_mode_direct[localization_language_index_]
+      : mode == MiniRtcTraversalRelay
+          ? localization::connection_mode_relay[localization_language_index_] : "—"));
+  stream->set_stats_local_endpoint(UiText(direct ? net.local_endpoint : ""));
+  stream->set_stats_remote_endpoint(UiText(direct ? net.remote_endpoint : ""));
 
   const auto fps_now = std::chrono::steady_clock::now();
   bool refresh_stats = false;
@@ -4323,7 +4259,7 @@ void GuiApplication::SyncStreamWindow() {
       refresh_stats = true;
     }
   }
-  (*ui_->stream)->set_stats_fps(UiText(std::to_string(props->fps_)));
+  stream->set_stats_fps(UiText(std::to_string(props->fps_)));
   if (!props->net_traffic_stats_button_pressed_ ||
       status != MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
     props->video_latency_snapshot_.reset();
@@ -4331,8 +4267,7 @@ void GuiApplication::SyncStreamWindow() {
     props->video_latency_snapshot_ = props->video_latency_->Get(fps_now);
   }
   const auto& latency = props->video_latency_snapshot_;
-  (*ui_->stream)
-      ->set_stats_video_latency(UiText(
+  stream->set_stats_video_latency(UiText(
           latency ? std::to_string(
                         static_cast<int>(std::lround(latency->average_ms))) +
                         " ms"
@@ -4348,7 +4283,7 @@ void GuiApplication::SyncStreamWindow() {
             ? "<1 ms"
             : std::to_string(static_cast<int>(std::lround(*display_rtt))) + " ms";
   }
-  (*ui_->stream)->set_stats_connection_latency(UiText(connection_latency));
+  stream->set_stats_connection_latency(UiText(connection_latency));
   if (refresh_stats && status == MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
     LOG_DEBUG("Latency stats: remote={} video_ms={} video_samples={} video_endpoint={} "
               "rtt_raw_ms={} rtt_display_ms={}",
@@ -4362,9 +4297,6 @@ void GuiApplication::SyncStreamWindow() {
 
 void GuiApplication::SyncVideoFrameGapStats() {
   const auto now = VideoLatencyFrame::Clock::now();
-  const bool visible = ui_ && ui_->stream && ui_->gallery_control_id.empty() &&
-      (*ui_->stream)->window().is_visible() &&
-      !(*ui_->stream)->window().is_minimized();
   const bool log = last_video_frame_gap_log_time_ ==
                        VideoLatencyFrame::Clock::time_point{} ||
       now - last_video_frame_gap_log_time_ >= std::chrono::seconds(5);
@@ -4374,8 +4306,8 @@ void GuiApplication::SyncVideoFrameGapStats() {
     if (!props) continue;
     const bool paused = props->preview_subscription_supported_ &&
                         props->preview_requested_.fps == 0;
-    const bool active = visible && !props->closing_ && props->tab_opened_ &&
-        id == focused_remote_id_ && !paused &&
+    const auto* view = FindStreamView(id);
+    const bool active = view && view->Visible() && !props->closing_ && !paused &&
         props->connection_status_ == MiniRtcConnectionStatus::MiniRtcConnectionConnected;
     LogVideoFrameDiagnostics(id,
         props->video_latency_->SetFrameGapTrackingEnabled(
@@ -4386,20 +4318,12 @@ void GuiApplication::SyncVideoFrameGapStats() {
   }
 }
 
-void GuiApplication::SyncStreamVideoFrame(double timer_lateness_ms) {
-  if (ui_ && !ui_->gallery_control_id.empty()) return;
-  if (!ui_ || !ui_->stream || !ui_->video_presenter) {
-    return;
-  }
-  auto props = SelectedSession();
-  if (!props) {
-    return;
-  }
-
+void GuiApplication::SyncStreamVideoFrame(
+    StreamView& view, std::optional<double> timer_lateness_ms) {
+  const auto& props = view.session;
   props->video_latency_->RecordRenderTick(timer_lateness_ms);
 
   SlintVideoPresenter::Frame frame;
-  frame.remote_id = props->remote_id_;
   {
     std::lock_guard lock(props->video_frame_mutex_);
     frame.nv12 = props->front_frame_;
@@ -4409,9 +4333,9 @@ void GuiApplication::SyncStreamVideoFrame(double timer_lateness_ms) {
     frame.timing = props->video_frame_timing_;
   }
 
-  const auto result = ui_->video_presenter->Present(frame);
+  const auto result = view.presenter.Present(frame);
   if (result.width > 0 && result.height > 0) {
-    (*ui_->stream)
+    view.window
         ->set_stats_resolution(UiText(FormatResolution(result.width, result.height)));
   }
   if (result.new_frame) {
@@ -4419,42 +4343,47 @@ void GuiApplication::SyncStreamVideoFrame(double timer_lateness_ms) {
   }
 }
 
-void GuiApplication::ConfigureStreamVideoRenderer() {
-  if (!ui_ || !ui_->stream || !ui_->video_presenter) {
-    return;
+void GuiApplication::PresentPendingVideoFrame(std::optional<double> timer_lateness_ms) {
+  for (auto& [_, view] : ui_->streams) {
+    if (view.Visible() && (view.session->frame_dirty_.exchange(false) || view.presenter.NeedsRedraw()))
+      SyncStreamVideoFrame(view, timer_lateness_ms);
   }
-
-  ui_->video_presenter->PrepareWindow(
-      *ui_->stream,
-      [this] {
-        SlintVideoPresenter::SurfaceState state;
-        state.selected_stream = focused_remote_id_;
-        state.fullscreen = fullscreen_button_pressed_;
-        return state;
-      },
-      [this] { video_frame_dirty_.store(true, std::memory_order_release); });
 }
 
-void GuiApplication::PresentPendingVideoFrame(double lateness_ms) {
-  const bool frame_dirty =
-      video_frame_dirty_.exchange(false, std::memory_order_acq_rel);
-  const bool native_render_needed = ui_->stream && ui_->video_presenter &&
-                                    ui_->video_presenter->NeedsRedraw();
-  if (frame_dirty || native_render_needed) SyncStreamVideoFrame(lateness_ms);
+void GuiApplication::RequestVideoPresent() {
+  if (!ui_) return;
+  // A decoder thread can produce frames faster than the UI drains wakeups, and
+  // the post itself allocates on the event queue. Coalesce to one in-flight
+  // task; the newest frame is picked up when it runs because presentation reads
+  // the session's latest frame, not a queued copy.
+  if (video_present_queued_.exchange(true, std::memory_order_acq_rel)) return;
+  const auto queued_at = std::chrono::steady_clock::now();
+  // Safe to capture this: the task only runs while the event loop is running,
+  // and Cleanup() (which resets ui_) runs after run_event_loop() returns.
+  slint::invoke_from_event_loop([this, queued_at] {
+    video_present_queued_.store(false, std::memory_order_release);
+    if (exit_ || !ui_) return;
+    const double queued_ms = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - queued_at).count();
+    for (auto& [_, view] : ui_->streams) {
+      if (view.Visible() && view.session->frame_dirty_)
+        view.session->video_latency_->RecordFrameWake(queued_ms);
+    }
+    PresentPendingVideoFrame();
+  });
 }
 
 #if defined(__APPLE__)
 void GuiApplication::UpdateVideoFrameScheduler() {
-  if (!ui_ || !ui_->video_scheduler.IsRunning()) return;
-  // Layout/selection/restore still need a wakeup with a static source. This UI
-  // poll requests work but never gates decoded-frame arrival notifications.
-  const bool enabled = ui_->stream && ui_->gallery_control_id.empty() &&
-      (*ui_->stream)->window().is_visible() &&
-      !(*ui_->stream)->window().is_minimized();
+  if (!ui_->video_scheduler.IsRunning()) return;
+  bool enabled = false, pending = false;
+  for (auto& [_, view] : ui_->streams) {
+    if (!view.Visible()) continue;
+    enabled = true;
+    pending |= view.session->frame_dirty_ || view.presenter.NeedsRedraw();
+  }
   ui_->video_scheduler.SetEnabled(enabled);
-  if (enabled && (video_frame_dirty_.load(std::memory_order_acquire) ||
-                 (ui_->video_presenter && ui_->video_presenter->NeedsRedraw())))
-    ui_->video_scheduler.Request();
+  if (pending) ui_->video_scheduler.Request();
 }
 #endif
 
@@ -4480,8 +4409,9 @@ void GuiApplication::ScheduleNextVideoFrame() {
   if (now >= next_video_frame_time_) {
     const double lateness_ms = std::chrono::duration<double, std::milli>(
         now - next_video_frame_time_).count();
-    if (const auto props = SelectedSession()) {
-      props->video_latency_->RecordSchedulerTick(
+    for (auto& [_, view] : ui_->streams) {
+      if (!view.Visible()) continue;
+      view.session->video_latency_->RecordSchedulerTick(
           lateness_ms, (now - next_video_frame_time_) / frame_interval);
     }
     // Measure a long stall before resynchronizing, without replaying missed
@@ -4502,92 +4432,6 @@ void GuiApplication::ScheduleNextVideoFrame() {
   ui_->video_timer.start(slint::TimerMode::SingleShot,
                          std::chrono::milliseconds(delay_ms),
                          [this] { ScheduleNextVideoFrame(); });
-}
-
-void GuiApplication::SetServerPanelExpanded(bool expanded) {
-  if (!ui_->server || !ui_->server_bar) return;
-  server_window_collapsed_ = !expanded;
-  (*ui_->server_bar)->set_expanded(expanded);
-  if (expanded) {
-    // SyncServerWindow shows the panel after native creation and placement.
-    PositionServerWindows();
-  } else {
-    (*ui_->server)->set_confirming_disconnect(false);
-    (*ui_->server)->hide();
-  }
-}
-
-void GuiApplication::PositionServerWindows() {
-  if (!ui_->server || !ui_->server_bar) return;
-  auto& bar = *ui_->server_bar;
-  auto& panel = *ui_->server;
-  const float scale = std::max(bar->window().scale_factor(), 0.01f);
-  SDL_Rect bounds{};
-  if (!SDL_GetDisplayUsableBounds(ui_->server_display, &bounds)) {
-    ui_->server_display = SDL_GetPrimaryDisplay();
-    if (!SDL_GetDisplayUsableBounds(ui_->server_display, &bounds)) return;
-  }
-  // Cocoa/SDL uses points; Windows and X11 report desktop pixels.
-#if defined(__APPLE__)
-  const float desktop_scale = 1;
-#else
-  const float desktop_scale = scale;
-#endif
-  const server_window_state::Rect screen{
-      bounds.x / desktop_scale, bounds.y / desktop_scale,
-      bounds.w / desktop_scale, bounds.h / desktop_scale};
-  float pointer_x = 0, pointer_y = 0;
-  bool pressed = false;
-  const bool pointer_valid = CanUseGlobalPointerPosition() &&
-      ui_->server_drag.ReadGlobalPointer(&pointer_x, &pointer_y, &pressed);
-  if (pointer_valid && ui_->server_drag.active) {
-    const float delta = (pointer_y - ui_->server_drag.pointer_start_y) / desktop_scale;
-    if (std::abs(delta) >= 4) {
-      ui_->server_drag_moved = true;
-      bar->set_dragged(true);
-    }
-    if (ui_->server_drag_moved) {
-      const float travel = std::max(1.0f, screen.height - 52.0f);
-      ui_->server_anchor = std::clamp(ui_->server_drag_anchor + delta / travel, 0.0f, 1.0f);
-    }
-    if (!pressed) ui_->server_drag.active = false;
-  }
-  ui_->server_layout = server_window_state::PlacePanel(
-      screen, ui_->server_anchor, bar->get_bar_width(), panel->get_content_height());
-  const auto& layout = ui_->server_layout;
-  bar->set_opens_above(layout.above);
-  const auto apply = [scale](slint::Window& window, const server_window_state::Rect& rect) {
-    const auto size = window.size();
-    const float own_scale = std::max(window.scale_factor(), 0.01f);
-    if (std::abs(size.width / own_scale - rect.width) > 0.5f ||
-        std::abs(size.height / own_scale - rect.height) > 0.5f) {
-      window.set_size(slint::LogicalSize(slint::Size<float>{rect.width, rect.height}));
-    }
-    if (!CanUseGlobalPointerPosition()) return;
-    const auto position = window.position();
-    if (std::abs(position.x / scale - rect.x) <= 0.5f &&
-        std::abs(position.y / scale - rect.y) <= 0.5f) return;
-#if defined(__APPLE__)
-    window.set_position(slint::LogicalPosition(slint::Point<float>{rect.x, rect.y}));
-#else
-    window.set_position(slint::PhysicalPosition(slint::Point<int32_t>{
-        static_cast<int32_t>(std::lround(rect.x * scale)),
-        static_cast<int32_t>(std::lround(rect.y * scale))}));
-#endif
-  };
-  apply(bar->window(), layout.bar);
-  apply(panel->window(), layout.panel);
-  if (pointer_valid) {
-    const float x = pointer_x / desktop_scale;
-    const float y = pointer_y / desktop_scale;
-    if (pressed && !ui_->server_pointer_pressed && !server_window_collapsed_ &&
-        !ui_->server_file_dialog_open && !ui_->server_drag.active &&
-        !server_window_state::Contains(layout.bar, x, y) &&
-        !server_window_state::Contains(layout.panel, x, y)) {
-      SetServerPanelExpanded(false);
-    }
-    ui_->server_pointer_pressed = pressed;
-  }
 }
 
 void GuiApplication::BindTrustedDeviceCallbacks(bool gallery_window) {
@@ -4696,75 +4540,8 @@ void GuiApplication::SyncTrustedDevices() {
   }
 }
 
-void GuiApplication::SyncServerWindow() {
-  // The connection map is authoritative. Lifecycle flags record callback
-  // intent, but callbacks for different controllers can cross each other, so
-  // the final decision must reflect the current connected-controller set.
-  need_to_create_server_window_.exchange(false, std::memory_order_acq_rel);
-  need_to_destroy_server_window_.exchange(false, std::memory_order_acq_rel);
-  bool has_connected_controller = false;
-  {
-    std::shared_lock lock(connection_status_mutex_);
-    has_connected_controller =
-        std::any_of(connection_status_.begin(), connection_status_.end(),
-                    [](const auto& entry) {
-                      return entry.second == MiniRtcConnectionStatus::MiniRtcConnectionConnected;
-                    });
-  }
-
-  // Privacy protects local display output while preserving capture.
-  // Keep the panel alive throughout privacy transitions so remote
-  // controllers can still see and operate it without resetting its UI state.
-  bool show_controller_window = has_connected_controller;
-#if !defined(_WIN32) && !defined(__APPLE__) && !(defined(__linux__) && !defined(__OHOS__))
-  // Preserve the existing panel behavior on other platforms.
-  const auto privacy_status = privacy_.Snapshot();
-  const bool privacy_covering = privacy_status.overlay_active ||
-      privacy_status.state == PrivacyState::starting ||
-      privacy_status.state == PrivacyState::stopping;
-  show_controller_window = show_controller_window && !privacy_covering;
-#endif
-  if (show_controller_window && !ui_->server) {
-    ui_->server.emplace(ui::ServerWindow::create());
-    ui_->server_bar.emplace(ui::ServerStatusBar::create());
-    RegisterFontAwesome((*ui_->server)->window());
-    RegisterFontAwesome((*ui_->server_bar)->window());
-    (*ui_->server)->set_controllers(ui_->controller_model);
-    server_window_collapsed_ = true;
-    ui_->server_display = DisplayForSlintWindow(ui_->main->window());
-    ui_->server_anchor = 0.3f;
-    ui_->server_drag.active = false;
-    ui_->server_drag_moved = false;
-    ui_->server_pointer_pressed = false;
-    ui_->server_suspended_for_dialog = false;
-    BindServerCallbacks();
-    ui_localization::ApplyServerStrings(*ui_->server, localization_language_index_);
-    ui_localization::ApplyServerStrings(*ui_->server_bar, localization_language_index_);
-    server_window_created_ = true;
-    server_window_inited_ = true;
-  }
-  if (!show_controller_window && ui_->server) {
-    (*ui_->server)->hide();
-    (*ui_->server_bar)->hide();
-    // Keep handles alive until the pending native file dialog completes.
-    if (ui_->server_file_dialog_open) {
-      server_window_collapsed_ = true;
-      (*ui_->server_bar)->set_expanded(false);
-      (*ui_->server)->set_confirming_disconnect(false);
-      ui_->server_suspended_for_dialog = true;
-      return;
-    }
-    ui_->server.reset();
-    ui_->server_bar.reset();
-    ui_->server_drag.active = false;
-    server_window_created_ = false;
-    server_window_inited_ = false;
-  }
-  if (!ui_->server) return;
-  if (ui_->server_suspended_for_dialog) {
-    ui_->server_suspended_for_dialog = false;
-  }
-
+void GuiApplication::SyncIncomingControllers() {
+  if (!incoming_controllers_changed_.exchange(false)) return;
   std::vector<ui::ControllerEntry> controllers;
   {
     std::shared_lock lock(connection_status_mutex_);
@@ -4784,35 +4561,15 @@ void GuiApplication::SyncServerWindow() {
     return std::string(a.remote_id) < std::string(b.remote_id);
   });
   std::vector<std::string> ids;
-  std::string signature;
-  for (const auto& controller : controllers) {
-    ids.emplace_back(controller.remote_id);
-    signature += std::string(controller.remote_id) + '\0' +
-                 std::string(controller.display_name) + '\0';
-  }
-  if (ids != ui_->controller_ids) (*ui_->server)->set_confirming_disconnect(false);
+  ids.reserve(controllers.size());
+  for (const auto& controller : controllers) ids.emplace_back(controller.remote_id);
+  if (ids != ui_->controller_ids) ui_->main->set_confirming_disconnect(false);
+  if (ids.empty()) ui_->main->set_controller_panel_open(false);
   ui_->controller_ids = std::move(ids);
-  if (signature != ui_->controller_model_signature) {
-    ui_->controller_model->set_vector(std::move(controllers));
-    ui_->controller_model_signature = std::move(signature);
-  }
+  ui::UpdateModelRows(*ui_->controller_model, std::move(controllers));
   const int selected = server_window_state::ReconcileSelectedController(
       ui_->controller_ids, &selected_server_remote_id_);
-  (*ui_->server)->set_selected_controller(selected);
-  (*ui_->server_bar)->set_controller_count(static_cast<int>(ui_->controller_ids.size()));
-  ui_localization::ApplyServerStrings(*ui_->server, localization_language_index_);
-  ui_localization::ApplyServerStrings(*ui_->server_bar, localization_language_index_);
-  (*ui_->server)->set_sending_file(transfers_.global_state().file_sending_.load());
-  PositionServerWindows();
-  const auto show_prepared = [](slint::Window& window) {
-    if (window.is_visible() || !NativeWindowReady(window)) return;
-#if _WIN32
-    if (!ConfigureWindowsServerWindow(window)) return;
-#endif
-    window.show();
-  };
-  show_prepared((*ui_->server_bar)->window());
-  if (!server_window_collapsed_) show_prepared((*ui_->server)->window());
+  ui_->main->set_selected_controller(selected);
 }
 
 void GuiApplication::CancelFileTransfer(uint32_t file_id) {
@@ -4838,12 +4595,12 @@ void GuiApplication::CancelFileTransfer(uint32_t file_id) {
   }
 }
 
-std::string GuiApplication::FileManagerPeerName(const std::string& remote) {
+std::string GuiApplication::SessionDisplayName(const std::string& remote) {
   Thumbnail::RecentConnection device{};
   device.remote_id = remote;
   if (const auto props = FindRemoteSession(remote)) {
     if (const auto direct = props->lan_session_) {
-      device.remote_id = Thumbnail::LanRecordId(direct->target.device_id);
+      device.remote_id = Thumbnail::LanRecordId(direct->target.address, direct->target.port);
     }
     std::lock_guard lock(props->remote_version_mutex_);
     device.remote_host_name = props->remote_host_name_;
@@ -4889,7 +4646,7 @@ void GuiApplication::OpenFileManager(const std::string& remote) {
     browser = std::make_unique<FileBrowserWindow>(transfers_, remote, controller,
         localization_language_index_);
   }
-  browser->SetPeerName(FileManagerPeerName(remote));
+  browser->SetPeerName(SessionDisplayName(remote));
   browser->Show();
   SyncFileTransferNotifications();
 }
@@ -5067,8 +4824,9 @@ void GuiApplication::SyncFileTransferNotifications() {
     return;
   }
   if (!ui_->transfer_display) {
-    const auto& anchor = ui_->stream && (*ui_->stream)->window().is_visible()
-        ? (*ui_->stream)->window()
+    const auto* view = FindStreamView(ui_->transfer_notifications.begin()->second.info.remote_id);
+    const auto& anchor = view && view->Visible()
+        ? view->window->window()
         : ui_->gallery_shown ? ui_->wall->window() : ui_->main->window();
     ui_->transfer_display = DisplayForSlintWindow(anchor);
   }
@@ -5091,7 +4849,9 @@ void GuiApplication::SyncFileTransferNotifications() {
   const float screen_height = bounds.h / desktop_scale - (clipboard_visible ? 122.0f : 0.0f);
   const auto layout = Fit(screen_width, screen_height);
   size_t slot = 0;
-  for (auto& [id, notification] : ui_->transfer_notifications) {
+  for (auto& transfer : ui_->transfer_notifications) {
+    const auto& id = transfer.first;
+    auto& notification = transfer.second;
     auto& info = notification.info;
     if (!files.count(id) && !pending_files.count(id) && info.status != Status::Completed &&
         info.status != Status::Failed && info.status != Status::Cancelled) {
@@ -5226,13 +4986,27 @@ bool GuiApplication::ValidateSelfHostedSettingsFromUi(bool gallery_window) {
 }
 
 bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
+  const auto previous_server = GetSignalServerSettings(*config_center_);
+  const bool saved = PersistSettingsFromUi(gallery_window);
+  const bool server_changed = previous_server != GetSignalServerSettings(*config_center_);
+  // Individual settings are committed separately. Even if a later setter
+  // fails, the saved endpoint and preview preference already apply.
+  if (saved || server_changed) ApplySettingsFromConfig(server_changed);
+  else settings_.ApplyPreviewPreference();
+  if (saved) {
+    ResetSettingsUi(gallery_window);
+    ui_->gallery_synced = {};
+  }
+  return saved;
+}
+
+bool GuiApplication::PersistSettingsFromUi(bool gallery_window) {
 #ifdef _WIN32
   // A later setter can fail after earlier values were persisted. Reconcile
   // with the host on the next status even when no config request was sent.
   if (managed_host_frontend_)
     local_host_status_.config_dirty = local_host_status_.identity_dirty = true;
 #endif
-  const auto previous_server = GetSignalServerSettings(*config_center_);
   const bool previous_ip_enabled = config_center_->IsIpDirectEnabled();
   const auto previous_connection_mode = config_center_->GetConnectionMode();
   auto& main = ui_->Window(gallery_window);
@@ -5257,11 +5031,14 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
       (wall_settings->resolution != ui_->gallery.stream_settings.resolution ||
        wall_settings->frame_rate != ui_->gallery.stream_settings.frame_rate ||
        wall_settings->bandwidth_mbps != ui_->gallery.stream_settings.bandwidth_mbps);
-  auto updated_wall = ui_->gallery;
+  const auto shared_wall_path = std::filesystem::path(cache_path_) / "deskhub.json";
+  gallery::Workspace previous_wall;
+  const bool wall_readable = !wall_changed || previous_wall.Load(shared_wall_path);
+  auto updated_wall = previous_wall;
   if (wall_settings) updated_wall.stream_settings = *wall_settings;
   // Persist the draft first, but leave live sessions unchanged until the
   // common save succeeds. Restore the previous wall file if it fails.
-  if (!wall_settings || (wall_changed && !updated_wall.Save(ui_->gallery_path))) {
+  if (!wall_settings || (wall_changed && (!wall_readable || !updated_wall.Save(shared_wall_path)))) {
     main->set_gallery_settings_error(UiText(
         localization::Literal("保存失败，请重试", localization_language_index_)));
     main->set_settings_tab(1);
@@ -5270,7 +5047,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
   if ((has_endpoint && config_center_->SetServerEndpoint(
           std::string(main->get_server_host()), *ParsePort(main->get_server_port())) != 0) ||
       config_center_->SetSelfHosted(main->get_self_hosted_enabled()) != 0) {
-    if (wall_changed && !ui_->gallery.Save(ui_->gallery_path))
+    if (wall_changed && !previous_wall.Save(shared_wall_path))
       LOG_ERROR("Failed to restore DeskHub settings after common save failure");
     main->set_self_host_settings_error(UiText(
         localization::self_hosted_save_failed[localization_language_index_]));
@@ -5279,7 +5056,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
     return false;
   }
   if (config_center_->SetIpDirectEnabled(main->get_ip_direct_enabled_draft()) != 0) {
-    if (wall_changed && !ui_->gallery.Save(ui_->gallery_path))
+    if (wall_changed && !previous_wall.Save(shared_wall_path))
       LOG_ERROR("Failed to restore DeskHub settings after IP direct save failure");
     main->set_settings_save_error(UiText(
         localization::Literal("无法保存 IP 连接设置，请重试。", localization_language_index_)));
@@ -5287,7 +5064,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
   }
 #if defined(_WIN32) || defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
   if (config_center_->SetLockOnDisconnect(main->get_lock_on_disconnect_enabled()) != 0) {
-    if (wall_changed && !ui_->gallery.Save(ui_->gallery_path))
+    if (wall_changed && !previous_wall.Save(shared_wall_path))
       LOG_ERROR("Failed to restore DeskHub settings after lock preference save failure");
     main->set_settings_save_error(UiText(
         localization::Literal("无法保存断开后锁屏设置，请重试。", localization_language_index_)));
@@ -5295,13 +5072,26 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
   }
 #endif
   if (config_center_->SetPrivacyLocalUnlock(main->get_privacy_local_unlock_allowed()) != 0) {
-    if (wall_changed) ui_->gallery.Save(ui_->gallery_path);
+    if (wall_changed) previous_wall.Save(shared_wall_path);
     main->set_settings_save_error(UiText(
         localization::Literal("无法保存隐私屏解锁设置，请重试。", localization_language_index_)));
     return false;
   }
+  if (main->get_privacy_black_screen_available() &&
+      config_center_->SetPrivacyBlackScreen(main->get_privacy_black_screen()) != 0) {
+    if (wall_changed) previous_wall.Save(shared_wall_path);
+    main->set_settings_save_error(UiText(
+        localization::Literal("保存失败，请重试", localization_language_index_)));
+    return false;
+  }
+  if (config_center_->SetDesktopRealtimeRateControl(main->get_desktop_realtime_rate_control()) != 0) {
+    if (wall_changed) previous_wall.Save(shared_wall_path);
+    main->set_settings_save_error(UiText(localization::Literal(
+        "保存失败，请重试", localization_language_index_)));
+    return false;
+  }
   if (config_center_->SetPauseVideoWhenMinimized(main->get_pause_video_when_minimized()) != 0) {
-    if (wall_changed && !ui_->gallery.Save(ui_->gallery_path))
+    if (wall_changed && !previous_wall.Save(shared_wall_path))
       LOG_ERROR("Failed to restore DeskHub settings after video pause preference save failure");
     main->set_settings_save_error(UiText(
         localization::Literal("保存失败，请重试", localization_language_index_)));
@@ -5326,7 +5116,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
     if (config_center_->SetIpDirectEnabled(previous_ip_enabled) != 0 ||
         config_center_->SetConnectionMode(previous_connection_mode) != 0)
       LOG_ERROR("Failed to restore IP availability after listener settings failure");
-    if (wall_changed && !ui_->gallery.Save(ui_->gallery_path))
+    if (wall_changed && !previous_wall.Save(shared_wall_path))
       LOG_ERROR("Failed to restore DeskHub settings after listener settings failure");
     main->set_settings_tab(0);
     main->set_settings_save_error(
@@ -5335,7 +5125,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
   }
   language_button_value_ =
       std::clamp(main->get_language_index(), 0, localization::kVietnameseLanguage);
-  video_encode_format_button_value_ = std::clamp(main->get_codec_index(), 0, 1);
+  video_encode_format_button_value_ = std::clamp(main->get_codec_index(), 0, static_cast<int>(MiniRtcVideoCodec::H265));
   enable_self_hosted_ = main->get_self_hosted_enabled();
 #if !defined(__OHOS__)
   enable_autostart_ = main->get_autostart_enabled();
@@ -5346,10 +5136,7 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
       static_cast<ConfigCenter::LANGUAGE>(language_button_value_);
   localization_language_index_ = localization::detail::ClampLanguageIndex(language_button_value_);
   config_center_->SetLanguage(localization_language_);
-  privacy_.SetText(
-      {localization::privacy_screen_unlock_hint[localization_language_index_],
-       localization::privacy_screen_locked_hint[localization_language_index_],
-       config_center_->IsPrivacyLocalUnlockAllowed()});
+  SyncPrivacyScreenSettings();
   config_center_->SetVideoEncodeFormat(
       static_cast<ConfigCenter::VIDEO_ENCODE_FORMAT>(
           video_encode_format_button_value_));
@@ -5381,9 +5168,6 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
   }
   if (config_center_->SetSaveRemotePreviews(main->get_save_remote_previews()) != 0) {
     LOG_ERROR("Failed to save remote preview preference");
-  }
-  if (thumbnail_->SetSavePreviews(config_center_->IsSaveRemotePreviews()) != 0) {
-    LOG_ERROR("Failed to clear saved remote previews");
   }
   reload_recent_connections_ = true;
 #if defined(_WIN32) || defined(__APPLE__) || (defined(__linux__) && !defined(__OHOS__))
@@ -5420,14 +5204,64 @@ bool GuiApplication::SaveSettingsFromUi(bool gallery_window) {
         "保存失败，请重试", localization_language_index_)));
     return false;
   }
-  ApplySettingsFromConfig(previous_server !=
-                          GetSignalServerSettings(*config_center_));
-  ResetSettingsUi(gallery_window);
-  ui_->gallery_synced = {};
   return true;
 }
 
+void GuiApplication::LoadHistoryWorkspace() {
+  ui_->gallery = {};
+  ui_->gallery_path = settings_.HistoryDirectory() / "deskhub.json";
+  if (!ui_->gallery.Load(ui_->gallery_path))
+    LOG_WARN("Could not load DeskHub workspace; original file retained");
+  gallery::Workspace shared;
+  if (shared.Load(std::filesystem::path(cache_path_) / "deskhub.json"))
+    ui_->gallery.stream_settings = shared.stream_settings;
+}
+
 void GuiApplication::ApplySettingsFromConfig(bool reconnect) {
+  const bool changed_history = settings_.SelectHistoryServer();
+  settings_.ApplyPreviewPreference();
+  if (changed_history) {
+    if (ui_) ReleaseControl();
+    CloseAllRemoteSessions();
+    ReloadRecentConnections();
+    device_presence_cache_.SetSignalConnected(false);
+    gallery_presence_ids_.clear();
+    {
+      std::lock_guard lock(pending_presence_probe_mutex_);
+      pending_presence_probe_ = false;
+      pending_presence_result_ready_ = false;
+      pending_presence_remote_id_.clear();
+      pending_presence_password_.clear();
+      pending_presence_remember_password_ = false;
+    }
+    connection_dialog_target_.clear();
+    show_connection_status_window_ = false;
+    if (ui_) {
+      ui_->recent_group_filter.reset();
+      ui_->recent_preview_images.clear();
+      ui_->recent_model_signature.clear();
+      ui_->recent_model->set_vector({});
+      ui_->gallery_previews.clear();
+      ui_->gallery_pending_previews.clear();
+      ui_->gallery_ids.clear();
+      ui_->gallery_focus.clear();
+      ui_->gallery_auth_id.clear();
+      ui_->gallery_requested_auth.clear();
+      ui_->batch_operations.clear();
+      ui_->gallery_hidden_active_ids.clear();
+      ui_->gallery_recent_model->set_vector({});
+      ui_->gallery_network_model->set_vector({});
+      ui_->gallery_model->set_vector({});
+      ui_->gallery_selected_model->set_vector({});
+      ui_->wall->set_gallery_group_index(0);
+      ui_->wall->invoke_reset_gallery_transient();
+      for (const auto& window : {ui_->main, ui_->wall})
+        window->invoke_reset_history_view();
+      LoadHistoryWorkspace();
+      ui_->gallery_synced = {};
+      SyncMainWindow();
+    }
+  }
   language_button_value_ = static_cast<int>(config_center_->GetLanguage());
   localization_language_index_ = localization::detail::ClampLanguageIndex(language_button_value_);
   localization_language_ = config_center_->GetLanguage();
@@ -5435,9 +5269,7 @@ void GuiApplication::ApplySettingsFromConfig(bool reconnect) {
   enable_self_hosted_ = config_center_->IsSelfHosted();
   enable_autostart_ = config_center_->IsEnableAutostart();
   enable_daemon_ = config_center_->IsEnableDaemon();
-  privacy_.SetText({localization::privacy_screen_unlock_hint[localization_language_index_],
-       localization::privacy_screen_locked_hint[localization_language_index_],
-       config_center_->IsPrivacyLocalUnlockAllowed()});
+  SyncPrivacyScreenSettings();
   const auto path = config_center_->GetFileTransferSavePath();
   std::snprintf(file_transfer_save_path_buf_, sizeof(file_transfer_save_path_buf_), "%s", path.c_str());
   const auto host = config_center_->GetSignalServerHost();
@@ -5462,21 +5294,24 @@ void GuiApplication::ApplySettingsFromConfig(bool reconnect) {
     if (!ui_->wall->get_settings_open()) ResetSettingsUi(true);
   }
   ApplyLanSettings();
+  if (changed_history) return;
   if (reconnect && !HasActiveSession()) {
     // Tick recreates the peer after asynchronous cleanup, using the committed
     // configuration. Keep the application and its console running throughout.
     CloseAllRemoteSessions();
   } else {
-    const bool av1 = config_center_->GetVideoEncodeFormat() ==
-                     ConfigCenter::VIDEO_ENCODE_FORMAT::AV1;
-    const auto turn = static_cast<MiniRtcTurnMode>(config_center_->GetTurnMode());
-    if (av1 != params_.av1_encoding || turn != params_.turn_mode) {
-      // Update the listening peer for incoming connections and the template
-      // copied by ConnectTo for outgoing connections. Existing sessions retain
-      // the codec/ICE snapshot with which they negotiated.
-      if (!peer_ || PeerUpdateConnectionSettings(peer_, true, av1, turn) == 0) {
-        params_.av1_encoding = av1;
-        params_.turn_mode = turn;
+    MiniRtcConnectionParams params{};
+    params.video_codec = config_center_->GetVideoEncodeFormat();
+    params.hardware_acceleration = true;
+    params.turn_mode = static_cast<MiniRtcTurnMode>(config_center_->GetTurnMode());
+    params.desktop_encoding_mode = config_center_->GetDesktopEncodingMode();
+    if (params.video_codec != preferred_video_codec_ || params.turn_mode != params_.turn_mode ||
+        params.desktop_encoding_mode != params_.desktop_encoding_mode) {
+      // Keep the outgoing peer template in sync with the listener.
+      if (!peer_ || PeerUpdateConnectionParams(peer_, params) == 0) {
+        preferred_video_codec_ = params.video_codec;
+        params_.turn_mode = params.turn_mode;
+        params_.desktop_encoding_mode = params.desktop_encoding_mode;
       } else {
         LOG_ERROR("Failed to apply connection settings without reconnecting");
       }
@@ -5490,13 +5325,11 @@ void GuiApplication::ConnectFromUi(const std::string& input) {
     if (!LanAvailable()) return;
     if (auto existing = FindRemoteSession(input);
         existing && existing->connection_established_) {
-      existing->tab_opened_ = true;
-      focused_remote_id_ = existing->remote_id_;
-      need_to_create_stream_window_ = true;
+      ShowStreamWindow(existing);
       return;
     }
     for (const auto& [_, recent] : recent_connections_)
-      if (recent.remote_id == input && !recent.lan.device_id.empty()) {
+      if (recent.remote_id == input && !recent.lan.address.empty()) {
         ui_->main->invoke_request_lan_connection(
             UiText(lan::FormatEndpoint(recent.lan.address, recent.lan.port)));
         return;
@@ -5512,10 +5345,7 @@ void GuiApplication::ConnectFromUi(const std::string& input) {
   ui_->main->set_connection_input_error("");
   if (auto existing = FindRemoteSession(remote_id);
       existing && !existing->closing_ && existing->connection_established_) {
-    ReleaseControl();
-    existing->tab_opened_ = true;
-    focused_remote_id_ = remote_id;
-    need_to_create_stream_window_ = true;
+    ShowStreamWindow(existing);
     return;
   }
 
@@ -5529,82 +5359,28 @@ void GuiApplication::ConnectFromUi(const std::string& input) {
   ConnectTo(remote_id, "", false);
 }
 
-void GuiApplication::SelectStreamTab(int index) {
-  if (!ui_ || index < 0 || index >= static_cast<int>(ui_->tab_ids.size())) {
-    return;
-  }
-  const std::string selected_remote_id = ui_->tab_ids[index];
-  const bool selection_changed = focused_remote_id_ != selected_remote_id;
-  bool renderer_selection_changed = false;
-  if (!controlled_remote_id_.empty() &&
-      controlled_remote_id_ != selected_remote_id)
-    ReleaseControl();
-  focused_remote_id_ = selected_remote_id;
-  controlled_remote_id_ = selected_remote_id;
-  if (ui_->video_presenter) {
-    renderer_selection_changed =
-        ui_->video_presenter->SelectStream(selected_remote_id);
-  }
-  if (renderer_selection_changed) {
-    video_frame_dirty_.store(true, std::memory_order_release);
-  }
-  if (selection_changed && ui_->stream) {
-    (*ui_->stream)->set_has_frame(false);
-  }
-  std::shared_ptr<RemoteSession> selected_session;
-  bool clipboard_resumed = false;
-  {
-    std::lock_guard delivery_lock(audio_delivery_mutex_);
-    std::shared_lock lock(remote_sessions_mutex_);
-    for (auto& [id, props] : remote_sessions_) {
-      if (props) {
-        props->tab_selected_ = id == focused_remote_id_;
-        const bool clipboard_allowed = props->tab_selected_ &&
-                                       props->control_mouse_ &&
-                                       focus_on_stream_window_;
-        if (!props->clipboard_allowed_.exchange(clipboard_allowed) &&
-            clipboard_allowed) {
-          clipboard_resumed = true;
-        }
-      }
+void GuiApplication::ShowStreamWindow(const std::shared_ptr<RemoteSession>& session) {
+  session->stream_window_open_ = true;
+  if (auto* view = FindStreamView(session->remote_id_)) {
+    auto& window = view->window->window();
+    window.set_minimized(false);
+    view->window->show();
+#if defined(__APPLE__)
+    MacActivateWindow(window.appkit_view());
+#elif defined(_WIN32)
+    SetForegroundWindow(window.win32_hwnd());
+#elif defined(__linux__) && !defined(__OHOS__)
+    if (window.wayland_surface()) {
+      platform::ActivateWaylandWindow(window.wayland_display(), window.wayland_surface(), {});
+    } else {
+      if (!ui_->x11_focus_display) ui_->x11_focus_display = XOpenDisplay(nullptr);
+      X11ActivateWindow(ui_->x11_focus_display, std::string(view->window->get_session_title()));
     }
-    const auto selected = remote_sessions_.find(selected_remote_id);
-    if (selected != remote_sessions_.end()) {
-      selected_session = selected->second;
-    }
-    start_keyboard_capturer_ = selected_session &&
-                               selected_session->control_mouse_ &&
-                               selected_session->connection_status_.load() ==
-                                   MiniRtcConnectionStatus::MiniRtcConnectionConnected;
+#endif
   }
-  if (clipboard_resumed) {
-    // Flush a copy made in another local app before the next paste shortcut,
-    // instead of waiting for the periodic clipboard poll.
-    clipboard_.HandleLocalUpdate();
-  }
-  SyncAudioPlayback();
 }
 
-void GuiApplication::ReorderStreamTab(int from, float drop_x, float tab_width) {
-  if (!ui_ || from < 0 || from >= static_cast<int>(ui_->tab_order.size()) ||
-      tab_width <= 0.0f) {
-    return;
-  }
-  const float slot_width = tab_width + 1.0f;
-  const int target =
-      std::clamp(static_cast<int>(std::floor(drop_x / slot_width)), 0,
-                 static_cast<int>(ui_->tab_order.size()) - 1);
-  if (target == from) {
-    return;
-  }
-  std::string moved = std::move(ui_->tab_order[from]);
-  ui_->tab_order.erase(ui_->tab_order.begin() + from);
-  ui_->tab_order.insert(ui_->tab_order.begin() + target, std::move(moved));
-  ui_->tab_ids = ui_->tab_order;
-  SelectStreamTab(target);
-}
-
-void GuiApplication::CloseRemoteClosedTabs() {
+void GuiApplication::CloseDisconnectedSessions() {
   std::vector<std::string> closed;
   {
     std::shared_lock lock(remote_sessions_mutex_);
@@ -5616,10 +5392,10 @@ void GuiApplication::CloseRemoteClosedTabs() {
   }
   // CloseRemoteSession drains transport callbacks and takes the session map
   // lock. Do this on the UI thread, outside both the callback and map lock.
-  for (const auto& id : closed) CloseStreamTab(id);
+  for (const auto& id : closed) DisconnectSession(id);
 }
 
-void GuiApplication::CloseStreamTab(const std::string& remote_id) {
+void GuiApplication::DisconnectSession(const std::string& remote_id) {
   // A user disconnect also cancels work that could reconnect this device.
   // Mark in place: this can run while SyncGallery is iterating the queue.
   for (auto& operation : ui_->batch_operations) {
@@ -5650,66 +5426,78 @@ void GuiApplication::CloseStreamTab(const std::string& remote_id) {
     ReleaseControl();
   else if (!gallery_group_control_id_.empty())
     ReleasePressedInput();
-  keyboard_.ReleaseRemotePressedKeys(remote_id, "stream_tab_closed");
+  keyboard_.ReleaseRemotePressedKeys(remote_id, "stream_window_closed");
   CloseRemoteSession(props);
   ResetRemoteSessionResources(props);
   {
     std::unique_lock lock(remote_sessions_mutex_);
     remote_sessions_.erase(remote_id);
   }
-  if (ui_->video_presenter) {
-    ui_->video_presenter->ForgetStream(remote_id);
-  }
-  if (focused_remote_id_ == remote_id) {
-    focused_remote_id_.clear();
-    if (controlled_remote_id_ == remote_id) controlled_remote_id_.clear();
-    if (ui_->video_presenter && ui_->video_presenter->SelectStream({})) {
-      video_frame_dirty_.store(true, std::memory_order_release);
-    }
-  }
+  if (connection_dialog_target_ == remote_id) connection_dialog_target_.clear();
 }
 
-std::shared_ptr<GuiApplication::RemoteSession>
-GuiApplication::SelectedSession() {
-  if (ui_ && !ui_->gallery_control_id.empty())
-    return FindRemoteSession(ui_->gallery_control_id);
-  std::shared_lock lock(remote_sessions_mutex_);
-  auto found = remote_sessions_.find(focused_remote_id_);
-  if (found != remote_sessions_.end()) {
-    return found->second;
+void GuiApplication::ResetPointerMotion() {
+  ui_->pointer_motion = {};
+  ui_->wall->global<ui::RemoteCursor>().invoke_reset();
+  if (auto* view = FindStreamView(controlled_remote_id_); view && ui_->gallery_control_id.empty())
+    view->window->global<ui::RemoteCursor>().invoke_reset();
+}
+
+std::optional<VideoPoint> GuiApplication::MapRemotePointer(
+    RemoteSession& session, float x, float y) {
+  const bool gallery = !ui_->gallery_control_id.empty();
+  const auto* view = FindStreamView(session.remote_id_);
+  if (!gallery && !view) return std::nullopt;
+  const auto width = gallery ? ui_->wall->get_gallery_video_width()
+                             : view->window->get_video_area_width();
+  const auto height = gallery ? ui_->wall->get_gallery_video_height()
+                              : view->window->get_video_area_height();
+  int video_width, video_height;
+  {
+    std::lock_guard lock(session.video_frame_mutex_);
+    video_width = session.video_width_;
+    video_height = session.video_height_;
   }
-  for (const auto& [_, props] : remote_sessions_) {
-    if (props && props->tab_selected_) {
-      return props;
-    }
+  const auto& cursor = gallery ? ui_->wall->global<ui::RemoteCursor>()
+                               : view->window->global<ui::RemoteCursor>();
+  if (!std::isfinite(width) || !std::isfinite(height) ||
+      !(width > 0 && height > 0 && x >= 0 && x <= width && y >= 0 && y <= height) ||
+      video_width <= 0 || video_height <= 0) {
+    cursor.set_adjusted_x(-1);
+    cursor.set_outside_video(true);
+    return std::nullopt;
   }
-  return nullptr;
+  const int percent = config_center_->GetMouseSensitivityPercent();
+  if (percent != 100) {
+    if (!cursor.get_adjusted()) ui_->pointer_motion = {};
+    const auto adjusted = ui_->pointer_motion.Update({x, y}, {width, height}, percent);
+    x = adjusted.x;
+    y = adjusted.y;
+    cursor.set_adjusted_x(x);
+    cursor.set_adjusted_y(y);
+  }
+  const auto point = MapVideoPoint(x, y, width, height, video_width, video_height);
+  cursor.set_outside_video(!point);
+  // The stream takes over local hover after this callback. Do not send the
+  // covered move, press or scroll to the peer.
+  if (percent != 100 && !gallery && ui_->pressed_mouse_buttons.empty() &&
+      view->window->invoke_is_local_control_area(x, y)) {
+    return std::nullopt;
+  }
+  return point;
 }
 
 void GuiApplication::SendPointerInput(int button, int kind, float x, float y) {
-  auto props = SelectedSession();
-  if (!props || !props->peer_ || !props->control_mouse_ ||
-      (!ui_->stream && ui_->gallery_control_id.empty())) {
+  auto props = FindRemoteSession(controlled_remote_id_);
+  if (!props || !props->peer_ || !props->control_mouse_) {
     return;
-  }
-
-  std::optional<VideoPoint> point;
-  {
-    std::lock_guard lock(props->video_frame_mutex_);
-    point = MapVideoPoint(x, y,
-                          ui_->gallery_control_id.empty()
-                              ? (*ui_->stream)->get_video_area_width()
-                              : ui_->wall->get_gallery_video_width(),
-                          ui_->gallery_control_id.empty()
-                              ? (*ui_->stream)->get_video_area_height()
-                              : ui_->wall->get_gallery_video_height(),
-                          props->video_width_, props->video_height_);
   }
   if (kind == 0) {
     ReleaseControl();
     return;
   }
   if (kind == 2 && !ui_->pressed_mouse_buttons.count(button)) return;
+  auto point = MapRemotePointer(*props, x, y);
   if (!point) {
     if (kind != 2) return;
     point = VideoPoint{ui_->pointer_x, ui_->pointer_y};
@@ -5749,29 +5537,16 @@ void GuiApplication::SendPointerInput(int button, int kind, float x, float y) {
   if (kind == 2) ui_->pressed_mouse_buttons.erase(button);
   ui_->pointer_x = point->x;
   ui_->pointer_y = point->y;
-  controlled_remote_id_ = props->remote_id_;
   SendRemoteInput(action);
 }
 
 void GuiApplication::SendScrollInput(float delta_x, float delta_y, float x,
                                      float y) {
-  auto props = SelectedSession();
-  if (!props || !props->peer_ || !props->control_mouse_ ||
-      (!ui_->stream && ui_->gallery_control_id.empty())) {
+  auto props = FindRemoteSession(controlled_remote_id_);
+  if (!props || !props->peer_ || !props->control_mouse_) {
     return;
   }
-  std::optional<VideoPoint> point;
-  {
-    std::lock_guard lock(props->video_frame_mutex_);
-    point = MapVideoPoint(x, y,
-                          ui_->gallery_control_id.empty()
-                              ? (*ui_->stream)->get_video_area_width()
-                              : ui_->wall->get_gallery_video_width(),
-                          ui_->gallery_control_id.empty()
-                              ? (*ui_->stream)->get_video_area_height()
-                              : ui_->wall->get_gallery_video_height(),
-                          props->video_width_, props->video_height_);
-  }
+  const auto point = MapRemotePointer(*props, x, y);
   if (!point) {
     return;
   }
@@ -5783,16 +5558,9 @@ void GuiApplication::SendScrollInput(float delta_x, float delta_y, float x,
   const float delta = vertical ? delta_y : delta_x;
   action.m.flag =
       vertical ? MouseFlag::wheel_vertical : MouseFlag::wheel_horizontal;
-#if defined(__APPLE__)
-  action.m.s = ui_->scroll.Consume(vertical, delta);
-#else
-  action.m.s = delta > 0 ? 1 : delta < 0 ? -1 : 0;
-#endif
-  if (action.m.s == 0) {
-    return;
-  }
-  controlled_remote_id_ = props->remote_id_;
-  SendRemoteInput(action);
+  ui_->pointer_x = point->x;
+  ui_->pointer_y = point->y;
+  SendRemoteInput(action, delta);
 }
 
 void GuiApplication::SendKeyInput(const std::string& text, bool pressed,
@@ -5800,16 +5568,13 @@ void GuiApplication::SendKeyInput(const std::string& text, bool pressed,
                                   bool meta) {
   (void)control;
   (void)alt;
-  (void)shift;
   (void)meta;
-  auto props = SelectedSession();
+  auto props = FindRemoteSession(controlled_remote_id_);
   if (!props || !props->peer_ || !props->control_mouse_ ||
       props->connection_status_.load() != MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
     return;
   }
 
-  controlled_remote_id_ = props->remote_id_;
-  focused_remote_id_ = props->remote_id_;
 
   // Native capture forwards the event independently. Slint keyboard events
   // are used only by platforms whose native capture backend is unavailable.
@@ -5819,7 +5584,7 @@ void GuiApplication::SendKeyInput(const std::string& text, bool pressed,
 
   const int virtual_key = SlintKeyToWindowsVk(text);
   if (virtual_key >= 0) {
-    keyboard_.SendKeyCommand(virtual_key, pressed);
+    keyboard_.SendWindowKey(virtual_key, pressed, shift);
   }
 }
 
@@ -5942,9 +5707,7 @@ bool GuiApplication::OpenUrl(const std::string& url) {
 void GuiApplication::SyncAudioPlayback() {
   const bool wall_visible = ui_ && ui_->wall->window().is_visible() &&
       !ui_->wall->window().is_minimized();
-  const bool stream_active = ui_ && ui_->stream && focus_on_stream_window_ &&
-      (*ui_->stream)->window().is_visible() &&
-      !(*ui_->stream)->window().is_minimized();
+
   std::lock_guard delivery_lock(audio_delivery_mutex_);
   std::shared_lock lock(remote_sessions_mutex_);
   for (const auto& [id, props] : remote_sessions_) {
@@ -5952,7 +5715,7 @@ void GuiApplication::SyncAudioPlayback() {
         props->connection_status_ == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
         props->audio_capture_button_pressed_ &&
         ((wall_visible && props->wall_managed_) ||
-         (stream_active && props->tab_opened_ && props->tab_selected_));
+         (focus_on_stream_window_ && id == controlled_remote_id_ && props->stream_window_open_));
     if (props->audio_allowed_.exchange(allowed) != allowed)
       props->preview_needs_sync_ = true;
     if (!allowed) devices_.ClearAudio(id);
@@ -5960,9 +5723,11 @@ void GuiApplication::SyncAudioPlayback() {
 }
 
 void GuiApplication::ReleasePressedInput(bool preserve_local_ui) {
-#if defined(__APPLE__)
-  ui_->scroll = {};
-#endif
+  {
+    std::shared_lock lock(remote_sessions_mutex_);
+    for (const auto& [_, session] : remote_sessions_) session->scroll_ = {};
+  }
+  ResetPointerMotion();
   keyboard_.ForceReleasePressedKeys();
   for (int button : ui_->pressed_mouse_buttons) {
     RemoteAction action{};
@@ -5975,13 +5740,16 @@ void GuiApplication::ReleasePressedInput(bool preserve_local_ui) {
     SendRemoteInput(action);
   }
   ui_->pressed_mouse_buttons.clear();
-  if (ui_->stream) {
-    if (preserve_local_ui) (*ui_->stream)->invoke_reset_pressed_input();
-    else (*ui_->stream)->invoke_reset_input_state();
+  if (auto* view = FindStreamView(controlled_remote_id_); view && ui_->gallery_control_id.empty()) {
+    if (preserve_local_ui) view->window->invoke_reset_pressed_input();
+    else view->window->invoke_reset_input_state();
   }
 }
 
 void GuiApplication::ReleaseControl(bool preserve_local_ui) {
+  if (ui_->releasing_input) return;
+  ui_->releasing_input = true;
+  focus_on_stream_window_ = false;
   const auto gallery_target = ui_->gallery_control_id;
   devices_.StopKeyboardCapturer();
   ReleasePressedInput(preserve_local_ui);
@@ -5994,17 +5762,17 @@ void GuiApplication::ReleaseControl(bool preserve_local_ui) {
     ui_->wall->set_gallery_controlling(false);
   }
   SyncAudioPlayback();
-  std::shared_lock lock(remote_sessions_mutex_);
-  for (const auto& [id, props] : remote_sessions_) {
+  if (auto props = FindRemoteSession(controlled_remote_id_)) {
     ++props->input_generation_;
     props->clipboard_allowed_ = false;
-    if (id == gallery_target) {
-      props->control_mouse_ = false;
-      props->enable_mouse_control_ = false;
+    if (props->remote_id_ == gallery_target) {
+      props->control_mouse_ = ui_->gallery_previous_mouse_control;
+      props->enable_mouse_control_ = props->control_mouse_;
     }
   }
   controlled_remote_id_.clear();
   start_keyboard_capturer_ = false;
+  ui_->releasing_input = false;
 }
 
 void GuiApplication::ShowGalleryWindow() {
@@ -6037,7 +5805,7 @@ void GuiApplication::ShowGalleryWindow() {
   SetForegroundWindow(window.win32_hwnd());
 #elif defined(__linux__) && !defined(__OHOS__)
   if (!ui_->x11_focus_display) ui_->x11_focus_display = XOpenDisplay(nullptr);
-  X11ActivateWindow(ui_->x11_focus_display, window, true);
+  X11ActivateWindow(ui_->x11_focus_display, std::string(ui_->wall->get_window_title()));
 #endif
   ui_->gallery_synced = {};
   SyncGallery();
@@ -6063,7 +5831,7 @@ void GuiApplication::CloseGalleryWindow() {
   }
   // Reuse explicit disconnect: cancel retries, release input/media resources,
   // and queue peer teardown without waiting for the transport on the UI thread.
-  for (const auto& id : disconnect_ids) CloseStreamTab(id);
+  for (const auto& id : disconnect_ids) DisconnectSession(id);
   need_to_rejoin_ = false;
   ui_->wall->invoke_reset_gallery_transient();
   ui_->wall->set_alias_open(false);
@@ -6094,7 +5862,7 @@ void GuiApplication::CloseGalleryWindow() {
   ui_->wall->hide();
   ui_->gallery_synced = {};
   SyncGallery();
-  SyncStreamWindow();
+  SyncStreamWindows();
 }
 
 void GuiApplication::ToggleGalleryFullscreen() {
@@ -6146,7 +5914,7 @@ void GuiApplication::SaveGalleryWindowState() {
     }
     const auto text = state.dump();
     if (text != ui_->saved_window_signature &&
-        gallery::WriteAtomically(ui_->gallery_path.string() + ".window", text))
+        gallery::WriteAtomically(std::filesystem::path(cache_path_) / "deskhub.json.window", text))
       ui_->saved_window_signature = text;
     ui_->window_saved = now;
   }
@@ -6324,6 +6092,37 @@ bool GuiApplication::SaveDeviceGroups(const std::string& new_group,
   return true;
 }
 
+bool GuiApplication::DeleteGroup(const std::string& name) {
+  auto updated = ui_->gallery;
+  if (!updated.DeleteGroup(name)) return true;
+  if (!updated.Save(ui_->gallery_path)) return false;
+
+  const auto removed = std::find(ui_->gallery.groups.begin(), ui_->gallery.groups.end(), name);
+  const int removed_index = int(removed - ui_->gallery.groups.begin()) + 1;
+  const int selected = ui_->wall->get_gallery_group_index();
+  ui_->gallery = std::move(updated);
+  if (selected == removed_index) ui_->wall->set_gallery_group_index(0);
+  else if (selected > removed_index) ui_->wall->set_gallery_group_index(selected - 1);
+  if (ui_->recent_group_filter == name) ui_->recent_group_filter.reset();
+
+  // A device editor can still be open in the other window.
+  for (auto& editor : ui_->group_editors) {
+    if (editor.options->row_count() == 0) continue;
+    std::vector<ui::DeviceGroupOption> options;
+    for (size_t row = 0; row < editor.options->row_count(); ++row) {
+      auto option = *editor.options->row_data(row);
+      if (std::string(option.name) != name) options.push_back(option);
+    }
+    options.front().selected = std::none_of(options.begin() + 1, options.end(),
+        [](const auto& option) { return option.selected; });
+    editor.options->set_vector(options);
+  }
+  ui_->gallery_synced = {};
+  SyncMainWindow();
+  SyncGallery();
+  return true;
+}
+
 void GuiApplication::GalleryAction(const std::string& action,
                                    const std::string& value,
                                    bool gallery_window) {
@@ -6355,7 +6154,7 @@ void GuiApplication::GalleryAction(const std::string& action,
     std::set<std::string> seen;
     int available = 0;
     for (const auto& [_, recent] : recent_connections_) {
-      if (!recent.lan.device_id.empty()) continue;
+      if (!recent.lan.address.empty()) continue;
       if (!gallery::Workspace::ValidId(recent.remote_id) ||
           !seen.insert(recent.remote_id).second)
         continue;
@@ -6438,6 +6237,7 @@ void GuiApplication::GalleryAction(const std::string& action,
           std::chrono::steady_clock::now() - props->gallery_frame_at_ > 5s)
         return;
     }
+    ui_->gallery_previous_mouse_control = props->control_mouse_;
     ui_->gallery_control_id = value;
     controlled_remote_id_ = value;
     if (action == "group-control") gallery_group_control_id_ = value;
@@ -6445,7 +6245,6 @@ void GuiApplication::GalleryAction(const std::string& action,
     props->control_mouse_ = true;
     props->enable_mouse_control_ = true;
     props->clipboard_allowed_ = true;
-    if (ui_->stream) (*ui_->stream)->hide();
     // The gallery window FocusScope owns keyboard input. Native capture stays
     // off so local toolbar/menu events never leak into this remote session.
     start_keyboard_capturer_ = false;
@@ -6503,7 +6302,7 @@ void GuiApplication::GalleryAction(const std::string& action,
     ReleaseControl();
     if (action == "disconnect") {
       // Disconnect must not wait for long-running file transfers to finish.
-      for (const auto& id : ids) CloseStreamTab(id);
+      for (const auto& id : ids) DisconnectSession(id);
       SyncGallery();
       return;
     }
@@ -6841,7 +6640,7 @@ void GuiApplication::SyncGallery() {
   };
   const auto name = [this](const std::string& id) {
     for (const auto& [_, recent] : recent_connections_)
-      if (recent.lan.device_id.empty())
+      if (recent.lan.address.empty())
         if (recent.remote_id == id)
           return settings_.RecentConnectionDisplayName(recent);
     Thumbnail::RecentConnection device{};
@@ -6902,6 +6701,10 @@ void GuiApplication::SyncGallery() {
       device.decoder = UiText(codecs.local_decoder.empty() ? "—" : codecs.local_decoder);
       const bool has_report = props->net_traffic_stats_.HasRecentReport(now);
       const auto stats = props->net_traffic_stats_.Load();
+      if (mode == MiniRtcTraversalP2P && has_report) {
+        device.local_endpoint = UiText(stats.local_endpoint);
+        device.remote_endpoint = UiText(stats.remote_endpoint);
+      }
       // Use negotiated transport state, never the local encryption preference.
       // Missing/stale reports cannot confirm either encrypted or plaintext.
       device.encryption_known = has_report;
@@ -6961,7 +6764,7 @@ void GuiApplication::SyncGallery() {
           bool remember = operation.remember_password;
           if (!operation.password)
             for (const auto& [_, recent] : recent_connections_)
-              if (recent.lan.device_id.empty())
+              if (recent.lan.address.empty())
                 if (recent.remote_id == operation.id) {
                   password = recent.password;
                   remember = recent.remember_password;
@@ -7016,7 +6819,7 @@ void GuiApplication::SyncGallery() {
           operation.started = now;
         } else if (now - operation.started > 30s) {
           operation.state = OperationState::Finished;
-          CloseStreamTab(operation.id);
+          DisconnectSession(operation.id);
         }
       } else if (props->connection_status_ != MiniRtcConnectionStatus::MiniRtcConnectionConnected)
         operation.state = OperationState::Finished;
@@ -7116,7 +6919,7 @@ void GuiApplication::SyncGallery() {
     tile.selected = wall.selected.count(id);
     auto props = FindRemoteSession(id);
     for (const auto& [_, recent] : recent_connections_) {
-      if (!recent.lan.device_id.empty()) continue;
+      if (!recent.lan.address.empty()) continue;
       if (recent.remote_id != id) continue;
       tile.host_name = UiText(recent.remote_host_name);
       break;
@@ -7240,17 +7043,6 @@ void GuiApplication::SyncGallery() {
   auto& bandwidth_demands = ui_->gallery_bandwidth_demands;
   pending_previews.clear();
   bandwidth_demands.clear();
-  const bool stream_window_visible = ui_->stream &&
-      (*ui_->stream)->window().is_visible() &&
-      !(*ui_->stream)->window().is_minimized();
-  const bool stream_window_receiving = ui_->stream &&
-      (stream_window_visible || !config_center_->IsPauseVideoWhenMinimized());
-  const auto stream_viewport = stream_window_visible
-      ? gallery::PreviewResolution::Viewport(
-            (*ui_->stream)->get_video_area_width(),
-            (*ui_->stream)->get_video_area_height(),
-            (*ui_->stream)->window().scale_factor())
-      : gallery::PreviewResolution{};
   {
     std::shared_lock lock(remote_sessions_mutex_);
     pending_previews.reserve(remote_sessions_.size());
@@ -7285,14 +7077,10 @@ void GuiApplication::SyncGallery() {
         if (props->wall_managed_)
           wall.stream_settings.ApplyFrameRate(demand, props->preview_fps15_supported_);
         const bool needs_sync = props->preview_needs_sync_.exchange(false);
-        const bool stream_visible = stream_window_visible &&
-            props->tab_opened_ && id == focused_remote_id_;
-        // Ordinary tabs keep receiving while their window is visible. DeskHub
-        // sessions also account for their visible previews below. A minimized
-        // window can keep receiving when the user disables automatic pausing.
-        const bool stream_needs_video = stream_window_receiving &&
-            props->tab_opened_ &&
-            (!props->wall_managed_ || id == focused_remote_id_);
+        const auto* view = FindStreamView(id);
+        const bool stream_visible = view && view->Visible() && props->stream_window_open_;
+        const bool stream_needs_video = view && props->stream_window_open_ &&
+            (stream_visible || !config_center_->IsPauseVideoWhenMinimized());
         if (props->preview_resolution_supported_) {
           const auto wall_viewport = !preview_ids.count(id)
               ? gallery::PreviewResolution{}
@@ -7301,7 +7089,9 @@ void GuiApplication::SyncGallery() {
           const auto resolution = props->preview_resolution_.Update(
               wall.stream_settings.Resolution(
                   props->wall_managed_, wall_viewport,
-                  stream_visible ? stream_viewport : gallery::PreviewResolution{}),
+                  stream_visible ? gallery::PreviewResolution::Viewport(
+                      view->window->get_video_area_width(), view->window->get_video_area_height(),
+                      view->window->window().scale_factor()) : gallery::PreviewResolution{}),
               now, needs_sync);
           demand.version = 2;
           demand.width = resolution.width;
@@ -7360,10 +7150,12 @@ void GuiApplication::SyncGallery() {
 }
 
 void GuiApplication::Cleanup() {
-#if defined(__APPLE__)
-  // Deactivate queued main-thread work before sessions/renderers are released.
+  // Deactivate queued presentation work before sessions/renderers are released.
+  // This covers every platform: the wakeup may be invoked from a decoder thread
+  // that outlives the window.
   std::atomic_store_explicit(&video_frame_wakeup_,
       std::shared_ptr<const std::function<void()>>{}, std::memory_order_release);
+#if defined(__APPLE__)
   if (ui_) ui_->video_scheduler.Stop();
 #endif
   BeginShutdown();
@@ -7397,7 +7189,6 @@ void GuiApplication::Cleanup() {
   if (ui_->clipboard_notification) (*ui_->clipboard_notification)->hide();
   ui_->clipboard_notification.reset();
   ui_->timer.stop();
-  ui_->server_file_dialog_timer.stop();
   ui_->video_timer.stop();
 #if _WIN32 && CROSSDESK_PORTABLE
   JoinPortableWindowsServiceInstallThread();
@@ -7413,22 +7204,8 @@ void GuiApplication::Cleanup() {
   CloseAllRemoteSessions();
   WaitForSessionCleanup();
   devices_.DestroyAudioOutput();
-  if (ui_->stream) {
-#if defined(__APPLE__)
-    void* stream_view = (*ui_->stream)->window().appkit_view();
-    SetStreamWindowFullscreen(false);
-    UnregisterStreamWindow(stream_view);
-#endif
-    if (ui_->video_presenter) {
-      ui_->video_presenter->Detach();
-    }
-    (*ui_->stream)->hide();
-    ui_->stream.reset();
-  }
-  if (ui_->server) {
-    (*ui_->server)->hide();
-    (*ui_->server_bar)->hide();
-  }
+  for (auto& [_, view] : ui_->streams) view.SaveSize(*config_center_);
+  ui_->streams.clear();
 #if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
   if (ui_->tray) {
     ui_->tray->RemoveTrayIcon();

@@ -62,7 +62,7 @@ Sau khi chuyển máy chủ, hãy kiểm tra lại ID máy này; danh tính thi�
 
 Ứng dụng kết nối dịch vụ signaling qua TLS. Chứng chỉ phải bao gồm tên miền / IP đã nhập và được hệ thống ứng dụng tin cậy. Khi dùng chứng chỉ do CA đáng tin cậy cấp, cấu hình chuỗi chứng chỉ theo hướng dẫn máy chủ; khi dùng chứng chỉ tự ký, cần tin cậy chứng chỉ gốc do bạn triển khai.
 
-[Script tạo chứng chỉ](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/docker/generate_certs.sh) mặc định chỉ ghi `EXTERNAL_IP` vào phạm vi địa chỉ của chứng chỉ; khi dùng chứng chỉ này, bạn nên nhập IP đó trong ứng dụng. Chuyển sang tên miền cần cấu hình chứng chỉ chứa tên miền đó. Khi đã có chứng chỉ, [script khởi động](https://github.com/kunkundi/crossdesk-server/blob/admin-dashboard/docker/start.sh) dùng lại chúng; đổi IP trong `.env` không tự cập nhật chứng chỉ.
+Script tạo chứng chỉ mặc định chỉ ghi `EXTERNAL_IP` vào phạm vi địa chỉ của chứng chỉ, nên trong ứng dụng hãy nhập IP đó. Chuyển sang tên miền cần cấu hình chứng chỉ chứa tên miền đó. Sau khi nâng cấp image hoặc đổi IP trong `.env`, script khởi động vẫn dùng lại chứng chỉ đã có. Nếu iOS từ chối chứng chỉ máy chủ 3650 ngày do script cũ cấp, hãy thay chứng chỉ theo hướng dẫn phía máy chủ và tin cậy chứng chỉ gốc mới trên thiết bị. [Các bước thay chứng chỉ máy chủ](https://github.com/kunkundi/crossdesk-server/blob/HEAD/docs/DEPLOYMENT.md#certificate-rotation)
 
 Tệp chứng chỉ mặc định ở `certs/` trong thư mục dữ liệu máy chủ. Tải `api.crossdesk.cn_root.crt` từ máy chủ của bạn về máy chạy ứng dụng, rồi thực hiện lệnh cho nền tảng tương ứng; không nhập chứng chỉ gốc không rõ nguồn gốc.
 

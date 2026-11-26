@@ -294,7 +294,7 @@ Mã tương ứng: [cấu hình toàn cục](../apps/desktop/src/config_center/c
 
 ## 7. Phạm vi hỗ trợ và điểm vào khắc phục
 
-IP trực tiếp hiện dành cho ứng dụng máy tính thường Windows, macOS, Linux. Trình duyệt, ứng dụng di động native, dịch vụ Windows trước đăng nhập và console Linux headless chưa có đầu vào trực tiếp này. IPv4/IPv6 dạng số và ứng viên UDP host là ràng buộc hiện tại. Chế độ mọi giao diện nhận được kết nối VPN hoặc card ảo, máy điều khiển cũng có thể khởi tạo qua chúng nhưng vẫn cần đường TCP, UDP hai bên thông suốt; không có phân giải tên máy, điều khiển loopback hay xuyên NAT mạng công cộng.
+Ứng dụng máy tính thường trên Windows, macOS, Linux có thể khởi tạo và nhận kết nối IP trực tiếp. Ứng dụng di động Android, iOS, HarmonyOS khởi tạo kết nối qua trình quản lý phiên phía máy điều khiển dùng chung, giữ nguyên quy trình xác thực TLS, đàm phán MiniRTC và ghép đôi thiết bị của bản máy tính. Ứng dụng di động không mở lắng nghe trong mạng LAN. Trình duyệt, dịch vụ Windows trước đăng nhập và console Linux headless dùng đầu vào ID. IPv4/IPv6 dạng số và ứng viên UDP host là ràng buộc hiện tại. Chế độ mọi giao diện nhận được kết nối VPN hoặc card ảo, máy điều khiển cũng có thể khởi tạo qua chúng nhưng vẫn cần đường TCP, UDP hai bên thông suốt; không có phân giải tên máy, điều khiển loopback hay xuyên NAT mạng công cộng.
 
 | Hiện tượng | Tầng kiểm tra đầu tiên |
 | --- | --- |

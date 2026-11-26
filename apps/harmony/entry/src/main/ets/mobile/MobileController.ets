@@ -65,6 +65,8 @@ export class MobileState {
   update: string = '';
   updateStatus: string = '';
   recent: RecentDevice[] = [];
+  recentGroups: string[] = [];
+  recentFilter: string | undefined = undefined;
   width: number = 16;
   height: number = 9;
   hasFrame: boolean = false;
@@ -98,6 +100,8 @@ export class MobileState {
   privacyVisible: boolean = true;
   networkTime: number = 0;
   unread: number = 0;
+  announcementTotal: number = 0;
+  announcementSaveFailed: boolean = false;
   announcements: AnnouncementItem[] = [];
   announcement?: AnnouncementItem;
   documentTitle: string = '';
@@ -145,6 +149,7 @@ export class MobileController {
   private previewSaved: boolean = false;
   private previewAttempts: number = 0;
   private uiEpoch: number = 0;
+  private passwordLookupEpoch?: number;
   private privacy: string = '';
   constructor(context: common.UIAbilityContext) {
     this.context = context; this.store = new MobileStore(context);
@@ -169,7 +174,12 @@ export class MobileController {
     });
     this.inbox = new AnnouncementInbox((request: AnnouncementRequest) => this.send({ op: 'signal', message: request }),
       (scope: string) => this.store.text(`inbox:${scope}`, '{}'), (scope: string, body: string) => this.store.put(`inbox:${scope}`, body));
-    this.inbox.changed = () => { this.state.announcements = this.inbox.items.slice(); this.state.unread = this.inbox.unread; };
+    this.inbox.changed = () => { this.state.announcements = this.inbox.items.slice(); this.state.unread = this.inbox.unread;
+      this.state.announcementSaveFailed = this.inbox.saveFailed;
+      this.state.announcementTotal = this.inbox.total;
+      const selected = this.state.announcement;
+      if (selected && !this.inbox.loading) this.state.announcement = this.inbox.items.find((item: AnnouncementItem) =>
+        item.id === selected.id && item.revision === selected.revision); };
     MobileLifecycle.foreground = () => this.resume(); MobileLifecycle.background = () => this.background(); MobileLifecycle.destroy = () => this.destroy();
     this.history(); this.timer = setInterval(() => this.poll(), 50);
     if (!this.state.consent) this.state.modal = 'consent'; else this.resume();
@@ -212,8 +222,13 @@ export class MobileController {
       this.send({ op: 'start', session: session, server: this.state.server, port: Number(this.state.port), identity: identity,
         trustKey: trustKey, logs: this.context.cacheDir, certificates: '/etc/security/certificates', directory: this.store.directory,
         previewDirectory: this.store.previewDirectory, version: this.state.version });
-    } catch { this.state.signalText = tr("安全存储不可用，请解锁设备后重试"); this.state.signal = -1; }
-    finally { if (session === this.session) this.starting = false; }
+      this.joinIfReady();
+    } catch {
+      const reason = tr("安全存储不可用，请解锁设备后重试");
+      if (this.state.connecting) this.end(reason);
+      this.state.signalText = reason;
+      this.state.signal = -1;
+    } finally { if (session === this.session) this.starting = false; }
   }
   private stopSignal(): void {
     this.session++; this.starting = this.started = false; this.signalGeneration = -1;
@@ -229,10 +244,10 @@ export class MobileController {
     }
     const changed = server !== this.state.server || port !== this.state.port;
     this.store.put('server', server); this.store.put('port', port); this.state.server = server; this.state.port = port;
-    if (changed) { this.end(''); this.stopSignal(); this.inbox.reset(); this.history(); this.ensureSignal(); }
+    if (changed) { this.state.recentFilter = undefined; this.end(''); this.stopSignal(); this.inbox.reset(); this.history(); this.ensureSignal(); }
     this.navigate('settings');
   }
-  navigate(page: string): void { this.state.page = page; this.state.modal = ''; }
+  navigate(page: string): void { this.uiEpoch++; this.state.page = page; this.state.modal = ''; }
   async pairingInfo(copy: boolean): Promise<void> {
     try {
       const seed = await this.store.trustKey();
@@ -248,29 +263,56 @@ export class MobileController {
     } catch { this.toast(tr("安全存储不可用，请解锁设备后重试")); }
   }
   history(): void {
-    const values = this.store.recent(this.scope()), now = this.now(); this.presence?.watch(values.map((d: RecentDevice) => d.id), now);
+    const values = this.store.recent(this.scope()), now = this.now();
+    const ids = values.filter((d: RecentDevice) => !d.id.includes(':')).map((d: RecentDevice) => d.id);
+    this.presence?.watch(ids, now);
     this.state.recent = values.filter((d: RecentDevice) => this.presence?.online(d.id, now))
       .concat(values.filter((d: RecentDevice) => !this.presence?.online(d.id, now)));
+    const groups = new Set<string>();
+    values.forEach((d: RecentDevice) => d.groups.forEach((name: string) => groups.add(name)));
+    this.state.recentGroups = Array.from(groups).sort();
+    if (this.state.recentFilter && !groups.has(this.state.recentFilter)) this.state.recentFilter = undefined;
+  }
+  editRecent(id: string, alias?: string, groups?: string[]): void {
+    this.store.editRecent(this.scope(), id, alias, groups);
+    this.history();
+  }
+  deleteGroup(scope: string, group: string): void {
+    if (scope !== this.scope()) return;
+    try { this.store.deleteGroup(scope, group); this.history(); }
+    catch { this.toast(tr("保存失败，请重试")); }
   }
   async deleteRecent(id: string): Promise<void> {
     try { await this.store.delete(this.scope(), id); this.history(); } catch { this.toast(tr("记录或密码删除失败，请重试")); }
   }
   async requestConnection(id: string): Promise<void> {
+    if (this.state.connecting || this.state.ready || this.state.modal === 'password' || this.passwordLookupEpoch === this.uiEpoch) return;
     id = id.replace(/\s/g, ''); this.state.remote = id;
-    if (!/^[0-9]{9}$/.test(id)) { this.toast(tr("请输入 9 位设备 ID")); return; }
+    if (!/^[0-9]{9}$/.test(id)) {
+      const endpoint = bridge.mobileDirectEndpoint(id);
+      if (!endpoint) { this.toast(tr("请输入设备 ID 或有效的 IP 地址")); return; }
+      id = endpoint; this.state.remote = endpoint;
+    }
     if (!this.state.consent) { this.state.modal = 'consent'; return; }
     const epoch = ++this.uiEpoch, scope = this.scope();
+    this.passwordLookupEpoch = epoch;
     this.state.password = ''; this.state.notice = '';
     this.state.remember = this.store.recent(scope).find((d: RecentDevice) => d.id === id)?.remember ?? false;
-    try {
-      const password = await this.store.secret(`password:${scope}:${id}`);
-      if (epoch !== this.uiEpoch || !this.foreground || !this.state.consent) return;
-      if (password) { this.state.remember = true; this.begin(password); return; }
-    } catch { if (epoch === this.uiEpoch) this.state.notice = tr("已保存密码无法读取，请重新输入"); }
-    if (epoch === this.uiEpoch) this.state.modal = 'password';
+    let password = '', notice = '';
+    try { password = await this.store.secret(`password:${scope}:${id}`); }
+    catch { notice = tr("已保存密码无法读取，请重新输入"); }
+    finally { if (this.passwordLookupEpoch === epoch) this.passwordLookupEpoch = undefined; }
+    if (epoch !== this.uiEpoch || !this.foreground || !this.state.consent || this.state.remote !== id) return;
+    if (password) { this.state.remember = true; this.startConnection(password); return; }
+    this.state.notice = notice; this.state.modal = 'password';
   }
   begin(password: string): void {
-    if (!this.state.consent || !/^[0-9]{9}$/.test(this.state.remote) || !password || password.length > 128 || password.includes('@')) { this.toast(tr("请输入有效的访问密码")); return; }
+    if (this.state.modal === 'password') this.startConnection(password);
+  }
+  private startConnection(password: string): void {
+    if (this.state.connecting || this.state.ready) return;
+    if (!this.state.consent || (!/^[0-9]{9}$/.test(this.state.remote) &&
+        (!bridge.mobileDirectEndpoint(this.state.remote) || !/^[A-Za-z0-9]{6}$/.test(password))) || !password || password.length > 128 || password.includes('@')) { this.toast(tr("请输入有效的访问密码")); return; }
     this.joinSent = false; this.connection++; this.connectingId = this.state.remote; this.pendingPassword = password;
     this.resolutionScope = this.scope();
     this.state.connecting = true; this.state.ready = false; this.state.modal = 'connecting'; this.state.notice = '';
@@ -289,7 +331,8 @@ export class MobileController {
   }
   private joinSent: boolean = false;
   private joinIfReady(): void {
-    if (!this.state.connecting || this.joinSent || this.state.signal !== 1 || !this.state.identity) return;
+    if (!this.state.connecting || this.joinSent || !this.started ||
+        (!this.connectingId.includes(':') && (this.state.signal !== 1 || !this.state.identity))) return;
     this.joinSent = true; this.send({ op: 'connect', connection: this.connection, remote: this.connectingId, password: this.pendingPassword,
       displayResolutions: this.resolutionStore.load(this.resolutionScope, this.connectingId) });
   }
@@ -371,10 +414,26 @@ export class MobileController {
     this.state.modal = '';
   }
   clearPreviews(): void { this.send({ op: 'cancelPreview' }); this.previewEligible = false; this.store.clearPreviews(); this.history(); this.toast(tr("已清除预览")); }
+  async pasteLocalClipboard(): Promise<void> {
+    const connection = this.connection, draft = this.state.clipboardText, epoch = this.uiEpoch;
+    const active = (): boolean => this.uiEpoch === epoch && this.connection === connection &&
+      this.state.ready && this.state.modal === 'clipboard' && this.state.clipboardText === draft;
+    try {
+      const data = await pasteboard.getSystemPasteboard().getData();
+      if (!active()) return;
+      const text = data.getPrimaryText();
+      if (text) this.state.clipboardText = text;
+      else this.toast(tr("剪贴板中没有文本"));
+    } catch {
+      if (active()) this.toast(tr("无法访问剪贴板，请重试。"));
+    }
+  }
   clipboard(): void {
     const text = this.state.clipboardText;
+    if (!text) { this.toast(tr("剪贴板中没有文本")); return; }
+    if (!this.state.ready || text.includes('\0')) { this.toast(tr("指令发送失败，请重试")); return; }
     if (new util.TextEncoder().encodeInto(text).length > 128 * 1024) { this.toast(tr("文本超过 128 KB")); return; }
-    if (text) { this.send({ op: 'clipboard', text: text }); this.toast(tr("已发送，请在远端粘贴")); }
+    this.send({ op: 'clipboard', session: this.session, connection: this.connection, text: text });
   }
   async copyRemote(): Promise<void> {
     if (!this.state.remoteClipboard) { this.toast(tr("尚未收到远端文本")); return; }
@@ -479,7 +538,7 @@ export class MobileController {
       this.state.signalText = labels[this.state.signal] ?? tr("未连接"); this.presence.connect(this.state.signal === 1, this.now()); this.configureInbox(); this.joinIfReady();
     } else if (e.type === 'signalMessage' && e.generation === this.signalGeneration && e.message) {
       const type = (e.message as SignalType).type;
-      if (type === 'announcements_changed') this.inbox.refresh();
+      if (type === 'announcements_changed') this.inbox.catalogChanged((e.message as AnnouncementResponse).reset_pages === true);
       else if (type === 'announcements') this.inbox.receive(e.message as AnnouncementResponse);
       else this.presence.receive(e.message as PresenceMessage, this.now());
     } else if (e.type === 'requestFailed') this.inbox.fail(String(e.request ?? ''));
@@ -489,7 +548,8 @@ export class MobileController {
         this.end(''); this.state.remote = this.connectingId; this.state.notice = tr("访问密码错误，请重新输入"); this.state.modal = 'password';
       } else if ((e.status ?? 0) >= 3) {
         const reasons = ['', '', '', tr("连接已断开"), tr("连接失败"), tr("远端已关闭连接"), tr("访问密码错误"), tr("找不到该设备 ID"), tr("远端当前不可用")];
-        this.end(reasons[e.status ?? 0] ?? tr("连接已结束"));
+        if (e.status === 4 && this.connectingId.includes(':')) this.end(tr("IP 直连失败，请检查电脑的直连地址和网络。"));
+        else this.end(reasons[e.status ?? 0] ?? tr("连接已结束"));
       }
     } else if (e.type === 'ended') this.end(tr(e.reason ?? ''));
     else if (e.type === 'data' && e.message) this.data(e.message as ControlData);
@@ -503,6 +563,7 @@ export class MobileController {
       }
     } else if (e.type === 'network' && e.report) this.network.receive(e.report, this.now());
     else if (e.type === 'clipboard') this.state.remoteClipboard = e.text ?? '';
+    else if (e.type === 'clipboardSent') this.toast(e.ok ? tr("已发送，请在远端粘贴") : tr("指令发送失败，请重试"));
     else if (e.type === 'feedback') this.toast(tr(e.text ?? ''));
     else if (e.type === 'file') {
       if (e.sending && ((e.progress ?? 0) < 0 || (e.progress ?? 0) >= 1)) this.sendingFile = false;
@@ -535,7 +596,7 @@ export class MobileController {
   private connected(): void {
     this.state.ready = true; this.state.connecting = false; this.state.modal = ''; this.state.page = 'session';
     const device: RecentDevice = { id: this.connectingId, name: this.state.hostName || this.connectingId,
-      platform: this.state.platform, remember: this.state.remember, preview: '' };
+      platform: this.state.platform, remember: this.state.remember, preview: '', alias: '', groups: [] };
     const password = this.pendingPassword; this.pendingPassword = '';
     const scope = this.scope(), connection = this.connection;
     this.store.saveRecent(scope, device, password).then(() => {

@@ -24,10 +24,13 @@
 #include <stream_names.h>
 #include "minirtc.h"
 #include "../../../../libs/controller/include/mobile_device_trust.h"
+#include "../../../../libs/controller/include/mobile_direct_connection.h"
+#include "../../../../libs/controller/include/history_server_endpoint.h"
 
 namespace {
 
 using crossdesk::mobile_controller::DeviceTrustIdentity;
+using crossdesk::mobile_controller::DirectConnection;
 
 using crossdesk::ControlType;
 using crossdesk::FileTransferAck;
@@ -65,6 +68,7 @@ enum class PeerRole { Identity, Controller };
 struct CallbackContext {
   __weak CrossDeskRTCBridge *owner = nil;
   PeerRole role = PeerRole::Identity;
+  DirectConnection *direct = nullptr;
   uint64_t generation = 0;
 };
 
@@ -74,6 +78,7 @@ struct PresenceRequest {
 };
 
 struct RTCState {
+  DirectConnection direct;
   std::unique_ptr<DeviceTrustIdentity> trust;
   MiniRtcPeerPtr *identity_peer = nullptr;
   MiniRtcPeerPtr *controller_peer = nullptr;
@@ -464,6 +469,7 @@ void OnConnectionState(MiniRtcConnectionStatus status, const char *remote_id,
       ![owner isControllerGenerationActive:context->generation]) {
     return;
   }
+  if (context->direct && context->direct->Status(status)) return;
   const std::string identifier(remote_id ? remote_id : "", remote_id_size);
   [owner handleConnectionState:static_cast<CrossDeskConnectionState>(status)
                        remoteID:identifier
@@ -544,6 +550,16 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
   std::atomic<uint64_t> _networkingGeneration;
 }
 
++ (NSString *)historyEndpoint:(NSString *)host port:(NSInteger)port {
+  const auto endpoint = crossdesk::HistoryServerEndpoint(host.UTF8String ?: "", static_cast<int>(port));
+  return [NSString stringWithUTF8String:endpoint.c_str()];
+}
+
++ (nullable NSString *)directEndpoint:(NSString *)input {
+  const auto endpoint = DirectConnection::Endpoint(input.UTF8String ?: "");
+  return endpoint.empty() ? nil : [NSString stringWithUTF8String:endpoint.c_str()];
+}
+
 + (nullable NSDictionary<NSString *, NSString *> *)deviceTrustInfoForDeviceID:(NSString *)deviceID {
   try {
     auto trust = LoadDeviceTrustIdentity();
@@ -571,6 +587,7 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
     _state->identity_context.role = PeerRole::Identity;
     _state->controller_context.owner = self;
     _state->controller_context.role = PeerRole::Controller;
+    _state->controller_context.direct = &_state->direct;
     _rtcQueue = dispatch_queue_create("cn.crossdesk.mobile.minirtc",
                                       DISPATCH_QUEUE_SERIAL);
     dispatch_queue_set_specific(_rtcQueue, &kRTCQueueSpecificKey,
@@ -895,8 +912,8 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
     self->_state->pending_controller_generation = generation;
     self->_state->pending_password = password_value;
     [self destroyControllerPeer];
-    if (self->_state->identity_ready &&
-        !self->_state->identity_base.empty()) {
+    if (identifier.find(':') != std::string::npos ||
+        (self->_state->identity_ready && !self->_state->identity_base.empty())) {
       [self createControllerPeer];
     }
   });
@@ -1252,6 +1269,9 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
   MiniRtcParams params = MakeParams(*_state, _state->identity_with_password,
                              &_state->identity_context);
   _state->identity_peer = MiniRtcCreatePeer(&params);
+  NSString *cache = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
+  MiniRtcSetAnnouncementCacheDirectory(_state->identity_peer,
+      [cache stringByAppendingPathComponent:@"CrossDeskMobile/AnnouncementCatalog"].fileSystemRepresentation);
   if (!_state->identity_peer || MiniRtcInit(_state->identity_peer) != 0) {
     [self destroyIdentityPeer];
     [self handleSignalState:CrossDeskSignalStateFailed
@@ -1261,8 +1281,9 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
 }
 
 - (void)createControllerPeer {
+  const bool direct = _state->pending_remote_id.find(':') != std::string::npos;
   if (_state->controller_peer || _state->pending_remote_id.empty() ||
-      _state->identity_base.empty()) {
+      (!direct && _state->identity_base.empty())) {
     return;
   }
   const uint64_t generation = _state->pending_controller_generation;
@@ -1292,6 +1313,25 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
   MiniRtcAddDataStream(_state->controller_peer, kFileFeedbackStream, true);
   MiniRtcAddDataStream(_state->controller_peer, kClipboardStream, true);
 
+  if (direct) {
+    __weak CrossDeskRTCBridge *owner = self;
+    const auto endpoint = _state->pending_remote_id;
+    dispatch_queue_t queue = _rtcQueue;
+    auto notify = [owner, queue, endpoint, generation](MiniRtcConnectionStatus status) {
+      const std::string remote = endpoint;
+      const uint64_t attempt = generation;
+      __weak CrossDeskRTCBridge *bridge = owner;
+      dispatch_async(queue, ^{
+        [bridge handleConnectionState:static_cast<CrossDeskConnectionState>(status)
+                            remoteID:remote generation:attempt];
+      });
+    };
+    if (!_state->trust || !_state->direct.Start(_state->controller_peer, endpoint,
+                                                _state->pending_password, notify))
+      notify(MiniRtcConnectionFailed);
+    _state->pending_password.clear();
+    return;
+  }
   if (MiniRtcInit(_state->controller_peer) != 0) {
     [self destroyControllerPeer];
     [self handleConnectionState:CrossDeskConnectionStateFailed
@@ -1321,6 +1361,7 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
 - (void)destroyControllerPeer {
   _activeControllerGeneration.store(0);
   if (_state->controller_peer) {
+    _state->direct.Stop();
     if (!_state->transmission_id.empty()) {
       MiniRtcLeaveConnection(_state->controller_peer,
                       _state->transmission_id.c_str());
@@ -2196,13 +2237,16 @@ MiniRtcParams MakeParams(const RTCState &state, const std::string &user_id,
       initWithBytes:stats->video_decoder
              length:strnlen(stats->video_decoder, sizeof(stats->video_decoder))
            encoding:NSUTF8StringEncoding];
+  NSString *localEndpoint = [NSString stringWithUTF8String:stats->local_endpoint];
+  NSString *remoteEndpoint = [NSString stringWithUTF8String:stats->remote_endpoint];
   DispatchMain(^{
     // Disconnect/reconnect can happen while this report waits on the UI queue.
     if (![self isControllerGenerationActive:generation]) return;
     id<CrossDeskRTCBridgeDelegate> delegate = self.delegate;
     if ([delegate respondsToSelector:
-            @selector(rtcBridge:didUpdateNetworkStats:localDecoder:)]) {
-      [delegate rtcBridge:self didUpdateNetworkStats:snapshot localDecoder:decoder ?: @""];
+            @selector(rtcBridge:didUpdateNetworkStats:localDecoder:localEndpoint:remoteEndpoint:)]) {
+      [delegate rtcBridge:self didUpdateNetworkStats:snapshot localDecoder:decoder ?: @""
+            localEndpoint:localEndpoint remoteEndpoint:remoteEndpoint];
     }
   });
 }
