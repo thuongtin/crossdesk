@@ -48,21 +48,31 @@ Tên asset và khoá feed phải khớp `ExpectedFilename()` và `PlatformKey()`
   thường thì không; thiếu nó thì meson của gói libsoup không tìm thấy glib và build dừng.
 - OpenSSL 3 trở lên đứng trước trên `PATH` (`brew install openssl@3`). `/usr/bin/openssl` của
   macOS là LibreSSL, không có `pkeyutl -rawin` nên không ký feed được.
-- Trong keychain đăng nhập (hoặc keychain riêng, khai báo qua `CROSSDESK_MACOS_KEYCHAIN`):
-  - `Developer ID Application: <Tên> (<TEAMID>)` để ký app.
-  - `Developer ID Installer: <Tên> (<TEAMID>)` để ký gói `.pkg`. Hai identity phải cùng Team ID.
-- Profile notarytool tên `crossdesk-notary` trong keychain, do chủ tài khoản tự tạo, không lưu
-  vào repo. Một trong hai cách:
-
-  ```bash
-  # Khoá API App Store Connect (file .p8 nằm ngoài repo); Issuer ID lấy ở App Store Connect.
-  xcrun notarytool store-credentials crossdesk-notary \
-      --key <đường-dẫn>/AuthKey_<KEYID>.p8 --key-id <KEYID> --issuer <ISSUER_ID>
-  # Hoặc Apple ID kèm mật khẩu ứng dụng (lệnh tự hỏi mật khẩu).
-  xcrun notarytool store-credentials crossdesk-notary --apple-id <apple-id> --team-id <TEAMID>
-  ```
-
-  Kiểm tra profile bằng `xcrun notarytool history --keychain-profile crossdesk-notary`.
+- Hai identity cùng Team ID trong một keychain thuộc search list của user (keychain đăng nhập
+  hoặc keychain riêng):
+  - "Developer ID Application" để ký app (`security find-identity -v -p codesigning`).
+  - "Developer ID Installer" để ký gói `.pkg` (`security find-identity -v -p basic`). Thiếu
+    identity này thì `--publish` dừng, dry-run chỉ build gói chưa ký.
+- **Không ghi họ tên hay Team ID vào file commit nào** (script, tài liệu, CI, PR, commit message).
+  Đặt `CROSSDESK_MACOS_SIGN_IDENTITY=auto` và `CROSSDESK_MACOS_INSTALLER_IDENTITY=auto` trong
+  `release.env` để `build_macos.sh` tự lấy tên lúc chạy; nhiều identity cùng loại thì nó dừng và
+  khi đó mới ghi tên đầy đủ vào `release.env` (file ngoài repo). Họ tên và Team ID được thay bằng
+  `<redacted>` trong log; `gate/macos-signing.txt` chỉ ghi kết quả kiểm.
+- Keychain riêng có thể khoá lại sau mỗi lần khởi động máy. Chủ máy tự mở bằng
+  `security unlock-keychain <keychain>`; script không hỏi hay gõ mật khẩu. Trước khi ký,
+  `build_macos.sh` kiểm trạng thái khoá mà không bật hộp thoại (trong phiên GUI, codesign trên
+  keychain đang khoá sẽ bật hộp thoại xin mở khoá thay vì báo `errSecInternalComponent`), rồi thử
+  ký một bản sao `/usr/bin/true` trước khi build.
+- Notarize bằng **khoá API App Store Connect** (cách chính): file `.p8` nằm ngoài repo, cùng Key ID
+  và Issuer ID, khai báo qua `CROSSDESK_MACOS_NOTARY_KEY`, `CROSSDESK_MACOS_NOTARY_KEY_ID`,
+  `CROSSDESK_MACOS_NOTARY_ISSUER` trong `release.env`. Có thể nạp từ một file env riêng ngoài repo
+  (xem `release.env.example`). Kiểm tra bằng
+  `xcrun notarytool history --key <file.p8> --key-id <KEYID> --issuer <ISSUER_ID>`.
+  Profile notarytool (`CROSSDESK_MACOS_NOTARY_PROFILE`) chỉ là phương án dự phòng khi không đặt
+  khoá API, vì profile trong keychain từng mất sau khi khởi động lại máy.
+- Trước khi gửi Apple, `build_macos.sh` kiểm mọi Mach-O trong app mang Team ID của identity và có
+  Hardened Runtime (log chỉ ghi `ok`/`MISMATCH`). `sign_app.sh` ký từ trong ra ngoài, không dùng
+  `codesign --deep` để ký.
 
 - Khoá bí mật Ed25519 của kênh cập nhật fork (PEM), khớp khoá công khai nhúng trong
   `scripts/release/lib.sh`. Đặt ngoài repo, `chmod 600`. Mất hoặc đổi khoá nghĩa là mọi bản đã cài
@@ -160,9 +170,10 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
   Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
   thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork
   Postcard (xem `docs/UPSTREAM_SYNC.md`). Bản `v1.7.7-2-20261125` đã phát hành qua gate strict.
-- `gate/macos-signing.txt`: trạng thái ký, `CFBundleVersion`, `CFBundleShortVersionString` và kết
-  quả kiểm bundle version (bỏ qua với phiên bản dry-run không có ngày; trượt khi `--publish` thì
-  dừng ngay sau khi đóng gói).
+- `gate/macos-signing.txt`: trạng thái ký (kèm identity còn thiếu), kết quả kiểm Team ID,
+  notarize và cách notarize, `CFBundleVersion`, `CFBundleShortVersionString` và kết quả kiểm
+  bundle version (bỏ qua với phiên bản dry-run không có ngày; trượt khi `--publish` thì dừng ngay
+  sau khi đóng gói). Không chứa họ tên hay Team ID.
 - `gate/windows-signing.txt`: trạng thái ký gói Windows.
 - `gate/linux/apt-simulate-*.txt`: kết quả giả lập cài đặt trên Ubuntu 20.04.
 - `logs/<platform>.log`: log đầy đủ từng nền tảng. `FAILED_PLATFORMS.txt` xuất hiện nếu có nền
@@ -190,7 +201,8 @@ scripts/release/release.sh v1.7.7-3-20261126 --publish --notes ~/release-notes/v
 `--publish` chỉ chấp nhận `--ref mcp` và làm lần lượt, dừng ngay khi một bước lỗi:
 
 1. Build lại sạch cả ba nền tảng từ đầu `origin/mcp`. macOS bắt buộc ký Developer ID, notarize
-   và staple; thiếu identity hay profile notarytool thì dừng.
+   và staple; thiếu identity, keychain đang khoá hay thiếu thông tin notarize thì dừng trước khi
+   build.
 2. Chạy gate ở chế độ nghiêm ngặt và tính `SHA256SUMS.txt`.
 3. `publish.sh` kiểm điều kiện: `gh` đã đăng nhập, `origin` trỏ đúng fork, remote `upstream` (nếu
    có) giữ push URL `DISABLED_no_push_to_upstream`, tag và release chưa tồn tại, checksum khớp,
@@ -226,6 +238,12 @@ bản mới, đọc lại phiên bản trong app và thử kết nối qua signa
 
 ## 5. Xử lý sự cố
 
+- **Keychain ký đang khoá**: `build_macos.sh` dừng trước khi build và in lệnh
+  `security unlock-keychain` cần chạy. Chủ máy tự mở rồi chạy lại. Nếu codesign vẫn chờ quyền
+  truy cập, probe tự dừng sau 90 giây; đóng hộp thoại đang mở (nếu có) trước khi chạy lại.
+- **Notarize trượt**: phản hồi và nhật ký của Apple nằm trong `<CROSSDESK_RELEASE_MACOS_DIR>/notary`.
+  Đọc lý do trước khi gửi lại; hay gặp nhất là thiếu Hardened Runtime, thiếu timestamp hoặc có
+  binary ad-hoc hay của team khác.
 - **Build một nền tảng lỗi**: xem `dist/<version>/logs/<platform>.log`. Có thể dry-run lại riêng
   nền tảng đó bằng `--platforms <platform>`. `--publish` luôn build lại cả các nền tảng được chọn.
 - **Đọc lại draft lỗi**: release vẫn là draft (chưa có tag công khai). Kiểm tra rồi xoá bằng
@@ -241,8 +259,11 @@ bản mới, đọc lại phiên bản trong app và thử kết nối qua signa
 
 ## 6. Bảo mật
 
-- Không in, xuất hay chép chứng thư, mật khẩu, token hay khoá bí mật. Script chỉ đọc tên
-  identity trong keychain và đọc khoá Ed25519 từ file để ký trong thư mục tạm.
+- Không in, xuất hay chép chứng thư, mật khẩu, token hay khoá bí mật (kể cả file `.p8` và file env
+  chứa thông tin notarize). Script chỉ đọc tên identity trong keychain, đọc khoá Ed25519 từ file
+  để ký trong thư mục tạm, và không đọc secret trong keychain hay đổi cấu hình keychain.
+- Output của `codesign -dv`, `security find-identity` và `pkgutil --check-signature` chứa họ tên
+  và Team ID: không dán vào repo, issue hay PR.
 - Mọi lệnh `gh` ghi dữ liệu đều có `-R thuongtin/crossdesk`. Không tạo release, PR, issue hay
   comment trên `kunkundi/crossdesk`, không đổi push URL của remote `upstream`.
 - Không force-push `mcp` hay `desktop-updates`.
