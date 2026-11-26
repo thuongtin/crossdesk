@@ -84,6 +84,24 @@ APP_PATH="$(find "$VERIFY_DIR/expanded" -type d -name 'CrossDesk.app' -print -qu
 [[ -n "$APP_PATH" ]] || die "CrossDesk.app is missing from $PACKAGE"
 bash ./apps/desktop/scripts/macos/verify_app.sh "$APP_PATH" arm64
 
+# macOS Installer so phiên bản theo CFBundleVersion và pkg-ref, nên tag v<base>-<build>-<date>
+# phải thành <base>.<date>.<build> (giống bản 1.7.7.20261125.2 đã phát hành). Kiểm ngay sau
+# khi đóng gói để --publish dừng trước khi tải gì lên, thay vì đợi tới bước sinh feed.
+BUNDLE_VERSION="$(plutil -extract CFBundleVersion raw "$APP_PATH/Contents/Info.plist")"
+SHORT_VERSION="$(plutil -extract CFBundleShortVersionString raw "$APP_PATH/Contents/Info.plist")"
+BUNDLE_CHECK="skipped (dry-run version without a date)"
+if [[ "$VERSION" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)-([0-9]{8})$ ]]; then
+    EXPECTED_BUNDLE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[3]}.${BASH_REMATCH[2]}"
+    EXPECTED_SHORT_VERSION="${BASH_REMATCH[1]}"
+    BUNDLE_CHECK="pass"
+    if [[ "$BUNDLE_VERSION" != "$EXPECTED_BUNDLE_VERSION" || "$SHORT_VERSION" != "$EXPECTED_SHORT_VERSION" ]] ||
+        ! grep -Fq "version=\"$EXPECTED_BUNDLE_VERSION\"" "$VERIFY_DIR/expanded/Distribution"; then
+        BUNDLE_CHECK="fail (expected CFBundleVersion and pkg-ref $EXPECTED_BUNDLE_VERSION, CFBundleShortVersionString $EXPECTED_SHORT_VERSION)"
+        [[ "$MODE" == "publish" ]] && die "macOS bundle version check $BUNDLE_CHECK; got $BUNDLE_VERSION / $SHORT_VERSION"
+        log "WARNING: macOS bundle version check $BUNDLE_CHECK; got $BUNDLE_VERSION / $SHORT_VERSION"
+    fi
+fi
+
 if [[ "$SIGNED" == 1 ]]; then
     pkgutil --check-signature "$PACKAGE"
 fi
@@ -93,6 +111,7 @@ if [[ "$NOTARIZED" == 1 ]]; then
 fi
 
 cp "$PACKAGE" "$DIST_DIR/"
-printf 'signed=%s\nnotarized=%s\nsdk=%s\n' "$SIGNED" "$NOTARIZED" \
-    "$(xcrun --sdk macosx --show-sdk-version)" > "$DIST_DIR/gate/macos-signing.txt"
+printf 'signed=%s\nnotarized=%s\nsdk=%s\nbundle_version=%s\nshort_version=%s\nbundle_check=%s\n' \
+    "$SIGNED" "$NOTARIZED" "$(xcrun --sdk macosx --show-sdk-version)" \
+    "$BUNDLE_VERSION" "$SHORT_VERSION" "$BUNDLE_CHECK" > "$DIST_DIR/gate/macos-signing.txt"
 log "macOS package ready: $DIST_DIR/$(basename "$PACKAGE") ($(file_size "$PACKAGE") bytes)"

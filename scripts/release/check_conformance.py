@@ -2,8 +2,8 @@
 """Fork-conformance gate cho bản build CrossDesk Postcard.
 
 Kiểm tra file thực thi trong từng gói đã build có trỏ đúng kênh của fork
-(feed cập nhật thuongtin/crossdesk, signaling crossdesk.ecom.io.vn, khoá công
-khai Ed25519 của fork) và không còn địa chỉ cập nhật hay signaling của upstream.
+(feed cập nhật và đường dẫn release của thuongtin/crossdesk, signaling
+crossdesk.ecom.io.vn, khoá công khai Ed25519 của fork) và không còn địa chỉ cập nhật hay signaling của upstream.
 Mặc định chỉ cảnh báo; với --strict thì thoát mã khác 0 khi có lỗi.
 """
 
@@ -19,6 +19,9 @@ import tempfile
 from pathlib import Path
 
 FEED_PATH = "/thuongtin/crossdesk/desktop-updates/crossdesk-desktop-update.json"
+# Trình cập nhật của fork chỉ chấp nhận URL asset https://github.com/thuongtin/crossdesk/releases/
+# download/v<version>/<file>, đúng dạng URL mà make_release_feed.py ký.
+RELEASE_PATH = "/thuongtin/crossdesk/releases"
 FORK_SIGNALING_HOST = "crossdesk.ecom.io.vn"
 UPSTREAM_SIGNALING_HOST = "api.crossdesk.cn"
 UPSTREAM_UPDATE_ORIGINS = ("https://version.crossdesk.cn", "https://downloads.crossdesk.cn")
@@ -39,6 +42,8 @@ def check_binary(label, data, public_key, is_main):
     problems = []
     if not contains(data, public_key):
         problems.append(f"{label}: fork update public key is missing")
+    if not contains(data, RELEASE_PATH):
+        problems.append(f"{label}: fork release asset path {RELEASE_PATH} is missing")
     for origin in UPSTREAM_UPDATE_ORIGINS:
         if contains(data, origin):
             problems.append(f"{label}: upstream update origin {origin} is present")

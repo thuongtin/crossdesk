@@ -143,13 +143,20 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
 - `gate/CONFORMANCE.txt`: kết quả fork-conformance gate cho từng file thực thi. Gate kiểm cả chuỗi
   ASCII và UTF-16LE:
   - mọi file thực thi (app và `crossdesk_updater`) chứa khoá công khai cập nhật của fork và
-    không chứa `https://version.crossdesk.cn` hay `https://downloads.crossdesk.cn`;
+    đường dẫn release `/thuongtin/crossdesk/releases` (trình cập nhật của fork chỉ nhận URL
+    `https://github.com/thuongtin/crossdesk/releases/download/v<version>/<file>`, đúng dạng URL
+    mà feed ký), và không chứa `https://version.crossdesk.cn` hay `https://downloads.crossdesk.cn`;
   - file thực thi chính chứa đường dẫn feed
     `/thuongtin/crossdesk/desktop-updates/crossdesk-desktop-update.json` và signaling mặc định
     `crossdesk.ecom.io.vn`, không chứa `api.crossdesk.cn`.
 
-  Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng.
-- `gate/macos-signing.txt`, `gate/windows-signing.txt`: trạng thái ký của từng gói.
+  Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
+  thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork
+  Postcard (xem `docs/UPSTREAM_SYNC.md`). Bản `v1.7.7-2-20261125` đã phát hành qua gate strict.
+- `gate/macos-signing.txt`: trạng thái ký, `CFBundleVersion`, `CFBundleShortVersionString` và kết
+  quả kiểm bundle version (bỏ qua với phiên bản dry-run không có ngày; trượt khi `--publish` thì
+  dừng ngay sau khi đóng gói).
+- `gate/windows-signing.txt`: trạng thái ký gói Windows.
 - `gate/linux/apt-simulate-*.txt`: kết quả giả lập cài đặt trên Ubuntu 20.04.
 - `logs/<platform>.log`: log đầy đủ từng nền tảng. `FAILED_PLATFORMS.txt` xuất hiện nếu có nền
   tảng build lỗi (các nền tảng còn lại vẫn được gate và tính checksum).
