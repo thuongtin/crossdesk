@@ -207,7 +207,8 @@ void DownloadPackage(const Artifact& artifact, const fs::path& destination,
     client.set_connection_timeout(10);
     client.set_read_timeout(30);
     client.set_write_timeout(10);
-    client.set_max_timeout(10 * 60 * 1000);
+    // Giữ mức 30 phút của upstream: gói tới 2 GiB trên đường truyền chậm vẫn cần đủ thời gian tải.
+    client.set_max_timeout(30 * 60 * 1000);
     client.set_follow_location(false);
 #if defined(__linux__)
     for (const char* bundle : {"/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt"}) {
