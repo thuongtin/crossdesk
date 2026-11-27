@@ -177,6 +177,13 @@ function setup_targets()
             "apps/desktop/src/gui/runtime")
         add_files("apps/desktop/tests/cursor_position_test.cpp")
 
+    target("window_fit_scale_test")
+        set_kind("binary")
+        set_languages("c++20")
+        set_default(false)
+        add_includedirs("apps/desktop/src/gui")
+        add_files("apps/desktop/tests/window_fit_scale_test.cpp")
+
     target("single_instance")
         set_kind("object")
         add_includedirs("apps/desktop/src", {public = true})

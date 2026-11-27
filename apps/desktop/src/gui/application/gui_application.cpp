@@ -1197,6 +1197,10 @@ struct GuiApplication::SlintUi {
   WindowDragState main_drag, gallery_drag;
   int main_native_titlebar_attempts = 30;
   int gallery_native_titlebar_attempts = 0;
+  // Do fork sở hữu: trạng thái để cửa sổ kết nối vừa màn hình của nó.
+  std::chrono::steady_clock::time_point fit_last_check{};
+  std::chrono::steady_clock::time_point fit_position_since{};
+  std::optional<slint::PhysicalPosition> fit_last_position;
   int localized_language = -1;
   std::chrono::steady_clock::time_point last_clipboard_poll{};
   slint::Timer video_timer;
@@ -1343,6 +1347,7 @@ int GuiApplication::Run(bool login_launch) {
 #endif
   // Configure the initial geometry before the native window becomes visible.
   // Subsequent ticks only acknowledge that placement and its resolved DPI.
+  UpdateMainWindowFitScale(true);
   RestoreWindowGeometry(true);
 
   ui_->timer.start(slint::TimerMode::Repeated, 16ms, [this] { Tick(); });
@@ -1891,7 +1896,10 @@ void GuiApplication::BindMainCallbacks(bool gallery_window) {
   });
   main->on_main_title_drag([this, main](int phase, float x, float y) {
     if (ui_) {
-      DragWindow(ui_->Window(main->get_gallery_mode()), phase, x, y,
+      // Tọa độ con trỏ tính theo đơn vị canvas; cửa sổ có thể đã bị thu nhỏ.
+      const float scale = main->get_ui_scale();
+      DragWindow(ui_->Window(main->get_gallery_mode()), phase, x * scale,
+                 y * scale,
                  main->get_gallery_mode() ? ui_->gallery_drag : ui_->main_drag);
     }
   });
@@ -6466,10 +6474,80 @@ void GuiApplication::RestoreWindowGeometry(bool before_show,
   }
 }
 
+// Do fork sở hữu: cửa sổ Postcard có kích thước thiết kế cố định. Thu nhỏ nó
+// (tối đa còn một nửa) khi vùng làm việc của màn hình không chứa đủ, nếu không
+// cửa sổ bị cắt trên màn hình nhỏ hoặc scale cao.
+void GuiApplication::UpdateMainWindowFitScale(bool before_show) {
+  if (!ui_ || ui_->main->get_gallery_mode()) return;
+  auto& window = ui_->main->window();
+  const auto now = std::chrono::steady_clock::now();
+  if (!before_show) {
+    if (!window.is_visible() || window.is_minimized() ||
+        ui_->connection_window.Restoring())
+      return;
+    if (now - ui_->fit_last_check < 250ms) return;
+    ui_->fit_last_check = now;
+    // Đợi cửa sổ đứng yên để kéo qua màn hình khác không đổi kích thước ngay
+    // dưới con trỏ.
+    const auto position = window.position();
+    if (!ui_->fit_last_position || ui_->fit_last_position->x != position.x ||
+        ui_->fit_last_position->y != position.y) {
+      ui_->fit_last_position = position;
+      ui_->fit_position_since = now;
+      return;
+    }
+    if (now - ui_->fit_position_since < 400ms) return;
+  }
+
+  SDL_DisplayID display = 0;
+  const float window_scale = std::max(window.scale_factor(), 1.0f);
+  if (!before_show) {
+    display = DisplayForSlintWindow(window);
+  } else if (ui_->connection_window.connection_position) {
+    // Vị trí đã lưu là pixel vật lý; SDL dùng point trên macOS.
+    const auto& saved = *ui_->connection_window.connection_position;
+#if defined(__APPLE__)
+    const SDL_Point point{static_cast<int>(saved.x / window_scale) + 100,
+                          static_cast<int>(saved.y / window_scale) + 100};
+#else
+    const SDL_Point point{saved.x + 100, saved.y + 100};
+#endif
+    display = SDL_GetDisplayForPoint(&point);
+  }
+  if (display == 0) display = SDL_GetPrimaryDisplay();
+  SDL_Rect usable{};
+  if (display == 0 || !SDL_GetDisplayUsableBounds(display, &usable) ||
+      usable.w <= 0 || usable.h <= 0) {
+    return;
+  }
+
+  float usable_width = static_cast<float>(usable.w);
+  float usable_height = static_cast<float>(usable.h);
+#if !defined(__APPLE__)
+  // SDL trả về pixel vật lý ở đây; đổi sang đơn vị logic.
+  float content_scale = SDL_GetDisplayContentScale(display);
+  if (!(content_scale >= 1.0f)) content_scale = 1.0f;
+  usable_width /= content_scale;
+  usable_height /= content_scale;
+#endif
+  // Chỗ cho khung và thanh tiêu đề gốc quanh vùng client. Thanh tiêu đề tự vẽ
+  // đã nằm sẵn trong chiều cao thiết kế.
+  const bool native_frame = !ui_->main->get_custom_titlebar();
+  const float fit = window_geometry::FitScale(
+      usable_width, usable_height, native_frame ? 16.0f : 8.0f,
+      native_frame ? 40.0f : 8.0f, ui_->main->get_design_width(),
+      ui_->main->get_design_height());
+  if (std::fabs(fit - ui_->main->get_fit_scale()) < 0.005f) return;
+  LOG_INFO("Connection window fit scale {:.3f} for work area {:.0f}x{:.0f}",
+           fit, usable_width, usable_height);
+  ui_->main->set_fit_scale(fit);
+}
+
 void GuiApplication::SyncWindowGeometry(bool gallery_window) {
   auto& component = ui_->Window(gallery_window);
   auto& window = component->window();
   if (!window.is_visible() || window.is_minimized()) return;
+  if (!gallery_window) UpdateMainWindowFitScale(false);
   const auto current_size = window.size();
   auto& placement = gallery_window ? ui_->gallery_window : ui_->connection_window;
   const bool wall_mode = gallery_window;
