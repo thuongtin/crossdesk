@@ -77,6 +77,7 @@ private:
   void ShowGalleryWindow();
   void CloseGalleryWindow();
   void SyncWindowGeometry(bool gallery_window);
+  void UpdateMainWindowFitScale(bool before_show);
   void ToggleGalleryFullscreen();
   void RestoreWindowGeometry(bool before_show = false,
                              bool gallery_window = false);

@@ -432,9 +432,25 @@ export component MainWindow inherits Window {
     in property <bool> window-active: true;
     private property <length> titlebar-height:
         root.custom-titlebar && !root.gallery-fullscreen ? (root.wayland-titlebar ? 32px : 31px) : 0px;
-    out property <length> minimum-window-width: root.gallery-mode ? 640px : 960px;
-    out property <length> minimum-window-height:
-        (root.gallery-mode ? 448px : 650px) + root.titlebar-height;
+    // Canvas thiết kế của Postcard. Phía host đặt fit-scale (0.5 đến 1) theo
+    // vùng làm việc của màn hình nơi cửa sổ mở, xem window_geometry.h.
+    out property <length> design-width: 960px;
+    out property <length> design-height: 650px + root.titlebar-height;
+    in property <float> fit-scale: 1.0;
+    out property <length> minimum-window-width:
+        root.gallery-mode ? 640px : root.design-width * root.fit-scale;
+    out property <length> minimum-window-height: root.gallery-mode
+        ? 448px + root.titlebar-height
+        : root.design-height * root.fit-scale;
+    // Tỷ lệ thực sự áp lên canvas, suy ra từ kích thước cửa sổ thật nên vẫn
+    // đúng khi hệ điều hành cấp kích thước khác với yêu cầu.
+    out property <float> ui-scale: root.gallery-mode ? 1.0 : clamp(
+        min(root.width / root.design-width, root.height / root.design-height),
+        0.5, 1.0);
+    // Kích thước cửa sổ tính theo đơn vị canvas. Mọi thứ nằm trong ui-scaler
+    // phải dùng hai giá trị này thay cho root.width và root.height.
+    out property <length> ui-width: root.width / root.ui-scale;
+    out property <length> ui-height: root.height / root.ui-scale;
     private property <length> wayland-corner-radius: 12px;
     in property <[ControllerEntry]> controllers;
     in-out property <int> selected-controller: 0;
@@ -891,10 +907,10 @@ export component MainWindow inherits Window {
         if !root.update-open { root.update-confirm-open = false; }
     }
     in-out property <bool> update-confirm-open: false;
-    out property <length> reset-password-dialog-width: min(440px, root.width - 40px);
+    out property <length> reset-password-dialog-width: min(440px, root.ui-width - 40px);
     out property <length> reset-password-dialog-height: root.reset-password-invalid ? 298px : 252px;
-    out property <length> reset-password-dialog-x: (root.width - root.reset-password-dialog-width) / 2;
-    out property <length> reset-password-dialog-y: root.titlebar-height + (root.height - root.titlebar-height - root.reset-password-dialog-height) / 2;
+    out property <length> reset-password-dialog-x: (root.ui-width - root.reset-password-dialog-width) / 2;
+    out property <length> reset-password-dialog-y: root.titlebar-height + (root.ui-height - root.titlebar-height - root.reset-password-dialog-height) / 2;
     out property <length> reset-password-input-x: root.reset-password-dialog-x + 24px;
     out property <length> reset-password-input-y: root.reset-password-dialog-y + 106px;
     out property <length> reset-password-input-width: root.reset-password-dialog-width - 48px;
@@ -1027,9 +1043,20 @@ export component MainWindow inherits Window {
         remote-id-editor.focus();
     }
 
+    // Do fork sở hữu: giao diện Postcard bố cục trên canvas cố định 960 x 650.
+    // Khi vùng làm việc nhỏ, host thu nhỏ cửa sổ (fit-scale) và wrapper này thu
+    // nhỏ toàn bộ canvas, gồm cả hộp thoại và menu, theo kích thước cửa sổ thật
+    // để không bị cắt. Với fit-scale bằng 1 nó không đổi gì.
+    ui-scaler := Rectangle {
+        x: 0px;
+        y: 0px;
+        width: root.ui-width;
+        height: root.ui-height;
+        transform-scale: root.ui-scale;
+        transform-origin: { x: 0px, y: 0px };
     window-surface := Rectangle {
-        width: root.width;
-        height: root.height;
+        width: root.ui-width;
+        height: root.ui-height;
         background: root.wayland-titlebar ? #f6f5f4 : transparent;
         border-radius:
             root.wayland-titlebar ? root.wayland-corner-radius : 0px;
@@ -1132,7 +1159,7 @@ export component MainWindow inherits Window {
     if root.custom-titlebar && !root.wayland-titlebar && !root.gallery-fullscreen: Rectangle {
         x: 0px;
         y: 0px;
-        width: root.width;
+        width: root.ui-width;
         height: 31px;
         background: #f9f9f9;
         z: 100;
@@ -1219,8 +1246,8 @@ export component MainWindow inherits Window {
     content-layer := Rectangle {
         x: 0px;
         y: root.titlebar-height;
-        width: root.width;
-        height: root.height - self.y;
+        width: root.ui-width;
+        height: root.ui-height - self.y;
         clip: true;
 
     Rectangle {
@@ -1568,7 +1595,7 @@ export component MainWindow inherits Window {
                         postcard: true;
                         // Open upward and align to the full field, so long IPv6
                         // addresses do not squeeze against the right/bottom edges.
-                        popup-min-width: min(450px, root.width - 56px);
+                        popup-min-width: min(450px, root.ui-width - 56px);
                         popup-anchor-width: local-address-field.width - 4px;
                         popup-above: true;
                         popup-gap: 44px;
@@ -3993,7 +4020,7 @@ export component MainWindow inherits Window {
 
     if root.gallery-mode && root.gallery-network-open: GalleryNetworkDialog {
         x: 0px; y: root.titlebar-height;
-        width: root.width; height: root.height - self.y;
+        width: root.ui-width; height: root.ui-height - self.y;
         z: 100;
         devices: root.gallery-network-devices;
         close => { root.gallery-network-open = false; focus-sink.focus(); }
@@ -4002,15 +4029,15 @@ export component MainWindow inherits Window {
     // Ignore clicks against moving cards and duplicate fullscreen requests.
     if root.gallery-transitioning: TouchArea {
         x: 0px; y: root.titlebar-height;
-        width: root.width; height: root.height - self.y;
+        width: root.ui-width; height: root.ui-height - self.y;
         z: 250;
     }
 
     if root.custom-titlebar: FlatSurface {
         x: 0px;
         y: 0px;
-        width: root.width;
-        height: root.height;
+        width: root.ui-width;
+        height: root.ui-height;
         background: transparent;
         outline-color: WorkbenchStyle.separator;
         border-radius:
@@ -4093,4 +4120,5 @@ export component MainWindow inherits Window {
         }
     }
 
+    }
 }

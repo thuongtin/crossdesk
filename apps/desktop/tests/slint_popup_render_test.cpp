@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <cmath>
 #include <string>
+#include <utility>
 
 using namespace std::chrono_literals;
 
@@ -843,6 +844,35 @@ bool VerifyServerPanel(RenderTestPlatform& platform) {
   return Check(picked == 1 && screen.extent.height == normal_height + 58,
                "Controlled-side file progress must resize the panel immediately");
 }
+
+// Do fork sở hữu: cửa sổ kết nối co theo fit-scale, còn tỷ lệ canvas suy ra
+// từ kích thước cửa sổ thật nên không có gì bị cắt.
+bool VerifyMainWindowFitScale(RenderTestPlatform&) {
+  auto main = CreateMainWindow();
+  const float design_width = main->get_design_width();
+  const float design_height = main->get_design_height();
+  if (!Check(main->get_minimum_window_width() == design_width &&
+                 main->get_minimum_window_height() == design_height &&
+                 main->get_ui_scale() == 1.0f,
+             "Default fit-scale must keep the design size")) return false;
+  const std::pair<float, float> cases[] = {{0.825f, 0.825f}, {0.5f, 0.5f}};
+  for (const auto& [fit, expected] : cases) {
+    main->set_fit_scale(fit);
+    main->window().set_size(slint::LogicalSize(
+        {main->get_minimum_window_width(), main->get_minimum_window_height()}));
+    main->show();
+    if (!Check(std::fabs(main->get_minimum_window_width() - design_width * fit) < 0.5f &&
+                   std::fabs(main->get_ui_scale() - expected) < 0.01f &&
+                   std::fabs(main->get_ui_width() - design_width) < 1.0f &&
+                   std::fabs(main->get_ui_height() - design_height) < 1.0f,
+               "Scaled window must expose the full design canvas")) return false;
+  }
+  main->set_gallery_mode(true);
+  main->set_fit_scale(0.5f);
+  main->window().set_size(slint::LogicalSize({960.0f, 720.0f}));
+  return Check(main->get_ui_scale() == 1.0f && main->get_minimum_window_width() == 640.0f,
+               "DeskHub mode must ignore fit-scale");
+}
 }  // namespace
 
 int main() {
@@ -876,6 +906,8 @@ int main() {
   if (!VerifyPasswordDialog(*backend)) return 7;
   if (!VerifyPostcardIpControls(*backend)) return 8;
   if (!VerifySquareRecentPreview(*backend)) return 9;
+  if (!VerifyMainWindowFitScale(*backend)) return 10;
+  std::cout << "Main window fit-scale passed.\n";
   std::cout << "Square mode controls and uncropped 16:9 recent preview passed.\n";
   std::cout << "Slint popup rendering and local input passed.\n";
 }
