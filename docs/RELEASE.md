@@ -273,7 +273,7 @@ Markdown giống lời nhắc cập nhật.
 Tiêu đề con trong mục (ví dụ `### Linux`) hiện thành dòng in đậm, còn dòng trong code fence hiện
 nguyên chữ. Dòng mà Markdown đọc riêng thành rỗng, như dòng trông giống định nghĩa link
 (`[a]: https://x`) nằm giữa một code span nhiều dòng hay nối tiếp đoạn văn, cũng hiện nguyên chữ như
-GitHub. Bấm link trong hộp thoại thì mở nó bằng trình duyệt. Vì vậy:
+GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình duyệt. Vì vậy:
 
 - Notes phải hoàn chỉnh trước lần build publish. `release.sh` tách mục này bằng
   `installed_release_notes.py` vào `dist/<version>/INSTALLED_RELEASE_NOTES.md` trước khi build và
@@ -307,12 +307,19 @@ GitHub. Bấm link trong hộp thoại thì mở nó bằng trình duyệt. Vì 
     nghĩa ở bất kỳ đâu trong notes, và không có định nghĩa link (`[ref]: url`) trong mục: hộp thoại đọc
     từng dòng riêng nên hiện nguyên chữ `[text][ref]` không có đích, còn GitHub hiện link và giấu dòng
     định nghĩa. Viết link nội dòng `[text](url)`. Ngoặc vuông không có định nghĩa như `[beta]` thì
-    GitHub cũng hiện nguyên chữ, nên không bị chặn. Ngoặc vuông nằm trong URL trần mà GitHub tự biến
-    thành link (`https://...`, `ftp://...` hay `www....`, ví dụ `https://example.com/?os[linux]=1`) và
-    ô đánh dấu đầu mục list (`- [x]`, `- [ ]`) cũng không phải link tham chiếu, nên không bị chặn dù
-    notes có định nghĩa `[linux]` hay `[x]`. Script theo đúng quy tắc autolink và task list của
-    cmark-gfm, nên `[x]` đứng sau dấu list lồng (`- - [x]`), trong `>` hay ở mục list không có chữ phía
-    sau thì vẫn là ngoặc vuông thường.
+    GitHub cũng hiện nguyên chữ, nên không bị chặn. Ô đánh dấu đầu mục list (`- [x]`, `- [ ]`) cũng
+    không phải link tham chiếu, nên không bị chặn dù notes có định nghĩa `[x]`. Script theo đúng quy
+    tắc task list của cmark-gfm, nên `[x]` đứng sau dấu list lồng (`- - [x]`), trong `>` hay ở mục list
+    không có chữ phía sau thì vẫn là ngoặc vuông thường.
+  - Không có URL trần mà GitHub tự biến thành link (`https://...`, `http://...`, `ftp://...` hay
+    `www....`): Markdown của hộp thoại không tự nhận URL trần nên hiện nó thành chữ không bấm được.
+    Viết `<https://...>`, GitHub hiện y như URL trần, hoặc `[text](https://...)`, ví dụ
+    `- Fix the window (<https://github.com/thuongtin/crossdesk/pull/6>).`. Hộp thoại chỉ mở link
+    `https://`. Script theo đúng quy tắc autolink của cmark-gfm, kể cả ngoặc vuông nằm trong URL (như
+    `https://example.com/?os[linux]=1`, không phải link tham chiếu), nên thứ GitHub không biến thành
+    link thì không bị chặn: URL trong backtick hay trong chữ của một link, tên miền không có `www.`
+    như `example.com`, `xhttps://...` hay `https://_x.com`. Địa chỉ email cũng không bị chặn vì hộp
+    thoại không mở link email.
   - Không có thứ GitHub đọc thành HTML, dạng khối hay nội dòng, kể cả trong ô bảng và comment
     `<!-- -->` mà GitHub giấu đi: hộp thoại hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì
     đặt nó trong backtick (`` `<package>` ``). Script kiểm theo cú pháp nội dòng của cmark-gfm, nên

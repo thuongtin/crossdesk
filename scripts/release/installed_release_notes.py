@@ -608,7 +608,8 @@ def domain_length(text, begin, limit, short):
             # U+FFFD từ trước.
             break
         offset += 1
-    if underscores_before or underscores_last:
+    # Như cmark-gfm, tên miền có hơn mười dấu chấm được nhận dù có '_' để tránh quét bậc hai.
+    if (underscores_before or underscores_last) and dots <= 10:
         return 0, previous_dot
     return (offset if short or dots else 0), previous_dot
 
@@ -650,6 +651,13 @@ def starts_host(char):
             and not unicodedata.category(char).startswith("P"))
 
 
+def url_start(text, index, start):
+    """Vị trí đầu tên giao thức đứng ngay trước ':' tại index, không lùi quá start."""
+    while index > start and text[index - 1] in ASCII_LETTERS:
+        index -= 1
+    return index
+
+
 def bare_url_end(text, index, start, limit, rejected_before=-1):
     """Cặp (vị trí ngay sau URL trần mà tiện ích autolink của GitHub mở tại index hoặc None, mốc mới).
 
@@ -665,9 +673,7 @@ def bare_url_end(text, index, start, limit, rejected_before=-1):
     if text[index] == ":":
         if not text.startswith("//", index + 1):
             return None, rejected_before
-        scheme = index
-        while scheme > start and text[scheme - 1] in ASCII_LETTERS:
-            scheme -= 1
+        scheme = url_start(text, index, start)
         if text[scheme:index + 3].lower() not in BARE_URL_SCHEMES or not starts_host(text[index + 3]):
             return None, rejected_before
         domain, _ = domain_length(text, index + 3, limit, True)
@@ -702,7 +708,10 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
     xuống cuối trang, còn hộp thoại hiện nguyên chữ "[^note]". Loại "split" là dấu '[' của chỗ gọi
     footnote sang dòng sau, có định nghĩa hay không: cmark-gfm không lấy chữ trong ngoặc làm nhãn mà
     lấy số byte bằng hiệu số cột của ']' và '[' trừ hai, nên GitHub hiện số chú thích hay chữ khác
-    hẳn, như "See [^compat" rồi "]" thành "See [^]".
+    hẳn, như "See [^compat" rồi "]" thành "See [^]". Loại "url" là đầu một URL trần mà tiện ích
+    autolink của GitHub biến thành link ("https://...", "http://...", "ftp://..." hay "www...."): hộp
+    thoại hiện nó thành chữ thường, không bấm được. Địa chỉ email không bị tính vì app chỉ mở link
+    https, nên link mailto của GitHub cũng không mở được trong hộp thoại.
 
     Đọc từ trái sang như cmark-gfm: ký tự thoát, code span, autolink, URL trần, phần "(đích "tiêu đề")"
     của link và nhãn "[...]" của link tham chiếu không chứa HTML hay link tham chiếu, còn '<' không mở
@@ -788,7 +797,12 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
         elif char in ":w" and not brackets:
             # Tiện ích autolink không chạy khi còn '[' hay '![' mở, kể cả '[' không còn mở link được.
             url_end, www_rejected_before = bare_url_end(text, index, position, limit, www_rejected_before)
-            index = index + 1 if url_end is None else url_end
+            if url_end is None:
+                index += 1
+            else:
+                # Ghi ở đầu tên giao thức hay "www." để dòng báo lỗi là dòng có URL.
+                found.append((index if text[index] == "w" else url_start(text, index, position), "url"))
+                index = url_end
         else:
             index += 1
     return found
@@ -797,7 +811,7 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
 def inline_lines(units, footnotes=frozenset()):
     """Chỉ số các dòng có thứ hộp thoại hiện khác GitHub, trong các nội dung nội dòng mà scan gom được.
 
-    Trả về dict từ loại tới tập chỉ số dòng: "html", "reference", "footnote" và "split" như inline_offsets
+    Trả về dict từ loại tới tập chỉ số dòng: "html", "reference", "footnote", "split" và "url" như inline_offsets
     (footnotes là khoá nhãn của mọi định nghĩa footnote), cùng "definition" cho các dòng của định
     nghĩa link tham chiếu mà GitHub bỏ khỏi trang. Như cmark-gfm, mọi định nghĩa trong notes được gom
     trước, nên link dùng được định nghĩa nằm ở bất kỳ đâu, kể cả phía sau nó.
@@ -813,7 +827,8 @@ def inline_lines(units, footnotes=frozenset()):
         start = reference_definitions_end(text, labels) if unit_kind == "paragraph" else 0
         contents.append((text, start, entries))
     definitions = frozenset(labels)
-    found = {"html": set(), "reference": set(), "footnote": set(), "split": set(), "definition": set()}
+    found = {"html": set(), "reference": set(), "footnote": set(), "split": set(), "url": set(),
+             "definition": set()}
 
     def line_of(offset, entries):
         """Chỉ số dòng chứa vị trí offset trong nội dung ghép từ entries."""
@@ -893,6 +908,11 @@ def extract(text, publish=False):
         if index in inline["reference"]:
             raise ValueError(f"line {index + 1}: the Release Notes dialog cannot resolve reference "
                              "links, so write this link inline as [text](url)")
+        # GitHub tự biến URL trần thành link, còn Markdown của Slint thì không, nên hộp thoại hiện
+        # nó thành chữ không bấm được. "<https://...>" hiện giống hệt trên GitHub và bấm được.
+        if index in inline["url"]:
+            raise ValueError(f"line {index + 1}: the Release Notes dialog shows bare URLs as plain "
+                             "text, so write this link as <https://...> or [text](https://...)")
     if publish and any(lines[index].strip() == PLACEHOLDER for index in section_indexes):
         raise ValueError(f"the '## Changes' section still has the '{PLACEHOLDER}' placeholder")
     section = normalize("\n".join(lines[start + 1:end]))

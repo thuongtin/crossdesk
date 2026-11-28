@@ -27,6 +27,8 @@ SPLIT = "line {}: GitHub changes the text of a [^...] that spans lines, so keep 
 REFERENCE = "line {}: the Release Notes dialog cannot resolve reference links, so write this link inline as [text](url)"
 DEFINITION = ("line {}: the Release Notes dialog cannot use link reference definitions, so write links inline as "
               "[text](url) and remove this line")
+BARE_URL = ("line {}: the Release Notes dialog shows bare URLs as plain text, so write this link as <https://...> "
+            "or [text](https://...)")
 # Ví dụ notes nằm trong một khối trước mục thật; mục giả không được thay mục thật.
 FAKE_SECTION = "## Changes\n- Example only\n## Downloads"
 
@@ -273,22 +275,43 @@ class ExtractTest(unittest.TestCase):
             with self.subTest(body=body):
                 self.assertEqual(notes.extract("## Changes\n\n" + body), body)
 
+    def test_bare_urls_are_rejected(self):
+        # GitHub tự biến URL trần thành link, còn hộp thoại hiện nó thành chữ không bấm được.
+        for body in ("- Fixes the window (https://github.com/thuongtin/crossdesk/pull/6).",
+                     "- See http://example.com", "- See ftp://example.com/file", "- See www.example.com",
+                     "- See *www.example.com*", "| Linux | https://example.com |\n| --- | --- |"):
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, BARE_URL.format(3))
+        self.assert_rejected("## Changes\n\n- First line\n  then https://example.com", BARE_URL.format(4))
+        # Autolink trong ngoặc nhọn, link nội dòng, URL trong code span hay trong chữ của link, tên miền
+        # không có "www." và địa chỉ email (app chỉ mở link https) không bị chặn.
+        for body in ("- Fixes the window (<https://github.com/thuongtin/crossdesk/pull/6>).",
+                     "- See [PR 6](https://github.com/thuongtin/crossdesk/pull/6)",
+                     "- See [https://example.com](https://example.com)", "- Run `curl https://example.com`",
+                     "- Open example.com", "- Mail admin@example.com or mailto:admin@example.com",
+                     "- See https:// alone", "- See wwwexample.com"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+
     def test_brackets_inside_bare_urls_are_not_reference_links(self):
         # Như cmark-gfm, URL trần "https://..." hay "www..." là một link tự động nuốt cả "[linux]",
-        # nên định nghĩa "[Linux]" ở mục khác không biến nó thành link tham chiếu.
+        # nên định nghĩa "[Linux]" ở mục khác không biến nó thành link tham chiếu; dòng bị chặn vì URL
+        # trần chứ không vì link tham chiếu. Tên miền có hơn mười dấu chấm được nhận dù có '_'.
         downloads = "\n\n## Downloads\n\n[Linux]: /downloads/linux"
         for body in ("- See https://docs.example.com/search?filter[linux]=1", "- See www.example.com/[linux]",
                      "- See (www.example.com/[linux])", "- See HTTPS://Example.com/[linux]",
                      "- See ftp://example.com/[linux]", "- See x_www.example.com/[linux]",
                      "- See https://\u4f8b\u5b50.\u6d4b\u8bd5/[linux]", "- See https://\u00e9_x.com/[linux]",
-                     "- See _www.a_b.c_d and www.example.com/[linux]"):
+                     "- See _www.a_b.c_d and www.example.com/[linux]",
+                     "- See www.a.b.c.d.e.f.g.h.i.k_l.m_n/[linux]", "- See https://a.b.c.d.e.f.g.h.i.j.k_l.m_n/[linux]"):
             with self.subTest(body=body):
-                self.assertEqual(notes.extract(f"## Changes\n\n{body}{downloads}"), body)
+                self.assert_rejected(f"## Changes\n\n{body}{downloads}", BARE_URL.format(3))
         # Không phải link tự động: scheme dính chữ phía trước, tên miền mở bằng dấu câu hay có '_' ở hai
-        # đoạn cuối, "www" dính chữ hay viết hoa, URL nằm sau một '[' còn mở, hoặc "[linux]" đứng sau
-        # dấu cách.
+        # đoạn cuối khi có tối đa mười dấu chấm, "www" dính chữ hay viết hoa, URL nằm sau một '[' còn
+        # mở, hoặc "[linux]" đứng sau dấu cách.
         for body in ("- See xhttps://example.com/[linux]", "- See https://_example.com/[linux]",
                      "- See https://-example.com/[linux]", "- See https://a_b.c_d/[linux]",
+                     "- See www.a.b.c.d.e.f.g.h.k_l.m_n/[linux]", "- See https://a.b.c.d.e.f.g.h.i.k_l.m_n/[linux]",
                      "- See www.example.com/[linux] and www.a_b.c_d/[linux]",
                      "- See xwww.example.com/[linux]", "- See WWW.example.com/[linux]",
                      "- See [https://example.com/ [linux]]", "- See [the https://example.com/[linux] page]",
