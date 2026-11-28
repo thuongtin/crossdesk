@@ -187,6 +187,9 @@ struct RemoteSession {
   // protected by remote_version_mutex_.
   std::mutex remote_version_mutex_;
   bool remote_host_info_received_ = false;
+  // Whether the host answers capture_status_request, and its latest answer.
+  bool remote_capture_status_supported_ = false;
+  CaptureState remote_capture_state_ = CaptureState::unknown;
   std::string remote_app_version_;
   HostPlatform remote_platform_ = HostPlatform::Unknown;
   // Retain history metadata after disconnect resets the live capabilities.
