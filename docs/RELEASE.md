@@ -288,6 +288,9 @@ nguyên chữ. Vì vậy:
     đặt nó trong backtick (`` `<package>` ``). Script kiểm theo cú pháp nội dòng của cmark-gfm, nên
     autolink như `<https://example.com>`, đích link như `[guide](<docs/Upgrade Guide.md>)` và dấu `<`
     trong `a < b` hay `x<limit` vẫn dùng được.
+- Bảng GFM trong mục Changes không bị chặn, nhưng hộp thoại đọc từng dòng riêng nên không dựng lại
+  bảng: mỗi hàng, kể cả dòng phân cách `| --- |`, hiện thành một dòng chữ có dấu `|`. Nên viết mục
+  Changes bằng list.
 - Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm, trừ fence hay khối HTML chưa đóng nằm
   trước mục. Sửa script này thì chạy
   `python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py`.

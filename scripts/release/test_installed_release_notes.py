@@ -177,6 +177,23 @@ class ExtractTest(unittest.TestCase):
                    "- See [the guide](<docs/Upgrade Guide.md>)\n\n[guide]: <docs/a b.md>")
         self.assertEqual(notes.extract("## Changes\n\n" + allowed), allowed)
 
+    def test_long_escaped_links_finish_quickly(self):
+        # Mỗi "\x" vừa là ký tự thoát vừa là hai ký tự thường; regex dò ngược sẽ treo bản build.
+        for body in ("- [" + "pkg\\_" * 40 + "](x)", "- [" + "\\!" * 40 + " x", '- [a](b "' + '\\"' * 40 + " x"):
+            with self.subTest(body=body[:12]):
+                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+
+    def test_link_label_length_limit(self):
+        # Như cmark-gfm, nhãn định nghĩa link dài tối đa 1000 byte UTF-8, ký tự thoát tính hai byte.
+        # Quá giới hạn thì dòng là chữ thường và <x y> trong đó là HTML.
+        for label in ("a" * 1000, "\\!" * 500):
+            with self.subTest(label=label[:4]):
+                body = f"[{label}]: <x y>"
+                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+        for label in ("a" * 1001, "\\!" * 500 + "a", "\u00e9" * 500 + "a"):
+            with self.subTest(label=label[:4]):
+                self.assert_rejected(f"## Changes\n\n[{label}]: <x y>", HTML.format(3))
+
     def test_setext_heading_in_changes_is_rejected(self):
         for underline in ("---", "==="):
             with self.subTest(underline=underline):
@@ -191,6 +208,9 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(notes.extract("## Changes\n\n" + table), table)
         # Đoạn chỉ có định nghĩa link không thành tiêu đề; GitHub hiện "---" sau nó thành chữ thường.
         self.assertEqual(notes.extract("## Changes\n\n[a]: https://example.com\n---"), "[a]: https://example.com\n---")
+        # cmark-gfm đọc định nghĩa link ngay khi gặp dòng giống gạch dưới, nên <x y> ở đây không phải
+        # HTML dù dòng "-" sau đó thành tiêu đề cột của bảng.
+        self.assertEqual(notes.extract("## Changes\n\n[a]: <x y>\n-\n|---|"), "[a]: <x y>\n-\n|---|")
         # Dòng phân cách lệch số cột khiến đoạn văn không bao giờ thành bảng, kể cả khi sau đó có cặp khớp.
         self.assert_rejected("## Changes\n\na | b\n-|-|-\nc | d\n-|-\n---",
                              "line 7: a line of '=' or '-' under text makes it a level 1 or 2 "

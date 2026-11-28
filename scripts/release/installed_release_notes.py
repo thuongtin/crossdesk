@@ -58,7 +58,7 @@ HTML_LONE_TAG = re.compile(rf"(?:<[A-Za-z][A-Za-z0-9-]*{HTML_ATTRIBUTE}* */?>|</
 ENDS_AT_BLANK_LINE = "blank line"
 # Dòng phân cách của bảng GFM như "| --- | :-: |": dòng cuối của đoạn văn ngay trên thành hàng tiêu đề
 # khi hai dòng có cùng số ô. cmark-gfm chỉ thử mẫu này khi dòng không mở khối nào khác.
-TABLE_DELIMITER_ROW = re.compile(r"^\|?[ \t\v\f]*:?-+:?[ \t\v\f]*(?:\|[ \t\v\f]*:?-+:?[ \t\v\f]*)*\|?[ \t\v\f]*$")
+TABLE_DELIMITER_ROW = re.compile(r"^\|?[ \t\v\f]*:?-+:?[ \t\v\f]*(?:\|[ \t\v\f]*:?-+:?[ \t\v\f]*)*(?:\|[ \t\v\f]*)?$")
 
 # Các mẫu dưới đây chạy trên nội dung nội dòng của một đoạn văn, tiêu đề hay ô bảng, theo cmark-gfm.
 ASCII_PUNCTUATION = frozenset("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
@@ -77,14 +77,14 @@ ATTRIBUTE = (rf"{SPACE}+[A-Za-z_:][A-Za-z0-9:._-]*"
 RAW_HTML = re.compile(rf"<{TAG_NAME}(?:{ATTRIBUTE})*{SPACE}*/?>|</{TAG_NAME}{SPACE}*>"
                       r"|<!---?>|<!--(?:[^-\x00]|-[^-\x00]|--[^>\x00])*-->"
                       r"|<\?(?:[^?>\x00]|\?[^>\x00]|>)*\?>"
-                      rf"|<![A-Z]+{SPACE}+[^>\x00]*>"
+                      rf"|<![A-Z]+{SPACE}[^>\x00]*>"
                       r"|<!\[CDATA\[(?:[^\]\x00]|\][^\]\x00]|\]\][^>\x00])*\]\]>")
 BACKTICK_RUN = re.compile(r"`+")
 MAX_BACKTICKS = 1000
-# Tiêu đề của link, đặt sau đích link và cách nó ít nhất một khoảng trắng.
-LINK_TITLE = re.compile(r'"(?:\\.|[^"\x00])*"|\'(?:\\.|[^\'\x00])*\'|\((?:\\.|[^()\x00])*\)')
-# Nhãn "[...]" của định nghĩa link tham chiếu, tối đa 999 ký tự và không chứa '[' hay ']' chưa thoát.
-LINK_LABEL = re.compile(r"\[((?:\\[!-/:-@\[-`{-~]|[^\[\]\\]|\\){0,999})\]:")
+# Độ dài tối đa tính bằng byte UTF-8 của nhãn "[...]" mà cmark-gfm nhận cho định nghĩa link.
+MAX_LINK_LABEL_BYTES = 1000
+# Ký tự đóng của từng kiểu tiêu đề link: "...", '...' và (...).
+LINK_TITLE_CLOSERS = {'"': '"', "'": "'", "(": ")"}
 
 # Dòng giữ chỗ trong bản nháp release.sh tự viết khi chưa có --notes.
 PLACEHOLDER = "- TODO"
@@ -272,9 +272,14 @@ def scan(lines):
                 leaf = ("html", html_block(body, in_paragraph))
                 break
             elif in_paragraph and SETEXT_UNDERLINE.match(body):
-                # Đoạn văn chỉ có định nghĩa link tham chiếu thì rỗng, nên dòng gạch dưới là chữ của nó.
+                # Như cmark-gfm, bỏ ngay các định nghĩa link tham chiếu ở đầu đoạn văn, kể cả khi
+                # sau đó đoạn văn thành bảng. Đoạn chỉ có định nghĩa thì rỗng, nên dòng gạch dưới là
+                # chữ của nó.
                 text = "".join(content + "\n" for _, content in paragraph)
-                if reference_definitions_end(text) < len(text):
+                dropped = definitions_end = reference_definitions_end(text)
+                while dropped:
+                    dropped -= len(paragraph.pop(0)[1]) + 1
+                if definitions_end < len(text):
                     leaf = "setext"
                 break
             elif THEMATIC_BREAK.match(body):
@@ -380,6 +385,29 @@ def link_destination_end(text, position):
     return index if index < len(text) else None
 
 
+def link_title_end(text, position):
+    """Vị trí ngay sau tiêu đề link mở tại position, hoặc None, như scan_link_title của cmark-gfm.
+
+    Máy quét của cmark-gfm lấy cách đọc dài nhất, nên ký tự đóng (và '(' trong tiêu đề kiểu ngoặc)
+    chỉ nằm bên trong tiêu đề khi đứng ngay sau '\\', còn '\\' đứng trước ký tự đóng cuối cùng là chữ
+    thường. Quét một lượt từ trái sang để thời gian luôn tuyến tính.
+    """
+    closer = LINK_TITLE_CLOSERS.get(text[position:position + 1])
+    if closer is None:
+        return None
+    stops = "()" if closer == ")" else closer
+    end = None
+    index = position + 1
+    while index < len(text) and text[index] != "\x00":
+        if text[index] in stops:
+            if text[index] == closer:
+                end = index + 1
+            if text[index - 1] != "\\":
+                break
+        index += 1
+    return end
+
+
 def link_tail_end(text, position):
     """Vị trí ngay sau phần "(đích "tiêu đề")" của link nội dòng mở tại position, hoặc None."""
     if not text.startswith("(", position):
@@ -387,11 +415,9 @@ def link_tail_end(text, position):
     url_end = link_destination_end(text, SPACES.match(text, position + 1).end())
     if url_end is None:
         return None
-    title_end = title_start = SPACES.match(text, url_end).end()
-    title = LINK_TITLE.match(text, title_start) if title_start > url_end else None
-    if title:
-        title_end = title.end()
-    end = SPACES.match(text, title_end).end()
+    title_start = SPACES.match(text, url_end).end()
+    title_end = link_title_end(text, title_start) if title_start > url_end else None
+    end = SPACES.match(text, title_end or title_start).end()
     return end + 1 if text.startswith(")", end) else None
 
 
@@ -404,6 +430,24 @@ def line_end_after(text, position):
     return position if position == len(text) else None
 
 
+def link_label_end(text, position):
+    """Vị trí ngay sau nhãn "[...]" mở tại position, hoặc None, như link_label của cmark-gfm.
+
+    Nhãn không chứa '[' hay ']' chưa thoát và dài tối đa MAX_LINK_LABEL_BYTES, tính cả ký tự thoát.
+    Quét một lượt từ trái sang để thời gian luôn tuyến tính.
+    """
+    if not text.startswith("[", position):
+        return None
+    index = position + 1
+    while index < len(text) and text[index] not in "[]":
+        index += 2 if text[index] == "\\" and text[index + 1:index + 2] in ASCII_PUNCTUATION else 1
+    if index >= len(text) or text[index] != "]":
+        return None
+    if len(text[position + 1:index].encode("utf-8")) > MAX_LINK_LABEL_BYTES:
+        return None
+    return index + 1
+
+
 def reference_definitions_end(text):
     """Vị trí sau các định nghĩa link tham chiếu như "[guide]: <docs/a b.md>" ở đầu đoạn văn text.
 
@@ -411,16 +455,17 @@ def reference_definitions_end(text):
     """
     position = 0
     while True:
-        label = LINK_LABEL.match(text, position)
-        if not label or not label.group(1).strip(" \t\v\f\r\n"):
+        label_end = link_label_end(text, position)
+        if (label_end is None or not text.startswith(":", label_end)
+                or not text[position + 1:label_end - 1].strip(" \t\v\f\r\n")):
             return position
-        url_start = LINK_SPACE.match(text, label.end()).end()
+        url_start = LINK_SPACE.match(text, label_end + 1).end()
         url_end = link_destination_end(text, url_start)
         if url_end is None or url_end == url_start:
             return position
         title_start = LINK_SPACE.match(text, url_end).end()
-        title = LINK_TITLE.match(text, title_start) if title_start > url_end else None
-        end = line_end_after(text, title.end()) if title else None
+        title_end = link_title_end(text, title_start) if title_start > url_end else None
+        end = None if title_end is None else line_end_after(text, title_end)
         if end is None:
             end = line_end_after(text, url_end)
         if end is None:
