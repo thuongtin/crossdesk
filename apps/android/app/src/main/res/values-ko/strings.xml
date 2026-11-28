@@ -6,7 +6,7 @@
     <string name="text_23ebae95d26dfe5e" formatted="false">" 장치"</string>
     <string name="text_a7f4dfd234a43b16" formatted="false">" 기사 · "</string>
     <string name="text_2c894057fc526576" formatted="false">" 읽지 않은 항목"</string>
-    <string name="text_d0ac753c6681e578" formatted="false">"CrossDesk원격접속"</string>
+    <string name="text_d0ac753c6681e578" formatted="false">"CrossDesk 원격 접속"</string>
     <string name="text_0991c6fc1de4ffd6" formatted="false">"GNU GPL 버전 3"</string>
     <string name="text_5ae7dc4079223967" formatted="false">"OpenFEC공지"</string>
     <string name="text_69ad29820a259526" formatted="false">"OpenFEC라이선스 및 소스"</string>
@@ -235,7 +235,7 @@
     <string name="text_dd6c465847af1b60" formatted="false">"접속비밀번호가 잘못되었습니다. 다시 입력해 주세요."</string>
     <string name="text_defba1d2989bfab4" formatted="false">"인증서 확인 실패 · 다시 시도하려면 클릭하세요."</string>
     <string name="text_44f3d4d52347095a" formatted="false">"먼저 온라인 인증을 완료해주세요."</string>
-    <string name="text_2a07ca002bc5093d" formatted="false">"원격 측에서CrossDesk시스템 서비스를 활성화하고 다시 시도하십시오."</string>
+    <string name="text_2a07ca002bc5093d" formatted="false">"원격 측에서 CrossDesk 시스템 서비스를 활성화하고 다시 시도하십시오."</string>
     <string name="text_990fd23c62de5ccf" formatted="false">"요청 시간이 초과되어 컴퓨터의 개인 정보 보호 화면 상태가 확인되지 않았습니다."</string>
     <string name="text_e5c8fa6dcf7b2a8b" formatted="false">"현재 파일이 전송될 때까지 기다려 주십시오."</string>
     <string name="text_9305d9d72b06110d" formatted="false">"1~65535 범위의 포트를 입력하세요."</string>

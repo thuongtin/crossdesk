@@ -3391,15 +3391,20 @@ export component MainWindow inherits Window {
         background: #15223835;
         z: 49;
         TouchArea { clicked => { focus-sink.focus(); } }
+        // Text ẩn chỉ để đo bề rộng tiêu đề: bản es, pt-BR dài hơn 324px của dialog 360px.
+        self-host-title-metrics := Text { visible: false; accessible-role: none; text: UiStrings.self-hosted-settings; font-size: 16px; font-weight: 600; }
         DialogSurface {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            width: 360px; height: root.self-host-settings-error == "" ? 266px : 322px;
+            // Nới dialog theo tiêu đề nhưng không vượt cửa sổ; quá hẹp thì tiêu đề elide.
+            width: min(parent.width - 32px, max(360px, self-host-title-metrics.preferred-width + 36px));
+            height: root.self-host-settings-error == "" ? 266px : 322px;
             border-radius: UiRadius.surface; outline-color: WorkbenchStyle.separator; background: #f8fafc;
             TouchArea { clicked => { focus-sink.focus(); } }
             Text {
                 x: 18px; y: 18px; width: parent.width - 36px; height: 24px;
                 text: UiStrings.self-hosted-settings; font-size: 16px; font-weight: 600; color: #22324a;
+                overflow: elide;
             }
             Text { x: 18px; y: 56px; width: parent.width - 36px; height: 20px; text: UiStrings.server-host; color: #34445a; font-size: 12px; overflow: elide; vertical-alignment: center; }
             RoundedLineEdit {
