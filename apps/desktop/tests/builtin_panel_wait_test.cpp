@@ -426,6 +426,55 @@ bool TestPendingSlotGeometry() {
   return ok;
 }
 
+// Covers the slots a viewer gets when the host opens its streams, which happens
+// before ChooseCaptureDisplay picks what each slot captures.
+bool TestCaptureDisplayPlan() {
+  using crossdesk::MainDisplayState;
+  using crossdesk::PlanCaptureDisplays;
+  using Displays = std::vector<uint32_t>;
+
+  constexpr uint32_t kPanel = 1;
+  constexpr uint32_t kExternal = 2;
+  constexpr uint32_t kSecondExternal = 3;
+  const MainDisplayState panel{kPanel, true, true, false};
+  bool ok = true;
+
+  ok &= Expect(PlanCaptureDisplays({kPanel, kExternal}, {}, panel) ==
+                   Displays{kPanel, kExternal},
+               "an awake extended desktop must keep ScreenCaptureKit's slots");
+  ok &= Expect(PlanCaptureDisplays({kExternal}, {}, panel) ==
+                   Displays{kPanel, kExternal},
+               "a built-in panel missing on wake must keep the first slot");
+  ok &= Expect(PlanCaptureDisplays({kExternal, kSecondExternal}, {}, panel) ==
+                   Displays{kPanel, kExternal, kSecondExternal},
+               "a reserved panel slot must not reorder the listed displays");
+  ok &= Expect(PlanCaptureDisplays({}, {kPanel, kExternal}, panel) ==
+                   Displays{kPanel, kExternal},
+               "an empty list on wake must keep a slot for every online display");
+  ok &= Expect(PlanCaptureDisplays({}, {}, panel).empty(),
+               "with no display anywhere the capturer must reserve its own slot");
+
+  MainDisplayState mirroring = panel;
+  mirroring.mirrors_another = true;
+  ok &= Expect(PlanCaptureDisplays({kExternal}, {}, mirroring) ==
+                   Displays{kExternal},
+               "a panel that mirrors another display must not get its own slot");
+  ok &= Expect(PlanCaptureDisplays({kPanel}, {}, panel) == Displays{kPanel},
+               "a display mirrored onto the panel must not add a slot");
+
+  MainDisplayState lid_closed = panel;
+  lid_closed.online = false;
+  ok &= Expect(PlanCaptureDisplays({kExternal}, {}, lid_closed) ==
+                   Displays{kExternal},
+               "a closed lid must not reserve a slot for the panel");
+
+  const MainDisplayState desktop_mac{kExternal, false, true, false};
+  ok &= Expect(PlanCaptureDisplays({kSecondExternal}, {}, desktop_mac) ==
+                   Displays{kSecondExternal},
+               "only a built-in panel may get a reserved slot");
+  return ok;
+}
+
 }  // namespace
 
 int main() {
@@ -437,5 +486,6 @@ int main() {
   ok &= TestConfigurationTimeout();
   ok &= TestTimedOutReturnHandoff();
   ok &= TestPendingSlotGeometry();
+  ok &= TestCaptureDisplayPlan();
   return ok ? 0 : 1;
 }

@@ -454,29 +454,26 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
     return -1;
   }
 
-  std::vector<CGDirectDisplayID> display_ids;
+  std::vector<CGDirectDisplayID> listed;
   if (completed && !capture_error) {
     for (SCDisplay *display in content.displays)
-      display_ids.push_back(display.displayID);
+      listed.push_back(display.displayID);
   }
 
-  if (display_ids.empty()) {
+  std::vector<CGDirectDisplayID> online;
+  if (listed.empty()) {
     // Sleeping displays can disappear from ScreenCaptureKit before a peer
     // negotiates its streams. CoreGraphics can still enumerate online outputs.
-    GetOnlineCaptureDisplays(display_ids);
+    GetOnlineCaptureDisplays(online);
     LOG_WARN("ScreenCaptureKit display enumeration unavailable; found {} online displays",
-             display_ids.size());
-  } else {
-    // During wake, ScreenCaptureKit may list only a secondary display.
-    // Reserve the primary built-in display's slot before negotiating streams.
-    const CGDirectDisplayID primary = CGMainDisplayID();
-    if (CGDisplayIsBuiltin(primary) && CGDisplayIsOnline(primary) &&
-        CGDisplayMirrorsDisplay(primary) == kCGNullDirectDisplay &&
-        std::find(display_ids.begin(), display_ids.end(), primary) ==
-            display_ids.end()) {
-      display_ids.insert(display_ids.begin(), primary);
-    }
+             online.size());
   }
+  const CGDirectDisplayID primary = CGMainDisplayID();
+  const MainDisplayState main_display{
+      primary, CGDisplayIsBuiltin(primary) != 0, CGDisplayIsOnline(primary) != 0,
+      CGDisplayMirrorsDisplay(primary) != kCGNullDirectDisplay};
+  const std::vector<CGDirectDisplayID> display_ids =
+      PlanCaptureDisplays(std::move(listed), std::move(online), main_display);
   std::lock_guard lock(lock_);
   SetCaptureDisplays(display_ids);
   return 0;

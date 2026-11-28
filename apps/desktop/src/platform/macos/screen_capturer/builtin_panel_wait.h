@@ -41,6 +41,40 @@ class BuiltinPanelWait {
   std::optional<Clock::time_point> missing_since_;
 };
 
+// What CoreGraphics reports about the main display when the capturer opens
+// its stream slots.
+struct MainDisplayState {
+  uint32_t id = 0;
+  bool builtin = false;
+  bool online = false;
+  // True when it mirrors another display and so has no picture of its own.
+  bool mirrors_another = false;
+};
+
+// Lists the displays the capturer opens stream slots for, in slot order; a
+// viewer's first stream captures the first slot. |listed| is
+// ScreenCaptureKit's display list and |online| the displays CoreGraphics
+// reports online, without mirrors.
+//
+// An empty list means every display is asleep or the enumeration failed, so
+// the online displays are used instead and none of them loses its slot. On
+// wake, ScreenCaptureKit may list a secondary display before the built-in
+// panel, so an online built-in main panel missing from the list gets the
+// first slot. That stream then waits for the panel instead of opening on the
+// secondary display. A panel that mirrors another display gets no slot.
+inline std::vector<uint32_t> PlanCaptureDisplays(
+    std::vector<uint32_t> listed, std::vector<uint32_t> online,
+    const MainDisplayState& main_display) {
+  if (listed.empty()) return online;
+  if (main_display.builtin && main_display.online &&
+      !main_display.mirrors_another &&
+      std::find(listed.begin(), listed.end(), main_display.id) ==
+          listed.end()) {
+    listed.insert(listed.begin(), main_display.id);
+  }
+  return listed;
+}
+
 struct CaptureDisplayChoice {
   // Index into the listed displays, or -1 to capture nothing for now.
   int index = -1;
