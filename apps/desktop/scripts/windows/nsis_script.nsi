@@ -47,8 +47,9 @@ BrandingText "${PRODUCT_NAME}"
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 
-; Every language the app ships. English must stay first: NSIS falls back to
-; the first language when the Windows display language matches none of them.
+; Every language the app ships, plus Turkish and Hebrew, which the app does not
+; translate yet. English must stay first: NSIS falls back to the first language
+; when the Windows display language matches none of them.
 !insertmacro MUI_LANGUAGE "English"
 !insertmacro MUI_LANGUAGE "Vietnamese"
 !insertmacro MUI_LANGUAGE "SimpChinese"
@@ -301,11 +302,20 @@ FunctionEnd
 ; kept even when CrossDesk.exe was deleted or quarantined. The per-user
 ; InstallDir survives an uninstall run from another account, so it only
 ; counts while CrossDesk.exe is still there.
-; The updater always passes /D, which NSIS applies before .onInit, so a
-; non-default $INSTDIR means the caller chose the folder.
+; A folder passed with /D always wins, even when it is the default one. The
+; updater always passes /D, which NSIS applies before .onInit, so a
+; non-default $INSTDIR means the caller chose the folder. For the default
+; folder, NSIS cuts its copy of the command line ($CMDLINE) at " /D=", so a
+; $CMDLINE shorter than the process command line means /D named it.
 Function LocateExistingInstall
     StrCpy $ExistingInstall 0
     ${If} $INSTDIR != "$PROGRAMFILES64\${PRODUCT_NAME}"
+        Return
+    ${EndIf}
+    System::Call 'kernel32::GetCommandLineW() w .r0'
+    StrLen $0 $0
+    StrLen $1 $CMDLINE
+    ${If} $1 < $0
         Return
     ${EndIf}
     ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "InstallLocation"
