@@ -355,7 +355,16 @@ Function SkipDirectoryPageOnUpgrade
     ; point, skips the check: the parent may be on a different volume.
     StrCpy $1 $INSTDIR
     ${Do}
-        System::Call 'kernel32::GetDiskFreeSpaceExW(w r1, *l .r2, *l .r4, *l .r5) i .r3 ?e'
+        ; Always pass a trailing backslash. GetParent turns D:\CrossDesk into
+        ; D:, which names the current directory on drive D: (that can be a
+        ; mount point of another volume), not the root of D:.
+        StrCpy $7 $1 "" -1
+        ${If} $7 == "\"
+            StrCpy $7 $1
+        ${Else}
+            StrCpy $7 "$1\"
+        ${EndIf}
+        System::Call 'kernel32::GetDiskFreeSpaceExW(w r7, *l .r2, *l .r4, *l .r5) i .r3 ?e'
         Pop $6
         ${If} $3 <> 0
             ${ExitDo}
