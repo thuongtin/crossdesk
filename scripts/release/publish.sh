@@ -57,9 +57,13 @@ for platform in ${PLATFORMS//,/ }; do
 done
 (cd "$DIST_DIR" && shasum -a 256 -c SHA256SUMS.txt) || die "SHA256SUMS.txt does not match dist files"
 
+# Chạy lại đúng gate của release.sh (kể cả --notes) để gate/CONFORMANCE.txt giữ kết quả kiểm notes.
+INSTALLED_NOTES="$DIST_DIR/INSTALLED_RELEASE_NOTES.md"
+[[ -s "$INSTALLED_NOTES" ]] || die "Missing $INSTALLED_NOTES; run the release through release.sh"
 log "Running strict fork-conformance gate"
 python3 "$SCRIPT_DIR/check_conformance.py" --dist "$DIST_DIR" --version "$VERSION" \
-    --platforms "$PLATFORMS" --public-key "$FORK_UPDATE_PUBLIC_KEY" --strict
+    --platforms "$PLATFORMS" --public-key "$FORK_UPDATE_PUBLIC_KEY" \
+    --notes "$INSTALLED_NOTES" --strict
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/crossdesk-publish.XXXXXX")"
 FEED_WORKTREE="$WORK/feed"

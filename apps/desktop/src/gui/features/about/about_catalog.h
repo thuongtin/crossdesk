@@ -7,14 +7,16 @@
 #ifndef _ABOUT_CATALOG_H_
 #define _ABOUT_CATALOG_H_
 
-#include <string>
+#include <string_view>
 
 #include "crossdesk_ui.h"
 
 namespace crossdesk::about {
 
-void SetInstalledReleaseNotes(const slint::ComponentHandle<ui::MainWindow>& window,
-                              const std::string& language);
+// Markdown release notes embedded in this build; empty when none were configured.
+std::string_view InstalledReleaseNotes();
+bool HasInstalledReleaseNotes();
+void SetInstalledReleaseNotes(const slint::ComponentHandle<ui::MainWindow>& window);
 void Populate(const slint::ComponentHandle<ui::MainWindow>& window);
 
 }  // namespace crossdesk::about

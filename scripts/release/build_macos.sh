@@ -16,6 +16,11 @@ source "$SCRIPT_DIR/lib.sh"
 VERSION="$1"
 COMMIT="$2"
 DIST_DIR="$3"
+# release.sh viết sẵn mục Changes để nhúng vào hộp thoại Release Notes; đường dẫn phải tuyệt đối
+# vì xmake chạy trong bản clone build.
+[[ -s "$DIST_DIR/INSTALLED_RELEASE_NOTES.md" ]] ||
+    die "Missing $DIST_DIR/INSTALLED_RELEASE_NOTES.md; run the build through release.sh"
+RELEASE_NOTES="$(cd "$DIST_DIR" && pwd)/INSTALLED_RELEASE_NOTES.md"
 MODE="${CROSSDESK_RELEASE_MODE:-dry-run}"
 BUILD_ROOT="${CROSSDESK_RELEASE_MACOS_DIR:-$HOME/build/crossdesk}"
 SRC_DIR="$BUILD_ROOT/src"
@@ -270,10 +275,19 @@ export CROSSDESK_UPDATE_PUBLIC_KEY="$FORK_UPDATE_PUBLIC_KEY"
 APP_VERSION="${VERSION#v}"
 log "Building CrossDesk $APP_VERSION for macOS arm64 (Xcode SDK $(xcrun --sdk macosx --show-sdk-version))"
 xmake repo -u
+# Ref cũ hơn option CROSSDESK_RELEASE_NOTES (dry-run với --ref) không nhận tham số này, xmake sẽ từ
+# chối cấu hình; khi đó build không nhúng notes và gate báo thiếu.
+NOTES_ARGS=()
+if grep -qs 'option("CROSSDESK_RELEASE_NOTES")' apps/desktop/xmake/options.lua; then
+    NOTES_ARGS=(--CROSSDESK_RELEASE_NOTES="$RELEASE_NOTES")
+else
+    log "WARNING: $COMMIT has no CROSSDESK_RELEASE_NOTES option; the build embeds no release notes"
+fi
 xmake f -y -p macosx -a arm64 -m release \
     --target_minver="$MACOS_DEPLOYMENT_TARGET" \
     --CROSSDESK_VERSION="$APP_VERSION" \
     --CROSSDESK_UPDATE_PUBLIC_KEY="$FORK_UPDATE_PUBLIC_KEY" \
+    ${NOTES_ARGS[@]+"${NOTES_ARGS[@]}"} \
     --USE_CUDA=false
 xmake b -vy crossdesk
 

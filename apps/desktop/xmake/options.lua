@@ -10,6 +10,12 @@ function setup_options_and_dependencies(enable_dependencies)
         set_description("Set CROSSDESK_VERSION for build")
     option_end()
 
+    -- Fork-owned: the release pipeline passes this build's notes; see docs/RELEASE.md.
+    option("CROSSDESK_RELEASE_NOTES")
+        set_showmenu(true)
+        set_description("Markdown file shown in the Release Notes dialog after installing this build")
+    option_end()
+
     option("USE_CUDA")
         set_default(false)
         set_showmenu(true)

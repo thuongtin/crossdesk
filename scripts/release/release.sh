@@ -92,7 +92,35 @@ json.dump({"version": version, "commit": commit, "ref": ref, "mode": mode,
            "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")},
           open(path, "w"), indent=2)
 PY
+fi
 
+if [[ -n "$NOTES" ]]; then
+    cp "$NOTES" "$DIST_DIR/RELEASE_NOTES.md"
+elif [[ ! -f "$DIST_DIR/RELEASE_NOTES.md" ]]; then
+    # Bản nháp theo khuôn release Postcard trước; người phát hành sửa phần Changes.
+    cat >"$DIST_DIR/RELEASE_NOTES.md" <<'EOF'
+## Downloads
+
+- macOS 14 or later, Apple Silicon: signed, notarized, stapled Developer ID installer.
+- Windows x64 installer.
+- Linux amd64 (Ubuntu 20.04 or later): `crossdesk` and `crossdesk-virtual-desktop-xfce` .deb packages.
+- Use `SHA256SUMS.txt` to verify the downloads.
+- Installs of v1.7.7-1 or v1.7.7-2 must download and install this release manually once: the update signing key changed in v1.7.7-3, so those builds cannot verify the new update feed. Builds from v1.7.7-3 on update from the app.
+
+## Changes
+
+- TODO
+EOF
+fi
+# Mục Changes được nhúng vào app để hộp thoại Release Notes hiện đúng ghi chú của bản này, nên nó
+# phải có trước khi build. Với --skip-build, tệp được sinh lại từ notes hiện tại để gate phát hiện
+# notes đã đổi sau lần build trước.
+notes_args=("$DIST_DIR/RELEASE_NOTES.md" "$DIST_DIR/INSTALLED_RELEASE_NOTES.md")
+[[ "$MODE" == "publish" ]] && notes_args+=(--publish)
+python3 "$SCRIPT_DIR/installed_release_notes.py" "${notes_args[@]}" ||
+    die "Cannot take the '## Changes' section from $DIST_DIR/RELEASE_NOTES.md"
+
+if [[ "$SKIP_BUILD" != 1 ]]; then
     export CROSSDESK_RELEASE_MODE="$MODE"
     # Mảng thường (không dùng mảng kết hợp) để chạy được với bash 3.2 của macOS.
     BUILD_PLATFORMS=()
@@ -132,7 +160,7 @@ fi
 
 if [[ -n "$PLATFORMS" ]]; then
     gate_args=(--dist "$DIST_DIR" --version "$VERSION" --platforms "$PLATFORMS"
-        --public-key "$FORK_UPDATE_PUBLIC_KEY")
+        --public-key "$FORK_UPDATE_PUBLIC_KEY" --notes "$DIST_DIR/INSTALLED_RELEASE_NOTES.md")
     [[ "$MODE" == "publish" ]] && gate_args+=(--strict)
     log "Running fork-conformance gate"
     python3 "$SCRIPT_DIR/check_conformance.py" "${gate_args[@]}"
@@ -149,25 +177,6 @@ if [[ -n "$PLATFORMS" ]]; then
     for asset in "${ASSETS[@]}"; do
         log "  $asset $(file_size "$DIST_DIR/$asset") bytes"
     done
-fi
-
-if [[ -n "$NOTES" ]]; then
-    cp "$NOTES" "$DIST_DIR/RELEASE_NOTES.md"
-elif [[ ! -f "$DIST_DIR/RELEASE_NOTES.md" ]]; then
-    # Bản nháp theo khuôn release Postcard trước; người phát hành sửa phần Changes.
-    cat >"$DIST_DIR/RELEASE_NOTES.md" <<'EOF'
-## Downloads
-
-- macOS 14 or later, Apple Silicon: signed, notarized, stapled Developer ID installer.
-- Windows x64 installer.
-- Linux amd64 (Ubuntu 20.04 or later): `crossdesk` and `crossdesk-virtual-desktop-xfce` .deb packages.
-- Use `SHA256SUMS.txt` to verify the downloads.
-- Installs of v1.7.7-1 or v1.7.7-2 must download and install this release manually once: the update signing key changed in v1.7.7-3, so those builds cannot verify the new update feed. Builds from v1.7.7-3 on update from the app.
-
-## Changes
-
-- TODO
-EOF
 fi
 
 if [[ -f "$DIST_DIR/FAILED_PLATFORMS.txt" ]]; then

@@ -1570,8 +1570,12 @@ void GuiApplication::InitializeUi() {
   ui_->session_end.Start();
 #endif
   const auto last_presented = config_center_->GetLastPresentedRelease();
+  // Fork-owned: only builds carrying the fork's notes for this version present
+  // them; a build without notes must not show an empty or upstream dialog.
+  about::SetInstalledReleaseNotes(ui_->main);
   ui_->main->set_release_welcome_pending(
-      last_presented.empty() || IsNewerVersion(last_presented, CROSSDESK_VERSION));
+      about::HasInstalledReleaseNotes() &&
+      (last_presented.empty() || IsNewerVersion(last_presented, CROSSDESK_VERSION)));
 #if defined(__APPLE__)
   ui_->video_scheduler.Start([this](double queued_ms) {
     for (auto& [_, view] : ui_->streams)
@@ -3568,7 +3572,6 @@ void GuiApplication::UpdateLocalization() {
         : "开机自启需要安装版 Release；便携版和 Debug 不支持无人值守服务。", language)));
   }
 #endif
-  about::SetInstalledReleaseNotes(ui_->main, localization::SupportedLanguage(language).code);
   ui_localization::ApplyMainWindowStrings(ui_->main, language);
   ui_localization::ApplyServerStrings(ui_->main, language);
   ui_localization::ApplyStreamWindowStrings(ui_->main, language);

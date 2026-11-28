@@ -26,6 +26,13 @@ TRAY_RUNTIME_RECOMMENDS="libayatana-appindicator3-1 | libappindicator3-1"
 # contain the same application, including headless support. Older Ubuntu releases ship
 # dbus-run-session in dbus; newer releases split it into dbus-daemon.
 HEADLESS_RUNTIME_DEPS="xvfb, xfce4, dbus-daemon | dbus"
+# The private Slint runtime and SDL load these with dlopen(), so the ldd check
+# below never sees them: winit's X11 backend (libX11-xcb), xkbcommon-dl (a
+# missing libxkbcommon-x11 aborts at startup), glutin (EGL), the Wayland backends
+# and fontique's system fontconfig. crossdesk-bin also links libz directly. The
+# signaling and update checks use TLS, which needs the system CA bundle.
+GUI_RUNTIME_DEPS="libxkbcommon0, libxkbcommon-x11-0, libx11-xcb1, libfontconfig1, libegl1,
+ libwayland-client0, libwayland-cursor0, libwayland-egl1, zlib1g, ca-certificates"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
@@ -217,6 +224,7 @@ Depends: libc6 (>= 2.31), libstdc++6 (>= 10), libx11-6, libxext6,
  libxcb-xtest0, libxcb-xinerama0, libxcb-shape0, libxcb-xkb1,
  libxcb-xfixes0, libxv1, libxtst6, $ALSA_RUNTIME_DEP, libsndio7.0,
  libxcb-shm0, libpulse0, libdrm2, libdbus-1-3, libgl1,
+ $GUI_RUNTIME_DEPS,
  fuse3 (>= 3.2) | fuse (>= 2.9)$extra_depends
 Recommends: $RECOMMENDS
 Conflicts: $other_package

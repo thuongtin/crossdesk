@@ -1,7 +1,9 @@
 #include "crossdesk_ui.h"
 #include "../src/gui/assets/fonts/fa_solid_900.h"
 #include "slint_render_test_platform.h"
+#include "ui/installed_release_notes_text.h"
 #include "ui/model_update.h"
+#include "ui/release_notes_text.h"
 #include "ui/ui_localization.h"
 
 #include <algorithm>
@@ -11,7 +13,9 @@
 #include <filesystem>
 #include <cmath>
 #include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 using namespace std::chrono_literals;
 
@@ -770,9 +774,104 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   main->set_update_install_available(true);
   main->set_latest_version("v2.0.0");
   main->set_current_version("1.7.6");
-  main->set_installed_release_notes(
-      std::make_shared<slint::VectorModel<slint::SharedString>>(
-          std::vector<slint::SharedString>{"Release highlights fixture"}));
+  // Do fork sở hữu: notes nhúng đi qua cùng đường dựng khối như app. Tiêu đề con phải thành
+  // dòng in đậm, còn mọi dòng trong code fence ("# ...", "---", "- ...") phải giữ nguyên chữ
+  // thay vì bị đọc thành tiêu đề, đường kẻ hay danh sách. Dòng đóng fence thụt tối đa ba dấu
+  // cách; thụt bốn dấu cách hay khác ký tự fence vẫn là nội dung của khối code.
+  struct ExpectedBlock {
+    std::string_view text;
+    bool markdown;
+    bool section_gap;
+  };
+  const ExpectedBlock expected_blocks[] = {
+      {"**Linux**", true, false},
+      {"- Release highlights fixture", true, true},
+      {"```sh", false, true},
+      {"# Restart after updating", false, false},
+      {"crossdesk", false, false},
+      {"---", false, false},
+      {"- not a list item", false, false},
+      {"```", false, false},
+      {"**Windows**", true, true},
+      {"- C# tooling", true, true},
+      {"**macOS**", true, true},
+      {"~~~", false, true},
+      {"``` not a closing fence", false, false},
+      {"    ~~~", false, false},
+      {"   ~~~", false, false},
+      {"- Notarized", true, false},
+  };
+  if (!Check(*slint::StyledText::from_markdown("- not a list item") !=
+                 slint::StyledText::from_plain_text("- not a list item"),
+             "Markdown and literal list lines must differ for the fence check")) return false;
+  const auto installed_blocks = crossdesk::release_notes_text::InstalledBlocks(
+      "### Linux ###\n\n- Release highlights fixture\n\n```sh\n# Restart after updating\n"
+      "crossdesk\n---\n- not a list item\n```\n\n## Windows\n\n- C# tooling\n\n## macOS\n\n"
+      "~~~\n``` not a closing fence\n    ~~~\n   ~~~\n- Notarized");
+  bool blocks_match = installed_blocks.size() == std::size(expected_blocks);
+  for (size_t index = 0; blocks_match && index < installed_blocks.size(); ++index) {
+    const auto& expected = expected_blocks[index];
+    const auto content = expected.markdown
+                             ? *slint::StyledText::from_markdown(expected.text)
+                             : slint::StyledText::from_plain_text(expected.text);
+    blocks_match = installed_blocks[index].content == content &&
+                   installed_blocks[index].section_gap == expected.section_gap;
+  }
+  if (!Check(blocks_match,
+             "Installed release notes must keep subheadings and every code fence line")) return false;
+  // GitHub hiện chữ của dòng giữa code span nhiều dòng và của dòng "2. ..." nối tiếp đoạn văn, còn
+  // Markdown đọc riêng từng dòng thấy định nghĩa link và bỏ mất chữ, nên hộp thoại giữ nguyên chữ.
+  const struct {
+    const char* text;
+    bool markdown;
+  } definition_like_blocks[] = {
+      {"- Run `crossdesk", true},
+      {"[notice]: https://example.com", false},
+      {"--check`", true},
+      {"Read the guide", true},
+      {"2. [guide]: ./guide", false},
+      {"- [x] Verified", true},
+  };
+  const auto definition_like = crossdesk::release_notes_text::InstalledBlocks(
+      "- Run `crossdesk\n[notice]: https://example.com\n--check`\n\nRead the guide\n"
+      "2. [guide]: ./guide\n\n- [x] Verified");
+  blocks_match = definition_like.size() == std::size(definition_like_blocks);
+  for (size_t index = 0; blocks_match && index < definition_like.size(); ++index) {
+    const auto& expected = definition_like_blocks[index];
+    blocks_match = definition_like[index].content ==
+                   (expected.markdown ? *slint::StyledText::from_markdown(expected.text)
+                                      : slint::StyledText::from_plain_text(expected.text));
+  }
+  if (!Check(blocks_match,
+             "Installed release notes must keep lines that look like link definitions")) return false;
+  // Markdown của Slint báo lỗi với trích dẫn, kể cả trích dẫn trong mục list, nên hộp thoại hiện cả
+  // dòng thành chữ thô và link trong đó không bấm được. Vì vậy extractor từ chối trích dẫn.
+  if (!Check(!slint::StyledText::from_markdown("> See [the guide](https://example.com)") &&
+                 !slint::StyledText::from_markdown("- > See [the guide](https://example.com)"),
+             "Slint Markdown must reject the block quotes that the extractor rejects")) return false;
+  // Hộp thoại đưa cả dòng của hàng bảng cho Markdown của Slint. Slint báo lỗi với ảnh hay HTML ở
+  // bất kỳ ô nào, nên cả hàng thành chữ thô và link "Guide" không bấm được. Vì vậy extractor từ chối
+  // ảnh và HTML trong các ô GitHub hiện, và cắt khỏi notes nhúng các ô thừa mà GitHub bỏ đi.
+  const bool image_rejected = !slint::StyledText::from_markdown(
+      "| [Guide](https://example.com/guide) | ![i](https://example.com/i.png) |");
+  const bool html_rejected =
+      !slint::StyledText::from_markdown("| [Guide](https://example.com/guide) | <b>new</b> |");
+  const bool url_accepted = slint::StyledText::from_markdown(
+                                "| [Guide](https://example.com/guide) | https://example.com |")
+                                .has_value();
+  if (!Check(image_rejected && html_rejected && url_accepted,
+             "Slint Markdown must reject table rows with an image or HTML in any cell")) return false;
+  std::vector<crossdesk::ui::ReleaseNoteBlock> installed_notes;
+  for (const auto& parsed : installed_blocks) {
+    crossdesk::ui::ReleaseNoteBlock block{};
+    block.content = parsed.content;
+    block.section_gap = parsed.section_gap;
+    installed_notes.push_back(std::move(block));
+  }
+  const auto installed_model =
+      std::make_shared<slint::VectorModel<crossdesk::ui::ReleaseNoteBlock>>(
+          std::move(installed_notes));
+  main->set_installed_release_notes(installed_model);
   main->set_release_welcome_pending(true);
   int release_dismissals = 0;
   main->on_dismiss_release_welcome([&] {
@@ -800,6 +899,37 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   if (!Check(install_requests == 0 && main->get_release_welcome_open(),
              "Update installation must not be clickable behind release notes")) return false;
   if (!WriteEnglishEvidence(screen, main, "release-notes-no-sponsor")) return false;
+  // Link trong notes phải tới được callback mở trình duyệt, với cả hai cách viết link mà
+  // extractor cho qua: autolink trong ngoặc nhọn và link nội dòng. Khối đi qua InstalledBlocks
+  // như notes thật, rồi bấm vào chữ đầu tiên ở góc trên bên trái vùng cuộn của hộp thoại.
+  std::vector<std::string> opened_links;
+  main->on_open_about_link([&](slint::SharedString url) { opened_links.emplace_back(url); });
+  const float notes_x = width / 2 - std::min(480.f, width - 40) / 2 + 24 + 12;
+  const float notes_y = height / 2 - std::min(416.f, height - 32) / 2 + 64 + 10;
+  for (const std::string_view link_markdown :
+       {std::string_view{"<https://example.com/downloads>"},
+        std::string_view{"[Open the Linux downloads page](https://example.com/downloads)"}}) {
+    std::vector<crossdesk::ui::ReleaseNoteBlock> link_notes;
+    for (const auto& parsed : crossdesk::release_notes_text::InstalledBlocks(link_markdown)) {
+      crossdesk::ui::ReleaseNoteBlock block{};
+      block.content = parsed.content;
+      block.section_gap = parsed.section_gap;
+      link_notes.push_back(std::move(block));
+    }
+    if (!Check(link_notes.size() == 1, "A one-line link must become one release notes block")) {
+      return false;
+    }
+    opened_links.clear();
+    main->set_installed_release_notes(
+        std::make_shared<slint::VectorModel<crossdesk::ui::ReleaseNoteBlock>>(std::move(link_notes)));
+    screen.Settle();
+    screen.Click(notes_x + 16, notes_y + 8);
+    if (!Check(opened_links == std::vector<std::string>{"https://example.com/downloads"} &&
+                   main->get_release_welcome_open(),
+               "A link in the installed release notes must open its URL")) return false;
+  }
+  main->set_installed_release_notes(installed_model);
+  screen.Settle();
   screen.Key(slint::platform::key_codes::Escape);
   if (!Check(release_dismissals == 1 && !main->get_release_welcome_open(),
              "Escape must close release notes without suppressing the update")) return false;

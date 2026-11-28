@@ -20,6 +20,8 @@ Tài liệu này mô tả quy trình phát hành lặp lại được cho fork `
 | `scripts/release/build_macos.sh` | Build, ký, notarize và kiểm tra gói `.pkg` ngay trên máy Mac |
 | `scripts/release/build_windows.sh` + `windows/build.ps1` | Build bộ cài NSIS trên máy Windows qua SSH |
 | `scripts/release/build_linux.sh` + `linux/*` | Build hai gói `.deb` trong bubblewrap trên máy Linux qua SSH |
+| `scripts/release/installed_release_notes.py` | Tách mục `## Changes` của release notes để nhúng vào hộp thoại Release Notes của app |
+| `scripts/release/test_installed_release_notes.py` | Unit test của `installed_release_notes.py` (xem bước 3 của mục 4) |
 | `scripts/release/check_conformance.py` | Fork-conformance gate trên file thực thi trong từng gói |
 | `scripts/release/make_release_feed.py` | Ký payload Ed25519 và sinh feed mới, không push |
 | `scripts/release/publish.sh` | Tạo release, đọc lại asset, công bố, rồi mới cập nhật feed |
@@ -206,6 +208,17 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
     Slint dlopen fontconfig của hệ thống) và không chứa `/packages/f/fontconfig/`. Fontconfig tĩnh
     do xmake build đọc `fonts.conf` dưới thư mục cài trên máy build, máy người dùng không có tệp đó
     nên chữ giao diện rơi về phông serif (bản `v1.7.7-3-20261126` bị lỗi này).
+  - trường `Depends` trong `control` của mỗi gói `.deb` có đủ thư viện mà runtime Slint và SDL nạp
+    bằng `dlopen` (dpkg-shlibdeps và `ldd` không thấy chúng): `libxkbcommon0`,
+    `libxkbcommon-x11-0`, `libx11-xcb1`, `libfontconfig1`, `libegl1`, `libwayland-client0`,
+    `libwayland-cursor0`, `libwayland-egl1`, cùng `zlib1g` và `ca-certificates` (TLS của signaling
+    và kiểm tra cập nhật). Thiếu `libxkbcommon-x11-0` thì app dừng ngay lúc mở trên Ubuntu tối giản
+    với lỗi `Library libxkbcommon-x11.so could not be loaded` (bản `v1.7.7-4-20261128` bị lỗi này).
+    Danh sách nằm ở `GUI_RUNTIME_DEPS` trong `apps/desktop/scripts/linux/package_deb.sh` và
+    `LINUX_RUNTIME_DEPENDS` trong gate; thêm thư viện nạp động mới thì sửa cả hai;
+  - file thực thi chính chứa nguyên văn `INSTALLED_RELEASE_NOTES.md` (mục `## Changes` của release
+    notes, xem bước 3), so trọn từ marker đứng trước tới byte NUL kết thúc, tức hộp thoại Release
+    Notes của bản cài mới hiện đúng ghi chú của bản này, không thừa không thiếu dòng nào.
 
   Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
   thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork
@@ -220,9 +233,26 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
 - `gate/linux/apt-simulate-*.txt`: kết quả giả lập cài đặt trên Ubuntu 20.04.
 - `logs/<platform>.log`: log đầy đủ từng nền tảng. `FAILED_PLATFORMS.txt` xuất hiện nếu có nền
   tảng build lỗi (các nền tảng còn lại vẫn được gate và tính checksum).
-- `RELEASE_NOTES.md`: bản nháp release notes theo khuôn các bản Postcard trước.
+- `RELEASE_NOTES.md`: bản sao của `--notes`, hoặc bản nháp theo khuôn các bản Postcard trước khi
+  không truyền `--notes`.
+- `INSTALLED_RELEASE_NOTES.md`: mục `## Changes` của `RELEASE_NOTES.md`, được viết trước khi build
+  và nhúng vào app của cả ba nền tảng (bước 3).
 
-Nên cài thử từng gói trên máy thật trước khi publish.
+Nên cài thử từng gói trên máy thật trước khi publish. Với Linux, cài từng gói `.deb` bằng
+`apt install --no-install-recommends ./<gói>.deb` trên Ubuntu 20.04, 22.04 và 24.04 tối giản
+(container hay rootfs sạch, không cài thêm gói nào bằng tay) rồi mở app. Màn hình cho app phải đến
+từ ngoài môi trường thử: chạy Xvfb trên máy chủ và chỉ chia sẻ socket X (`/tmp/.X11-unix/X<n>`) vào
+container. Đừng tự cài `xvfb` hay gói khác vào chính container đó, vì nó kéo theo thư viện như
+`zlib1g` (qua `libxfont2`) và che mất thư viện mà gói CrossDesk quên khai báo; gói headless tự kéo
+`xvfb` qua `Depends` của nó thì không sao. Trong container đặt `DISPLAY=:<n>` trỏ tới Xvfb đó, rồi
+xem cửa sổ app có hiện trên framebuffer của máy chủ không (chạy Xvfb với `-fbdir` và đọc file XWD):
+khi không mở được `DISPLAY`, gói headless tự chạy Xvfb riêng trong container và lần thử không còn
+dùng màn hình của máy chủ. Gate chỉ kiểm tên trong `Depends`, còn `apt-simulate`
+chỉ giả lập cài trên 20.04; thư viện nạp bằng `dlopen` còn thiếu chỉ lộ ra khi app thật sự chạy
+trên máy không có sẵn nó. Ngược lại, thư viện mà chính apt cần thì luôn có trong rootfs dùng được
+apt, ví dụ `zlib1g` (qua `libapt-pkg` trên cả 20.04, 22.04 và 24.04), nên lần cài thử không bắt được
+gói quên khai báo chúng: chỉ phép kiểm `Depends` của gate (`LINUX_RUNTIME_DEPENDS` trong
+`check_conformance.py`) bắt được.
 
 ### Bước 3: Viết release notes
 
@@ -236,6 +266,97 @@ Giữ câu nhắc máy đang chạy v1.7.7-1 hoặc v1.7.7-2 phải cài tay m�
 
 Nội dung này vừa là mô tả GitHub release vừa là `releaseNotes` trong feed mà app hiển thị.
 
+Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp, cả hai ở cột 0 và nằm ngoài
+code fence hay khối HTML ở cấp cao nhất) còn được nhúng vào chính bản build: app mở hộp thoại
+**Release Notes** một lần sau khi cài mới hoặc nâng cấp lên bản này và hiện đúng mục đó, hiển thị
+Markdown giống lời nhắc cập nhật.
+Tiêu đề con trong mục (ví dụ `### Linux`) hiện thành dòng in đậm, còn dòng trong code fence hiện
+nguyên chữ. Dòng mà Markdown đọc riêng thành rỗng, như dòng trông giống định nghĩa link
+(`[a]: https://x`) nằm giữa một code span nhiều dòng hay nối tiếp đoạn văn, cũng hiện nguyên chữ như
+GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình duyệt. Vì vậy:
+
+- Notes phải hoàn chỉnh trước lần build publish. `release.sh` tách mục này bằng
+  `installed_release_notes.py` vào `dist/<version>/INSTALLED_RELEASE_NOTES.md` trước khi build và
+  truyền nó cho xmake (`--CROSSDESK_RELEASE_NOTES=<file>`) trên cả ba nền tảng; gate kiểm từng file
+  thực thi chính chứa nguyên văn mục đó.
+- Mục phải có ít nhất một dòng; thiếu mục thì dừng trước khi build. Khi `--publish`, dòng giữ chỗ
+  `- TODO` của bản nháp bị từ chối, kể cả khi có khoảng trắng thừa. Dry-run không có `--notes` nhúng bản nháp, nên muốn soát hộp
+  thoại với notes thật thì dry-run kèm `--notes`.
+- Tiêu đề `## Changes` và mọi tiêu đề cấp 1 hoặc 2 phải ở cột 0. `installed_release_notes.py` tìm
+  tiêu đề theo cách GitHub (cmark-gfm) dựng khối: dòng trong code fence ở cấp cao nhất (kể cả fence
+  thụt một tới ba dấu cách) hay trong khối HTML (ví dụ `<!-- ... -->`, `<details>`) chỉ là chữ, nên
+  một `## Changes` làm ví dụ trong đó không bị chọn nhầm. Fence hay khối HTML chưa đóng nằm trước
+  hoặc trong mục Changes nuốt hết phần sau nó trên GitHub, nên script dừng ở dòng mở của khối đó.
+- Trong mục Changes, script dừng ở dòng vi phạm đầu tiên:
+  - Code fence (```` ``` ```` hoặc `~~~`) phải mở ở cột 0, không thụt lề, không đứng sau dấu list
+    hay `>` (kể cả dòng giống fence trong khối code thụt lề), vì theo CommonMark fence lồng kết thúc
+    cùng mục list chứa nó, còn extractor và hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một
+    mục list thì đặt fence ra ngoài list.
+  - Không có tiêu đề cấp 1 hoặc 2 thụt lề, và không có dòng toàn `=` hay `-` ngay dưới một dòng chữ,
+    kể cả trong mục list (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một
+    dòng trống phía trên nó. Dòng cuối của bảng GFM không phải dòng chữ, nên `---` ngay dưới bảng vẫn
+    là đường kẻ.
+  - Không có định nghĩa footnote (`[^note]: ...`), kể cả trong mục list hay sau `>`: GitHub đưa nó
+    xuống cuối trang, bỏ hẳn nếu không chỗ nào gọi và giấu comment HTML bên trong, còn hộp thoại hiện
+    nó thành chữ ngay tại chỗ. Viết ghi chú đó thẳng vào mục. Chỗ gọi `[^note]` cũng bị chặn khi có
+    định nghĩa cùng nhãn ở bất kỳ đâu trong notes, vì GitHub hiện số chú thích còn hộp thoại hiện
+    `[^note]`; không có định nghĩa thì GitHub hiện nguyên chữ như hộp thoại, nên không bị chặn. Một
+    `[^...]` kéo sang dòng sau luôn bị chặn: GitHub lấy nhãn theo vị trí cột của hai dấu ngoặc nên hiện
+    chữ khác hẳn, ví dụ `See [^]`. Giữ nó trên một dòng.
+  - Không có link tham chiếu (`[text][ref]`, `[ref][]`, `[ref]` hay ảnh `![alt][ref]`) khi nhãn có định
+    nghĩa ở bất kỳ đâu trong notes, và không có định nghĩa link (`[ref]: url`) trong mục: hộp thoại đọc
+    từng dòng riêng nên hiện nguyên chữ `[text][ref]` không có đích, còn GitHub hiện link và giấu dòng
+    định nghĩa. Viết link nội dòng `[text](url)`. Ngoặc vuông không có định nghĩa như `[beta]` thì
+    GitHub cũng hiện nguyên chữ, nên không bị chặn. Ô đánh dấu đầu mục list (`- [x]`, `- [ ]`) cũng
+    không phải link tham chiếu, nên không bị chặn dù notes có định nghĩa `[x]`. Script theo đúng quy
+    tắc task list của cmark-gfm, nên `[x]` đứng sau dấu list lồng (`- - [x]`) hay ở mục list không có
+    chữ phía sau thì vẫn là ngoặc vuông thường.
+  - Không có URL trần mà GitHub tự biến thành link (`https://...`, `http://...`, `ftp://...` hay
+    `www....`): Markdown của hộp thoại không tự nhận URL trần nên hiện nó thành chữ không bấm được.
+    Viết `<https://...>`, GitHub hiện y như URL trần, hoặc `[text](https://...)`, ví dụ
+    `- Fix the window (<https://github.com/thuongtin/crossdesk/pull/6>).`. Hộp thoại chỉ mở link
+    `https://`, nên địa chỉ không có dạng `https://` (như một máy chủ `ftp://`) thì đặt trong backtick
+    để nó hiện thành chữ ở cả hai nơi. Chuỗi `#` đóng của tiêu đề (`### Remove the www. ###`) không
+    thuộc chữ tiêu đề, như trên GitHub. Script theo đúng quy tắc autolink của cmark-gfm, kể cả ngoặc vuông nằm trong URL (như
+    `https://example.com/?os[linux]=1`, không phải link tham chiếu), nên thứ GitHub không biến thành
+    link thì không bị chặn: URL trong backtick hay trong chữ của một link, tên miền không có `www.`
+    như `example.com`, `xhttps://...` hay `https://_x.com`. Địa chỉ email cũng không bị chặn vì hộp
+    thoại không mở link email.
+  - Không có ảnh (`![alt](src)`), kể cả ảnh trong chữ của link như badge `[![alt](src)](url)`:
+    Markdown của hộp thoại không hiện ảnh nên hiện cả dòng thành chữ thô, còn GitHub hiện ảnh. Bỏ ảnh
+    hoặc link tới nó bằng `[text](https://...)`.
+  - Không có trích dẫn (dòng mở bằng `>`), kể cả trích dẫn trong mục list (`- > ...`) hay ngay dưới
+    một dòng chữ: Markdown của hộp thoại báo lỗi với trích dẫn nên hiện cả dòng thành chữ thô kèm dấu
+    `>`, link trong đó không bấm được, còn GitHub hiện khối trích dẫn. Bỏ dấu `>` và viết thành chữ
+    thường hay một mục list. Dấu `>` giữa dòng (`a > b`) hay trong code fence vẫn dùng được.
+  - Link nội dòng (`[text](url)`) phải nằm gọn trên một dòng, kể cả phần chữ, đích và tiêu đề: hộp
+    thoại đọc từng dòng riêng nên link kéo sang dòng sau hiện thành cú pháp thô không bấm được, còn
+    GitHub hiện link. Chữ nhấn mạnh hay code span kéo sang dòng sau không bị chặn
+    nhưng hộp thoại hiện kèm dấu `*` hay backtick, nên cũng giữ chúng trên một dòng.
+  - Không có thứ GitHub đọc thành HTML, dạng khối hay nội dòng, kể cả trong ô bảng và comment
+    `<!-- -->` mà GitHub giấu đi: hộp thoại hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì
+    đặt nó trong backtick (`` `<package>` ``). Script kiểm theo cú pháp nội dòng của cmark-gfm, nên
+    autolink như `<https://example.com>`, đích link như `[guide](<docs/Upgrade Guide.md>)`,
+    `` `D:\|<x>` `` trong ô bảng (`\|` là chữ `|` của ô) và dấu `<` trong `a < b` hay `x<limit` vẫn
+    dùng được.
+- Bảng GFM trong mục Changes không bị chặn, nhưng hộp thoại đọc từng dòng riêng nên không dựng lại
+  bảng: mỗi hàng, kể cả dòng phân cách `| --- |`, hiện thành một dòng chữ có dấu `|`. Nên viết mục
+  Changes bằng list. Ô của hàng thân bảng vượt quá số ô của hàng tiêu đề thì GitHub bỏ đi, nên
+  script cũng cắt chúng khỏi notes nhúng và không kiểm gì trong đó: hộp thoại chỉ hiện các ô GitHub
+  hiện, và ảnh hay HTML trong ô thừa không còn làm Markdown của Slint hiện cả hàng thành chữ thô.
+- Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm, trừ fence hay khối HTML chưa đóng nằm
+  trước mục. Sửa script này thì chạy
+  `python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py`.
+- Sửa notes sau khi đã build thì phải build lại. `--skip-build` sinh lại
+  `INSTALLED_RELEASE_NOTES.md` từ notes hiện tại, nên gate báo lệch nếu notes đã đổi.
+- Viết bằng tiếng Anh như phần còn lại của release notes: hộp thoại hiện nguyên văn ở mọi ngôn ngữ
+  giao diện, giống release notes trong lời nhắc cập nhật.
+- Bản build không qua `release.sh` (build tay, build dev) không nhúng notes và không mở hộp thoại
+  này. Hộp thoại không còn đọc `apps/desktop/resources/release-notes.json` của upstream.
+- Dry-run `--ref` một commit cũ hơn option `CROSSDESK_RELEASE_NOTES` vẫn build được: script build
+  ghi cảnh báo, không truyền option đó cho xmake, và gate báo file thực thi thiếu notes. `--publish`
+  luôn build `mcp` nên luôn có option này.
+
 ### Bước 4: Publish
 
 ```bash
@@ -244,13 +365,14 @@ scripts/release/release.sh v1.7.7-3-20261126 --publish --notes ~/release-notes/v
 
 `--publish` chỉ chấp nhận `--ref mcp` và làm lần lượt, dừng ngay khi một bước lỗi:
 
-1. Build lại sạch cả ba nền tảng từ đầu `origin/mcp`. macOS bắt buộc ký Developer ID, notarize
-   và staple; thiếu identity, keychain đang khoá hay thiếu thông tin notarize thì dừng trước khi
-   build.
+1. Build lại sạch cả ba nền tảng từ đầu `origin/mcp`, nhúng mục `## Changes` của `--notes`.
+   macOS bắt buộc ký Developer ID, notarize và staple; thiếu identity, keychain đang khoá hay
+   thiếu thông tin notarize thì dừng trước khi build.
 2. Chạy gate ở chế độ nghiêm ngặt và tính `SHA256SUMS.txt`.
 3. `publish.sh` kiểm điều kiện: `gh` đã đăng nhập, `origin` trỏ đúng fork, remote `upstream` (nếu
    có) giữ push URL `DISABLED_no_push_to_upstream`, tag và release chưa tồn tại, checksum khớp,
-   có `CROSSDESK_UPDATE_PRIVATE_KEY_FILE`.
+   có `CROSSDESK_UPDATE_PRIVATE_KEY_FILE`, rồi chạy lại gate nghiêm ngặt với cùng tham số (kể cả
+   `--notes`), nên `gate/CONFORMANCE.txt` cuối cùng vẫn có kết quả kiểm notes.
 4. Sinh feed mới từ feed hiện tại của `origin/desktop-updates` (`make_release_feed.py`): kiểm
    OpenSSL 3, quyền file khoá (600), phiên bản mới hơn feed đang công bố, kiểm gói macOS
    (`spctl`, `stapler`, `codesign`, `lipo`, `CFBundleVersion`), ký payload
@@ -278,7 +400,8 @@ curl -fsSL https://raw.githubusercontent.com/thuongtin/crossdesk/desktop-updates
 ```
 
 Sau đó trên một máy đang chạy bản cũ của từng nền tảng: Check for updates, xem release notes, cài
-bản mới, đọc lại phiên bản trong app và thử kết nối qua signaling mặc định.
+bản mới, kiểm hộp thoại Release Notes mở lần đầu hiện đúng mục `## Changes` của bản này, đọc lại
+phiên bản trong app và thử kết nối qua signaling mặc định.
 
 ## 5. Xử lý sự cố
 

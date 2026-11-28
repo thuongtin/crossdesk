@@ -4,7 +4,9 @@
 Kiểm tra file thực thi trong từng gói đã build có trỏ đúng kênh của fork
 (feed cập nhật và đường dẫn release của thuongtin/crossdesk, signaling
 crossdesk.ecom.io.vn, khoá công khai Ed25519 của fork) và không còn địa chỉ cập nhật, signaling
-hay trang issue của upstream. Với gói Linux, cổng còn kiểm runtime Slint nạp fontconfig của hệ thống.
+hay trang issue của upstream. Với gói Linux, cổng còn kiểm runtime Slint nạp fontconfig của hệ thống
+và trường Depends khai báo đủ thư viện mà app nạp bằng dlopen. Với --notes, file thực thi chính phải
+chứa nguyên văn mục Changes của release notes (nội dung hộp thoại Release Notes sau khi cài).
 Mặc định chỉ cảnh báo; với --strict thì thoát mã khác 0 khi có lỗi.
 """
 
@@ -12,6 +14,7 @@ import argparse
 import io
 import lzma
 import gzip
+import re
 import shutil
 import subprocess
 import sys
@@ -36,6 +39,15 @@ LINUX_PACKAGES = ("crossdesk", "crossdesk-virtual-desktop-xfce")
 SLINT_RUNTIME_PATH = "usr/lib/crossdesk/libslint_cpp.so"
 SYSTEM_FONTCONFIG = "libfontconfig.so.1"
 PRIVATE_FONTCONFIG_PREFIX = "/packages/f/fontconfig/"
+# Runtime Slint và SDL nạp các thư viện này bằng dlopen nên dpkg-shlibdeps hay ldd không thấy; thiếu
+# libxkbcommon-x11-0 thì app dừng ngay khi mở trên Ubuntu tối giản (bản v1.7.7-4-20261128 bị lỗi này).
+# crossdesk-bin liên kết libz, còn TLS của signaling và kiểm tra cập nhật cần bộ CA của hệ thống.
+LINUX_RUNTIME_DEPENDS = (
+    "libxkbcommon0", "libxkbcommon-x11-0", "libx11-xcb1", "libfontconfig1", "libegl1",
+    "libwayland-client0", "libwayland-cursor0", "libwayland-egl1", "zlib1g", "ca-certificates",
+)
+# Marker mà about_resources.lua đặt ngay trước notes nhúng trong file thực thi chính; hai nơi phải đổi cùng nhau.
+NOTES_MARKER = b"crossdesk-installed-release-notes\n"
 
 
 def encodings(text):
@@ -47,7 +59,12 @@ def contains(data, text):
     return any(encoded in data for encoded in encodings(text))
 
 
-def check_binary(label, data, public_key, is_main):
+def normalize_notes(text):
+    """Chuẩn hoá giống rule about_resources.lua: LF và bỏ khoảng trắng hai đầu (lớp %s của Lua)."""
+    return text.replace("\r\n", "\n").strip(" \t\n\v\f\r")
+
+
+def check_binary(label, data, public_key, is_main, notes=None):
     """Trả về danh sách lỗi của một file thực thi."""
     problems = []
     if not contains(data, public_key):
@@ -66,6 +83,10 @@ def check_binary(label, data, public_key, is_main):
             problems.append(f"{label}: upstream signaling host {UPSTREAM_SIGNALING_HOST} is present")
         if contains(data, UPSTREAM_ISSUE_PATH):
             problems.append(f"{label}: upstream issue page {UPSTREAM_ISSUE_PATH} is present")
+        # Bản nhúng là marker, notes UTF-8 rồi NUL. So cả marker lẫn NUL để notes cũ chỉ trùng phần
+        # đầu hoặc phần cuối với notes hiện tại cũng bị phát hiện.
+        if notes is not None and NOTES_MARKER + notes.encode("utf-8") + b"\0" not in data:
+            problems.append(f"{label}: embedded release notes do not match the '## Changes' section")
     return problems
 
 
@@ -136,18 +157,62 @@ def decompress(name, payload):
     raise ValueError(f"unsupported .deb data member {name}")
 
 
+def control_field(control, field):
+    """Đọc một trường (kể cả dòng tiếp nối bắt đầu bằng khoảng trắng) của tệp control Debian."""
+    value = None
+    for line in control.split("\n"):
+        if value is not None:
+            if line[:1] in (" ", "\t"):
+                value += " " + line.strip()
+                continue
+            break
+        if line.lower().startswith(field.lower() + ":"):
+            value = line.split(":", 1)[1].strip()
+    return value
+
+
+def check_linux_depends(label, control):
+    """Trả về lỗi khi Depends thiếu thư viện runtime mà app nạp bằng dlopen."""
+    depends = control_field(control, "Depends")
+    if depends is None:
+        return [f"{label}: control has no Depends field"]
+    names = set()
+    for item in depends.split(","):
+        # Bỏ ràng buộc phiên bản "(>= x)" và kiến trúc ":any" hay "[amd64]".
+        matches = [re.match(r"\s*([a-z0-9][a-z0-9+.-]*)", alternative) for alternative in item.split("|")]
+        alternatives = [match.group(1) for match in matches if match]
+        # Nhóm "a | b" thoả được bằng gói khác, nên chỉ nhóm một lựa chọn mới bảo đảm thư viện được cài.
+        if len(alternatives) == 1:
+            names.add(alternatives[0])
+    missing = [name for name in LINUX_RUNTIME_DEPENDS if name not in names]
+    return [f"{label}: Depends is missing {', '.join(missing)}"] if missing else []
+
+
+def read_tar_member(members, prefix, package):
+    name = next((name for name in members if name.startswith(prefix)), None)
+    if name is None:
+        raise ValueError(f"{package.name}: {prefix} member is missing")
+    return tarfile.open(fileobj=io.BytesIO(decompress(name, members[name])), mode="r:")
+
+
+def linux_control(members, package):
+    with read_tar_member(members, "control.tar", package) as archive:
+        for member in archive:
+            if member.isreg() and member.name.lstrip("./") == "control":
+                return archive.extractfile(member).read().decode("utf-8")
+    raise ValueError(f"{package.name}: control file is missing")
+
+
 def linux_binaries(package):
     members = read_ar_members(package.read_bytes())
-    data_name = next((name for name in members if name.startswith("data.tar")), None)
-    if data_name is None:
-        raise ValueError(f"{package.name}: data.tar member is missing")
+    problems = check_linux_depends(f"{package.name}:control", linux_control(members, package))
     wanted = {
         "usr/lib/crossdesk/crossdesk-bin": True,
         "usr/lib/crossdesk/crossdesk_updater": False,
     }
     found = []
     slint_runtime = None
-    with tarfile.open(fileobj=io.BytesIO(decompress(data_name, members[data_name])), mode="r:") as archive:
+    with read_tar_member(members, "data.tar", package) as archive:
         for member in archive:
             name = member.name.lstrip("./") if member.name.startswith("./") else member.name
             if not member.isreg():
@@ -161,7 +226,8 @@ def linux_binaries(package):
         raise ValueError(f"{package.name}: crossdesk-bin or crossdesk_updater is missing")
     if slint_runtime is None:
         raise ValueError(f"{package.name}: {SLINT_RUNTIME_PATH} is missing")
-    return found, check_slint_runtime(f"{package.name}:libslint_cpp.so", slint_runtime)
+    problems.extend(check_slint_runtime(f"{package.name}:libslint_cpp.so", slint_runtime))
+    return found, problems
 
 
 def collect(platform, dist, version):
@@ -187,8 +253,15 @@ def main():
     parser.add_argument("--version", required=True)
     parser.add_argument("--platforms", default="macos,windows,linux")
     parser.add_argument("--public-key", required=True)
+    parser.add_argument("--notes", type=Path,
+                        help="the '## Changes' section the builds embed (INSTALLED_RELEASE_NOTES.md)")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
+    notes = None
+    if args.notes is not None:
+        notes = normalize_notes(args.notes.read_text(encoding="utf-8-sig"))
+        if not notes:
+            parser.error(f"{args.notes} is empty")
 
     report_lines = []
     failed = []
@@ -196,7 +269,7 @@ def main():
         try:
             binaries, problems = collect(platform, args.dist, args.version)
             for label, data, is_main in binaries:
-                problems.extend(check_binary(label, data, args.public_key, is_main))
+                problems.extend(check_binary(label, data, args.public_key, is_main, notes))
         except (OSError, ValueError, subprocess.CalledProcessError, tarfile.TarError) as error:
             problems = [f"{platform}: cannot inspect build output: {error}"]
         status = "PASS" if not problems else "FAIL"
