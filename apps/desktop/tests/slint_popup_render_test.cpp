@@ -597,8 +597,19 @@ bool VerifyAutostartSettings(RenderTestPlatform& platform) {
   main->show(); main->set_settings_open(true); screen.Settle();
   if (!Check(refreshes == 1, "Opening managed autostart settings must query the system")) return false;
   const float top = (height - 446) / 2;
-  main->window().dispatch_pointer_scroll_event(slint::LogicalPosition({width / 2, top + 260}), 0, -1200);
-  screen.Settle();
+  // Do fork sở hữu: cuộn bằng wheel đặt trên thanh cuộn (rộng 14px, ở x 382 đến
+  // 396 của hộp thoại rộng 400px), không đặt trên nội dung. Wheel trên nội dung đi
+  // qua hoạt cảnh giảm tốc của Flickable, và tuỳ nhịp khung hình có thể dừng lệch
+  // biên một phần nhỏ của pixel. Khi đó vùng vẽ lại từng phần của SoftwareRenderer
+  // cắt ngang dải khử răng cưa ở góc công tắc, nên ảnh chụp sau vài lần vẽ lại từng
+  // phần khác ảnh sau một lần vẽ lại toàn bộ dù giao diện không đổi. Thanh cuộn của
+  // style fluent kẹp thẳng giá trị về biên, nên vị trí cuộn không tuỳ nhịp khung hình.
+  const auto scroll_settings_to_end = [&] {
+    main->window().dispatch_pointer_scroll_event(
+        slint::LogicalPosition({width / 2 + 189, top + 260}), 0, -1200);
+    screen.Settle();
+  };
+  scroll_settings_to_end();
   const float toggle_x = width / 2 + 144, toggle_y = top + 322;
   const auto toggle_pixels = [&] {
     return screen.Region(int(toggle_x - 18), int(toggle_y - 10), 36, 20);
@@ -656,8 +667,7 @@ bool VerifyAutostartSettings(RenderTestPlatform& platform) {
   if (!Check(!main->get_autostart_guide_open(), "Closing settings must also dismiss its guide")) return false;
   main->set_autostart_system_managed(false);
   main->set_settings_open(true); screen.Settle();
-  main->window().dispatch_pointer_scroll_event(slint::LogicalPosition({width / 2, top + 260}), 0, -1200);
-  screen.Settle();
+  scroll_settings_to_end();
   screen.Click(toggle_x, toggle_y);
   return Check(refreshes == 2 && !main->get_autostart_enabled() && !main->get_autostart_guide_open(),
                "Other platforms toggle their autostart preference directly without querying Harmony or opening guidance");
@@ -692,6 +702,22 @@ bool VerifyGalleryPopups(RenderTestPlatform& platform) {
   auto network = std::make_shared<slint::VectorModel<crossdesk::ui::GalleryNetworkDevice>>();
   wall->set_gallery_network_devices(network);
   wall->show();
+  // Do fork sở hữu: nút "网络状态" nằm ngay sau chữ đếm kết nối, mà độ rộng chữ
+  // này tùy font CJK của máy (rootfs build Linux không có font CJK nên chữ Hán
+  // rộng 0). Lấy tâm nút từ mặt trắng ngay dưới viền trên của nó (chân trang ở
+  // y 566 đến 590) thay vì hoành độ đo bằng font của macOS.
+  const auto network_button_x = [&] {
+    for (int x = 0, start = -1; x < 450; ++x) {
+      const auto p = screen.pixels.at(568 * screen.extent.width + x);
+      const bool face = p.r == 255 && p.g == 255 && p.b == 255;
+      if (face && start < 0) start = x;
+      if (!face && start >= 0) {
+        if (x - start >= 48) return (start + x) / 2;
+        start = -1;
+      }
+    }
+    return -1;
+  };
   unsigned ticks = 0;
   slint::Timer sync;
   sync.start(slint::TimerMode::Repeated, 16ms, [&] {
@@ -703,8 +729,10 @@ bool VerifyGalleryPopups(RenderTestPlatform& platform) {
   screen.Settle();
   if (!WriteEnglishEvidence(screen, wall, "deskhub")) return false;
   const auto baseline = screen.Region(75, 100, 740, 400);
+  const int network_x = network_button_x();
+  if (!Check(network_x > 0, "DeskHub network button must be painted in the footer")) return false;
   for (int repeat = 0; repeat < 2; ++repeat) {
-    screen.Click(160, 578);
+    screen.Click(network_x, 578);
     if (!Check(wall->get_gallery_network_open() && screen.Region(75, 100, 740, 400) != baseline,
                "DeskHub network dialog must paint immediately during live refresh")) return false;
     // Eight rows fill the available height, placing the dialog 16 px from the top.
@@ -772,6 +800,12 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   screen.Click(width / 2 + 163, channel_y);
   if (!Check(release_channel_requests == 1 && install_requests == 0 && manual_downloads == 0,
              "Update header must open the release channel without starting a download")) return false;
+  // Do fork sở hữu: so nhãn bằng tiếng Anh, vì máy không có font CJK (rootfs build
+  // Linux) vẽ cả "安装更新" lẫn "重试更新" thành khoảng trống như nhau. Phép so vẫn đòi
+  // khung hình đổi nhãn; các cú bấm sau đó quay lại hình học tiếng Trung như cũ.
+  crossdesk::ui_localization::ApplyMainWindowStrings(main, 1);
+  main->set_language_index(1);
+  screen.Settle();
   const auto install_label = action_pixels();
   main->set_update_install_failed(true);
   main->set_update_install_status(crossdesk::ui_localization::Text(
@@ -779,6 +813,9 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   screen.Settle();
   if (!Check(action_pixels() != install_label,
              "A failed update must visibly replace Install update with Retry update")) return false;
+  crossdesk::ui_localization::ApplyMainWindowStrings(main, 0);
+  main->set_language_index(0);
+  screen.Settle();
   screen.Click(manual_x, button_y);
   if (!Check(manual_downloads == 1 && install_requests == 0 && !main->get_update_confirm_open(),
              "Manual download must remain reachable after failure without starting automatic installation")) return false;
@@ -827,20 +864,49 @@ bool VerifyServerPanel(RenderTestPlatform& platform) {
     panel->set_file_progress(0.5);
   });
   screen.Settle();
+  // Do fork sở hữu: hai nút chân bảng rộng theo nhãn, mà độ rộng chữ Hán tùy font CJK
+  // của máy (rootfs build Linux không có font CJK). Lấy hai nút từ hàng y 123 của khung
+  // hình thay vì hoành độ đo bằng font của macOS: nút "发送文件"/"取消" nằm giữa hai
+  // cạnh viền đầu và cuối tính từ lề x 10, nút ngắt tất cả là đoạn đỏ #d92d20 bên phải.
+  // Dò nút đỏ trước, rồi dò nút gửi tới trước cột liền kề nút đỏ, vì cột đó có thể là
+  // mép khử răng cưa của nút đỏ chứ không thuộc nút gửi. Mỗi nút rộng ít nhất 20px (nhãn
+  // cộng 20px): đoạn nút gửi tính cả cột viền khử răng cưa nên có ít nhất 20 cột, còn khi
+  // nút đỏ đặt ở hoành độ lẻ thì hai cột mép là màu pha, nên chỉ chắc chắn còn 19 cột đỏ.
+  const auto footer_pixel = [&](int x) { return screen.pixels.at(123 * screen.extent.width + x); };
+  int send_left = -1, send_right = -1, danger_left = -1, danger_right = -1;
+  for (int x = 10; x < int(screen.extent.width) - 10; ++x) {
+    const auto p = footer_pixel(x);
+    if (p.r == 0xd9 && p.g == 0x2d && p.b == 0x20) {
+      if (danger_left < 0) danger_left = x;
+      danger_right = x;
+    }
+  }
+  for (int x = 10; x < danger_left - 1; ++x) {
+    const auto p = footer_pixel(x);
+    if (!(p.r == 255 && p.g == 255 && p.b == 255)) {
+      if (send_left < 0) send_left = x;
+      send_right = x;
+    }
+  }
+  if (!Check(danger_left >= 0 && send_left >= 0 && send_right - send_left + 1 >= 20 &&
+                 danger_right - danger_left + 1 >= 19,
+             "Controlled-side footer buttons must be painted")) return false;
+  const float send_x = (send_left + send_right) / 2.f;
+  const float disconnect_all_x = (danger_left + danger_right) / 2.f;
   screen.Click(50, 84, 4);
   if (!Check(selected == 1, "Controlled-side controller selection must respond to a held click")) return false;
   const auto normal_height = screen.extent.height;
-  screen.Click(180, 123, 4);
+  screen.Click(disconnect_all_x, 123, 4);
   if (!Check(panel->get_confirming_disconnect() && screen.extent.height == normal_height,
              "Disconnect confirmation must use the space reserved below the buttons")) return false;
-  screen.Click(110, 123, 4);
+  screen.Click(send_x, 123, 4);
   if (!Check(!panel->get_confirming_disconnect() && disconnected == 0 && screen.extent.height == normal_height,
              "Cancel must clear the confirmation and preserve the panel height")) return false;
-  screen.Click(180, 123, 4);
-  screen.Click(180, 123, 4);
+  screen.Click(disconnect_all_x, 123, 4);
+  screen.Click(disconnect_all_x, 123, 4);
   if (!Check(disconnected == 1 && !panel->get_confirming_disconnect(),
              "Disconnect all must require and accept confirmation")) return false;
-  screen.Click(110, 123, 4);
+  screen.Click(send_x, 123, 4);
   return Check(picked == 1 && screen.extent.height == normal_height + 58,
                "Controlled-side file progress must resize the panel immediately");
 }
