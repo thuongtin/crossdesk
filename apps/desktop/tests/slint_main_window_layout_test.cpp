@@ -354,11 +354,14 @@ bool EndsWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, int y1
 // dải. Dấu "…" nằm trên đường chân chữ, cách đáy dải nhiều nhất chừng 0.25em (phần chân của
 // g, p, y), còn chân chữ dòng trên dừng cao hơn đường chân chữ dòng dưới ít nhất chừng 0.9em
 // nên không lọt vào phần đáy đó và không che được dấu "…" của một dòng cuối ngắn hơn.
+// Khi xét cả dòng, vùng quét lấy thêm hàng trống ngay trên dải: dòng chỉ còn mỗi dấu "…" có
+// chấm chạm hàng đầu của dải, và EndsWithEllipsis sẽ coi đó là đáy chữ cái bị cắt.
 bool LinesEndWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, int y1,
                           const slint::Rgb8Pixel& background, float font_px) {
   bool elided = false;
   for (const Span& line : InkRowBands(screen, x0, x1, y0, y1, background, 1)) {
-    elided |= EndsWithEllipsis(screen, x0, x1, line.begin, line.end, background, font_px);
+    elided |= EndsWithEllipsis(screen, x0, x1, std::max(y0, line.begin - 1), line.end,
+                               background, font_px);
     if (line.Width() > 1.5f * font_px)
       elided |= EndsWithEllipsis(screen, x0, x1, line.end - int(std::lround(0.6f * font_px)),
                                  line.end, background, font_px);
@@ -367,31 +370,36 @@ bool LinesEndWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, in
 }
 
 // Tự kiểm bộ dò "…" trên hình vẽ tay: hai dòng dính nhau, chân chữ dòng trên nằm bên phải
-// dấu "…" của dòng cuối ngắn hơn. Không có dấu "…" thì bộ dò không được báo nhầm.
+// dấu "…" của dòng cuối ngắn hơn. Không có dấu "…" thì bộ dò không được báo nhầm. Dòng cuối
+// chỉ còn mỗi dấu "…" (không có chữ cái nào vừa chỗ) cũng phải bị phát hiện.
 bool VerifyEllipsisDetector() {
   static constexpr int kWidth = 120, kHeight = 32;
   static constexpr float kFontPx = 13.0f;
   const slint::Rgb8Pixel paper{255, 255, 255};
-  const auto draw = [](ScaledWindow& screen, int x0, int x1, int y0, int y1) {
-    for (int y = y0; y <= y1; ++y)
-      for (int x = x0; x <= x1; ++x) screen.pixels[std::size_t(y) * kWidth + x] = {0, 0, 0};
-  };
-  bool ok = true;
-  for (const bool with_dots : {true, false}) {
+  const auto detect = [&paper](bool lower_text, bool with_dots) {
     ScaledWindow screen;
     screen.extent = slint::PhysicalSize({kWidth, kHeight});
     screen.pixels.assign(std::size_t(kWidth) * kHeight, paper);
-    draw(screen, 2, 90, 2, 11);    // thân chữ dòng trên
-    draw(screen, 88, 90, 12, 15);  // chân chữ dòng trên, ở bên phải dấu "…"
-    draw(screen, 10, 12, 14, 16);  // dấu của dòng cuối chạm chân chữ dòng trên
-    draw(screen, 2, 50, 17, 26);   // thân chữ dòng cuối, đường chân chữ ở hàng 26
+    const auto draw = [&screen](int x0, int x1, int y0, int y1) {
+      for (int y = y0; y <= y1; ++y)
+        for (int x = x0; x <= x1; ++x) screen.pixels[std::size_t(y) * kWidth + x] = {0, 0, 0};
+    };
+    draw(2, 90, 2, 11);    // thân chữ dòng trên
+    draw(88, 90, 12, 15);  // chân chữ dòng trên, ở bên phải dấu "…"
+    if (lower_text) {
+      draw(10, 12, 14, 16);  // dấu của dòng cuối chạm chân chữ dòng trên
+      draw(2, 50, 17, 26);   // thân chữ dòng cuối, đường chân chữ ở hàng 26
+    }
     if (with_dots)
-      for (const int x : {54, 58, 62}) draw(screen, x, x + 1, 25, 26);
-    const bool found = LinesEndWithEllipsis(screen, 0, kWidth - 1, 0, kHeight - 1, paper, kFontPx);
-    ok &= Check(found == with_dots,
-                with_dots ? "The ellipsis detector must find a trailing ellipsis under a merged line"
-                          : "The ellipsis detector must not report an ellipsis that is not there");
-  }
+      for (const int x : {54, 58, 62}) draw(x, x + 1, 25, 26);
+    return LinesEndWithEllipsis(screen, 0, kWidth - 1, 0, kHeight - 1, paper, kFontPx);
+  };
+  bool ok = Check(detect(true, true),
+                  "The ellipsis detector must find a trailing ellipsis under a merged line");
+  ok &= Check(!detect(true, false),
+              "The ellipsis detector must not report an ellipsis that is not there");
+  ok &= Check(detect(false, true),
+              "The ellipsis detector must find a last line that holds only an ellipsis");
   return ok;
 }
 
