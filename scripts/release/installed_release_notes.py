@@ -172,6 +172,20 @@ def table_cells(text):
     return cells
 
 
+def raw_text_at(raw, column):
+    """Phần của dòng gốc raw bắt đầu ở cột column của raw.expandtabs(4).
+
+    cmark-gfm chỉ mở rộng tab để đo thụt lề, còn nội dung đoạn văn giữ nguyên tab, nên độ dài nhãn
+    link phải đếm trên chữ gốc. column không nằm giữa một tab vì nó là đầu một ký tự khác khoảng trắng.
+    """
+    position = 0
+    for index, char in enumerate(raw):
+        if position >= column:
+            return raw[index:]
+        position += 4 - position % 4 if char == "\t" else 1
+    return ""
+
+
 def match_containers(line, containers):
     """Bỏ tiền tố của các khối chứa mà line còn thuộc về; trả về (phần còn lại, số khối khớp).
 
@@ -229,7 +243,8 @@ def scan(lines):
     table = False  # khối lá đang mở là bảng GFM
     unclosed = None
     for index, raw in enumerate(lines):
-        rest, matched = match_containers(raw.expandtabs(4), containers)
+        expanded = raw.expandtabs(4)
+        rest, matched = match_containers(expanded, containers)
         blank = not rest.strip(" ")
         all_matched = matched == len(containers)
         if all_matched:
@@ -277,7 +292,7 @@ def scan(lines):
                 # chữ của nó.
                 text = "".join(content + "\n" for _, content in paragraph)
                 dropped = definitions_end = reference_definitions_end(text)
-                while dropped:
+                while dropped > 0:
                     dropped -= len(paragraph.pop(0)[1]) + 1
                 if definitions_end < len(text):
                     leaf = "setext"
@@ -301,7 +316,7 @@ def scan(lines):
             body = rest.lstrip(" ")
         if body and paragraph is not None and not all_matched and not opened and leaf is None:
             # Dòng nối lười: chữ tiếp tục đoạn văn của khối chứa mà nó không thuộc về.
-            paragraph.append((index, body))
+            paragraph.append((index, raw_text_at(raw, len(expanded) - len(body))))
             header = rest
             kinds.append("text")
             continue
@@ -311,7 +326,7 @@ def scan(lines):
         containers.extend(opened)
         fence = html_end = None
         if continues_paragraph and body:
-            paragraph.append((index, body))
+            paragraph.append((index, raw_text_at(raw, len(expanded) - len(body))))
             header = body
         elif table_row:
             units.extend(("cell", [(index, cell)]) for cell in table_cells(body))
@@ -325,7 +340,7 @@ def scan(lines):
             paragraph = None
             table = leaf == "table"
             if body and leaf is None:
-                paragraph = [(index, body)]
+                paragraph = [(index, raw_text_at(raw, len(expanded) - len(body)))]
                 units.append(("paragraph", paragraph))
                 header = body
                 table_visited = False

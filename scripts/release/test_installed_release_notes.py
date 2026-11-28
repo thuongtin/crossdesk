@@ -184,13 +184,15 @@ class ExtractTest(unittest.TestCase):
                 self.assertEqual(notes.extract("## Changes\n\n" + body), body)
 
     def test_link_label_length_limit(self):
-        # Như cmark-gfm, nhãn định nghĩa link dài tối đa 1000 byte UTF-8, ký tự thoát tính hai byte.
-        # Quá giới hạn thì dòng là chữ thường và <x y> trong đó là HTML.
-        for label in ("a" * 1000, "\\!" * 500):
-            with self.subTest(label=label[:4]):
-                body = f"[{label}]: <x y>"
-                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
-        for label in ("a" * 1001, "\\!" * 500 + "a", "\u00e9" * 500 + "a"):
+        # Như cmark-gfm, nhãn định nghĩa link dài tối đa 1000 byte UTF-8, ký tự thoát tính hai byte
+        # và tab tính một byte dù nó lấp tới cột bội số của 4. Quá giới hạn thì dòng là chữ thường và
+        # <x y> trong đó là HTML.
+        for label in ("a" * 1000, "\\!" * 500, "a\t" * 333):
+            for prefix in ("", "> "):
+                with self.subTest(label=label[:4], prefix=prefix):
+                    body = f"{prefix}[{label}]: <x y>"
+                    self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+        for label in ("a" * 1001, "\\!" * 500 + "a", "\u00e9" * 500 + "a", "a\t" * 500 + "a"):
             with self.subTest(label=label[:4]):
                 self.assert_rejected(f"## Changes\n\n[{label}]: <x y>", HTML.format(3))
 
