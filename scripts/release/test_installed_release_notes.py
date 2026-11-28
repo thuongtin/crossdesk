@@ -29,6 +29,7 @@ DEFINITION = ("line {}: the Release Notes dialog cannot use link reference defin
               "[text](url) and remove this line")
 BARE_URL = ("line {}: the Release Notes dialog shows bare URLs as plain text, so write this link as <https://...> "
             "or [text](https://...), or put an address that has no https form in backticks")
+IMAGE = "line {}: the Release Notes dialog cannot show images, so remove this image or link to it as [text](https://...)"
 WRAPPED = ("line {}: the Release Notes dialog reads each line on its own and cannot show a link that wraps to the "
            "next line, so keep this link on one line")
 # Ví dụ notes nằm trong một khối trước mục thật; mục giả không được thay mục thật.
@@ -304,11 +305,27 @@ class ExtractTest(unittest.TestCase):
             with self.subTest(body=body):
                 self.assertEqual(notes.extract("## Changes\n\n" + body), body)
 
+    def test_images_are_rejected(self):
+        # Markdown của Slint không hiện ảnh nên hộp thoại hiện cả dòng thành chữ thô, còn GitHub hiện
+        # ảnh, kể cả ảnh trong chữ của link, trong ô bảng, trong tiêu đề hay kéo sang dòng sau.
+        for body in ("- See ![logo](/logo.png)", "- [![badge](/badge.svg)](https://example.com)",
+                     "| ![logo](/logo.png) |\n| --- |", "### ![logo](/logo.png) Linux",
+                     "- See ![logo\n  image](/logo.png)", "- See ![logo](/logo.png \"Title\") and [more](/u)"):
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, IMAGE.format(3))
+        self.assert_rejected("## Changes\n\n- First line\n  then ![logo](/logo.png)", IMAGE.format(4))
+        # Ảnh trong code span, '!' bị thoát trước một link, "![alt]" không có đích và "![^...]" (dấu '!'
+        # rồi chỗ gọi footnote) không phải ảnh trên GitHub.
+        for body in ("- Write `![logo](/logo.png)`", "- See \\![logo](https://example.com/logo.png)",
+                     "- See ![logo] here", "- Wow![^1]"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+
     def test_links_that_wrap_to_the_next_line_are_rejected(self):
         # GitHub hiện link nội dòng kéo sang dòng sau, còn hộp thoại đọc từng dòng riêng nên hiện cú
         # pháp thô không bấm được. Dòng báo lỗi là dòng có '[' mở link.
         for body in ("- Read [migration\n  guide](https://example.com)", "- Read [guide](https://example.com\n  \"Title\")",
-                     "- See ![logo\n  image](/logo.png)", "- See [a](\n  /u)", "> Read [the\n> guide](https://example.com)",
+                     "- See [a](\n  /u)", "> Read [the\n> guide](https://example.com)",
                      "- Read [`code\n  span`](/u)"):
             with self.subTest(body=body):
                 self.assert_rejected("## Changes\n\n" + body, WRAPPED.format(3))

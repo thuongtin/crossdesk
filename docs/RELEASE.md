@@ -322,9 +322,12 @@ GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình du
     link thì không bị chặn: URL trong backtick hay trong chữ của một link, tên miền không có `www.`
     như `example.com`, `xhttps://...` hay `https://_x.com`. Địa chỉ email cũng không bị chặn vì hộp
     thoại không mở link email.
-  - Link hay ảnh nội dòng (`[text](url)`, `![alt](src)`) phải nằm gọn trên một dòng, kể cả phần chữ,
-    đích và tiêu đề: hộp thoại đọc từng dòng riêng nên link kéo sang dòng sau hiện thành cú pháp thô
-    không bấm được, còn GitHub hiện link. Chữ nhấn mạnh hay code span kéo sang dòng sau không bị chặn
+  - Không có ảnh (`![alt](src)`), kể cả ảnh trong chữ của link như badge `[![alt](src)](url)`:
+    Markdown của hộp thoại không hiện ảnh nên hiện cả dòng thành chữ thô, còn GitHub hiện ảnh. Bỏ ảnh
+    hoặc link tới nó bằng `[text](https://...)`.
+  - Link nội dòng (`[text](url)`) phải nằm gọn trên một dòng, kể cả phần chữ, đích và tiêu đề: hộp
+    thoại đọc từng dòng riêng nên link kéo sang dòng sau hiện thành cú pháp thô không bấm được, còn
+    GitHub hiện link. Chữ nhấn mạnh hay code span kéo sang dòng sau không bị chặn
     nhưng hộp thoại hiện kèm dấu `*` hay backtick, nên cũng giữ chúng trên một dòng.
   - Không có thứ GitHub đọc thành HTML, dạng khối hay nội dòng, kể cả trong ô bảng và comment
     `<!-- -->` mà GitHub giấu đi: hộp thoại hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì
