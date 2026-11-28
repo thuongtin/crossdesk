@@ -3776,7 +3776,7 @@ export component MainWindow inherits Window {
                         text: root.update-action-text;
                         enabled: !root.update-install-busy;
                         clicked => { root.open-download(); root.about-open = false; root.update-open = true; }
-                        about-update-button-metrics := Text { visible: false; text: root.update-action-text; font-size: 12px; }
+                        about-update-button-metrics := Text { visible: false; text: root.update-action-text; font-size: 12px; font-weight: 600; }
                     }
                     SettingsButton {
                         width: max(116px, check-button-metrics.preferred-width + 24px);
@@ -3908,6 +3908,9 @@ export component MainWindow inherits Window {
                         max-height: 64px;
                         overflow: elide;
                     }
+                    // Chữ đo phải cùng cỡ và độ đậm với nhãn WorkbenchButton (13px,
+                    // 500 hoặc 600 cho nút chính); đo bằng 12px thường làm nhãn dài
+                    // như "Download manually" hay bản dịch bị cắt ở mép phải.
                     HorizontalLayout {
                         alignment: end;
                         spacing: 8px;
@@ -3923,7 +3926,7 @@ export component MainWindow inherits Window {
                             enabled: !root.update-install-busy;
                             text: UiStrings.download;
                             clicked => { root.open-manual-download(); }
-                            manual-download-metrics := Text { visible: false; text: UiStrings.download; font-size: 12px; }
+                            manual-download-metrics := Text { visible: false; text: UiStrings.download; font-size: 13px; font-weight: 500; }
                         }
                         WorkbenchButton {
                             width: max(110px, update-action-metrics.preferred-width + 24px);
@@ -3932,7 +3935,7 @@ export component MainWindow inherits Window {
                             enabled: !root.update-install-busy;
                             text: root.update-action-text;
                             clicked => { root.open-download(); }
-                            update-action-metrics := Text { visible: false; text: root.update-action-text; font-size: 12px; }
+                            update-action-metrics := Text { visible: false; text: root.update-action-text; font-size: 13px; font-weight: 600; }
                         }
                     }
                 }
@@ -4015,6 +4018,7 @@ export component MainWindow inherits Window {
                                 visible: false;
                                 text: UiStrings.install-update;
                                 font-size: 13px;
+                                font-weight: 600;
                             }
                         }
                     }
