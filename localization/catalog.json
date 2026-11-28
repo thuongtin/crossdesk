@@ -1346,7 +1346,7 @@
       "fr": "Modifier le port",
       "es": "Editar puerto",
       "pt-BR": "Editar porta",
-      "tr": "Bağlantı noktasını değiştir",
+      "tr": "Portu değiştir",
       "he": "שינוי פורט",
       "vi": "Đổi cổng"
     },
@@ -1826,7 +1826,7 @@
       "fr": "Changer d'IP",
       "es": "Cambiar IP",
       "pt-BR": "Trocar IP",
-      "tr": "IP adresini değiştir",
+      "tr": "IP değiştir",
       "he": "החלפת IP",
       "vi": "Đổi IP"
     },
