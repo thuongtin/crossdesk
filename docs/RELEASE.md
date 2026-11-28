@@ -251,16 +251,17 @@ Giữ câu nhắc máy đang chạy v1.7.7-1 hoặc v1.7.7-2 phải cài tay m�
 
 Nội dung này vừa là mô tả GitHub release vừa là `releaseNotes` trong feed mà app hiển thị.
 
-Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp) còn được nhúng vào chính bản
-build: app mở hộp thoại **Release Notes** một lần sau khi cài mới hoặc nâng cấp lên bản này và hiện
-đúng mục đó, hiển thị Markdown giống lời nhắc cập nhật. Vì vậy:
+Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp nằm ngoài code fence) còn được
+nhúng vào chính bản build: app mở hộp thoại **Release Notes** một lần sau khi cài mới hoặc nâng cấp
+lên bản này và hiện đúng mục đó, hiển thị Markdown giống lời nhắc cập nhật. Tiêu đề con trong mục
+(ví dụ `### Linux`) hiện thành dòng in đậm. Vì vậy:
 
 - Notes phải hoàn chỉnh trước lần build publish. `release.sh` tách mục này bằng
   `installed_release_notes.py` vào `dist/<version>/INSTALLED_RELEASE_NOTES.md` trước khi build và
   truyền nó cho xmake (`--CROSSDESK_RELEASE_NOTES=<file>`) trên cả ba nền tảng; gate kiểm từng file
   thực thi chính chứa nguyên văn mục đó.
 - Mục phải có ít nhất một dòng; thiếu mục thì dừng trước khi build. Khi `--publish`, dòng giữ chỗ
-  `- TODO` của bản nháp bị từ chối. Dry-run không có `--notes` nhúng bản nháp, nên muốn soát hộp
+  `- TODO` của bản nháp bị từ chối, kể cả khi có khoảng trắng thừa. Dry-run không có `--notes` nhúng bản nháp, nên muốn soát hộp
   thoại với notes thật thì dry-run kèm `--notes`.
 - Sửa notes sau khi đã build thì phải build lại. `--skip-build` sinh lại
   `INSTALLED_RELEASE_NOTES.md` từ notes hiện tại, nên gate báo lệch nếu notes đã đổi.

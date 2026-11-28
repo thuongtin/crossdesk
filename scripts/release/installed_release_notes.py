@@ -15,7 +15,9 @@ from pathlib import Path
 
 CHANGES_HEADING = re.compile(r"^##[ \t]+Changes[ \t]*$")
 # Mục Changes kết thúc ở tiêu đề cấp 1 hoặc 2 kế tiếp; tiêu đề cấp 3 trở xuống thuộc về mục.
-SECTION_END = re.compile(r"^#{1,2}[ \t]")
+SECTION_END = re.compile(r"^ {0,3}#{1,2}(?:[ \t]|$)")
+# Dòng mở hoặc đóng code fence; dòng trông như tiêu đề bên trong fence chỉ là chữ, ví dụ chú thích shell.
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 # Dòng giữ chỗ trong bản nháp release.sh tự viết khi chưa có --notes.
 PLACEHOLDER = "- TODO"
 # Khớp string:trim() của xmake (lớp %s của Lua) để gate so được từng byte với bản nhúng.
@@ -27,13 +29,31 @@ def normalize(text):
     return text.replace("\r\n", "\n").strip(WHITESPACE)
 
 
+def outside_fences(lines):
+    """Trả về chỉ số các dòng nằm ngoài code fence (bản thân dòng fence cũng bị loại)."""
+    indexes = []
+    fence = None
+    for index, line in enumerate(lines):
+        match = FENCE.match(line)
+        if fence is None:
+            if match and not (match.group(1)[0] == "`" and "`" in match.group(2)):
+                fence = match.group(1)
+            else:
+                indexes.append(index)
+        elif match and match.group(1)[0] == fence[0] and len(match.group(1)) >= len(fence) \
+                and not match.group(2).strip():
+            fence = None
+    return indexes
+
+
 def extract(text):
     """Trả về nội dung mục `## Changes` đã chuẩn hoá; báo ValueError khi thiếu hoặc rỗng."""
     lines = text.replace("\r\n", "\n").split("\n")
-    start = next((index for index, line in enumerate(lines) if CHANGES_HEADING.match(line)), None)
+    candidates = outside_fences(lines)
+    start = next((index for index in candidates if CHANGES_HEADING.match(lines[index])), None)
     if start is None:
         raise ValueError("release notes have no '## Changes' section")
-    end = next((index for index in range(start + 1, len(lines)) if SECTION_END.match(lines[index])),
+    end = next((index for index in candidates if index > start and SECTION_END.match(lines[index])),
                len(lines))
     section = normalize("\n".join(lines[start + 1:end]))
     if not section:
@@ -53,7 +73,7 @@ def main():
     except (OSError, UnicodeDecodeError, ValueError) as error:
         print(f"ERROR: {args.notes}: {error}", file=sys.stderr)
         return 1
-    if args.publish and PLACEHOLDER in section.split("\n"):
+    if args.publish and any(line.strip() == PLACEHOLDER for line in section.split("\n")):
         print(f"ERROR: {args.notes}: the '## Changes' section still has the '{PLACEHOLDER}' placeholder",
               file=sys.stderr)
         return 1
