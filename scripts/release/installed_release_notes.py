@@ -107,7 +107,6 @@ URL_TRAILING = frozenset("?!.,:*_~'\"")
 # Dòng mở mục task list của GitHub như "- [x] Done", xét trên cả dòng gốc như tiện ích tasklist của
 # cmark-gfm, nên "> - [x]" hay "- - [x]" không phải task.
 TASK_LIST_ITEM = re.compile(r"[ \t\v\f]*(?:[-+*]|[0-9]+[.)])[ \t\v\f]+\[[ xX]\][ \t\v\f]")
-TASK_CHECKBOXES = ("[ ]", "[x]", "[X]")
 # Độ dài tối đa tính bằng byte UTF-8 của nhãn "[...]" mà cmark-gfm nhận cho định nghĩa link.
 MAX_LINK_LABEL_BYTES = 1000
 # Ký tự đóng của từng kiểu tiêu đề link: "...", '...' và (...).
@@ -214,6 +213,21 @@ def raw_text_at(raw, column):
     return ""
 
 
+def raw_column_after(raw, column, count):
+    """Cột của raw.expandtabs(4) sau count ký tự gốc, tính từ ký tự gốc chứa cột column.
+
+    Như cmark_parser_advance_offset với columns là False, mỗi ký tự gốc tính là một, kể cả tab mà
+    khối chứa đã dùng mất một phần.
+    """
+    position = 0
+    for index, char in enumerate(raw):
+        width = 4 - position % 4 if char == "\t" else 1
+        if position + width > column:
+            return len(raw[:index + count].expandtabs(4))
+        position += width
+    return position
+
+
 def match_containers(line, containers):
     """Bỏ tiền tố của các khối chứa mà line còn thuộc về; trả về (phần còn lại, số khối khớp).
 
@@ -300,21 +314,31 @@ def scan(lines):
         # Mở các khối mới ở đầu phần còn lại, theo thứ tự ưu tiên của cmark-gfm.
         in_paragraph = paragraph is not None and all_matched
         maybe_lazy = paragraph is not None
+        # Khối mà cmark-gfm đưa cho tiện ích tasklist khi dòng không mở khối chứa mới có phải mục list
+        # không: mục list trong cùng còn khớp, khi nó không có đoạn văn hay bảng đang mở. Khi một mục
+        # list lồng bên trong không khớp, khối đó là list chứa mục lồng chứ không phải mục list.
+        if all_matched:
+            item_container = (bool(containers) and isinstance(containers[-1], list)
+                              and not in_paragraph and not table)
+        else:
+            item_container = (matched > 0 and isinstance(containers[matched - 1], list)
+                              and not isinstance(containers[matched], list))
         opened = []
         leaf = None
         while body:
             indent = len(rest) - len(body)
+            # GitHub hiện ô đánh dấu thay cho "[x]" ở đầu mục task list, nên đó không phải link tham
+            # chiếu. Tiện ích tasklist của cmark-gfm chỉ chạy khi không khối nào khác mở được ở đây,
+            # rồi bỏ đúng ba ký tự gốc tính từ chỗ đang đọc, kể cả khi đó là "\v[x" của "- \v[x] Done"
+            # hay "-\v[" của dòng nối tiếp mục "-\v[x] Done". Phần còn lại luôn là chữ của đoạn văn.
+            task = (isinstance(opened[-1], list) if opened else item_container) and TASK_LIST_ITEM.match(raw)
             if indent > 3:
                 # Khối code thụt lề, trừ khi dòng là chữ nối tiếp đoạn văn.
                 if not maybe_lazy:
                     leaf = "code"
-                break
-            if (opened and isinstance(opened[-1], list) and body[:3] in TASK_CHECKBOXES
-                    and TASK_LIST_ITEM.match(raw)):
-                # GitHub hiện ô đánh dấu thay cho "[x]" ở đầu mục task list, nên đó không phải link tham
-                # chiếu. Phần sau ô luôn là chữ của đoạn văn, kể cả khi trông như mở khối khác.
-                rest = body[3:]
-                body = rest.lstrip(" ")
+                elif task:
+                    rest = expanded[raw_column_after(raw, len(expanded) - len(rest), 3):]
+                    body = rest.lstrip(" ")
                 break
             if body.startswith(">"):
                 opened.append(None)
@@ -356,8 +380,11 @@ def scan(lines):
             else:
                 item = list_item(body, indent, in_paragraph)
                 if item is None:
+                    if task:
+                        rest = expanded[raw_column_after(raw, len(expanded) - len(rest), 3):]
+                        body = rest.lstrip(" ")
                     # Dòng phân cách cùng số ô với dòng cuối của đoạn văn biến dòng đó thành bảng.
-                    if in_paragraph and not table_visited and TABLE_DELIMITER_ROW.match(body):
+                    elif in_paragraph and not table_visited and TABLE_DELIMITER_ROW.match(body):
                         if len(table_cells(body)) == len(table_cells(header)):
                             leaf = "table"
                         else:

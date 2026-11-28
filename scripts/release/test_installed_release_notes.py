@@ -378,6 +378,21 @@ class ExtractTest(unittest.TestCase):
             with self.subTest(body=body):
                 self.assert_rejected(f"## Changes\n\n{body}{downloads}", REFERENCE.format(3))
         self.assert_rejected("## Changes\n\n- [x] [x]: /u", DEFINITION.format(3))
+        # Khi dòng gốc trông như mục task, tiện ích tasklist của cmark-gfm bỏ ba ký tự gốc tính từ chỗ
+        # đang đọc của mục list trong cùng, như "\v[x" sau dấu list hay "-\v[" ở dòng nối tiếp một mục
+        # không còn đoạn văn hay bảng mở, kể cả khi dòng đó nối lười vào trích dẫn trong mục.
+        for body in ("- \v[x] Done", "- \f[ ] Todo", "- A\n\n  -\v[x] Done", "- # H\n  -\v[x] Done",
+                     "- > q\n  -\v[x] Done"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract(f"## Changes\n\n{body}{downloads}"), body)
+        # Ba ký tự đó có thể chừa lại "[x]" (tab chỉ tính là một ký tự), và không có ô đánh dấu khi đoạn
+        # văn, bảng hay mục list lồng của mục còn mở, hoặc khi khối trong cùng không phải mục list.
+        for body, line in (("- A\n\n \t-\v[x] Done", 5), ("- A\n\n  1234567890. [x] Done", 5),
+                           ("- > q\n      -\v[x] Done", 4), ("- A\n  -\v[x] Done", 4),
+                           ("- A\n  | a | b |\n  | - | - |\n  -\v[x] | Done", 6),
+                           ("- A\n  - B\n\n  -\v[x] Done", 6), ("> q\n-\v[x] Done", 4), ("-\v[x] Done", 3)):
+            with self.subTest(body=body):
+                self.assert_rejected(f"## Changes\n\n{body}{downloads}", REFERENCE.format(line))
 
     def test_vertical_tabs_and_form_feeds_stay_in_labels_and_destinations(self):
         # cmark-gfm chỉ gộp và cắt dấu cách, tab và xuống dòng trong nhãn; "\v" và "\f" là chữ, nên
