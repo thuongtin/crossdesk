@@ -686,35 +686,36 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
       logical_index = 0;
     }
 
-    SCDisplay *logical_fallback = nil;
-    int display_index = 0;
+    std::vector<uint32_t> listed;
+    listed.reserve(content.displays.count);
     for (SCDisplay *display in content.displays) {
-      if (display_index == logical_index) logical_fallback = display;
-      if (current_display_ != 0 && current_display_ == display.displayID) {
-        captured_display = display;
-        break;
-      }
-      ++display_index;
+      listed.push_back(display.displayID);
     }
-    // The built-in panel can briefly disappear from ScreenCaptureKit on wake.
-    // Keep its stream bound to that panel while CoreGraphics reports it
-    // online, but only for a grace period: a panel that stays missing must
-    // not keep viewers from a display that is still available.
-    const bool builtin_missing = !captured_display &&
-                                 CGDisplayIsBuiltin(current_display_) &&
-                                 CGDisplayIsOnline(current_display_);
-    const bool waiting_for_builtin =
-        builtin_panel_wait_.ShouldWait(builtin_missing, Clock::now());
-    if (builtin_missing && !waiting_for_builtin) {
+    // The slot keeps the display it was opened for apart from the one it
+    // captures now, so a fallback ends once the requested display is listed
+    // again. The built-in panel can briefly disappear from ScreenCaptureKit
+    // on wake: wait for it while CoreGraphics reports it online, but only for
+    // a grace period, so a panel that stays missing cannot keep viewers from
+    // a display that is still available.
+    const auto requested_it = display_id_map_.find(logical_index);
+    const CGDirectDisplayID requested =
+        requested_it == display_id_map_.end() ? kCGNullDirectDisplay
+                                              : requested_it->second;
+    const bool requested_builtin_online = requested != kCGNullDirectDisplay &&
+                                          CGDisplayIsBuiltin(requested) &&
+                                          CGDisplayIsOnline(requested);
+    const CaptureDisplayChoice choice = ChooseCaptureDisplay(
+        listed, requested, current_display_, requested_builtin_online,
+        logical_index, builtin_panel_wait_, Clock::now());
+    if (choice.gave_up_on_builtin) {
       LOG_WARN("Built-in display {} is still missing from ScreenCaptureKit; "
                "falling back to another display",
-               current_display_);
+               requested);
     }
-    if (!captured_display && !waiting_for_builtin) {
-      captured_display = logical_fallback ? logical_fallback
-                                          : content.displays.firstObject;
+    if (choice.index >= 0) {
       // The viewer and input still use the selected slot, even when SCK
-      // falls back to its first display. Bind that slot to the new geometry.
+      // falls back to another display. Bind that slot to the new geometry.
+      captured_display = content.displays[choice.index];
     }
 
     if (captured_display) {
@@ -731,6 +732,11 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
       current_monitor_index_ = logical_index;
       current_display_ = new_display;
       current_stream_id_ = stable_stream_id;
+      if (requested == kCGNullDirectDisplay) {
+        // A slot reserved before any display was listed adopts its first
+        // capture as the display it asks for from now on.
+        display_id_map_[logical_index] = new_display;
+      }
 
       CGRect bounds = CGDisplayBounds(new_display);
       auto& info = display_info_list_[logical_index];
