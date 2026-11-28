@@ -293,10 +293,14 @@ Function .onInstFailed
 FunctionEnd
 
 ; New installations go to the 64-bit Program Files folder. An existing
-; installation is upgraded where it is, even in Program Files (x86): the
-; updater relaunches CrossDesk.exe from its old path, and the service, the
-; per-user auto-start tasks and the firewall rules all point at that path.
-; Moving it would also need the old uninstaller, which deletes user data.
+; installation is upgraded or repaired where it is, even in Program Files
+; (x86): the updater relaunches CrossDesk.exe from its old path, and the
+; service, the per-user auto-start tasks and the firewall rules all point at
+; that path. Moving it would also need the old uninstaller, which deletes user
+; data. The uninstall entry marks a registered installation, so its folder is
+; kept even when CrossDesk.exe was deleted or quarantined. The per-user
+; InstallDir survives an uninstall run from another account, so it only
+; counts while CrossDesk.exe is still there.
 ; The updater always passes /D, which NSIS applies before .onInit, so a
 ; non-default $INSTDIR means the caller chose the folder.
 Function LocateExistingInstall
@@ -306,10 +310,13 @@ Function LocateExistingInstall
     ${EndIf}
     ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "InstallLocation"
     ${If} $0 == ""
-        ReadRegStr $0 HKCU "Software\${PRODUCT_NAME}" "InstallDir"
+        ReadRegStr $1 HKCU "Software\${PRODUCT_NAME}" "InstallDir"
+        ${If} $1 != ""
+        ${AndIf} ${FileExists} "$1\CrossDesk.exe"
+            StrCpy $0 $1
+        ${EndIf}
     ${EndIf}
     ${If} $0 != ""
-    ${AndIf} ${FileExists} "$0\CrossDesk.exe"
         StrCpy $INSTDIR $0
         StrCpy $ExistingInstall 1
     ${EndIf}
