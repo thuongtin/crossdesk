@@ -134,7 +134,7 @@ The controller and host must be mutually reachable over a LAN or VPN. Internet a
 
 The desktop trusted-device restriction is **off by default** and applies to both ID and direct IP connections. When enabled, the controller must pass the existing password verification and prove possession of a pairing private key recognized by the host. Knowing the ID and password alone does not satisfy this restriction.
 
-1. **Copy pairing information on the controller.** Open **Settings → General → Privacy → Manage trusted devices**. Under **This device’s pairing info**, click **Copy pairing info**.
+1. **Copy pairing information on the controller.** Open **Settings → General → Privacy → Trusted devices → Manage**. Under **This device’s pairing info**, click **Copy pairing info**.
 2. **Add the controller on the host.** Open the same management dialog, paste the information into **Add a trusted device**, and click **Add**. It is saved immediately, with no second confirmation or prior remote connection required.
 3. **Enable the restriction on the host.** Return to settings, select **Only allow trusted devices**, and save. Connect by ID or IP and verify the password as usual.
 

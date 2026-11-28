@@ -10,7 +10,7 @@ Bạn có thể tải APK đã ký từ [trang chủ](https://www.crossdesk.cn/)
 
 ## Xác thực thiết bị đáng tin cậy
 
-“Cài đặt → Thông tin ghép đôi máy này → Xem fingerprint” cho phép xem fingerprint của máy này và sao chép thông tin ghép đôi. Dán thông tin đó vào “Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy” trên máy được điều khiển, đối chiếu fingerprint rồi thêm thiết bị. Sau đó bạn có thể kết nối máy đã bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”; mật khẩu kết nối vẫn cần được xác minh.
+“Cài đặt → Thông tin ghép đôi máy này → Xem fingerprint” cho phép xem fingerprint của máy này và sao chép thông tin ghép đôi. Dán thông tin đó vào “Thiết bị đáng tin cậy → Quản lý → Thêm thiết bị đáng tin cậy” trên máy được điều khiển, đối chiếu fingerprint rồi thêm thiết bị. Sau đó bạn có thể kết nối máy đã bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”; mật khẩu kết nối vẫn cần được xác minh.
 
 Ứng dụng di động dùng giao thức thách thức–đáp ứng Ed25519 chung. Khóa riêng được mã hóa bằng Android Keystore / AES-GCM và lưu bền vững trong vùng riêng của ứng dụng, không ghi vào bộ nhớ đệm, nhật ký hay thông tin ghép đôi. Khởi động lại, xóa bộ nhớ đệm hoặc đổi máy chủ/ID đăng nhập không làm đổi khóa công khai. Nếu khóa hiện có bị hỏng, không đọc được hoặc bị mất, quá trình khởi tạo sẽ dừng và báo lỗi, không tự thay khóa. Xóa dữ liệu hoặc gỡ rồi cài lại ứng dụng thì cần ghép đôi lại.
 

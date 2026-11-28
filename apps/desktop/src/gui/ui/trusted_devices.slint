@@ -233,7 +233,8 @@ export component TrustedDevicesDialog inherits Rectangle {
                                 color: WorkbenchStyle.text; wrap: word-wrap; vertical-alignment: center;
                             }
                             SettingsButton {
-                                width: min(160px, self.label-width); height: 30px; text: TrustStrings.copy;
+                                // Nhãn tiếng Việt, tiếng Đức dài hơn 160px; cho nút nở theo chữ, tối đa nửa hàng.
+                                width: min(parent.width * 0.5, self.label-width); height: 30px; text: TrustStrings.copy;
                                 enabled: root.local-fingerprint != ""; clicked => { root.action("copy", "", ""); }
                             }
                         }
