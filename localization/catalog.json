@@ -13975,18 +13975,18 @@
       "pt-BR": "Nenhuma imagem chegou do computador remoto ainda. Verifique se ele não está em repouso e se o CrossDesk nele tem permissão para gravar a tela; depois reconecte.",
       "vi": "Chưa nhận được hình ảnh từ máy tính từ xa. Hãy kiểm tra máy đó không ở chế độ ngủ và CrossDesk trên máy đó đã được cấp quyền ghi màn hình, rồi kết nối lại."
     },
-    "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。": {
-      "zh-Hans": "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。",
-      "en": "The remote computer is sharing its screen, but no picture has arrived. Check the network connection, then reconnect.",
-      "ru": "Удалённый компьютер транслирует экран, но изображение не поступает. Проверьте сетевое подключение и переподключитесь.",
-      "zh-Hant": "遠端電腦正在分享螢幕，但尚未收到畫面。請檢查網路連線，然後重新連線。",
-      "ja": "リモートコンピューターは画面を共有していますが、画面が届いていません。ネットワーク接続を確認してから、再接続してください。",
-      "ko": "원격 컴퓨터가 화면을 공유하고 있지만 화면이 도착하지 않았습니다. 네트워크 연결을 확인한 후 다시 연결하세요.",
-      "de": "Der entfernte Computer teilt seinen Bildschirm, aber es kommt kein Bild an. Prüfen Sie die Netzwerkverbindung und verbinden Sie sich dann erneut.",
-      "fr": "L'ordinateur distant partage son écran, mais aucune image n'arrive. Vérifiez la connexion réseau, puis reconnectez-vous.",
-      "es": "El equipo remoto está compartiendo su pantalla, pero no llega ninguna imagen. Compruebe la conexión de red y vuelva a conectarse.",
-      "pt-BR": "O computador remoto está compartilhando a tela, mas nenhuma imagem chegou. Verifique a conexão de rede e reconecte.",
-      "vi": "Máy tính từ xa đang chia sẻ màn hình nhưng chưa có hình ảnh nào tới. Hãy kiểm tra kết nối mạng, rồi kết nối lại."
+    "远程电脑正在录制屏幕，但画面未能到达此窗口。请重新连接；如果问题持续，请检查两台电脑的网络。": {
+      "zh-Hans": "远程电脑正在录制屏幕，但画面未能到达此窗口。请重新连接；如果问题持续，请检查两台电脑的网络。",
+      "en": "The remote computer is capturing its screen, but the picture is not reaching this window. Reconnect; if it keeps happening, check the network on both computers.",
+      "ru": "Удалённый компьютер записывает экран, но изображение не доходит до этого окна. Переподключитесь; если это повторяется, проверьте сеть на обоих компьютерах.",
+      "zh-Hant": "遠端電腦正在錄製螢幕，但畫面未能送達此視窗。請重新連線；如果問題持續，請檢查兩台電腦的網路。",
+      "ja": "リモートコンピューターは画面を収録していますが、映像がこのウインドウに届いていません。再接続してください。繰り返し起きる場合は、両方のコンピューターのネットワークを確認してください。",
+      "ko": "원격 컴퓨터가 화면을 기록하고 있지만 화면이 이 창에 도착하지 않습니다. 다시 연결하세요. 계속 발생하면 두 컴퓨터의 네트워크를 확인하세요.",
+      "de": "Der entfernte Computer nimmt seinen Bildschirm auf, aber das Bild erreicht dieses Fenster nicht. Verbinden Sie sich erneut; wenn das wieder passiert, prüfen Sie das Netzwerk auf beiden Computern.",
+      "fr": "L'ordinateur distant enregistre son écran, mais l'image n'atteint pas cette fenêtre. Reconnectez-vous ; si cela se reproduit, vérifiez le réseau des deux ordinateurs.",
+      "es": "El equipo remoto está grabando su pantalla, pero la imagen no llega a esta ventana. Vuelva a conectarse; si sigue ocurriendo, compruebe la red de ambos equipos.",
+      "pt-BR": "O computador remoto está gravando a tela, mas a imagem não está chegando a esta janela. Reconecte; se continuar acontecendo, verifique a rede dos dois computadores.",
+      "vi": "Máy tính từ xa đang ghi màn hình nhưng hình ảnh không tới được cửa sổ này. Hãy kết nối lại; nếu vẫn lặp lại, hãy kiểm tra mạng trên cả hai máy."
     },
     "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。": {
       "zh-Hans": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
@@ -14328,7 +14328,7 @@
     "windows_service_repair_failed": "修复失败，请检查管理员权限和便携版文件后重试",
     "remote_service_unavailable_message": "远端 Windows 服务不可用，锁屏时无法操作。请在远端安装或修复 CrossDesk 服务。",
     "frame_wait_no_picture": "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。",
-    "frame_wait_no_video": "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。",
+    "frame_wait_no_video": "远程电脑正在录制屏幕，但画面未能到达此窗口。请重新连接；如果问题持续，请检查两台电脑的网络。",
     "frame_wait_permission_denied": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
     "frame_wait_display_unavailable": "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
     "frame_wait_capture_failed": "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。"
@@ -15275,7 +15275,7 @@
       "重试",
       "连接到设备",
       "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。",
-      "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。",
+      "远程电脑正在录制屏幕，但画面未能到达此窗口。请重新连接；如果问题持续，请检查两台电脑的网络。",
       "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
       "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
       "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。"

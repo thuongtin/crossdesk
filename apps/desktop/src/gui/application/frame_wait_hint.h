@@ -12,7 +12,9 @@ enum class Hint {
   receiving,
   // No reason is known; the host cannot report one or did not.
   no_picture,
-  // The host captures its screen, so the video is lost on the way.
+  // The host captures its screen, but no frame reaches this viewer. The
+  // host does not report delivery, so the hint suggests reconnecting first
+  // and checking the network only if the problem keeps happening.
   no_video,
   permission_denied,
   display_unavailable,

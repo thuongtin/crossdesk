@@ -31,7 +31,7 @@ int main() {
   ok &= Expect(Select(10000, CaptureState::failed) == Hint::capture_failed,
                "a lasting capture failure must be explained");
   ok &= Expect(Select(10000, CaptureState::capturing) == Hint::no_video,
-               "a capturing host without video must point at the connection");
+               "a capturing host without video must suggest reconnecting");
   ok &= Expect(Select(9999, CaptureState::unknown) == Hint::receiving,
                "an unknown state must wait for the generic delay");
   ok &= Expect(Select(10000, CaptureState::unknown) == Hint::no_picture,
