@@ -3003,7 +3003,9 @@ export component MainWindow inherits Window {
         background: #15223850;
         z: 48;
         TouchArea { clicked => { if !root.lan-open { focus-sink.focus(); } } }
-        WorkbenchCard {
+        // Skin Postcard ánh xạ WorkbenchCard sang thẻ trong suốt, nên hộp thoại
+        // modal phải dùng DialogSurface có nền đặc như các hộp thoại khác.
+        DialogSurface {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             width: 340px;

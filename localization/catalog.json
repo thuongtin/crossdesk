@@ -398,12 +398,12 @@
       "ja": "IDモード",
       "ko": "ID 모드",
       "de": "ID-Modus",
-      "fr": "Mode identification",
-      "es": "Modo de identificación",
+      "fr": "Mode ID",
+      "es": "Modo ID",
       "pt-BR": "Modo ID",
       "tr": "Kimlikle",
       "he": "לפי מזהה",
-      "vi": "Kết nối bằng ID"
+      "vi": "Theo ID"
     },
     "IP 和端口已复制": {
       "zh-Hans": "IP 和端口已复制",
@@ -433,7 +433,7 @@
       "pt-BR": "Modo IP",
       "tr": "IP ile",
       "he": "לפי IP",
-      "vi": "Kết nối bằng IP"
+      "vi": "Theo IP"
     },
     "IP 连接准备中…": {
       "zh-Hans": "IP 连接准备中…",
@@ -1811,9 +1811,9 @@
       "fr": "Limite de résolution",
       "es": "Límite de resolución",
       "pt-BR": "Limite de resolução",
-      "tr": "En yüksek çözünürlük",
+      "tr": "Maks. çözünürlük",
       "he": "רזולוציה מרבית",
-      "vi": "Giới hạn độ phân giải"
+      "vi": "Độ phân giải tối đa"
     },
     "切换 IP": {
       "zh-Hans": "切换 IP",
@@ -9491,9 +9491,9 @@
       "fr": "Bande passante totale",
       "es": "Ancho de banda total",
       "pt-BR": "Largura de banda total",
-      "tr": "Toplam video bant genişliği",
+      "tr": "Toplam bant genişliği",
       "he": "רוחב פס כולל",
-      "vi": "Tổng băng thông video"
+      "vi": "Tổng băng thông"
     },
     "视频编码": {
       "zh-Hans": "视频编码",

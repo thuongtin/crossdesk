@@ -234,9 +234,9 @@ Cấu hình thống nhất thiết bị trong bức tường tại **Cài đặt
 
 | Cài đặt | Giải thích |
 | --- | --- |
-| Giới hạn độ phân giải | Tự động, 320 × 180, 640 × 360, 1280 × 720, 1920 × 1080, 2560 × 1440, 3840 × 2160 hoặc độ phân giải gốc; chế độ tự động điều chỉnh theo lưới / chế độ phóng to, giới hạn cố định giữ tỷ lệ và không phóng lớn hình ảnh nguồn |
+| Độ phân giải tối đa | Tự động, 320 × 180, 640 × 360, 1280 × 720, 1920 × 1080, 2560 × 1440, 3840 × 2160 hoặc độ phân giải gốc; chế độ tự động điều chỉnh theo lưới / chế độ phóng to, giới hạn cố định giữ tỷ lệ và không phóng lớn hình ảnh nguồn |
 | Tốc độ khung hình | Theo cài đặt thiết bị, hoặc chỉ định 15 / 30 / 60 FPS |
-| Tổng băng thông video | Mặc định 20 Mbps, có thể chọn 2 / 5 / 10 / 20 / 50 / 100 Mbps; các phiên DeskHub hỗ trợ khả năng này dùng chung, ưu tiên cấp cho hình ảnh phóng to, không gồm âm thanh, truyền tệp và kết nối thông thường, cũng không phải giới hạn cứng của lưu lượng tức thời |
+| Tổng băng thông | Mặc định 20 Mbps, có thể chọn 2 / 5 / 10 / 20 / 50 / 100 Mbps; các phiên DeskHub hỗ trợ khả năng này dùng chung, ưu tiên cấp cho hình ảnh phóng to, không gồm âm thanh, truyền tệp và kết nối thông thường, cũng không phải giới hạn cứng của lưu lượng tức thời |
 
 <p align="center">
   <img src="images/desktop-settings-deskhub-zh.png" width="720" alt="Cài đặt truyền hình ảnh DeskHub: độ phân giải tự động, tốc độ khung hình theo thiết bị và tổng băng thông video 20 Mbps" />

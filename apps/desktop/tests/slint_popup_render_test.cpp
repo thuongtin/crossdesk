@@ -873,6 +873,33 @@ bool VerifyMainWindowFitScale(RenderTestPlatform&) {
   return Check(main->get_ui_scale() == 1.0f && main->get_minimum_window_width() == 640.0f,
                "DeskHub mode must ignore fit-scale");
 }
+
+bool VerifyConnectionDialogSurface(RenderTestPlatform& platform) {
+  auto main = CreateMainWindow();
+  ConfigureEvidenceData(main);
+  crossdesk::ui_localization::ApplyMainWindowStrings(main, 1);
+  main->set_language_index(1);
+  auto& screen = *platform.adapter;
+  const float width = main->get_minimum_window_width();
+  const float height = main->get_minimum_window_height();
+  main->window().set_size(slint::LogicalSize({width, height}));
+  main->show();
+  main->set_connection_status_text("Establishing P2P connection...");
+  main->set_connection_pending(true);
+  main->set_connection_dialog_open(true);
+  screen.Settle();
+  if (!WritePopupEvidence(screen, "connection-dialog")) return false;
+  // Hộp thoại rộng 340px, cao 168px, căn giữa cửa sổ. Điểm lấy mẫu nằm trong
+  // lề trái của thẻ, ngoài vùng chữ và nút, nên chỉ thấy nền của thẻ.
+  const int card_x = int((width - 340.0f) / 2.0f);
+  const int card_y = int((height - 168.0f) / 2.0f);
+  const bool opaque = screen.Light(card_x + 10, card_y + 84) &&
+                      screen.Light(card_x + 330, card_y + 84) &&
+                      screen.Light(card_x + 170, card_y + 90);
+  main->set_connection_dialog_open(false);
+  main->set_connection_pending(false);
+  return Check(opaque, "Connection progress dialog must paint an opaque surface over the scrim");
+}
 }  // namespace
 
 int main() {
@@ -894,6 +921,10 @@ int main() {
     return VerifyPostcardIpControls(*backend) ? 0 : 8;
   }
   if (const char* test = std::getenv("CROSSDESK_POPUP_TEST");
+      test && std::string(test) == "connection-dialog") {
+    return VerifyConnectionDialogSurface(*backend) ? 0 : 11;
+  }
+  if (const char* test = std::getenv("CROSSDESK_POPUP_TEST");
       test && std::string(test) == "recent-16x9") {
     return VerifySquareRecentPreview(*backend) ? 0 : 9;
   }
@@ -907,6 +938,7 @@ int main() {
   if (!VerifyPostcardIpControls(*backend)) return 8;
   if (!VerifySquareRecentPreview(*backend)) return 9;
   if (!VerifyMainWindowFitScale(*backend)) return 10;
+  if (!VerifyConnectionDialogSurface(*backend)) return 11;
   std::cout << "Main window fit-scale passed.\n";
   std::cout << "Square mode controls and uncropped 16:9 recent preview passed.\n";
   std::cout << "Slint popup rendering and local input passed.\n";
