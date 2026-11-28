@@ -16,6 +16,17 @@ namespace crossdesk {
 
 class PrivacyController;
 
+// Whether a started capture can deliver frames. Backends that do not track
+// it report unknown, and remote viewers then fall back to a generic hint.
+enum class ScreenCaptureHealth {
+  unknown,
+  starting,
+  capturing,
+  permission_denied,
+  display_unavailable,
+  failed,
+};
+
 class ScreenCapturer {
  public:
   // Windows backends emit a control-only callback BEFORE automatic recovery.
@@ -52,6 +63,8 @@ class ScreenCapturer {
   // Called on the UI thread. Publish a settled topology only if the host can
   // admit its stream count for the next connection.
   virtual bool RefreshIdleDisplays(const std::function<bool(size_t)>&) { return false; }
+  // Called on the UI thread while capture is requested.
+  virtual ScreenCaptureHealth GetCaptureHealth() { return ScreenCaptureHealth::unknown; }
 };
 }  // namespace crossdesk
 #endif

@@ -13961,6 +13961,71 @@
       "es": "Conectar a un dispositivo",
       "pt-BR": "Conectar a um dispositivo",
       "vi": "Kết nối với thiết bị"
+    },
+    "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。": {
+      "zh-Hans": "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。",
+      "en": "No picture has arrived from the remote computer. Make sure it is awake and CrossDesk on it is allowed to record the screen, then reconnect.",
+      "ru": "Изображение с удалённого компьютера не поступает. Убедитесь, что он не в спящем режиме и CrossDesk на нём разрешена запись экрана, затем переподключитесь.",
+      "zh-Hant": "尚未收到遠端電腦的畫面。請確認對方電腦已喚醒，且其上的 CrossDesk 已獲准錄製螢幕，然後重新連線。",
+      "ja": "リモートコンピューターから画面が届いていません。相手のコンピューターがスリープしていないこと、その CrossDesk に画面収録が許可されていることを確認してから、再接続してください。",
+      "ko": "원격 컴퓨터에서 화면이 아직 도착하지 않았습니다. 원격 컴퓨터가 깨어 있고 그 컴퓨터의 CrossDesk에 화면 기록 권한이 있는지 확인한 후 다시 연결하세요.",
+      "de": "Vom entfernten Computer kommt noch kein Bild an. Stellen Sie sicher, dass er wach ist und CrossDesk dort den Bildschirm aufnehmen darf, und verbinden Sie sich dann erneut.",
+      "fr": "Aucune image n'est encore arrivée de l'ordinateur distant. Vérifiez qu'il n'est pas en veille et que CrossDesk y est autorisé à enregistrer l'écran, puis reconnectez-vous.",
+      "es": "Todavía no llega imagen del equipo remoto. Asegúrese de que no esté en reposo y de que CrossDesk tenga permiso para grabar la pantalla en él; luego vuelva a conectarse.",
+      "pt-BR": "Nenhuma imagem chegou do computador remoto ainda. Verifique se ele não está em repouso e se o CrossDesk nele tem permissão para gravar a tela; depois reconecte.",
+      "vi": "Chưa nhận được hình ảnh từ máy tính từ xa. Hãy kiểm tra máy đó không ở chế độ ngủ và CrossDesk trên máy đó đã được cấp quyền ghi màn hình, rồi kết nối lại."
+    },
+    "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。": {
+      "zh-Hans": "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。",
+      "en": "The remote computer is sharing its screen, but no picture has arrived. Check the network connection, then reconnect.",
+      "ru": "Удалённый компьютер транслирует экран, но изображение не поступает. Проверьте сетевое подключение и переподключитесь.",
+      "zh-Hant": "遠端電腦正在分享螢幕，但尚未收到畫面。請檢查網路連線，然後重新連線。",
+      "ja": "リモートコンピューターは画面を共有していますが、画面が届いていません。ネットワーク接続を確認してから、再接続してください。",
+      "ko": "원격 컴퓨터가 화면을 공유하고 있지만 화면이 도착하지 않았습니다. 네트워크 연결을 확인한 후 다시 연결하세요.",
+      "de": "Der entfernte Computer teilt seinen Bildschirm, aber es kommt kein Bild an. Prüfen Sie die Netzwerkverbindung und verbinden Sie sich dann erneut.",
+      "fr": "L'ordinateur distant partage son écran, mais aucune image n'arrive. Vérifiez la connexion réseau, puis reconnectez-vous.",
+      "es": "El equipo remoto está compartiendo su pantalla, pero no llega ninguna imagen. Compruebe la conexión de red y vuelva a conectarse.",
+      "pt-BR": "O computador remoto está compartilhando a tela, mas nenhuma imagem chegou. Verifique a conexão de rede e reconecte.",
+      "vi": "Máy tính từ xa đang chia sẻ màn hình nhưng chưa có hình ảnh nào tới. Hãy kiểm tra kết nối mạng, rồi kết nối lại."
+    },
+    "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。": {
+      "zh-Hans": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
+      "en": "The remote computer has not allowed CrossDesk to record its screen. On that Mac, open System Settings > Privacy & Security > Screen & System Audio Recording, turn on CrossDesk, then restart CrossDesk there.",
+      "ru": "На удалённом компьютере CrossDesk не разрешена запись экрана. На этом Mac откройте «Системные настройки > Конфиденциальность и безопасность > Запись экрана и системного аудио», включите CrossDesk и перезапустите там CrossDesk.",
+      "zh-Hant": "遠端電腦未允許 CrossDesk 錄製螢幕。請在那台 Mac 上開啟「系統設定 > 隱私權與安全性 > 螢幕與系統錄音」，開啟 CrossDesk，然後在那台電腦上重新啟動 CrossDesk。",
+      "ja": "リモートコンピューターで CrossDesk の画面収録が許可されていません。その Mac で「システム設定 > プライバシーとセキュリティ > 画面収録とシステムオーディオ録音」を開き、CrossDesk をオンにしてから、その Mac で CrossDesk を再起動してください。",
+      "ko": "원격 컴퓨터에서 CrossDesk의 화면 기록이 허용되지 않았습니다. 해당 Mac에서 시스템 설정 > 개인정보 보호 및 보안 > 화면 및 시스템 오디오 녹음을 열고 CrossDesk를 켠 다음, 그 Mac에서 CrossDesk를 다시 시작하세요.",
+      "de": "Der entfernte Computer erlaubt CrossDesk nicht, den Bildschirm aufzunehmen. Öffnen Sie auf diesem Mac „Systemeinstellungen > Datenschutz & Sicherheit > Bildschirm- & System-Audioaufnahme“, aktivieren Sie CrossDesk und starten Sie CrossDesk dort neu.",
+      "fr": "L'ordinateur distant n'autorise pas CrossDesk à enregistrer son écran. Sur ce Mac, ouvrez Réglages Système > Confidentialité et sécurité > Enregistrement de l'écran et de l'audio du système, activez CrossDesk, puis redémarrez CrossDesk sur ce Mac.",
+      "es": "El equipo remoto no ha permitido que CrossDesk grabe su pantalla. En ese Mac, abra Ajustes del Sistema > Privacidad y seguridad > Grabación de pantalla y audio del sistema, active CrossDesk y reinicie CrossDesk en ese equipo.",
+      "pt-BR": "O computador remoto não permitiu que o CrossDesk gravasse a tela. Nesse Mac, abra Ajustes do Sistema > Privacidade e Segurança > Gravação de Tela e Áudio do Sistema, ative o CrossDesk e reinicie o CrossDesk nele.",
+      "vi": "Máy tính từ xa chưa cho phép CrossDesk ghi màn hình. Trên máy Mac đó, mở Cài đặt hệ thống > Quyền riêng tư & Bảo mật > Ghi màn hình & âm thanh hệ thống, bật CrossDesk, rồi khởi động lại CrossDesk trên máy đó."
+    },
+    "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。": {
+      "zh-Hans": "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
+      "en": "The remote screen is asleep or turned off. Waiting for it to wake up... If this lasts, wake the remote computer or check that its display is connected.",
+      "ru": "Удалённый экран в спящем режиме или выключен. Ожидание пробуждения... Если это продолжается, разбудите удалённый компьютер или проверьте подключение дисплея.",
+      "zh-Hant": "遠端螢幕處於睡眠或關閉狀態，正在等待喚醒...若持續如此，請喚醒遠端電腦或檢查其顯示器是否已連接。",
+      "ja": "リモートの画面がスリープ中または電源オフです。復帰を待っています...続く場合は、リモートコンピューターをスリープから復帰させるか、ディスプレイの接続を確認してください。",
+      "ko": "원격 화면이 잠자기 상태이거나 꺼져 있습니다. 깨어나기를 기다리는 중... 계속되면 원격 컴퓨터를 깨우거나 디스플레이가 연결되어 있는지 확인하세요.",
+      "de": "Der entfernte Bildschirm ist im Ruhezustand oder ausgeschaltet. Warten auf das Aufwachen... Wenn das anhält, wecken Sie den entfernten Computer oder prüfen Sie, ob sein Display angeschlossen ist.",
+      "fr": "L'écran distant est en veille ou éteint. En attente de son réveil... Si cela persiste, réveillez l'ordinateur distant ou vérifiez que son écran est branché.",
+      "es": "La pantalla remota está en reposo o apagada. Esperando a que se active... Si continúa, active el equipo remoto o compruebe que su pantalla esté conectada.",
+      "pt-BR": "A tela remota está em repouso ou desligada. Aguardando que ela desperte... Se continuar, desperte o computador remoto ou verifique se a tela dele está conectada.",
+      "vi": "Màn hình máy từ xa đang ngủ hoặc đã tắt. Đang chờ màn hình bật lại... Nếu kéo dài, hãy đánh thức máy tính từ xa hoặc kiểm tra màn hình của máy đó đã được kết nối."
+    },
+    "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。": {
+      "zh-Hans": "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。",
+      "en": "The remote computer could not start screen capture. Restart CrossDesk on the remote computer, then reconnect.",
+      "ru": "Удалённому компьютеру не удалось начать захват экрана. Перезапустите CrossDesk на удалённом компьютере и переподключитесь.",
+      "zh-Hant": "遠端電腦無法開始螢幕錄製。請在遠端電腦上重新啟動 CrossDesk，然後重新連線。",
+      "ja": "リモートコンピューターで画面キャプチャを開始できませんでした。リモートコンピューターで CrossDesk を再起動してから、再接続してください。",
+      "ko": "원격 컴퓨터에서 화면 캡처를 시작할 수 없습니다. 원격 컴퓨터에서 CrossDesk를 다시 시작한 후 다시 연결하세요.",
+      "de": "Der entfernte Computer konnte die Bildschirmaufnahme nicht starten. Starten Sie CrossDesk auf dem entfernten Computer neu und verbinden Sie sich dann erneut.",
+      "fr": "L'ordinateur distant n'a pas pu démarrer la capture d'écran. Redémarrez CrossDesk sur l'ordinateur distant, puis reconnectez-vous.",
+      "es": "El equipo remoto no pudo iniciar la captura de pantalla. Reinicie CrossDesk en el equipo remoto y vuelva a conectarse.",
+      "pt-BR": "O computador remoto não conseguiu iniciar a captura de tela. Reinicie o CrossDesk no computador remoto e reconecte.",
+      "vi": "Máy tính từ xa không thể bắt đầu ghi màn hình. Hãy khởi động lại CrossDesk trên máy tính từ xa, rồi kết nối lại."
     }
   },
   "desktop": {
@@ -14261,7 +14326,12 @@
     "windows_service_repairing": "正在修复 Windows 服务…",
     "windows_service_repair_success": "服务已修复并启动",
     "windows_service_repair_failed": "修复失败，请检查管理员权限和便携版文件后重试",
-    "remote_service_unavailable_message": "远端 Windows 服务不可用，锁屏时无法操作。请在远端安装或修复 CrossDesk 服务。"
+    "remote_service_unavailable_message": "远端 Windows 服务不可用，锁屏时无法操作。请在远端安装或修复 CrossDesk 服务。",
+    "frame_wait_no_picture": "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。",
+    "frame_wait_no_video": "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。",
+    "frame_wait_permission_denied": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
+    "frame_wait_display_unavailable": "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
+    "frame_wait_capture_failed": "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。"
   },
   "slint": [
     "此端口已被占用，",
@@ -15203,7 +15273,12 @@
       "删除分组",
       "组内设备和连接记录将保留。",
       "重试",
-      "连接到设备"
+      "连接到设备",
+      "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。",
+      "远程电脑正在共享屏幕，但尚未收到画面。请检查网络连接，然后重新连接。",
+      "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
+      "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
+      "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。"
     ],
     "android": [
       " · 已完成",

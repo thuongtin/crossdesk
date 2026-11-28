@@ -404,6 +404,8 @@ void PeerEventHandler::DispatchConnectionStatus(MiniRtcConnectionStatus status,
         {
           std::lock_guard lock(props->remote_version_mutex_);
           props->remote_host_info_received_ = false;
+          props->remote_capture_status_supported_ = false;
+          props->remote_capture_state_ = CaptureState::unknown;
           props->remote_app_version_.clear();
           props->remote_platform_ = HostPlatform::Unknown;
           props->remote_update_dismissed_ = false;
@@ -651,6 +653,7 @@ std::string GuiRuntime::BuildHostInformation(bool advertise_trust,
   action.preferred_display_resolutions = preferences;
   action.i.supports_video_settings = true;
   action.i.supports_video_codec_status = true;
+  action.i.supports_capture_status = true;
   action.i.supports_text_input = devices_.SupportsTextInput();
   action.i.supports_deskhub_preview = true;
   action.i.supports_deskhub_resolution = true;

@@ -49,6 +49,17 @@ static CaptureInterruption ClassifyCaptureError(NSError* error) {
   return CaptureInterruption::failure;
 }
 
+// True when no online display can be captured, such as after idle display
+// sleep or on a Mac with no display attached.
+static bool CaptureDisplaysAsleep() {
+  CGDirectDisplayID displays[32];
+  uint32_t count = 0;
+  if (CGGetOnlineDisplayList(32, displays, &count) != kCGErrorSuccess || count == 0)
+    return true;
+  return std::all_of(displays, displays + count,
+                     [](CGDirectDisplayID display) { return CGDisplayIsAsleep(display); });
+}
+
 static std::string NSErrorToString(NSError *error) {
   if (!error) {
     return "";
@@ -188,6 +199,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   }
   int ResetToInitialMonitor() override;
   bool RefreshIdleDisplays(const std::function<bool(size_t)>& accept) override;
+  ScreenCaptureHealth GetCaptureHealth() override;
 
  private:
   std::vector<DisplayInfo> display_info_list_;
@@ -202,6 +214,8 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   bool recovery_pending_ = false;
   bool awaiting_recovery_filter_ = false;
   unsigned recovery_attempt_ = 0;
+  // Why the requested stream has no frames yet; frames override it.
+  ScreenCaptureHealth interruption_ = ScreenCaptureHealth::starting;
   uint64_t capture_session_ = 0;
   using Clock = std::chrono::steady_clock;
   Clock::time_point capture_attempt_started_{};
@@ -522,6 +536,7 @@ int ScreenCapturerSckImpl::Start(bool show_cursor) {
     capture_requested_ = true;
     stream_running_ = received_frame_ = recovery_pending_ = false;
     recovery_attempt_ = 0;
+    interruption_ = ScreenCaptureHealth::starting;
     suspended_since_ = {};
     capture_attempt_started_ = Clock::now();
     session = ++capture_session_;
@@ -928,6 +943,12 @@ void ScreenCapturerSckImpl::RecoverCapture(uint64_t generation,
           std::min(1u << std::min(recovery_attempt_, 3u), 5u));
       recovery_attempt_ = std::min(recovery_attempt_ + 1, 4u);
       next_recovery_ = Clock::now() + delay;
+      // Tell remote viewers why no video arrives until the retry delivers.
+      interruption_ = !CGPreflightScreenCaptureAccess()
+          ? ScreenCaptureHealth::permission_denied
+          : cause == CaptureInterruption::display_loss || CaptureDisplaysAsleep()
+              ? ScreenCaptureHealth::display_unavailable
+              : ScreenCaptureHealth::failed;
       LOG_WARN("ScreenCaptureKit recovery: {}; retry in {} s", reason, delay.count());
     } else {
       capture_requested_ = false;
@@ -954,6 +975,13 @@ void ScreenCapturerSckImpl::RecoverCapture(uint64_t generation,
     }
   }
   [old_stream stopCaptureWithCompletionHandler:nil];
+}
+
+ScreenCaptureHealth ScreenCapturerSckImpl::GetCaptureHealth() {
+  std::lock_guard lock(lock_);
+  if (!capture_requested_) return ScreenCaptureHealth::unknown;
+  if (stream_running_ && received_frame_) return ScreenCaptureHealth::capturing;
+  return interruption_;
 }
 
 bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
