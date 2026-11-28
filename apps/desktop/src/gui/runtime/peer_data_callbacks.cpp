@@ -367,6 +367,31 @@ void PeerEventHandler::OnReceiveDataBuffer(
                                 wire_id.data(), wire_id.size());
     return;
   }
+  if (remote_action.type == ControlType::capture_status_request) {
+    // Only desktop viewers that saw supports_capture_status send this.
+    if (source_id != runtime->control_data_label_ ||
+        !runtime->IsAuthorizedController(remote_id))
+      return;
+    RemoteAction reply{};
+    reply.type = ControlType::capture_status;
+    reply.cps.state = runtime->devices_.capture_state();
+    const auto message = reply.to_json();
+    PeerSendReliableDataFrameToPeer(bound_peer, message.data(), message.size(),
+                                runtime->control_data_label_.c_str(),
+                                wire_id.data(), wire_id.size());
+    return;
+  }
+  if (remote_action.type == ControlType::capture_status) {
+    if (auto props = runtime->FindRemoteSession(remote_id);
+        props && source_id == props->control_data_label_) {
+      std::lock_guard lock(props->remote_version_mutex_);
+      if (props->remote_capture_state_ != remote_action.cps.state)
+        LOG_INFO("Remote capture state for {}: {}", remote_id,
+                 CaptureStateName(remote_action.cps.state));
+      props->remote_capture_state_ = remote_action.cps.state;
+    }
+    return;
+  }
   if (remote_action.type == ControlType::privacy_status) {
     if (auto props = runtime->FindRemoteSession(remote_id)) {
       if (source_id != props->control_data_label_) return;
@@ -497,6 +522,8 @@ void PeerEventHandler::OnReceiveDataBuffer(
       if (props && source_id == props->control_data_label_) {
         std::lock_guard lock(props->remote_version_mutex_);
         props->remote_host_info_received_ = true;
+        props->remote_capture_status_supported_ =
+            remote_action.i.supports_capture_status;
         props->remote_platform_ = remote_action.i.platform;
         props->recent_platform_ = remote_action.i.platform;
         props->remote_app_version_ = IsValidAppVersion(remote_action.i.app_version)

@@ -100,6 +100,12 @@ public:
   int SwitchDisplay(int display_id);
   InputOutcome ResetToInitialDisplay();
 
+  // Whether local screen capture can serve the connected controllers. Updated
+  // by UpdateInteractions; transport threads read it to answer viewers.
+  CaptureState capture_state() const {
+    return capture_state_.load(std::memory_order_relaxed);
+  }
+
   // Snapshot of the capture displays. The UI thread refreshes the list every
   // tick while transport threads build host information and map mouse input
   // from it, so callers get a copy taken under the lock.
@@ -117,6 +123,7 @@ private:
   void RefreshIdleDisplays();
   void SetDisplayInfoList(std::vector<DisplayInfo> displays);
   void ResetCaptureMetrics();
+  void UpdateCaptureState(bool capture_needed);
   uint64_t RecordCaptureCadence(std::chrono::steady_clock::time_point now,
                                 int fps, bool from_secure_desktop);
 
@@ -130,6 +137,11 @@ private:
 #ifdef __APPLE__
   MacHeadlessDisplay headless_display_;
 #endif
+  std::atomic<CaptureState> capture_state_{CaptureState::unknown};
+  // Why the last StartScreenCapturer call failed, or unknown after success.
+  CaptureState capture_start_failure_ = CaptureState::unknown;
+  std::chrono::steady_clock::time_point next_capture_state_check_{};
+  std::chrono::steady_clock::time_point next_display_wake_{};
   std::atomic<bool> cursor_capture_dirty_{true};
   SpeakerCaptureController speaker_capture_;
   DeviceControllerFactory *device_controller_factory_ = nullptr;

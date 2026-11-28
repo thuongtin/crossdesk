@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <utility>
 
 #include <nlohmann/json.hpp>
 
@@ -96,6 +97,7 @@ void ResetHostInfo(HostInfo& info) {
   info.supports_file_browser = false;
   info.supports_file_clipboard = false;
   info.file_clipboard_version = 0;
+  info.supports_capture_status = false;
 }
 
 void CopyHostName(HostInfo& info, const std::string& host_name) {
@@ -131,12 +133,32 @@ char* DuplicateString(const std::string& value) {
   return copy;
 }
 
+constexpr std::pair<CaptureState, const char*> kCaptureStateNames[] = {
+    {CaptureState::starting, "starting"},
+    {CaptureState::capturing, "capturing"},
+    {CaptureState::permission_denied, "permission_denied"},
+    {CaptureState::display_unavailable, "display_unavailable"},
+    {CaptureState::failed, "failed"},
+};
+
+CaptureState CaptureStateFromName(const std::string& name) {
+  for (const auto& [value, state_name] : kCaptureStateNames)
+    if (name == state_name) return value;
+  return CaptureState::unknown;
+}
+
 }  // namespace
 
 bool ParseDisplayResolutionPreferences(
     const std::string& text, std::vector<DisplayResolutionPreference>& result) {
   return text.size() <= 65536 &&
       ReadDisplayResolutionPreferences(json::parse(text, nullptr, false), result);
+}
+
+const char* CaptureStateName(CaptureState state) {
+  for (const auto& [value, name] : kCaptureStateNames)
+    if (value == state) return name;
+  return "unknown";
 }
 
 const char* HostPlatformName(HostPlatform platform) {
@@ -261,6 +283,11 @@ std::string RemoteAction::ToJson(const RemoteAction& action) {
     case ControlType::video_codec_status:
       object["video_codec"] = {{"encoder", action.vcs.encoder}};
       break;
+    case ControlType::capture_status_request:
+      break;
+    case ControlType::capture_status:
+      object["capture_status"] = {{"state", CaptureStateName(action.cps.state)}};
+      break;
     case ControlType::display_resolution:
     case ControlType::display_resolution_status: {
       const auto& change = action.resolution_change;
@@ -340,7 +367,8 @@ std::string RemoteAction::ToJson(const RemoteAction& action) {
           {"supports_deskhub_bandwidth", action.i.supports_deskhub_bandwidth},
           {"supports_file_browser", action.i.supports_file_browser},
           {"supports_file_clipboard", action.i.supports_file_clipboard},
-          {"file_clipboard_version", action.i.file_clipboard_version}};
+          {"file_clipboard_version", action.i.file_clipboard_version},
+          {"supports_capture_status", action.i.supports_capture_status}};
       if (!action.display_resolutions.empty())
         object["host_info"]["display_resolutions"] =
             DisplayResolutionsJson(action.display_resolutions);
@@ -481,6 +509,12 @@ bool RemoteAction::FromJson(const std::string& json_string,
         std::memcpy(output.vcs.encoder, encoder.c_str(), encoder.size() + 1);
         break;
       }
+      case ControlType::capture_status_request:
+        break;
+      case ControlType::capture_status:
+        output.cps.state = CaptureStateFromName(
+            object.at("capture_status").at("state").get<std::string>());
+        break;
       case ControlType::video_settings:
       case ControlType::video_settings_status: {
         const auto& settings = object.at("video_settings");
@@ -603,6 +637,8 @@ bool RemoteAction::FromJson(const std::string& json_string,
             host_info_object.value("supports_file_browser", false);
         output.i.supports_file_clipboard =
             host_info_object.value("supports_file_clipboard", false);
+        output.i.supports_capture_status =
+            host_info_object.value("supports_capture_status", false);
         output.i.file_clipboard_version = host_info_object.value("file_clipboard_version", 0);
         const std::string host_name =
             host_info_object.at("host_name").get<std::string>();

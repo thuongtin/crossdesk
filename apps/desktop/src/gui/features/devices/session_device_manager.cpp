@@ -329,8 +329,10 @@ bool SessionDeviceManager::ShouldCaptureCursor() const {
 }
 
 int SessionDeviceManager::StartScreenCapturer() {
+  capture_start_failure_ = CaptureState::failed;
 #ifdef __APPLE__
   if (!owner_.EnsureMacScreenRecordingPermission()) {
+    capture_start_failure_ = CaptureState::permission_denied;
     return -1;
   }
 #endif
@@ -355,6 +357,8 @@ int SessionDeviceManager::StartScreenCapturer() {
   if (ret != 0) {
     screen_sharing_power_.SetSharing(false);
     LOG_ERROR("Start screen capturer failed: {}", ret);
+  } else {
+    capture_start_failure_ = CaptureState::unknown;
   }
   return ret;
 }
@@ -756,6 +760,46 @@ void SessionDeviceManager::RefreshIdleDisplays() {
   if (recreate_peer) owner_.CloseConnectionPeer();
 }
 
+void SessionDeviceManager::UpdateCaptureState(bool capture_needed) {
+  using namespace std::chrono_literals;
+  const auto now = std::chrono::steady_clock::now();
+  if (now < next_capture_state_check_) return;
+  next_capture_state_check_ = now + 500ms;
+
+  CaptureState state = CaptureState::unknown;
+  if (capture_needed && owner_.screen_capturer_is_started_ && screen_capturer_) {
+    switch (screen_capturer_->GetCaptureHealth()) {
+      case ScreenCaptureHealth::unknown: state = CaptureState::unknown; break;
+      case ScreenCaptureHealth::starting: state = CaptureState::starting; break;
+      case ScreenCaptureHealth::capturing: state = CaptureState::capturing; break;
+      case ScreenCaptureHealth::permission_denied:
+        state = CaptureState::permission_denied;
+        break;
+      case ScreenCaptureHealth::display_unavailable:
+        state = CaptureState::display_unavailable;
+        break;
+      case ScreenCaptureHealth::failed: state = CaptureState::failed; break;
+    }
+  } else if (capture_needed) {
+    // Starts are retried every second; report why the last one failed.
+    state = capture_start_failure_ == CaptureState::unknown
+        ? CaptureState::starting : capture_start_failure_;
+  }
+  const auto previous = capture_state_.exchange(state, std::memory_order_relaxed);
+  if (previous != state)
+    LOG_INFO("Screen capture state: {} -> {}", CaptureStateName(previous),
+             CaptureStateName(state));
+
+  // A display that sleeps while it is shared, or before a later controller
+  // connects, stays dark until something reports user activity.
+  if (state != CaptureState::display_unavailable) {
+    next_display_wake_ = {};
+  } else if (now >= next_display_wake_) {
+    next_display_wake_ = now + 10s;
+    screen_sharing_power_.WakeDisplay();
+  }
+}
+
 void SessionDeviceManager::UpdateInteractions() {
   // Restore the previous session's modes and apply the new controller's saved
   // selections before starting capture or allowing an early input return.
@@ -807,6 +851,7 @@ void SessionDeviceManager::UpdateInteractions() {
     RefreshIdleDisplays();
   if (!capture_needed) next_capture_start_retry_ = {};
   screen_sharing_power_.SetSharing(!controllers.empty() && owner_.screen_capturer_is_started_);
+  UpdateCaptureState(!controllers.empty());
 
 #if defined(__linux__) && !defined(__OHOS__)
   if (owner_.screen_capturer_is_started_) {

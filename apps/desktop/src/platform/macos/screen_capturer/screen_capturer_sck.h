@@ -40,6 +40,7 @@ class ScreenCapturerSck : public ScreenCapturer {
   std::vector<DisplayInfo> GetDisplayInfoList() override;
 
   bool RefreshIdleDisplays(const std::function<bool(size_t)>& accept) override;
+  ScreenCaptureHealth GetCaptureHealth() override;
 
   void OnFrame();
 

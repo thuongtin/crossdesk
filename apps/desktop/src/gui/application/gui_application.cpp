@@ -38,6 +38,7 @@
 #include <utility>
 #include <vector>
 
+#include "application/frame_wait_hint.h"
 #include "crossdesk_ui.h"
 #include "fa_solid_900.h"
 #include "features/about/about_catalog.h"
@@ -553,6 +554,24 @@ std::string ConnectionStatusText(MiniRtcConnectionStatus status, int language) {
   }
 }
 
+std::string FrameWaitText(frame_wait::Hint hint, int language) {
+  switch (hint) {
+    case frame_wait::Hint::no_picture:
+      return localization::frame_wait_no_picture[language];
+    case frame_wait::Hint::no_video:
+      return localization::frame_wait_no_video[language];
+    case frame_wait::Hint::permission_denied:
+      return localization::frame_wait_permission_denied[language];
+    case frame_wait::Hint::display_unavailable:
+      return localization::frame_wait_display_unavailable[language];
+    case frame_wait::Hint::capture_failed:
+      return localization::frame_wait_capture_failed[language];
+    case frame_wait::Hint::receiving:
+    default:
+      return localization::receiving_screen[language];
+  }
+}
+
 std::string FormatResolution(int width, int height) {
   return std::to_string(width) + " × " + std::to_string(height);
 }
@@ -1057,6 +1076,9 @@ struct GuiApplication::StreamView {
   int chrome_attempts = 30;
 #endif
   bool was_visible = false;
+  // SDL ticks when the connected window started waiting for its first frame.
+  std::optional<uint64_t> frame_wait_since;
+  uint64_t last_capture_query = 0;
   slint::ComponentHandle<ui::StreamWindow> window = ui::StreamWindow::create();
 
   bool Visible() const {
@@ -4219,9 +4241,13 @@ void GuiApplication::SyncStreamWindow(StreamView& view) {
   const MiniRtcConnectionStatus status = props->connection_status_.load();
   bool remote_update_available = false;
   HostPlatform remote_platform = HostPlatform::Unknown;
+  bool capture_status_supported = false;
+  CaptureState remote_capture_state = CaptureState::unknown;
   if (status == MiniRtcConnectionStatus::MiniRtcConnectionConnected) {
     std::lock_guard lock(props->remote_version_mutex_);
     remote_platform = props->remote_platform_;
+    capture_status_supported = props->remote_capture_status_supported_;
+    remote_capture_state = props->remote_capture_state_;
     // Wait for host_info: a version still in transit is not a legacy peer.
     if (props->remote_host_info_received_ && !props->remote_update_dismissed_) {
       remote_update_available = props->remote_app_version_.empty() ||
@@ -4241,6 +4267,22 @@ void GuiApplication::SyncStreamWindow(StreamView& view) {
   const bool waiting_for_frame =
       status == MiniRtcConnectionStatus::MiniRtcConnectionConnected &&
       !stream->get_has_frame();
+  const uint64_t now_ticks = SDL_GetTicks();
+  if (!waiting_for_frame) {
+    view.frame_wait_since.reset();
+  } else if (!view.frame_wait_since) {
+    view.frame_wait_since = now_ticks;
+  }
+  if (waiting_for_frame && capture_status_supported &&
+      now_ticks - view.last_capture_query >= frame_wait::kQueryIntervalMs) {
+    // Old hosts do not advertise the capability and are never asked.
+    view.last_capture_query = now_ticks;
+    RemoteAction query{};
+    query.type = ControlType::capture_status_request;
+    const auto message = query.to_json();
+    MiniRtcSendReliableDataFrame(props->peer_, message.data(), message.size(),
+                                 props->control_data_label_.c_str());
+  }
   // Once the peer is connected, the frame-waiting hint replaces the
   // connection status. Keeping these states mutually exclusive also avoids a
   // transient overlap when both properties are synchronized in one tick.
@@ -4250,7 +4292,9 @@ void GuiApplication::SyncStreamWindow(StreamView& view) {
               : ConnectionStatusText(status, localization_language_index_)));
   stream->set_receiving_text(UiText(
           waiting_for_frame
-              ? localization::receiving_screen[localization_language_index_]
+              ? FrameWaitText(frame_wait::Select(now_ticks - *view.frame_wait_since,
+                                                 remote_capture_state),
+                              localization_language_index_)
               : std::string{}));
   stream->set_mouse_control_enabled(props->control_mouse_);
   {

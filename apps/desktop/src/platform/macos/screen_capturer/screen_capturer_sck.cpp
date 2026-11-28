@@ -99,6 +99,11 @@ bool ScreenCapturerSck::RefreshIdleDisplays(const std::function<bool(size_t)>& a
   return screen_capturer_sck_impl_ && screen_capturer_sck_impl_->RefreshIdleDisplays(accept);
 }
 
+ScreenCaptureHealth ScreenCapturerSck::GetCaptureHealth() {
+  return screen_capturer_sck_impl_ ? screen_capturer_sck_impl_->GetCaptureHealth()
+                                   : ScreenCaptureHealth::unknown;
+}
+
 void ScreenCapturerSck::OnFrame() {}
 
 void ScreenCapturerSck::CleanUp() {}
