@@ -597,8 +597,19 @@ bool VerifyAutostartSettings(RenderTestPlatform& platform) {
   main->show(); main->set_settings_open(true); screen.Settle();
   if (!Check(refreshes == 1, "Opening managed autostart settings must query the system")) return false;
   const float top = (height - 446) / 2;
-  main->window().dispatch_pointer_scroll_event(slint::LogicalPosition({width / 2, top + 260}), 0, -1200);
-  screen.Settle();
+  // Do fork sở hữu: cuộn bằng wheel đặt trên thanh cuộn (rộng 14px, ở x 382 đến
+  // 396 của hộp thoại rộng 400px), không đặt trên nội dung. Wheel trên nội dung đi
+  // qua hoạt cảnh giảm tốc của Flickable, và tuỳ nhịp khung hình có thể dừng lệch
+  // biên một phần nhỏ của pixel. Khi đó vùng vẽ lại từng phần của SoftwareRenderer
+  // cắt ngang dải khử răng cưa ở góc công tắc, nên ảnh chụp sau vài lần vẽ lại từng
+  // phần khác ảnh sau một lần vẽ lại toàn bộ dù giao diện không đổi. Thanh cuộn của
+  // style fluent kẹp thẳng giá trị về biên, nên vị trí cuộn không tuỳ nhịp khung hình.
+  const auto scroll_settings_to_end = [&] {
+    main->window().dispatch_pointer_scroll_event(
+        slint::LogicalPosition({width / 2 + 189, top + 260}), 0, -1200);
+    screen.Settle();
+  };
+  scroll_settings_to_end();
   const float toggle_x = width / 2 + 144, toggle_y = top + 322;
   const auto toggle_pixels = [&] {
     return screen.Region(int(toggle_x - 18), int(toggle_y - 10), 36, 20);
@@ -656,8 +667,7 @@ bool VerifyAutostartSettings(RenderTestPlatform& platform) {
   if (!Check(!main->get_autostart_guide_open(), "Closing settings must also dismiss its guide")) return false;
   main->set_autostart_system_managed(false);
   main->set_settings_open(true); screen.Settle();
-  main->window().dispatch_pointer_scroll_event(slint::LogicalPosition({width / 2, top + 260}), 0, -1200);
-  screen.Settle();
+  scroll_settings_to_end();
   screen.Click(toggle_x, toggle_y);
   return Check(refreshes == 2 && !main->get_autostart_enabled() && !main->get_autostart_guide_open(),
                "Other platforms toggle their autostart preference directly without querying Harmony or opening guidance");
