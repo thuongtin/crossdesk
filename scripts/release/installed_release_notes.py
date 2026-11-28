@@ -11,6 +11,7 @@ Usage: installed_release_notes.py <release-notes.md> <output.md> [--publish]
 import argparse
 import re
 import sys
+from bisect import bisect_left
 from pathlib import Path
 
 # Ranh giới mục chỉ tính tiêu đề ATX ở cột 0 nằm ngoài code fence và khối HTML ở cấp cao nhất. Dòng
@@ -38,8 +39,9 @@ SETEXT_UNDERLINE = re.compile(r"^(?:=+|-+) *$")
 # Dấu list theo sau là dấu cách hoặc hết dòng; nhóm 1 là số thứ tự của list có thứ tự.
 LIST_MARKER = re.compile(r"(?:[-+*]|([0-9]{1,9})[.)])(?= |$)")
 # Dòng mở định nghĩa chú thích cuối trang (footnote) của GitHub như "[^note]: chữ"; nhãn không có dấu
-# cách. Như cmark-gfm, khối này đứng sau đường kẻ và trước mục list trong thứ tự thử mở khối.
-FOOTNOTE_DEFINITION = re.compile(r"^\[\^[^\] \t\r\n\x00]+\]:[ \t]*")
+# cách. Như cmark-gfm, khối này đứng sau đường kẻ và trước mục list trong thứ tự thử mở khối. Nhóm 1
+# là nhãn.
+FOOTNOTE_DEFINITION = re.compile(r"^\[\^([^\] \t\r\n\x00]+)\]:[ \t]*")
 # Khối chứa của một định nghĩa footnote trong ngăn xếp của scan: nội dung thụt bốn cột.
 FOOTNOTE = "footnote"
 # Khối HTML loại 1 tới 5 của CommonMark: kéo dài tới hết dòng chứa chuỗi đóng, kể cả qua dòng trống.
@@ -68,6 +70,10 @@ TABLE_DELIMITER_ROW = re.compile(r"^\|?[ \t\v\f]*:?-+:?[ \t\v\f]*(?:\|[ \t\v\f]*
 # Các mẫu dưới đây chạy trên nội dung nội dòng của một đoạn văn, tiêu đề hay ô bảng, theo cmark-gfm.
 ASCII_PUNCTUATION = frozenset("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
 SPACE = r"[ \t\v\f\r\n]"
+# Khoảng trắng theo cmark_isspace của cmark-gfm: nhãn link và footnote gộp, cắt theo tập này, và đích
+# link không có ngoặc nhọn dừng ở đây. Khác chỗ cách giữa các phần của link nội dòng hay thẻ HTML,
+# "\v" và "\f" ở đây là chữ thường, nên "[\v]" là một nhãn được và "b\vc" là một đích.
+CMARK_SPACE = " \t\r\n"
 SPACES = re.compile(f"{SPACE}*")
 # Khoảng trắng của định nghĩa link tham chiếu: dấu cách hay tab, tối đa một lần xuống dòng.
 LINK_SPACE = re.compile(r"[ \t]*(?:\n[ \t]*)?")
@@ -179,13 +185,16 @@ def raw_text_at(raw, column):
     """Phần của dòng gốc raw bắt đầu ở cột column của raw.expandtabs(4).
 
     cmark-gfm chỉ mở rộng tab để đo thụt lề, còn nội dung đoạn văn giữ nguyên tab, nên độ dài nhãn
-    link phải đếm trên chữ gốc. column không nằm giữa một tab vì nó là đầu một ký tự khác khoảng trắng.
+    link phải đếm trên chữ gốc. Khi column nằm giữa một tab mà khối chứa đã dùng mất một phần, như
+    add_line của cmark-gfm, phần còn lại của tab thành dấu cách.
     """
     position = 0
     for index, char in enumerate(raw):
         if position >= column:
             return raw[index:]
         position += 4 - position % 4 if char == "\t" else 1
+        if position > column:
+            return " " * (position - column) + raw[index + 1:]
     return ""
 
 
@@ -227,12 +236,12 @@ def match_containers(line, containers):
 def scan(lines):
     """Phân loại từng dòng theo khối của cmark-gfm để tìm ranh giới mục và HTML.
 
-    Trả về (kinds, unclosed, html_lines). kinds[i] là "code" cho dòng nằm trong code fence cấp cao
-    nhất (kể cả dòng đóng, trừ dòng mở), "footnote" cho dòng mở định nghĩa footnote ở mọi cấp, "html"
-    cho các dòng khác của khối HTML ở mọi cấp, "setext" cho dòng gạch dưới biến đoạn văn ở mọi cấp
-    thành tiêu đề, và "text" cho mọi dòng khác. unclosed là (chỉ số dòng mở, tên khối) của fence hay
-    khối HTML loại 1 tới 5 cấp cao nhất vẫn mở khi hết notes, hoặc None. html_lines là tập chỉ số
-    dòng nơi HTML thô nội dòng bắt đầu, trong đoạn văn, tiêu đề hay ô bảng ở mọi cấp.
+    Trả về (kinds, unclosed, inline). kinds[i] là "code" cho dòng nằm trong code fence cấp cao nhất
+    (kể cả dòng đóng, trừ dòng mở), "footnote" cho dòng mở định nghĩa footnote ở mọi cấp, "html" cho
+    các dòng khác của khối HTML ở mọi cấp, "setext" cho dòng gạch dưới biến đoạn văn ở mọi cấp thành
+    tiêu đề, và "text" cho mọi dòng khác. unclosed là (chỉ số dòng mở, tên khối) của fence hay khối
+    HTML loại 1 tới 5 cấp cao nhất vẫn mở khi hết notes, hoặc None. inline là kết quả của
+    inline_lines cho nội dung nội dòng của đoạn văn, tiêu đề và ô bảng ở mọi cấp.
 
     Fence thụt một tới ba dấu cách vẫn ở cấp cao nhất, trừ khi nó thuộc một mục list hay trích dẫn,
     như dòng đóng "  ```" của mục "- ```sh". Vì vậy scan giữ ngăn xếp khối chứa đang mở cùng khối lá
@@ -252,6 +261,7 @@ def scan(lines):
     table_visited = False  # đoạn văn đang mở đã gặp dòng phân cách lệch số ô nên không thành bảng nữa
     table = False  # khối lá đang mở là bảng GFM
     unclosed = None
+    footnote_labels = []  # khoá label_key của nhãn mọi định nghĩa footnote
     for index, raw in enumerate(lines):
         expanded = raw.expandtabs(4)
         rest, matched = match_containers(expanded, containers)
@@ -318,6 +328,7 @@ def scan(lines):
                 break
             elif FOOTNOTE_DEFINITION.match(body):
                 opened.append(FOOTNOTE)
+                footnote_labels.append(label_key(FOOTNOTE_DEFINITION.match(body).group(1)))
                 rest = body[FOOTNOTE_DEFINITION.match(body).end():]
             else:
                 item = list_item(body, indent, in_paragraph)
@@ -334,8 +345,10 @@ def scan(lines):
             in_paragraph = maybe_lazy = False
             body = rest.lstrip(" ")
         if body and paragraph is not None and not all_matched and not opened and leaf is None:
-            # Dòng nối lười: chữ tiếp tục đoạn văn của khối chứa mà nó không thuộc về.
-            paragraph.append((index, raw_text_at(raw, len(expanded) - len(body))))
+            # Dòng nối lười: chữ tiếp tục đoạn văn của khối chứa mà nó không thuộc về. Khác dòng nối
+            # thường, cmark-gfm giữ khoảng trắng đầu dòng này, nên "   [b]: /v" nối lười không còn là
+            # định nghĩa link tham chiếu.
+            paragraph.append((index, raw_text_at(raw, len(expanded) - len(rest))))
             header = rest
             kinds.append("text")
             continue
@@ -382,14 +395,14 @@ def scan(lines):
         if FOOTNOTE in opened:
             kind = "footnote"
         kinds.append(kind)
-    return kinds, unclosed, inline_html_lines(units)
+    return kinds, unclosed, inline_lines(units, frozenset(footnote_labels))
 
 
 def link_destination_end(text, position):
     """Vị trí ngay sau đích link bắt đầu tại position, hoặc None khi không có đích hợp lệ.
 
     Đích "<...>" không chứa xuống dòng hay '<' chưa thoát; đích không có ngoặc nhọn dừng ở khoảng
-    trắng hay ')' không cặp, như manual_scan_link_url của cmark-gfm.
+    trắng CMARK_SPACE hay ')' không cặp, như manual_scan_link_url của cmark-gfm.
     """
     index = position
     if text.startswith("<", position):
@@ -415,7 +428,7 @@ def link_destination_end(text, position):
             if depth == 0:
                 break
             depth -= 1
-        elif char in " \t\v\f\r\n":
+        elif char in CMARK_SPACE:
             break
         index += 1
     return index if index < len(text) else None
@@ -486,7 +499,7 @@ def link_label_end(text, position):
 
 def label_key(label):
     """Khoá tra cứu của nhãn link tham chiếu: gộp khoảng trắng và bỏ khác biệt hoa thường như cmark-gfm."""
-    return re.sub(f"{SPACE}+", " ", label).strip(" ").casefold()
+    return re.sub(f"[{CMARK_SPACE}]+", " ", label).strip(" ").casefold()
 
 
 def reference_definitions_end(text, labels=None):
@@ -499,7 +512,7 @@ def reference_definitions_end(text, labels=None):
     while True:
         label_end = link_label_end(text, position)
         label = None if label_end is None else text[position + 1:label_end - 1]
-        if label is None or not text.startswith(":", label_end) or not label.strip(" \t\v\f\r\n"):
+        if label is None or not text.startswith(":", label_end) or not label.strip(CMARK_SPACE):
             return position
         url_start = LINK_SPACE.match(text, label_end + 1).end()
         url_end = link_destination_end(text, url_start)
@@ -531,7 +544,7 @@ def link_end(text, close, content_start, bracket_after, definitions):
         return tail
     label_end = link_label_end(text, after)
     label = None if label_end is None else text[after + 1:label_end - 1]
-    if (label is None or not label.strip(" \t\v\f\r\n")) and not bracket_after:
+    if (label is None or not label.strip(CMARK_SPACE)) and not bracket_after:
         label = text[content_start:close]
         if label_end is None:
             label_end = after
@@ -540,18 +553,27 @@ def link_end(text, close, content_start, bracket_after, definitions):
     return None
 
 
-def raw_html_offsets(text, position, definitions=frozenset()):
-    """Vị trí bắt đầu của từng đoạn HTML thô trong nội dung nội dòng text, tính từ position.
+def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset()):
+    """Các (vị trí, loại) mà hộp thoại hiện khác GitHub trong nội dung nội dòng text, tính từ position.
+
+    Loại "html" là chỗ bắt đầu một đoạn HTML thô. Loại "reference" là dấu '[' hay '![' mở link hoặc ảnh
+    lấy đích từ một định nghĩa (khoá label_key nằm trong definitions): hộp thoại đọc từng dòng riêng
+    nên hiện nguyên chữ "[text][ref]", còn GitHub hiện link "text". Loại "footnote" là dấu '[' của chỗ
+    gọi footnote có định nghĩa (khoá nằm trong footnotes): GitHub hiện số chú thích và đưa ghi chú
+    xuống cuối trang, còn hộp thoại hiện nguyên chữ "[^note]". Loại "split" là dấu '[' của chỗ gọi
+    footnote sang dòng sau, có định nghĩa hay không: cmark-gfm không lấy chữ trong ngoặc làm nhãn mà
+    lấy số byte bằng hiệu số cột của ']' và '[' trừ hai, nên GitHub hiện số chú thích hay chữ khác
+    hẳn, như "See [^compat" rồi "]" thành "See [^]".
 
     Đọc từ trái sang như cmark-gfm: ký tự thoát, code span, autolink, phần "(đích "tiêu đề")" của
-    link và nhãn "[...]" của link tham chiếu có định nghĩa (khoá label_key nằm trong definitions)
-    không chứa HTML, còn '<' không mở được thẻ nào như trong "a < b" hay "x<limit" là chữ. Như tiện ích
-    footnotes của GitHub, "[^...]" không thành link là chỗ gọi footnote, và HTML bên trong nó chỉ
-    còn là chữ.
+    link và nhãn "[...]" của link tham chiếu không chứa HTML, còn '<' không mở được thẻ nào như trong
+    "a < b" hay "x<limit" là chữ. Như tiện ích footnotes của GitHub, "[^...]" không thành link là chỗ
+    gọi footnote, và mọi thứ bên trong nó chỉ còn là chữ của nhãn.
     """
     found = []
-    # [là ảnh, vị trí đầu chữ trong ngoặc, đã có '[' mở sau nó, số HTML đã thấy lúc mở] của từng '['
-    # hay '![' chưa đóng, trong cùng ở cuối.
+    newlines = [match.start() for match in re.finditer("\n", text)]
+    # [là ảnh, vị trí dấu mở, vị trí đầu chữ trong ngoặc, đã có '[' mở sau nó, số mục đã thấy lúc mở]
+    # của từng '[' hay '![' chưa đóng, trong cùng ở cuối.
     brackets = []
     # Như no_link_openers của cmark-gfm: sau khi một link khớp, mọi '[' còn mở không thành link được
     # nữa, cho tới khi một '[' mới mở ra thì tất cả lại mở được link, như GitHub hiện
@@ -587,40 +609,51 @@ def raw_html_offsets(text, position, definitions=frozenset()):
         elif char == "<":
             link_or_html = AUTOLINK.match(text, index) or RAW_HTML.match(text, index)
             if link_or_html is not None and link_or_html.re is RAW_HTML:
-                found.append(index)
+                found.append((index, "html"))
             index = index + 1 if link_or_html is None else link_or_html.end()
         elif char == "[" or (text.startswith("![", index) and not text.startswith("![^", index)):
             # Như tiện ích footnotes của cmark-gfm, "![^" không mở ảnh: '!' là chữ, còn "[^" mở như
             # một '[' thường.
             if brackets:
-                brackets[-1][2] = True
+                brackets[-1][3] = True
             if char == "[":
                 no_link_openers = False
+            opener = index
             index += 1 if char == "[" else 2
-            brackets.append([char == "!", index, False, len(found)])
+            brackets.append([char == "!", opener, index, False, len(found)])
         elif char == "]" and brackets:
-            image, content_start, bracket_after, seen = brackets.pop()
+            image, opener, content_start, bracket_after, seen = brackets.pop()
             active = image or not no_link_openers
             end = link_end(text, index, content_start, bracket_after, definitions) if active else None
             if end is not None:
+                # Link nội dòng kết thúc bằng ')', còn link tham chiếu kết thúc bằng ']' của nhãn.
+                if text[end - 1] == "]":
+                    found.append((opener, "reference"))
                 index = end
                 if not image:
                     no_link_openers = True
             else:
                 if active and text.startswith("^", content_start) and index > content_start + 1:
-                    # Chỗ gọi footnote thay mọi thứ trong ngoặc bằng chữ của nhãn.
+                    # Chỗ gọi footnote thay mọi thứ trong ngoặc bằng chữ của nhãn. GitHub chỉ giữ nó
+                    # là chỗ gọi khi có định nghĩa cùng nhãn, ngược lại hiện lại đúng chữ gốc.
                     del found[seen:]
+                    if bisect_left(newlines, content_start) < bisect_left(newlines, index):
+                        found.append((opener, "split"))
+                    elif footnotes and label_key(text[content_start + 1:index]) in footnotes:
+                        found.append((opener, "footnote"))
                 index += 1
         else:
             index += 1
     return found
 
 
-def inline_html_lines(units):
-    """Chỉ số các dòng nơi HTML thô bắt đầu, trong các nội dung nội dòng mà scan gom được.
+def inline_lines(units, footnotes=frozenset()):
+    """Chỉ số các dòng có thứ hộp thoại hiện khác GitHub, trong các nội dung nội dòng mà scan gom được.
 
-    Như cmark-gfm, mọi định nghĩa link tham chiếu trong notes được gom trước, nên link dùng được
-    định nghĩa nằm ở bất kỳ đâu, kể cả phía sau nó.
+    Trả về dict từ loại tới tập chỉ số dòng: "html", "reference", "footnote" và "split" như inline_offsets
+    (footnotes là khoá nhãn của mọi định nghĩa footnote), cùng "definition" cho các dòng của định
+    nghĩa link tham chiếu mà GitHub bỏ khỏi trang. Như cmark-gfm, mọi định nghĩa trong notes được gom
+    trước, nên link dùng được định nghĩa nằm ở bất kỳ đâu, kể cả phía sau nó.
     """
     labels = []
     contents = []
@@ -633,14 +666,26 @@ def inline_html_lines(units):
         start = reference_definitions_end(text, labels) if unit_kind == "paragraph" else 0
         contents.append((text, start, entries))
     definitions = frozenset(labels)
-    found = set()
+    found = {"html": set(), "reference": set(), "footnote": set(), "split": set(), "definition": set()}
+
+    def line_of(offset, entries):
+        """Chỉ số dòng chứa vị trí offset trong nội dung ghép từ entries."""
+        for line_index, content in entries:
+            offset -= len(content) + 1
+            if offset < 0:
+                return line_index
+        return entries[-1][0]
+
     for text, start, entries in contents:
-        for offset in raw_html_offsets(text, start, definitions):
-            for line_index, content in entries:
-                offset -= len(content) + 1
-                if offset < 0:
-                    found.add(line_index)
-                    break
+        # Các dòng nằm trước start chỉ chứa định nghĩa.
+        consumed = 0
+        for line_index, content in entries:
+            if consumed >= start:
+                break
+            found["definition"].add(line_index)
+            consumed += len(content) + 1
+        for offset, kind in inline_offsets(text, start, definitions, footnotes):
+            found[kind].add(line_of(offset, entries))
     return found
 
 
@@ -661,7 +706,7 @@ def extract(text, publish=False):
     dòng giữ chỗ của bản nháp cũng bị từ chối.
     """
     lines = text.replace("\r\n", "\n").split("\n")
-    kinds, unclosed, html_lines = scan(lines)
+    kinds, unclosed, inline = scan(lines)
     candidates = [index for index, kind in enumerate(kinds) if kind == "text"]
     start = next((index for index in candidates if CHANGES_HEADING.match(lines[index])), None)
     end = len(lines) if start is None else next(
@@ -683,13 +728,24 @@ def extract(text, publish=False):
             raise ValueError(f"line {index + 1}: start code fences at column 0, "
                              "not indented or inside a list item or quote")
         # GitHub bỏ định nghĩa footnote không ai gọi và đưa định nghĩa còn lại xuống cuối trang, còn
-        # hộp thoại hiện nó như chữ ngay tại chỗ, kể cả comment HTML bên trong mà GitHub giấu đi.
-        if kinds[index] == "footnote":
+        # hộp thoại hiện nó như chữ ngay tại chỗ, kể cả comment HTML bên trong mà GitHub giấu đi. Chỗ
+        # gọi một định nghĩa thành số chú thích trên GitHub, còn hộp thoại hiện nguyên chữ "[^note]".
+        if kinds[index] == "footnote" or index in inline["footnote"]:
             raise ValueError(f"line {index + 1}: the Release Notes dialog shows footnotes as plain "
                              "text, so put this note in the text instead")
-        if kinds[index] == "html" or index in html_lines:
+        if index in inline["split"]:
+            raise ValueError(f"line {index + 1}: GitHub changes the text of a [^...] that spans lines, "
+                             "so keep it on one line")
+        if kinds[index] == "html" or index in inline["html"]:
             raise ValueError(f"line {index + 1}: the Release Notes dialog shows HTML as plain text, "
                              "so remove the HTML or put it in backticks")
+        # Hộp thoại đọc từng dòng riêng nên không nối được link tham chiếu với định nghĩa của nó.
+        if index in inline["definition"]:
+            raise ValueError(f"line {index + 1}: the Release Notes dialog cannot use link reference "
+                             "definitions, so write links inline as [text](url) and remove this line")
+        if index in inline["reference"]:
+            raise ValueError(f"line {index + 1}: the Release Notes dialog cannot resolve reference "
+                             "links, so write this link inline as [text](url)")
     if publish and any(lines[index].strip() == PLACEHOLDER for index in section_indexes):
         raise ValueError(f"the '## Changes' section still has the '{PLACEHOLDER}' placeholder")
     section = normalize("\n".join(lines[start + 1:end]))

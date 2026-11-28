@@ -293,14 +293,22 @@ nguyên chữ. Vì vậy:
     là đường kẻ.
   - Không có định nghĩa footnote (`[^note]: ...`), kể cả trong mục list hay sau `>`: GitHub đưa nó
     xuống cuối trang, bỏ hẳn nếu không chỗ nào gọi và giấu comment HTML bên trong, còn hộp thoại hiện
-    nó thành chữ ngay tại chỗ. Viết ghi chú đó thẳng vào mục. Chỗ gọi `[^note]` không có định nghĩa
-    thì GitHub hiện nguyên chữ như hộp thoại, nên không bị chặn.
+    nó thành chữ ngay tại chỗ. Viết ghi chú đó thẳng vào mục. Chỗ gọi `[^note]` cũng bị chặn khi có
+    định nghĩa cùng nhãn ở bất kỳ đâu trong notes, vì GitHub hiện số chú thích còn hộp thoại hiện
+    `[^note]`; không có định nghĩa thì GitHub hiện nguyên chữ như hộp thoại, nên không bị chặn. Một
+    `[^...]` kéo sang dòng sau luôn bị chặn: GitHub lấy nhãn theo vị trí cột của hai dấu ngoặc nên hiện
+    chữ khác hẳn, ví dụ `See [^]`. Giữ nó trên một dòng.
+  - Không có link tham chiếu (`[text][ref]`, `[ref][]`, `[ref]` hay ảnh `![alt][ref]`) khi nhãn có định
+    nghĩa ở bất kỳ đâu trong notes, và không có định nghĩa link (`[ref]: url`) trong mục: hộp thoại đọc
+    từng dòng riêng nên hiện nguyên chữ `[text][ref]` không có đích, còn GitHub hiện link và giấu dòng
+    định nghĩa. Viết link nội dòng `[text](url)`. Ngoặc vuông không có định nghĩa như `[beta]` thì
+    GitHub cũng hiện nguyên chữ, nên không bị chặn.
   - Không có thứ GitHub đọc thành HTML, dạng khối hay nội dòng, kể cả trong ô bảng và comment
     `<!-- -->` mà GitHub giấu đi: hộp thoại hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì
     đặt nó trong backtick (`` `<package>` ``). Script kiểm theo cú pháp nội dòng của cmark-gfm, nên
-    autolink như `<https://example.com>`, đích link như `[guide](<docs/Upgrade Guide.md>)`, nhãn của
-    link tham chiếu có định nghĩa ở bất kỳ đâu trong notes như `[profile][<profile>]`, `` `D:\|<x>` ``
-    trong ô bảng (`\|` là chữ `|` của ô) và dấu `<` trong `a < b` hay `x<limit` vẫn dùng được.
+    autolink như `<https://example.com>`, đích link như `[guide](<docs/Upgrade Guide.md>)`,
+    `` `D:\|<x>` `` trong ô bảng (`\|` là chữ `|` của ô) và dấu `<` trong `a < b` hay `x<limit` vẫn
+    dùng được.
 - Bảng GFM trong mục Changes không bị chặn, nhưng hộp thoại đọc từng dòng riêng nên không dựng lại
   bảng: mỗi hàng, kể cả dòng phân cách `| --- |`, hiện thành một dòng chữ có dấu `|`. Nên viết mục
   Changes bằng list.
