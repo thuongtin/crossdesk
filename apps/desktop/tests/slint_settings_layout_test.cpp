@@ -20,7 +20,9 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -381,6 +383,41 @@ bool VerifyRowButton(Fixture& fixture, const RowProbe& probe, const std::string&
   return Check(false, label + " " + probe.name + ": the probed row never became visible");
 }
 
+// Chỉ hạ chữ hoa ASCII. Chữ hoa ngoài ASCII lệch nhau thì test báo lỗi chứ không
+// đạt nhầm, nên cách so này an toàn cho kiểm tra bên dưới.
+std::string FoldAsciiCase(std::string text) {
+  for (auto& c : text)
+    if (c >= 'A' && c <= 'Z') c = char(c - 'A' + 'a');
+  return text;
+}
+
+// Chữ hiện trên hai nút Manage phải nằm trong tên đọc của nút ở mọi ngôn ngữ
+// (WCAG 2.5.3), để điều khiển bằng giọng nói tìm được nút theo chữ người dùng thấy.
+// Gói Slint đang dùng không bật SLINT_FEATURE_TESTING nên test không đọc được
+// accessible-label từ cây phần tử. Vì vậy test kiểm chuỗi mà hai binding trong
+// main_window.slint đọc: UiStrings.manage là chữ trên nút, còn TrustStrings.manage
+// và UiStrings.manage-system-permissions là tên đọc.
+bool VerifyManageNames() {
+  bool ok = true;
+  for (const auto& language : AllLanguages()) {
+    auto main = crossdesk::ui::MainWindow::create();
+    crossdesk::ui_localization::ApplyMainWindowStrings(main, language.index);
+    const auto& strings = main->global<crossdesk::ui::UiStrings>();
+    const std::string visible(std::string_view(strings.get_manage()));
+    const std::pair<const char*, std::string> names[] = {
+        {"trusted devices",
+         std::string(std::string_view(main->global<crossdesk::ui::TrustStrings>().get_manage()))},
+        {"system permissions",
+         std::string(std::string_view(strings.get_manage_system_permissions()))}};
+    for (const auto& [row, name] : names)
+      ok &= Check(!visible.empty() &&
+                      FoldAsciiCase(name).find(FoldAsciiCase(visible)) != std::string::npos,
+                  std::string(language.name) + " " + row + " Manage: the accessible name \"" +
+                      name + "\" must contain the visible text \"" + visible + "\"");
+  }
+  return ok;
+}
+
 const std::vector<RowProbe>& RowProbes() {
   static const std::vector<RowProbe> probes = {
       {"self-hosted Edit", 0, 60.0f,
@@ -559,6 +596,11 @@ int main() {
     }
   }
   if (ok) std::cout << "Settings row buttons fit and center at every scale and language.\n";
+  if (VerifyManageNames())
+    std::cout << "Manage buttons keep their visible text in the accessible name in every "
+                 "language.\n";
+  else
+    ok = false;
 
   if (const char* directory = std::getenv("CROSSDESK_SETTINGS_EVIDENCE_DIR");
       directory && *directory) {
