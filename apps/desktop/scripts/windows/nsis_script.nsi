@@ -549,6 +549,12 @@ Function un.RemoveMachineData
     ${EndIf}
     SetRegView lastused
 
+    ; The service and the unattended host run as SYSTEM and create folders
+    ; whose DACL allows only SYSTEM, such as CrossDeskUnattended\host, which
+    ; an administrator can neither list nor delete without these privileges.
+    Push 2
+    Call un.SetBackupPrivileges
+
     ; The identity and trusted devices published for the unattended host, and
     ; staging folders an interrupted elevated update left behind.
     SetShellVarContext all
@@ -571,6 +577,9 @@ Function un.RemoveMachineData
     RMDir /r "$SYSDIR\config\systemprofile\AppData\Local\${PRODUCT_NAME}"
     RMDir /r "$SYSDIR\config\systemprofile\AppData\Roaming\${PRODUCT_NAME}"
     ${EnableX64FSRedirection}
+
+    Push 0
+    Call un.SetBackupPrivileges
 
     ; Windows adds inbound rules for CrossDesk.exe when a user answers its
     ; firewall prompt. Only rules for this copy's path are removed.
@@ -637,6 +646,43 @@ Function un.RemovePrivateMachineDirectory
     ${Else}
         DetailPrint "$(CD_MachineDataKept) $R9"
     ${EndIf}
+FunctionEnd
+
+; Enables (2, SE_PRIVILEGE_ENABLED) or disables (0) SeBackupPrivilege and
+; SeRestorePrivilege in the uninstaller's token, per the value on the stack.
+; Administrators hold both, disabled. While they are enabled, FindFirstFile,
+; DeleteFile and RemoveDirectory, which open with backup intent, ignore
+; DACLs, so they stay enabled only while RMDir /r removes the folders that
+; un.RemovePrivateMachineDirectory and the SYSTEM profile path vouch for.
+Function un.SetBackupPrivileges
+    Exch $0
+    Push $1
+    Push $2
+    Push $3
+    Push $4
+    ; TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY on the current process.
+    System::Call 'advapi32::OpenProcessToken(p -1, i 0x28, *p .r1) i .r4'
+    ${If} $4 <> 0
+        ; TOKEN_PRIVILEGES: PrivilegeCount, then two LUID_AND_ATTRIBUTES of
+        ; LUID (two DWORDs) and Attributes.
+        System::Call '*(i 2, i 0, i 0, i r0, i 0, i 0, i r0) p .r2'
+        IntPtrOp $3 $2 + 4
+        System::Call 'advapi32::LookupPrivilegeValueW(p 0, w "SeBackupPrivilege", p r3) i .r4'
+        ${If} $4 <> 0
+            IntPtrOp $3 $2 + 16
+            System::Call 'advapi32::LookupPrivilegeValueW(p 0, w "SeRestorePrivilege", p r3) i .r4'
+            ${If} $4 <> 0
+                System::Call 'advapi32::AdjustTokenPrivileges(p r1, i 0, p r2, i 0, p 0, p 0) i .r4'
+            ${EndIf}
+        ${EndIf}
+        System::Free $2
+        System::Call 'kernel32::CloseHandle(p r1)'
+    ${EndIf}
+    Pop $4
+    Pop $3
+    Pop $2
+    Pop $1
+    Pop $0
 FunctionEnd
 
 ; Sets $R7 to 1 when the SID at address $R8 is LocalSystem or the
