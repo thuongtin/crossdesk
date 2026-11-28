@@ -764,24 +764,50 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   main->set_update_install_available(true);
   main->set_latest_version("v2.0.0");
   main->set_current_version("1.7.6");
-  // Do fork sở hữu: notes nhúng đi qua cùng đường Markdown như app. Tiêu đề con phải thành
-  // dòng in đậm và dòng '#' trong code fence phải còn nguyên chữ, vì Parse bỏ mọi tiêu đề.
-  const std::string installed_markdown = crossdesk::release_notes_text::InstalledMarkdown(
+  // Do fork sở hữu: notes nhúng đi qua cùng đường dựng khối như app. Tiêu đề con phải thành
+  // dòng in đậm, còn mọi dòng trong code fence ("# ...", "---", "- ...") phải giữ nguyên chữ
+  // thay vì bị đọc thành tiêu đề, đường kẻ hay danh sách.
+  struct ExpectedBlock {
+    std::string_view text;
+    bool markdown;
+    bool section_gap;
+  };
+  const ExpectedBlock expected_blocks[] = {
+      {"**Linux**", true, false},
+      {"- Release highlights fixture", true, true},
+      {"```sh", false, true},
+      {"# Restart after updating", false, false},
+      {"crossdesk", false, false},
+      {"---", false, false},
+      {"- not a list item", false, false},
+      {"```", false, false},
+      {"**Windows**", true, true},
+      {"- C# tooling", true, true},
+  };
+  if (!Check(*slint::StyledText::from_markdown("- not a list item") !=
+                 slint::StyledText::from_plain_text("- not a list item"),
+             "Markdown and literal list lines must differ for the fence check")) return false;
+  const auto installed_blocks = crossdesk::release_notes_text::InstalledBlocks(
       "### Linux ###\n\n- Release highlights fixture\n\n```sh\n# Restart after updating\n"
-      "crossdesk\n```\n\n## Windows\n\n- C# tooling");
-  if (!Check(installed_markdown ==
-                 "**Linux**\n\n- Release highlights fixture\n\n```sh\n\\# Restart after updating\n"
-                 "crossdesk\n```\n\n**Windows**\n\n- C# tooling\n",
-             "Installed release notes must keep subheadings and fenced comment lines")) return false;
+      "crossdesk\n---\n- not a list item\n```\n\n## Windows\n\n- C# tooling");
+  bool blocks_match = installed_blocks.size() == std::size(expected_blocks);
+  for (size_t index = 0; blocks_match && index < installed_blocks.size(); ++index) {
+    const auto& expected = expected_blocks[index];
+    const auto content = expected.markdown
+                             ? *slint::StyledText::from_markdown(expected.text)
+                             : slint::StyledText::from_plain_text(expected.text);
+    blocks_match = installed_blocks[index].content == content &&
+                   installed_blocks[index].section_gap == expected.section_gap;
+  }
+  if (!Check(blocks_match,
+             "Installed release notes must keep subheadings and every code fence line")) return false;
   std::vector<crossdesk::ui::ReleaseNoteBlock> installed_notes;
-  for (const auto& parsed : crossdesk::release_notes_text::Parse(installed_markdown)) {
+  for (const auto& parsed : installed_blocks) {
     crossdesk::ui::ReleaseNoteBlock block{};
     block.content = parsed.content;
     block.section_gap = parsed.section_gap;
     installed_notes.push_back(std::move(block));
   }
-  if (!Check(installed_notes.size() == 8,
-             "Parse must keep every installed release notes line")) return false;
   main->set_installed_release_notes(
       std::make_shared<slint::VectorModel<crossdesk::ui::ReleaseNoteBlock>>(
           std::move(installed_notes)));
