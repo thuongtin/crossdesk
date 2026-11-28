@@ -349,12 +349,20 @@ Function SkipDirectoryPageOnUpgrade
     IntOp $0 $0 + 1023
     IntOp $0 $0 / 1024
     ; Ask about the folder itself, as the directory page does, not the drive
-    ; root: a folder can be the mount point of another volume. A missing
-    ; folder is checked through its nearest existing parent.
+    ; root: a folder can be the mount point of another volume. Only a folder
+    ; that does not exist (yet) is checked through its nearest existing
+    ; parent. Any other failure, such as access denied on an existing mount
+    ; point, skips the check: the parent may be on a different volume.
     StrCpy $1 $INSTDIR
     ${Do}
-        System::Call 'kernel32::GetDiskFreeSpaceExW(w r1, *l .r2, *l .r4, *l .r5) i .r3'
+        System::Call 'kernel32::GetDiskFreeSpaceExW(w r1, *l .r2, *l .r4, *l .r5) i .r3 ?e'
+        Pop $6
         ${If} $3 <> 0
+            ${ExitDo}
+        ${EndIf}
+        ; ERROR_FILE_NOT_FOUND and ERROR_PATH_NOT_FOUND.
+        ${If} $6 <> 2
+        ${AndIf} $6 <> 3
             ${ExitDo}
         ${EndIf}
         ${GetParent} $1 $1
