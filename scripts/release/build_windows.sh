@@ -23,20 +23,30 @@ REMOTE_ROOT_SCP="${REMOTE_ROOT//\\//}"
 
 SSH_OPTS=(-o BatchMode=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20)
 require_cmd ssh scp
+# Tên notes riêng cho mỗi lần chạy để lần chạy khác trên cùng thư mục build không ghi đè notes mà bản
+# build đang chạy chưa đọc tới; xoá trên máy Windows khi script kết thúc.
+REMOTE_NOTES="release-notes-$(date +%Y%m%d%H%M%S)-$$.md"
+STAGING=""
+cleanup() {
+    ssh "${SSH_OPTS[@]}" -p "$PORT" "$HOST" \
+        "powershell -NoProfile -Command \"Remove-Item -Force -ErrorAction SilentlyContinue '$REMOTE_ROOT\\tools\\$REMOTE_NOTES'\"" \
+        </dev/null || true
+    [[ -z "$STAGING" ]] || rm -rf "$STAGING"
+}
+trap cleanup EXIT
 
 log "Uploading Windows build script to $HOST:$REMOTE_ROOT"
 ssh "${SSH_OPTS[@]}" -p "$PORT" "$HOST" \
     "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path '$REMOTE_ROOT\\tools' | Out-Null\""
 scp "${SSH_OPTS[@]}" -P "$PORT" "$SCRIPT_DIR/windows/build.ps1" "$HOST:$REMOTE_ROOT_SCP/tools/build.ps1"
 # Mục Changes nhúng vào hộp thoại Release Notes của bản build này.
-scp "${SSH_OPTS[@]}" -P "$PORT" "$RELEASE_NOTES" "$HOST:$REMOTE_ROOT_SCP/tools/release-notes.md"
+scp "${SSH_OPTS[@]}" -P "$PORT" "$RELEASE_NOTES" "$HOST:$REMOTE_ROOT_SCP/tools/$REMOTE_NOTES"
 
 log "Running Windows build on $HOST"
 ssh "${SSH_OPTS[@]}" -p "$PORT" "$HOST" \
-    "powershell -NoProfile -ExecutionPolicy Bypass -File \"$REMOTE_ROOT\\tools\\build.ps1\" -Root \"$REMOTE_ROOT\" -RepoUrl \"$FORK_URL\" -Commit $COMMIT -Version $VERSION -PublicKey $FORK_UPDATE_PUBLIC_KEY -ReleaseNotes \"$REMOTE_ROOT\\tools\\release-notes.md\""
+    "powershell -NoProfile -ExecutionPolicy Bypass -File \"$REMOTE_ROOT\\tools\\build.ps1\" -Root \"$REMOTE_ROOT\" -RepoUrl \"$FORK_URL\" -Commit $COMMIT -Version $VERSION -PublicKey $FORK_UPDATE_PUBLIC_KEY -ReleaseNotes \"$REMOTE_ROOT\\tools\\$REMOTE_NOTES\""
 
 STAGING="$(mktemp -d "${TMPDIR:-/tmp}/crossdesk-release-windows.XXXXXX")"
-trap 'rm -rf "$STAGING"' EXIT
 log "Copying Windows artifacts back"
 scp "${SSH_OPTS[@]}" -P "$PORT" -r "$HOST:$REMOTE_ROOT_SCP/out/$VERSION" "$STAGING/"
 

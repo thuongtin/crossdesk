@@ -36,12 +36,15 @@ scp -q "${SSH_OPTS[@]}" -P "$PORT" \
     "$SCRIPT_DIR/linux/build_in_rootfs.sh" \
     "$SCRIPT_DIR/linux/fetch_image_rootfs.py" \
     "$HOST:$REMOTE_ROOT/tools/linux/"
-# Mục Changes nhúng vào hộp thoại Release Notes; remote_build.sh đưa nó vào rootfs build.
-scp -q "${SSH_OPTS[@]}" -P "$PORT" "$RELEASE_NOTES" "$HOST:$REMOTE_ROOT/tools/linux/release-notes.md"
+# Mục Changes nhúng vào hộp thoại Release Notes; remote_build.sh đưa nó vào rootfs build rồi xoá khi
+# kết thúc. Tên riêng cho mỗi lần chạy để lần chạy khác trên cùng thư mục build (sẽ bị khoá từ chối)
+# không ghi đè notes mà bản build đang chạy chưa đọc tới.
+REMOTE_NOTES="release-notes-$(date +%Y%m%d%H%M%S)-$$.md"
+scp -q "${SSH_OPTS[@]}" -P "$PORT" "$RELEASE_NOTES" "$HOST:$REMOTE_ROOT/tools/linux/$REMOTE_NOTES"
 
 log "Running Linux build on $HOST"
 ssh "${SSH_OPTS[@]}" -p "$PORT" "$HOST" \
-    "CROSSDESK_RELEASE_SKIP_APT_SIMULATE=$SKIP_APT_SIMULATE bash '$REMOTE_ROOT/tools/linux/remote_build.sh' '$REMOTE_ROOT' '$VERSION' '$COMMIT'" \
+    "CROSSDESK_RELEASE_SKIP_APT_SIMULATE=$SKIP_APT_SIMULATE bash '$REMOTE_ROOT/tools/linux/remote_build.sh' '$REMOTE_ROOT' '$VERSION' '$COMMIT' '$REMOTE_NOTES'" \
     </dev/null
 
 STAGING="$(mktemp -d "${TMPDIR:-/tmp}/crossdesk-release-linux.XXXXXX")"

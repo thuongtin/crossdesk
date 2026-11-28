@@ -2,23 +2,27 @@
 # Chạy trên máy Linux x86_64 (được build_linux.sh gọi qua SSH). Chuẩn bị bản clone
 # riêng của fork, dựng rootfs từ image build upstream đã ghim digest rồi build gói
 # .deb bên trong bubblewrap, không cần Docker hay sudo.
-# Usage: remote_build.sh <root> <version> <commit>
+# Usage: remote_build.sh <root> <version> <commit> <release-notes-name>
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/release/lib.sh
 source "$SCRIPT_DIR/../lib.sh"
 
-[[ $# -eq 3 ]] || die "Usage: $0 <root> <version> <commit>"
+[[ $# -eq 4 ]] || die "Usage: $0 <root> <version> <commit> <release-notes-name>"
 VERSION="$2"
 COMMIT="$3"
+# build_linux.sh chép mục Changes của release notes cạnh script này dưới tên riêng của lần chạy; thư
+# mục script được gắn chỉ đọc vào /tmp/crossdesk-release trong rootfs. Tệp chỉ dùng cho lần chạy này.
+NOTES_NAME="$4"
+[[ "$NOTES_NAME" =~ ^release-notes-[A-Za-z0-9._-]+\.md$ ]] || die "Unsupported release notes name: $NOTES_NAME"
+NOTES_FILE="$SCRIPT_DIR/$NOTES_NAME"
+trap 'rm -f "$NOTES_FILE"' EXIT
 validate_version "$VERSION" dry-run
 [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || die "Commit must be a full 40-character SHA, got: $COMMIT"
 [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]] || die "The Linux amd64 build must run on x86_64 Linux"
 require_cmd git bwrap python3 flock sha256sum
-# build_linux.sh chép mục Changes của release notes cạnh script này; thư mục script được gắn
-# chỉ đọc vào /tmp/crossdesk-release trong rootfs.
-[[ -s "$SCRIPT_DIR/release-notes.md" ]] || die "Missing $SCRIPT_DIR/release-notes.md"
+[[ -s "$NOTES_FILE" ]] || die "Missing $NOTES_FILE"
 
 mkdir -p "$1"
 ROOT="$(cd "$1" && pwd)"
@@ -78,7 +82,7 @@ bwrap \
     --setenv CROSSDESK_RELEASE_SKIP_APT_SIMULATE "${CROSSDESK_RELEASE_SKIP_APT_SIMULATE:-0}" \
     --chdir /workspace \
     /bin/bash /tmp/crossdesk-release/build_in_rootfs.sh "$VERSION" "$FORK_UPDATE_PUBLIC_KEY" \
-    /tmp/crossdesk-release/release-notes.md </dev/null
+    "/tmp/crossdesk-release/$NOTES_NAME" </dev/null
 
 while IFS= read -r asset; do
     [[ -s "$OUT_DIR/$asset" ]] || die "Linux build did not produce $asset"
