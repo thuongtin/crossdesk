@@ -1267,13 +1267,18 @@ int main() {
   stream->set_remote_update_visible(true);
   // Do fork sở hữu: hộp thoại cao theo tiêu đề và nội dung đã xuống dòng, nên
   // hàng nút phụ thuộc font của máy (DejaVu trên Linux ngắt thành nhiều dòng hơn
-  // macOS). Bấm vào nút đã vẽ thay vì tung độ đo bằng font của một nền tảng.
-  // Cột 724 nằm trong nút (x 712 đến 816) nhưng bên trái nhãn "Got it".
-  const float notice_button_y = PrimaryButtonCenterY(
-      stream->window(), 724.0f, stream->get_video_area_top() + notice_y - 24.0f);
-  if (notice_button_y < 0.0f) {
-    std::cerr << "Upgrade confirmation button must be painted\n";
-    return 9;
+  // macOS). Khi chạy headless, bấm vào nút đã vẽ thay vì tung độ đo bằng font của
+  // một nền tảng. Cột 724 nằm trong nút (x 712 đến 816) nhưng bên trái nhãn "Got it".
+  // Backend native giữ cửa sổ stream ẩn và đọc ngược GPU có thể ra ảnh đen, nên ở
+  // chế độ đó vẫn dùng tung độ đo trên macOS như trước.
+  float notice_button_y = stream->get_video_area_top() + notice_y - 24.0f + 124.0f;
+  if (headless) {
+    notice_button_y = PrimaryButtonCenterY(
+        stream->window(), 724.0f, stream->get_video_area_top() + notice_y - 24.0f);
+    if (notice_button_y < 0.0f) {
+      std::cerr << "Upgrade confirmation button must be painted\n";
+      return 9;
+    }
   }
   const auto notice_button = slint::LogicalPosition(
       slint::Point<float>{764.0f, notice_button_y});

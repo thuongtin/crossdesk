@@ -868,18 +868,28 @@ bool VerifyServerPanel(RenderTestPlatform& platform) {
   // của máy (rootfs build Linux không có font CJK). Lấy hai nút từ hàng y 123 của khung
   // hình thay vì hoành độ đo bằng font của macOS: nút "发送文件"/"取消" nằm giữa hai
   // cạnh viền đầu và cuối tính từ lề x 10, nút ngắt tất cả là đoạn đỏ #d92d20 bên phải.
+  // Dò nút đỏ trước, rồi dò nút gửi tới trước cột liền kề nút đỏ, vì cột đó có thể là
+  // mép khử răng cưa của nút đỏ chứ không thuộc nút gửi. Mỗi nút rộng ít nhất 20px (nhãn
+  // cộng 20px): đoạn nút gửi tính cả cột viền khử răng cưa nên có ít nhất 20 cột, còn khi
+  // nút đỏ đặt ở hoành độ lẻ thì hai cột mép là màu pha, nên chỉ chắc chắn còn 19 cột đỏ.
+  const auto footer_pixel = [&](int x) { return screen.pixels.at(123 * screen.extent.width + x); };
   int send_left = -1, send_right = -1, danger_left = -1, danger_right = -1;
   for (int x = 10; x < int(screen.extent.width) - 10; ++x) {
-    const auto p = screen.pixels.at(123 * screen.extent.width + x);
+    const auto p = footer_pixel(x);
     if (p.r == 0xd9 && p.g == 0x2d && p.b == 0x20) {
       if (danger_left < 0) danger_left = x;
       danger_right = x;
-    } else if (danger_left < 0 && !(p.r == 255 && p.g == 255 && p.b == 255)) {
+    }
+  }
+  for (int x = 10; x < danger_left - 1; ++x) {
+    const auto p = footer_pixel(x);
+    if (!(p.r == 255 && p.g == 255 && p.b == 255)) {
       if (send_left < 0) send_left = x;
       send_right = x;
     }
   }
-  if (!Check(send_left >= 0 && send_right - send_left >= 20 && danger_right - danger_left >= 20,
+  if (!Check(danger_left >= 0 && send_left >= 0 && send_right - send_left + 1 >= 20 &&
+                 danger_right - danger_left + 1 >= 19,
              "Controlled-side footer buttons must be painted")) return false;
   const float send_x = (send_left + send_right) / 2.f;
   const float disconnect_all_x = (danger_left + danger_right) / 2.f;
