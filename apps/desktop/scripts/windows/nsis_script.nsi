@@ -69,6 +69,7 @@ BrandingText "${PRODUCT_NAME}"
 ; Include LogicLib for process handling
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
+!include "x64.nsh"
 !include /CHARSET=UTF8 "installer_strings.nsh"
 Var UpdateMode
 Var ExistingInstall
@@ -250,6 +251,7 @@ uninstallApp:
     ${EndIf}
     Call un.UnregisterInstalledService
     Call un.RemoveUsbmmiddDriver
+    Call un.RemoveMachineData
 
     ; Delete main executable and uninstaller
     Delete "$INSTDIR\CrossDesk.exe"
@@ -523,4 +525,129 @@ unplug_loop:
     SetRegView lastused
 
 done:
+FunctionEnd
+
+; Removes what CrossDesk keeps outside the install folder and the user
+; profiles. Upgrades never run the uninstaller, so all of this survives them.
+Function un.RemoveMachineData
+    DetailPrint "$(CD_RemovingMachineData)"
+
+    ; --service-uninstall writes Unattended\Enabled=0 again after
+    ; un.UnregisterInstalledService deleted the key, so remove it only now.
+    ; Keep the usbmmidd marker when un.RemoveUsbmmiddDriver could not run
+    ; deviceinstaller64.exe, so that the next uninstall can remove the driver.
+    SetRegView 64
+    ClearErrors
+    ReadRegDWORD $0 HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
+    ${If} ${Errors}
+    ${OrIf} $0 <> 1
+        DeleteRegKey HKLM "Software\${PRODUCT_NAME}"
+    ${Else}
+        DeleteRegKey HKLM "Software\${PRODUCT_NAME}\Unattended"
+        DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "LastAttachedDisplayModeV2"
+        DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "LastAttachedDisplayMode"
+    ${EndIf}
+    SetRegView lastused
+
+    ; The identity and trusted devices published for the unattended host, and
+    ; staging folders an interrupted elevated update left behind.
+    SetShellVarContext all
+    StrCpy $R6 $APPDATA
+    SetShellVarContext current
+    StrCpy $R9 "$R6\CrossDeskUnattended"
+    Call un.RemovePrivateMachineDirectory
+    FindFirst $R5 $R4 "$R6\CrossDesk-update-*"
+    ${DoWhile} $R4 != ""
+        StrCpy $R9 "$R6\$R4"
+        Call un.RemovePrivateMachineDirectory
+        FindNext $R5 $R4
+    ${Loop}
+    FindClose $R5
+
+    ; The service and the unattended host run as SYSTEM and keep their logs,
+    ; cache and settings in its profile. The uninstaller is a 32-bit process:
+    ; reach System32 itself, not SysWOW64.
+    ${DisableX64FSRedirection}
+    RMDir /r "$SYSDIR\config\systemprofile\AppData\Local\${PRODUCT_NAME}"
+    RMDir /r "$SYSDIR\config\systemprofile\AppData\Roaming\${PRODUCT_NAME}"
+    ${EnableX64FSRedirection}
+
+    ; Windows adds inbound rules for CrossDesk.exe when a user answers its
+    ; firewall prompt. Only rules for this copy's path are removed.
+    nsExec::ExecToLog '"$SYSDIR\netsh.exe" advfirewall firewall delete rule name=all program="$INSTDIR\CrossDesk.exe"'
+    Pop $0
+FunctionEnd
+
+; Removes the folder in $R9 only if it is a real directory, not a junction
+; or symbolic link, owned by SYSTEM or Administrators, whose DACL only allows
+; those two: the folders CrossDesk creates, and what PrivateDirectory in
+; unattended_config.cpp and OwnedJobDirectory in update_platform.cpp accept.
+; Standard users can create folders in ProgramData and RMDir /r follows
+; junctions it finds inside, so the elevated uninstaller must not empty a
+; folder anyone else could write to. Such a folder is not CrossDesk's and is
+; kept.
+Function un.RemovePrivateMachineDirectory
+    System::Call 'kernel32::GetFileAttributesW(w R9) i .r0'
+    ${If} $0 = -1
+        Return
+    ${EndIf}
+    StrCpy $5 0
+    ; FILE_ATTRIBUTE_DIRECTORY set, FILE_ATTRIBUTE_REPARSE_POINT clear.
+    IntOp $1 $0 & 0x410
+    ${If} $1 = 0x10
+        ; SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION.
+        System::Call 'advapi32::GetNamedSecurityInfoW(w R9, i 1, i 5, *p .r1, p 0, *p .r2, p 0, *p .r3) i .r0'
+        ${If} $0 = 0
+            StrCpy $R8 $1
+            Call un.IsTrustedSid
+            ; A NULL DACL grants everyone full access.
+            ${If} $R7 = 1
+            ${AndIf} $2 <> 0
+                StrCpy $5 1
+                ; ACL header: AclRevision, Sbz1, AclSize, AceCount.
+                System::Call '*$2(&i1 .r6, &i1 .r6, &i2 .r6, &i2 .r4)'
+                StrCpy $6 0
+                ${DoWhile} $6 < $4
+                    System::Call 'advapi32::GetAce(p r2, i r6, *p .r7) i .r0'
+                    ${If} $0 = 0
+                        StrCpy $5 0
+                        ${ExitDo}
+                    ${EndIf}
+                    ; ACE header: AceType, AceFlags, AceSize. The SID of an
+                    ; ACCESS_ALLOWED_ACE follows the header and the 4-byte mask.
+                    System::Call '*$7(&i1 .r0, &i1 .r1)'
+                    ${If} $0 <> 0
+                        StrCpy $5 0
+                        ${ExitDo}
+                    ${EndIf}
+                    IntPtrOp $R8 $7 + 8
+                    Call un.IsTrustedSid
+                    ${If} $R7 <> 1
+                        StrCpy $5 0
+                        ${ExitDo}
+                    ${EndIf}
+                    IntOp $6 $6 + 1
+                ${Loop}
+            ${EndIf}
+            System::Call 'kernel32::LocalFree(p r3)'
+        ${EndIf}
+    ${EndIf}
+    ${If} $5 = 1
+        RMDir /r "$R9"
+    ${Else}
+        DetailPrint "$(CD_MachineDataKept) $R9"
+    ${EndIf}
+FunctionEnd
+
+; Sets $R7 to 1 when the SID at address $R8 is LocalSystem or the
+; Administrators group, else to 0.
+Function un.IsTrustedSid
+    ; WinLocalSystemSid, WinBuiltinAdministratorsSid.
+    System::Call 'advapi32::IsWellKnownSid(p R8, i 22) i .R7'
+    ${If} $R7 = 0
+        System::Call 'advapi32::IsWellKnownSid(p R8, i 26) i .R7'
+    ${EndIf}
+    ${If} $R7 <> 0
+        StrCpy $R7 1
+    ${EndIf}
 FunctionEnd
