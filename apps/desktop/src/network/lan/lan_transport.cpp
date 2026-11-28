@@ -28,6 +28,7 @@ using Hdl = websocketpp::connection_hdl;
 using Error = websocketpp::lib::error_code;
 using Context = websocketpp::lib::asio::ssl::context;
 using ResolveResults = asio::ip::tcp::resolver::results_type;
+bool DialableAddress(const asio::ip::address& address);
 
 // System resolvers may keep running after cancellation. A lookup owns no
 // session state and can only post results while its transport is attached.
@@ -70,7 +71,10 @@ struct NameLookup {
           for (const auto& text : ReadHostsFileAddresses(host)) {
             asio::error_code parse_error;
             const auto address = asio::ip::make_address(text, parse_error);
-            if (!parse_error) hosts_file.push_back(address);
+            // Chỉ địa chỉ bộ quay số thật sự dùng được mới thay cho DNS; một
+            // dòng hosts chỉ có địa chỉ IPv4-mapped không được chặn truy vấn.
+            if (!parse_error && DialableAddress(address))
+              hosts_file.push_back(address);
           }
           Error error;
           ResolveResults results;
@@ -219,6 +223,12 @@ std::string SocketAddress(asio::ip::address address) {
   const auto scope = ipv6.scope_id();
   ipv6.scope_id(0);
   return ipv6.to_string() + (scope ? "%" + std::to_string(scope) : "");
+}
+// Điều kiện chung của QueueAddresses và tra cứu file hosts: bỏ IPv4-mapped
+// và mọi địa chỉ MiniRTC không nhận làm địa chỉ quay số trực tiếp.
+bool DialableAddress(const asio::ip::address& address) {
+  if (address.is_v6() && address.to_v6().is_v4_mapped()) return false;
+  return IsIpAddress(SocketAddress(address));
 }
 std::shared_ptr<Context> TlsContext() {
   auto context = std::make_shared<Context>(Context::tls);
@@ -661,9 +671,9 @@ struct Transport::Impl {
     std::set<std::string> seen;
     int family = 0;
     for (const auto& address : addresses) {
-      if (address.is_v6() && address.to_v6().is_v4_mapped()) continue;
+      if (!DialableAddress(address)) continue;
       auto ip = SocketAddress(address);
-      if (!IsIpAddress(ip) || !seen.insert(ip).second) continue;
+      if (!seen.insert(ip).second) continue;
       if (dial->candidates.count(ip)) {
         if (!prioritize) continue;
         auto pending =
