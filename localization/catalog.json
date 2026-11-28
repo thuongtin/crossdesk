@@ -13988,18 +13988,18 @@
       "pt-BR": "O computador remoto está gravando a tela, mas a imagem não está chegando a esta janela. Reconecte; se continuar acontecendo, verifique a rede dos dois computadores.",
       "vi": "Máy tính từ xa đang ghi màn hình nhưng hình ảnh không tới được cửa sổ này. Hãy kết nối lại; nếu vẫn lặp lại, hãy kiểm tra mạng trên cả hai máy."
     },
-    "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。": {
-      "zh-Hans": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
-      "en": "The remote computer has not allowed CrossDesk to record its screen. On that Mac, open System Settings > Privacy & Security > Screen & System Audio Recording, turn on CrossDesk, then restart CrossDesk there.",
-      "ru": "На удалённом компьютере CrossDesk не разрешена запись экрана. На этом Mac откройте «Системные настройки > Конфиденциальность и безопасность > Запись экрана и системного аудио», включите CrossDesk и перезапустите там CrossDesk.",
-      "zh-Hant": "遠端電腦未允許 CrossDesk 錄製螢幕。請在那台 Mac 上開啟「系統設定 > 隱私權與安全性 > 螢幕與系統錄音」，開啟 CrossDesk，然後在那台電腦上重新啟動 CrossDesk。",
-      "ja": "リモートコンピューターで CrossDesk の画面収録が許可されていません。その Mac で「システム設定 > プライバシーとセキュリティ > 画面収録とシステムオーディオ録音」を開き、CrossDesk をオンにしてから、その Mac で CrossDesk を再起動してください。",
-      "ko": "원격 컴퓨터에서 CrossDesk의 화면 기록이 허용되지 않았습니다. 해당 Mac에서 시스템 설정 > 개인정보 보호 및 보안 > 화면 및 시스템 오디오 녹음을 열고 CrossDesk를 켠 다음, 그 Mac에서 CrossDesk를 다시 시작하세요.",
-      "de": "Der entfernte Computer erlaubt CrossDesk nicht, den Bildschirm aufzunehmen. Öffnen Sie auf diesem Mac „Systemeinstellungen > Datenschutz & Sicherheit > Bildschirm- & System-Audioaufnahme“, aktivieren Sie CrossDesk und starten Sie CrossDesk dort neu.",
-      "fr": "L'ordinateur distant n'autorise pas CrossDesk à enregistrer son écran. Sur ce Mac, ouvrez Réglages Système > Confidentialité et sécurité > Enregistrement de l'écran et de l'audio du système, activez CrossDesk, puis redémarrez CrossDesk sur ce Mac.",
-      "es": "El equipo remoto no ha permitido que CrossDesk grabe su pantalla. En ese Mac, abra Ajustes del Sistema > Privacidad y seguridad > Grabación de pantalla y audio del sistema, active CrossDesk y reinicie CrossDesk en ese equipo.",
-      "pt-BR": "O computador remoto não permitiu que o CrossDesk gravasse a tela. Nesse Mac, abra Ajustes do Sistema > Privacidade e Segurança > Gravação de Tela e Áudio do Sistema, ative o CrossDesk e reinicie o CrossDesk nele.",
-      "vi": "Máy tính từ xa chưa cho phép CrossDesk ghi màn hình. Trên máy Mac đó, mở Cài đặt hệ thống > Quyền riêng tư & Bảo mật > Ghi màn hình & âm thanh hệ thống, bật CrossDesk, rồi khởi động lại CrossDesk trên máy đó."
+    "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”（较早的 macOS 中称为“屏幕录制”），开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。": {
+      "zh-Hans": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”（较早的 macOS 中称为“屏幕录制”），开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
+      "en": "The remote computer has not allowed CrossDesk to record its screen. On that Mac, open System Settings > Privacy & Security > Screen & System Audio Recording (Screen Recording on older macOS), turn on CrossDesk, then restart CrossDesk there.",
+      "ru": "На удалённом компьютере CrossDesk не разрешена запись экрана. На этом Mac откройте «Системные настройки > Конфиденциальность и безопасность > Запись экрана и системного аудио» (в старых версиях macOS: «Запись экрана»), включите CrossDesk и перезапустите там CrossDesk.",
+      "zh-Hant": "遠端電腦未允許 CrossDesk 錄製螢幕。請在那台 Mac 上開啟「系統設定 > 隱私權與安全性 > 螢幕與系統錄音」（較舊的 macOS 中稱為「螢幕錄製」），開啟 CrossDesk，然後在那台電腦上重新啟動 CrossDesk。",
+      "ja": "リモートコンピューターで CrossDesk の画面収録が許可されていません。その Mac で「システム設定 > プライバシーとセキュリティ > 画面収録とシステムオーディオ録音」（古い macOS では「画面収録」）を開き、CrossDesk をオンにしてから、その Mac で CrossDesk を再起動してください。",
+      "ko": "원격 컴퓨터에서 CrossDesk의 화면 기록이 허용되지 않았습니다. 해당 Mac에서 시스템 설정 > 개인정보 보호 및 보안 > 화면 및 시스템 오디오 녹음(이전 macOS에서는 화면 기록)을 열고 CrossDesk를 켠 다음, 그 Mac에서 CrossDesk를 다시 시작하세요.",
+      "de": "Der entfernte Computer erlaubt CrossDesk nicht, den Bildschirm aufzunehmen. Öffnen Sie auf diesem Mac „Systemeinstellungen > Datenschutz & Sicherheit > Bildschirm- & System-Audioaufnahme“ (in älteren macOS-Versionen „Bildschirmaufnahme“), aktivieren Sie CrossDesk und starten Sie CrossDesk dort neu.",
+      "fr": "L'ordinateur distant n'autorise pas CrossDesk à enregistrer son écran. Sur ce Mac, ouvrez Réglages Système > Confidentialité et sécurité > Enregistrement de l'écran et de l'audio du système (Enregistrement de l'écran sur les anciennes versions de macOS), activez CrossDesk, puis redémarrez CrossDesk sur ce Mac.",
+      "es": "El equipo remoto no ha permitido que CrossDesk grabe su pantalla. En ese Mac, abra Ajustes del Sistema > Privacidad y seguridad > Grabación de pantalla y audio del sistema (Grabación de pantalla en versiones anteriores de macOS), active CrossDesk y reinicie CrossDesk en ese equipo.",
+      "pt-BR": "O computador remoto não permitiu que o CrossDesk gravasse a tela. Nesse Mac, abra Ajustes do Sistema > Privacidade e Segurança > Gravação de Tela e Áudio do Sistema (Gravação de Tela em versões anteriores do macOS), ative o CrossDesk e reinicie o CrossDesk nele.",
+      "vi": "Máy tính từ xa chưa cho phép CrossDesk ghi màn hình. Trên máy Mac đó, mở Cài đặt hệ thống > Quyền riêng tư & Bảo mật > Ghi màn hình & âm thanh hệ thống (trên macOS cũ hơn là Ghi màn hình), bật CrossDesk, rồi khởi động lại CrossDesk trên máy đó."
     },
     "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。": {
       "zh-Hans": "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
@@ -14329,7 +14329,7 @@
     "remote_service_unavailable_message": "远端 Windows 服务不可用，锁屏时无法操作。请在远端安装或修复 CrossDesk 服务。",
     "frame_wait_no_picture": "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。",
     "frame_wait_no_video": "远程电脑正在录制屏幕，但画面未能到达此窗口。请重新连接；如果问题持续，请检查两台电脑的网络。",
-    "frame_wait_permission_denied": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
+    "frame_wait_permission_denied": "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”（较早的 macOS 中称为“屏幕录制”），开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
     "frame_wait_display_unavailable": "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
     "frame_wait_capture_failed": "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。"
   },
@@ -15276,7 +15276,7 @@
       "连接到设备",
       "尚未收到远程电脑的画面。请确认对方电脑已唤醒，且其上的 CrossDesk 已获准录制屏幕，然后重新连接。",
       "远程电脑正在录制屏幕，但画面未能到达此窗口。请重新连接；如果问题持续，请检查两台电脑的网络。",
-      "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”，开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
+      "远程电脑未允许 CrossDesk 录制屏幕。请在那台 Mac 上打开“系统设置 > 隐私与安全性 > 录屏与系统录音”（较早的 macOS 中称为“屏幕录制”），开启 CrossDesk，然后在那台电脑上重新启动 CrossDesk。",
       "远程屏幕处于睡眠或关闭状态，正在等待唤醒...若持续如此，请唤醒远程电脑或检查其显示器是否已连接。",
       "远程电脑无法开始屏幕录制。请在远程电脑上重新启动 CrossDesk，然后重新连接。"
     ],
