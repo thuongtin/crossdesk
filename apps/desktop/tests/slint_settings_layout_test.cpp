@@ -2,159 +2,34 @@
 // vùng làm việc nhỏ, render MainWindow thật bằng software renderer. Khi đặt
 // CROSSDESK_SETTINGS_EVIDENCE_DIR, test xuất thêm ảnh PPM của từng trang Settings
 // và các hộp thoại mở từ đó để soát giao diện bằng mắt.
-#include "crossdesk_ui.h"
-#include "../src/gui/assets/fonts/fa_solid_900.h"
-#include "application/window_geometry.h"
-#include "ui/ui_localization.h"
+#include "slint_layout_test_support.h"
 
-#include <slint-platform.h>
-
-#include <chrono>
 #include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <filesystem>
-#include <fstream>
 #include <functional>
-#include <iostream>
-#include <memory>
 #include <optional>
-#include <string>
 #include <string_view>
-#include <thread>
 #include <utility>
-#include <vector>
 
 namespace {
 
-// Bộ chuyển cửa sổ có hệ số scale: buffer theo pixel vật lý, còn Slint bố cục
-// theo đơn vị logic, giống cửa sổ thật trên màn hình 125% hay 150%.
-class ScaledWindow : public slint::platform::WindowAdapter {
- public:
-  slint::platform::SoftwareRenderer software{
-      slint::platform::SoftwareRenderer::RepaintBufferType::NewBuffer};
-  slint::PhysicalSize extent{{960, 650}};
-  std::vector<slint::Rgb8Pixel> pixels =
-      std::vector<slint::Rgb8Pixel>(std::size_t(960) * 650);
-  float scale = 1.0f;
+using namespace crossdesk::layout_test;
 
-  slint::PhysicalSize size() override { return extent; }
-  slint::platform::AbstractRenderer& renderer() override { return software; }
-  void request_redraw() override {}
-  void set_size(slint::PhysicalSize value) override {
-    extent = value;
-    pixels.assign(std::size_t(extent.width) * extent.height, {});
-    window().dispatch_resize_event(slint::LogicalSize(
-        {float(extent.width) / scale, float(extent.height) / scale}));
-  }
-  void SetScale(float value) {
-    scale = value;
-    window().dispatch_scale_factor_change_event(value);
-  }
-  // Mỗi lần chụp đều vẽ lại toàn bộ khung hình sau khi animation đã chạy xong.
-  void Settle(int frames = 16) {
-    for (int i = 0; i < frames; ++i) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(16));
-      slint::platform::update_timers_and_animations();
-    }
-    software.render(pixels, extent.width);
-  }
-  slint::Rgb8Pixel At(int x, int y) const {
-    return pixels.at(std::size_t(y) * extent.width + x);
-  }
-};
-
-class ScaledPlatform : public slint::platform::Platform {
- public:
-  ScaledWindow* adapter = nullptr;
-  std::unique_ptr<slint::platform::WindowAdapter> create_window_adapter() override {
-    auto result = std::make_unique<ScaledWindow>();
-    adapter = result.get();
-    return result;
-  }
-};
-
-bool Check(bool value, const std::string& message) {
-  if (!value) std::cerr << message << '\n';
-  return value;
-}
-
-// Một cấu hình màn hình: hệ số scale và vùng làm việc logic (0 nghĩa là đủ chỗ
-// cho kích thước thiết kế). Thanh tiêu đề tự vẽ giống bản Windows.
-struct DisplayCase {
-  const char* name;
-  float scale;
-  float usable_width;
-  float usable_height;
-  bool custom_titlebar;
-};
-
-constexpr float kTaskbarHeight = 48.0f;
-
-const std::vector<DisplayCase>& AllDisplayCases() {
-  static const std::vector<DisplayCase> cases = {
-      {"100-default", 1.0f, 0.0f, 0.0f, false},
-      {"125-default", 1.25f, 0.0f, 0.0f, true},
-      {"150-default", 1.5f, 0.0f, 0.0f, true},
-      {"125-1366x768", 1.25f, 1366.0f / 1.25f, (768.0f - kTaskbarHeight) / 1.25f, true},
-      {"150-1280x800", 1.5f, 1280.0f / 1.5f, (800.0f - kTaskbarHeight) / 1.5f, true},
-  };
-  return cases;
-}
+constexpr const char* kDisplayEnv = "CROSSDESK_SETTINGS_DISPLAY";
+constexpr const char* kEvidenceEnv = "CROSSDESK_SETTINGS_EVIDENCE_DIR";
 
 // CROSSDESK_SETTINGS_DISPLAY giới hạn test vào một cấu hình khi cần soát nhanh.
 const std::vector<DisplayCase>& DisplayCases() {
-  static const std::vector<DisplayCase> cases = [] {
-    const char* only = std::getenv("CROSSDESK_SETTINGS_DISPLAY");
-    std::vector<DisplayCase> result;
-    for (const auto& display : AllDisplayCases())
-      if (!only || !*only || std::string(only) == display.name) result.push_back(display);
-    return result;
-  }();
+  static const std::vector<DisplayCase> cases = SelectDisplayCases(kDisplayEnv);
   return cases;
 }
 
-struct LanguageCase {
-  const char* name;
-  int index;
-};
-
-// Tra chỉ số theo mã trong danh sách ngôn ngữ của ứng dụng thay vì ghi số cứng:
-// đợt đồng bộ upstream chèn tr và he trước vi, khiến số 11 cũ của tiếng Việt
-// trỏ sang tiếng Hebrew mà test vẫn qua.
-int LanguageIndex(std::string_view code) {
-  const auto& languages = crossdesk::localization::GetSupportedLanguages();
-  for (std::size_t i = 0; i < languages.size(); ++i)
-    if (languages[i].code == code) return static_cast<int>(i);
-  std::cerr << "Unknown language code " << code << "\n";
-  std::exit(9);
-}
-
+// Ngôn ngữ đại diện: chữ ngắn (en), chữ có dấu (vi), chữ dài (de, tr) và chữ
+// viết từ phải sang trái (he).
 const std::vector<LanguageCase>& LayoutLanguages() {
   static const std::vector<LanguageCase> languages = {
       {"en", LanguageIndex("en-US")}, {"vi", LanguageIndex("vi")},
       {"de", LanguageIndex("de")},    {"tr", LanguageIndex("tr")},
       {"he", LanguageIndex("he")}};
-  return languages;
-}
-
-const std::vector<LanguageCase>& AllLanguages() {
-  static const std::vector<LanguageCase> languages = [] {
-    // Mọi ngôn ngữ ứng dụng hỗ trợ, đúng thứ tự của danh sách chọn ngôn ngữ.
-    static const std::pair<const char*, const char*> kNamesAndCodes[] = {
-        {"zh-Hans", "zh-CN"}, {"en", "en-US"}, {"ru", "ru-RU"}, {"zh-Hant", "zh-Hant"},
-        {"ja", "ja"},         {"ko", "ko"},    {"de", "de"},    {"fr", "fr"},
-        {"es", "es"},         {"pt-BR", "pt-BR"}, {"tr", "tr"}, {"he", "he"},
-        {"vi", "vi"}};
-    std::vector<LanguageCase> result;
-    for (const auto& [name, code] : kNamesAndCodes)
-      result.push_back({name, LanguageIndex(code)});
-    if (result.size() != crossdesk::localization::GetSupportedLanguages().size()) {
-      std::cerr << "AllLanguages must list every supported language\n";
-      std::exit(9);
-    }
-    return result;
-  }();
   return languages;
 }
 
@@ -174,29 +49,8 @@ class Fixture {
  public:
   Fixture(ScaledPlatform& platform, const DisplayCase& display, int language)
       : display_(display), main_(crossdesk::ui::MainWindow::create()) {
-    if (main_->window().window_handle().register_font_from_data(
-            fa_solid_900_ttf, fa_solid_900_ttf_len).has_value()) {
-      std::cerr << "Fixture FontAwesome registration failed\n";
-      std::exit(8);
-    }
     screen_ = platform.adapter;
-    main_->set_custom_titlebar(display.custom_titlebar);
-    crossdesk::ui_localization::ApplyMainWindowStrings(main_, language);
-    main_->set_language_index(language);
-    if (display.usable_width > 0.0f) {
-      // Cùng công thức với GuiApplication::UpdateMainWindowFitScale.
-      const float frame = display.custom_titlebar ? 8.0f : 16.0f;
-      const float frame_height = display.custom_titlebar ? 8.0f : 40.0f;
-      fit_scale_ = crossdesk::window_geometry::FitScale(
-          display.usable_width, display.usable_height, frame, frame_height,
-          main_->get_design_width(), main_->get_design_height());
-    }
-    // Software renderer bỏ qua transform-scale của ui-scaler. Phép thu nhỏ đó
-    // đồng đều nên gộp vào hệ số scale của thiết bị cho ra đúng kích thước pixel
-    // vật lý của cửa sổ thật: canvas giữ kích thước thiết kế, fit-scale giữ 1.
-    screen_->SetScale(display.scale * fit_scale_);
-    main_->window().set_size(slint::LogicalSize(
-        {main_->get_minimum_window_width(), main_->get_minimum_window_height()}));
+    fit_scale_ = PrepareMainWindow(main_, *screen_, display, language);
     ConfigureData();
     main_->show();
     screen_->Settle();
@@ -299,18 +153,6 @@ class Fixture {
   float titlebar_ = 0.0f;
 };
 
-bool WritePpm(const ScaledWindow& screen, const std::filesystem::path& path);
-
-// Lưu khung hình lúc kiểm tra thất bại để dễ xem lỗi, chỉ khi có thư mục evidence.
-void WriteFailureFrame(const ScaledWindow& screen, const std::string& label) {
-  const char* directory = std::getenv("CROSSDESK_SETTINGS_EVIDENCE_DIR");
-  if (!directory || !*directory) return;
-  std::string name = "failure-" + label;
-  for (auto& ch : name)
-    if (ch == '/' || ch == ' ') ch = '-';
-  WritePpm(screen, std::filesystem::path(directory) / (name + ".ppm"));
-}
-
 bool ToggleOn(const slint::Rgb8Pixel& pixel) {
   // ToggleSwitch đang bật có màu #2463c7; viền chống răng cưa thì nhạt hơn.
   return pixel.b > 150 && pixel.r < 90 && pixel.g > 60 && pixel.g < 140;
@@ -404,7 +246,7 @@ bool VerifyRowButton(Fixture& fixture, const RowProbe& probe, const std::string&
     }
     fixture.Scroll(-24.0f, 4);
   }
-  WriteFailureFrame(screen, label + " " + probe.name);
+  WriteFailureFrame(screen, kEvidenceEnv, label + " " + probe.name);
   return Check(false, label + " " + probe.name + ": the probed row never became visible");
 }
 
@@ -465,18 +307,6 @@ const std::vector<RowProbe>& RowProbes() {
        [](crossdesk::ui::MainWindow& main) { main.set_save_remote_previews(true); }},
   };
   return probes;
-}
-
-bool WritePpm(const ScaledWindow& screen, const std::filesystem::path& path) {
-  std::filesystem::create_directories(path.parent_path());
-  std::ofstream output(path, std::ios::binary);
-  output << "P6\n" << screen.extent.width << ' ' << screen.extent.height << "\n255\n";
-  for (const auto& pixel : screen.pixels) {
-    output.put(static_cast<char>(pixel.r));
-    output.put(static_cast<char>(pixel.g));
-    output.put(static_cast<char>(pixel.b));
-  }
-  return Check(output.good(), "Settings evidence must be written completely: " + path.string());
 }
 
 struct EvidencePage {
@@ -604,9 +434,7 @@ int main() {
 
   // Tên cấu hình gõ sai thì danh sách rỗng: báo lỗi thay vì "đạt" mà không kiểm gì.
   if (DisplayCases().empty()) {
-    std::cerr << "Unknown CROSSDESK_SETTINGS_DISPLAY; expected one of:";
-    for (const auto& display : AllDisplayCases()) std::cerr << ' ' << display.name;
-    std::cerr << '\n';
+    ReportUnknownDisplay(kDisplayEnv);
     return 1;
   }
 
@@ -627,7 +455,7 @@ int main() {
   else
     ok = false;
 
-  if (const char* directory = std::getenv("CROSSDESK_SETTINGS_EVIDENCE_DIR");
+  if (const char* directory = std::getenv(kEvidenceEnv);
       directory && *directory) {
     const std::filesystem::path root(directory);
     for (const auto& display : DisplayCases())

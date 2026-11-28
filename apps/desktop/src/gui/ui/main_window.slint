@@ -1380,15 +1380,20 @@ export component MainWindow inherits Window {
         if !root.gallery-mode: Rectangle {
             x: 28px; y: parent.height - 54px; width: parent.width - 56px; height: 2px;
             background: WorkbenchStyle.separator;
-            Rectangle { x: 0px; width: 170px; height: 5px; y: -1px; background: WorkbenchStyle.accent; }
+            // Vạch nhấn lặp lại bề rộng thanh chuyển chế độ ở trên để giữ nhịp thiết kế khi thanh nở.
+            Rectangle { x: 0px; width: connection-mode-switch.width; height: 5px; y: -1px; background: WorkbenchStyle.accent; }
         }
 
         // A compact application toolbar keeps global actions outside device cards.
         // Leave a clear margin before the printed rule below the toolbar.
         connection-mode-switch := WorkbenchButton {
+            // Mỗi nửa giữ tối thiểu 84px như thiết kế gốc và nở theo nhãn dài nhất, đo bằng chính font
+            // đang chạy: DejaVu Sans trên Linux rộng hơn font Mac nên một bề rộng cố định làm nhãn
+            // tiếng Việt chạm mép và đè sang nửa bên kia.
+            property <length> tab-width: max(84px, max(id-mode-metrics.preferred-width, ip-mode-metrics.preferred-width) + 24px);
             visible: !root.gallery-mode && root.ip-direct-enabled;
             x: 28px; y: 9px;
-            width: 170px; height: 40px;
+            width: 2 * self.tab-width + 2px; height: 40px;
             background: WorkbenchStyle.field-surface;
             enabled: !root.connection-pending && !root.lan-connecting;
             tooltip: root.lan-mode ? GalleryStrings.texts[63] : GalleryStrings.texts[64];
@@ -1409,6 +1414,14 @@ export component MainWindow inherits Window {
                 border-radius: WorkbenchStyle.corner-radius;
                 background: WorkbenchStyle.accent;
                 animate x { duration: 180ms; easing: ease-in-out; }
+            }
+            id-mode-metrics := Text {
+                visible: false; accessible-role: none;
+                text: GalleryStrings.texts[67]; font-size: 15px; font-weight: 600;
+            }
+            ip-mode-metrics := Text {
+                visible: false; accessible-role: none;
+                text: GalleryStrings.texts[66]; font-size: 15px; font-weight: 600;
             }
             for lan in [false, true]: Text {
                 x: lan ? parent.width / 2 : 1px;
@@ -1559,6 +1572,12 @@ export component MainWindow inherits Window {
             local-card := WorkbenchCard {
                 x: parent.width - 330px; y: 252px;
                 width: 330px; height: 224px;
+                // Hai nút LAN giữ cỡ 14px khi vừa chỗ. Nhãn bên trái luôn còn ít nhất 64px (đủ một
+                // từ như "IP/Port" khi xuống hai dòng); nếu không đủ (fr với DejaVu Sans trên Linux)
+                // thì chữ nút co lại, nhỏ nhất 12px, giống cách ô địa chỉ bên dưới co chữ IP.
+                private property <float> lan-action-scale: max(12 / 14, min(1,
+                    (self.width - 32px - 12px - 64px - 48px)
+                        / (lan-switch-ip-metrics.preferred-width + lan-edit-port-metrics.preferred-width)));
                 // Khung tiêu đề cao hơn cỡ chữ để chân chữ (y, g) của font sans-serif hệ thống không bị
                 // cắt, và phụ đề nằm dưới chân chữ đó thay vì đè lên. Tiêu đề vẫn canh trên nên không dời.
                 Text { x: 16px; y: 14px; width: parent.width - 32px; height: 30px; overflow: elide; text: UiStrings.local-desktop; font-size: 25px; font-weight: 600; color: WorkbenchStyle.text; }
@@ -1582,9 +1601,9 @@ export component MainWindow inherits Window {
                 lan-switch-ip-action := WorkbenchButton {
                     visible: root.lan-mode;
                     x: lan-edit-port-action.x - self.width - 6px; y: local-address-label.y;
-                    width: max(74px, lan-switch-ip-metrics.preferred-width + 24px); height: 36px;
+                    width: max(74px, lan-switch-ip-metrics.preferred-width * local-card.lan-action-scale + 24px); height: 36px;
                     text: lan-switch-ip-metrics.text;
-                    text-size: 14px;
+                    text-size: 14px * local-card.lan-action-scale;
                     enabled: root.lan-mode && !root.lan-password-pending && root.lan-interfaces.length > 0;
                     clicked => {
                         if root.lan-port-dirty && !root.apply-lan-endpoint() { return; }
@@ -1594,9 +1613,9 @@ export component MainWindow inherits Window {
                 lan-edit-port-action := WorkbenchButton {
                     visible: root.lan-mode;
                     x: parent.width - 16px - self.width; y: local-address-label.y;
-                    width: max(74px, lan-edit-port-metrics.preferred-width + 24px); height: 36px;
+                    width: max(74px, lan-edit-port-metrics.preferred-width * local-card.lan-action-scale + 24px); height: 36px;
                     text: lan-edit-port-metrics.text;
-                    text-size: 14px;
+                    text-size: 14px * local-card.lan-action-scale;
                     enabled: root.lan-mode && !root.lan-password-pending && (root.lan-listen-all || root.lan-interfaces.length > 0);
                     clicked => {
                         // Moving from the editor to this action is still editing.
@@ -1802,11 +1821,21 @@ export component MainWindow inherits Window {
             }
             WorkbenchCard {
                 x: 0px; y: 0px; width: parent.width; height: 220px;
-                Text { x: 0px; y: 28px; width: parent.width; height: 76px; overflow: elide; text: UiStrings.connect-heading; font-size: 62px; font-weight: 600; color: WorkbenchStyle.text; }
+                connect-heading-metrics := Text { visible: false; accessible-role: none; text: UiStrings.connect-heading; font-size: 62px; font-weight: 600; }
+                // Tiêu đề dài (ru, de, fr, pt-BR với DejaVu Sans trên Linux) thu cỡ chữ cho vừa
+                // một dòng thay vì bị rút gọn; chừa 8px để sai số làm tròn khi hinting không cắt chữ.
+                Text {
+                    x: 0px; y: 28px; width: parent.width; height: 76px; overflow: elide;
+                    text: UiStrings.connect-heading;
+                    font-size: 62px * max(0.75, min(1, (self.width - 8px) / connect-heading-metrics.preferred-width));
+                    font-weight: 600; color: WorkbenchStyle.text;
+                }
                 Text { x: 0px; y: 0px; width: parent.width; height: 20px; text: "CROSSDESK   /   " + UiStrings.remote-desktop; font-size: 12px; letter-spacing: 1.5px; color: WorkbenchStyle.muted; overflow: elide; }
-                Text { x: 16px; y: 132px; width: 150px; height: 52px; vertical-alignment: center; text: root.lan-mode ? GalleryStrings.texts[234] : UiStrings.remote-id; font-size: 14px; color: WorkbenchStyle.muted; wrap: word-wrap; overflow: elide; }
+                // Nhãn dài (es "Identificación remota" với DejaVu Sans trên Linux) xuống dòng trong
+                // khung cao 52px thay vì tràn sang ô nhập bên phải.
+                Text { x: 16px; y: 132px; width: 150px; height: 52px; vertical-alignment: center; text: root.lan-mode ? GalleryStrings.texts[234] : UiStrings.remote-id; font-size: 14px; color: WorkbenchStyle.muted; wrap: word-wrap; }
                 FlatSurface {
-                    x: 174px; y: 126px; width: parent.width - 370px; height: 60px;
+                    x: 174px; y: 126px; width: connect-action.x - 8px - self.x; height: 60px;
                     background: remote-id-editor.has-focus ? #fffdf7 : WorkbenchStyle.field-surface;
                     border-radius: WorkbenchStyle.corner-radius;
                     outline-color: root.connection-input-error != "" ? UiSurface.error : remote-id-editor.has-focus ? WorkbenchStyle.accent : WorkbenchStyle.separator;
@@ -1844,8 +1873,19 @@ export component MainWindow inherits Window {
                         : root.lan-mode ? GalleryStrings.texts[87] : "";
                     font-size: 11px; color: root.connection-input-error != "" ? #be3d42 : WorkbenchStyle.muted; wrap: word-wrap;
                 }
-                WorkbenchButton {
-                    x: parent.width - 188px; y: 126px; width: 188px; height: 60px;
+                connect-label-metrics := Text {
+                    visible: false; accessible-role: none;
+                    text: UiStrings.connect; font-size: 23px; font-weight: 600;
+                }
+                connecting-label-metrics := Text {
+                    visible: false; accessible-role: none;
+                    text: GalleryStrings.texts[56]; font-size: 23px; font-weight: 600;
+                }
+                connect-action := WorkbenchButton {
+                    // Giữ 188px của thiết kế gốc và nở theo nhãn dài hơn trong hai trạng thái, để nút
+                    // không đổi bề rộng khi bắt đầu kết nối mà chữ (ru "Подключиться") vẫn còn lề.
+                    width: max(188px, max(connect-label-metrics.preferred-width, connecting-label-metrics.preferred-width) + 48px);
+                    x: parent.width - self.width; y: 126px; height: 60px;
                     border-radius: 0px; text-size: 23px; icon-size: 20px;
                     primary: true;
                     text: root.connection-pending || root.lan-connecting ? GalleryStrings.texts[56] : UiStrings.connect;
@@ -1913,23 +1953,30 @@ export component MainWindow inherits Window {
                         background: WorkbenchStyle.field-surface; border-radius: WorkbenchStyle.corner-radius;
                         Text { text: FontAwesomeIcons.display; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 20px; color: WorkbenchStyle.muted; horizontal-alignment: center; vertical-alignment: center; }
                     }
-                    Text {
-                        x: 84px; y: 36px; width: parent.width - 104px; height: 24px;
-                        text: root.lan-mode
-                            ? GalleryStrings.texts[88]
-                            : root.recent-group-index == 0
-                            ? GalleryStrings.texts[89]
-                            : GalleryStrings.texts[90];
-                        color: WorkbenchStyle.text; font-size: 14px; font-weight: 600;
-                    }
-                    Text {
-                        x: 84px; y: 68px; width: parent.width - 104px; height: 20px;
-                        text: root.lan-mode
-                            ? GalleryStrings.texts[91]
-                            : root.recent-group-index == 0
-                            ? GalleryStrings.texts[92]
-                            : GalleryStrings.texts[93];
-                        color: WorkbenchStyle.muted; font-size: 12px;
+                    // Cột chữ canh giữa theo chiều dọc cạnh biểu tượng: lời gợi ý dài (de, fr) xuống
+                    // dòng thay vì bị cắt ở mép phải, còn bản một dòng vẫn nằm đúng chỗ như trước.
+                    VerticalLayout {
+                        x: 84px; y: 0px; width: parent.width - 104px; height: parent.height;
+                        alignment: center;
+                        spacing: 14px;
+                        Text {
+                            text: root.lan-mode
+                                ? GalleryStrings.texts[88]
+                                : root.recent-group-index == 0
+                                ? GalleryStrings.texts[89]
+                                : GalleryStrings.texts[90];
+                            color: WorkbenchStyle.text; font-size: 14px; font-weight: 600;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: root.lan-mode
+                                ? GalleryStrings.texts[91]
+                                : root.recent-group-index == 0
+                                ? GalleryStrings.texts[92]
+                                : GalleryStrings.texts[93];
+                            color: WorkbenchStyle.muted; font-size: 12px;
+                            wrap: word-wrap;
+                        }
                     }
                 }
                 recent-scroll := ScrollView {
