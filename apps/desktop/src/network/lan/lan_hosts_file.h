@@ -8,6 +8,8 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace crossdesk::lan {
@@ -47,6 +49,23 @@ inline std::vector<std::string> FindHostsFileAddresses(std::istream& in,
     }
   }
   return addresses;
+}
+
+// Chọn địa chỉ trong file hosts dùng thay cho DNS, giữ thứ tự trong file.
+// `parse` biến chuỗi thành địa chỉ (std::optional rỗng khi sai cú pháp),
+// `dialable` loại địa chỉ mà bộ quay số không nhận, ví dụ IPv4-mapped. Kết
+// quả rỗng nghĩa là file hosts không thay được DNS và phải hỏi resolver; khác
+// rỗng thì không hỏi DNS nữa.
+template <typename Parse, typename Dialable>
+auto SelectHostsFileAddresses(const std::vector<std::string>& texts,
+                              Parse parse, Dialable dialable) {
+  using Address = typename std::invoke_result_t<Parse&, const std::string&>::value_type;
+  std::vector<Address> selected;
+  for (const auto& text : texts) {
+    auto address = parse(text);
+    if (address && dialable(*address)) selected.push_back(std::move(*address));
+  }
+  return selected;
 }
 
 // Đọc cơ sở dữ liệu hosts cục bộ. Chỉ dùng trên hệ POSIX, nơi backend files

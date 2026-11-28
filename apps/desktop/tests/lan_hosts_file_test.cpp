@@ -1,4 +1,5 @@
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -8,6 +9,7 @@
 namespace {
 
 using crossdesk::lan::FindHostsFileAddresses;
+using crossdesk::lan::SelectHostsFileAddresses;
 
 bool Expect(bool condition, const char* message) {
   if (condition) return true;
@@ -18,6 +20,19 @@ bool Expect(bool condition, const char* message) {
 std::vector<std::string> Find(const std::string& hosts, const char* host) {
   std::istringstream in(hosts);
   return FindHostsFileAddresses(in, host);
+}
+
+// Thay cho asio::ip::make_address và DialableAddress của lan_transport.cpp:
+// chuỗi "not-an-ip" là sai cú pháp, địa chỉ "::ffff:" là IPv4-mapped.
+std::optional<std::string> ParseFake(const std::string& text) {
+  if (text == "not-an-ip") return std::nullopt;
+  return text;
+}
+bool DialableFake(const std::string& address) {
+  return address.rfind("::ffff:", 0) != 0;
+}
+std::vector<std::string> Select(const std::string& hosts, const char* host) {
+  return SelectHostsFileAddresses(Find(hosts, host), ParseFake, DialableFake);
 }
 
 }  // namespace
@@ -69,6 +84,28 @@ int main() {
                "an empty name must never match");
   ok &= Expect(Find(hosts, "missing.lan").empty(),
                "an unknown name must return nothing");
+
+  // Chọn địa chỉ thay cho DNS: kết quả rỗng nghĩa là vẫn hỏi resolver.
+  const std::string resolver_hosts =
+      "::ffff:192.168.1.70 mapped.lan\n"
+      "::ffff:192.168.1.80 mixed.lan\n"
+      "192.168.1.80        mixed.lan\n"
+      "fd00::80            mixed.lan\n"
+      "not-an-ip           broken.lan\n"
+      "not-an-ip           partly-broken.lan\n"
+      "192.168.1.90        partly-broken.lan\n";
+  ok &= Expect(Select(resolver_hosts, "mapped.lan").empty(),
+               "a name with only IPv4-mapped entries must still ask DNS");
+  ok &= Expect(Select(resolver_hosts, "mixed.lan") ==
+                   std::vector<std::string>{"192.168.1.80", "fd00::80"},
+               "mixed entries must keep only dialable addresses, in file order");
+  ok &= Expect(Select(resolver_hosts, "broken.lan").empty(),
+               "a name with only malformed entries must still ask DNS");
+  ok &= Expect(Select(resolver_hosts, "partly-broken.lan") ==
+                   std::vector<std::string>{"192.168.1.90"},
+               "a malformed entry must not hide a valid one");
+  ok &= Expect(Select(resolver_hosts, "missing.lan").empty(),
+               "a name missing from the hosts file must ask DNS");
 
   if (!ok) return 1;
   std::cout << "lan_hosts_file_test passed\n";

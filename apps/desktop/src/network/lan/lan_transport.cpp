@@ -10,6 +10,7 @@
 #include <future>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <thread>
 #include <websocketpp/client.hpp>
@@ -67,15 +68,17 @@ struct NameLookup {
           // khi file không có địa chỉ hợp lệ mới hỏi resolver. Không bao giờ
           // hỏi bằng tên tương đối, vì search suffix có thể đưa kết nối chưa
           // ghim khoá tới máy khác.
-          std::vector<asio::ip::address> hosts_file;
-          for (const auto& text : ReadHostsFileAddresses(host)) {
-            asio::error_code parse_error;
-            const auto address = asio::ip::make_address(text, parse_error);
-            // Chỉ địa chỉ bộ quay số thật sự dùng được mới thay cho DNS; một
-            // dòng hosts chỉ có địa chỉ IPv4-mapped không được chặn truy vấn.
-            if (!parse_error && DialableAddress(address))
-              hosts_file.push_back(address);
-          }
+          // Chỉ địa chỉ bộ quay số thật sự dùng được mới thay cho DNS; một
+          // dòng hosts chỉ có địa chỉ IPv4-mapped không được chặn truy vấn.
+          std::vector<asio::ip::address> hosts_file = SelectHostsFileAddresses(
+              ReadHostsFileAddresses(host),
+              [](const std::string& text) -> std::optional<asio::ip::address> {
+                asio::error_code parse_error;
+                auto address = asio::ip::make_address(text, parse_error);
+                if (parse_error) return std::nullopt;
+                return address;
+              },
+              DialableAddress);
           Error error;
           ResolveResults results;
           if (hosts_file.empty()) {
