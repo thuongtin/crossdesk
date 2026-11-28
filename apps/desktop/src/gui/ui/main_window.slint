@@ -3864,7 +3864,8 @@ export component MainWindow inherits Window {
                         // "Releases" từng bị cắt. Căn phải không cứu được vì nó đẩy phần dư
                         // ra đúng mép cắt. Vì vậy khung bấm giữ đúng preferred-width (thẳng
                         // hàng với khung ghi chú ở tỉ lệ nguyên), còn chữ căn trái và vùng vẽ
-                        // rộng thêm 16px tràn vào phần padding 24px của hộp thoại.
+                        // rộng thêm 16px tràn vào phần padding 24px của hộp thoại. Vùng
+                        // bấm rộng đúng bằng vùng vẽ, để mấy pixel chữ tràn ra vẫn bấm được.
                         Rectangle {
                             width: update-website-label.preferred-width;
                             accessible-role: button;
@@ -3879,7 +3880,12 @@ export component MainWindow inherits Window {
                                 horizontal-alignment: left;
                                 vertical-alignment: center;
                             }
-                            website-touch := TouchArea { mouse-cursor: pointer; clicked => { root.open-update-channel(); } }
+                            website-touch := TouchArea {
+                                x: 0px;
+                                width: update-website-label.width;
+                                mouse-cursor: pointer;
+                                clicked => { root.open-update-channel(); }
+                            }
                         }
                     }
                 }

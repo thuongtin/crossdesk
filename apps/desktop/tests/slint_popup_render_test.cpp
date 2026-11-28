@@ -940,6 +940,74 @@ bool VerifyMainWindowFitScale(RenderTestPlatform&) {
                "DeskHub mode must ignore fit-scale");
 }
 
+// Do fork sở hữu: ở 150% trên màn hình 1366x768 host thu cửa sổ về fit-scale
+// khoảng 0.74, nên chữ được vẽ ở tỉ lệ thật khoảng 1.11 và có thể rộng hơn
+// preferred-width vài pixel. Link "GitHub Releases" trong hộp thoại cập nhật phải
+// vẽ đủ chữ cuối (không chạm mép cắt của vùng Text), và bấm vào cột mực cuối cùng
+// vẫn phải mở kênh phát hành. Bộ vẽ phần mềm của test không áp transform-scale
+// của ui-scaler, nên test đạt cùng cỡ chữ vật lý bằng hệ số scale cửa sổ 1.1104.
+bool VerifyUpdateLinkAtFractionalScale(RenderTestPlatform& platform) {
+  constexpr float kWindowScale = 1.1104f;
+  // Chỉ số ngôn ngữ nội bộ: 1 là en-US, 10 là tr, 12 là vi.
+  for (const int language : {1, 10, 12}) {
+    auto main = CreateMainWindow();
+    auto& screen = *platform.adapter;
+    crossdesk::ui_localization::ApplyMainWindowStrings(main, language);
+    main->set_language_index(language);
+    screen.window().dispatch_scale_factor_change_event(kWindowScale);
+    const float width = main->get_minimum_window_width();
+    const float height = main->get_minimum_window_height();
+    // RenderTestWindow::set_size coi kích thước vật lý là kích thước logic, nên ở
+    // tỉ lệ khác 1 test tự cấp bộ đệm vật lý và báo kích thước logic đúng.
+    screen.extent = slint::PhysicalSize({std::uint32_t(std::lround(width * kWindowScale)),
+                                         std::uint32_t(std::lround(height * kWindowScale))});
+    screen.pixels.resize(std::size_t(screen.extent.width) * screen.extent.height);
+    screen.window().dispatch_resize_event(slint::LogicalSize({width, height}));
+    screen.dirty = true;
+    main->set_update_available(true);
+    main->set_latest_version("v2.0.0");
+    main->set_current_version("1.7.6");
+    int channel_requests = 0;
+    main->on_open_update_channel([&] { ++channel_requests; });
+    main->show();
+    screen.Settle();
+    if (!Check(main->get_ui_scale() == 1.0f,
+               "Fractional-scale fixture must keep the design canvas")) return false;
+    const float canvas_width = main->get_ui_width();
+    const float canvas_height = main->get_ui_height();
+    const float to_physical = kWindowScale;
+    const float row_y = canvas_height / 2 - std::min(488.f, canvas_height - 32) / 2 + 64;
+    // Hộp thoại rộng 480px, căn giữa, padding 24px; vùng Text rộng thêm 16px.
+    const float text_clip = canvas_width / 2 + 240 - 24 + 16;
+    const int top = int((row_y - 12) * to_physical);
+    const int bottom = int((row_y + 12) * to_physical);
+    const int left = int(canvas_width / 2 * to_physical);
+    const int right = std::min(int(std::ceil((text_clip + 4) * to_physical)),
+                               int(screen.extent.width));
+    int ink_end = -1;
+    for (int y = top; y <= bottom; ++y)
+      for (int x = left; x < right; ++x) {
+        const auto p = screen.pixels.at(std::size_t(y) * screen.extent.width + x);
+        // Chữ của link là màu nhấn bão hoà; tiêu đề, số phiên bản và nền đều xám.
+        if (std::max({p.r, p.g, p.b}) - std::min({p.r, p.g, p.b}) > 48)
+          ink_end = std::max(ink_end, x);
+      }
+    if (!WritePopupEvidence(screen, "update-link-150-" + std::to_string(language))) return false;
+    if (!Check(ink_end >= 0, "Update link must render at a fractional scale")) return false;
+    if (!Check(ink_end + 2 < int(text_clip * to_physical),
+               "Update link must end before the edge that clips its text")) return false;
+    screen.Click((ink_end + 0.5f) / kWindowScale, row_y);
+    if (!Check(channel_requests == 1,
+               "The last rendered letter of the update link must open the release channel")) return false;
+    // Phần mực tràn ra tuỳ font nên có máy không tràn; bấm thẳng vào giữa dải
+    // 16px mở rộng để chắc vùng bấm phủ hết vùng vẽ trên mọi nền tảng.
+    screen.Click(text_clip - 8, row_y);
+    if (!Check(channel_requests == 2,
+               "The update link must respond across its whole drawing area")) return false;
+  }
+  return true;
+}
+
 bool VerifyConnectionDialogSurface(RenderTestPlatform& platform) {
   auto main = CreateMainWindow();
   ConfigureEvidenceData(main);
@@ -1005,6 +1073,8 @@ int main() {
   if (!VerifySquareRecentPreview(*backend)) return 9;
   if (!VerifyMainWindowFitScale(*backend)) return 10;
   if (!VerifyConnectionDialogSurface(*backend)) return 11;
+  if (!VerifyUpdateLinkAtFractionalScale(*backend)) return 12;
+  std::cout << "Update link at a fractional scale passed.\n";
   std::cout << "Main window fit-scale passed.\n";
   std::cout << "Square mode controls and uncropped 16:9 recent preview passed.\n";
   std::cout << "Slint popup rendering and local input passed.\n";
