@@ -201,7 +201,11 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
   - file thực thi chính chứa đường dẫn feed
     `/thuongtin/crossdesk/desktop-updates/crossdesk-desktop-update.json` và signaling mặc định
     `crossdesk.ecom.io.vn`, không chứa `api.crossdesk.cn` và trang issue `/kunkundi/crossdesk/issues`
-    của upstream (nút phản hồi GitHub đã bỏ khỏi bản fork).
+    của upstream (nút phản hồi GitHub đã bỏ khỏi bản fork);
+  - `usr/lib/crossdesk/libslint_cpp.so` trong mỗi gói `.deb` chứa `libfontconfig.so.1` (runtime
+    Slint dlopen fontconfig của hệ thống) và không chứa `/packages/f/fontconfig/`. Fontconfig tĩnh
+    do xmake build đọc `fonts.conf` dưới thư mục cài trên máy build, máy người dùng không có tệp đó
+    nên chữ giao diện rơi về phông serif (bản `v1.7.7-3-20261126` bị lỗi này).
 
   Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
   thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork

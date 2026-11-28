@@ -14,6 +14,13 @@ package("slint")
         add_configs("per_window_xdg_app_id", {description = "Support per-window XDG application IDs", default = true, type = "boolean", readonly = true})
         add_patches("1.17.1", path.join(os.scriptdir(), "patches/1.17.1-per-window-xdg-app-id.patch"),
             "86aedd42960c6e1b0f9d2a37ee5681bff177f166ee7aa77fee4b18c72fbff3d3")
+        -- The private fontconfig below reads fonts.conf from its build prefix,
+        -- which user machines lack, so sans-serif fell back to a serif font.
+        -- The runtime dlopens the system libfontconfig.so.1 instead; the
+        -- private copy still serves slint-compiler at build time.
+        add_configs("system_fontconfig", {description = "Load the system fontconfig at runtime", default = true, type = "boolean", readonly = true})
+        add_patches("1.17.1", path.join(os.scriptdir(), "patches/1.17.1-fontconfig-dlopen.patch"),
+            "c4b8302c1ade6e6ded002e3c0bdc2a10fadf87c22d47331821f883211f77b480")
     elseif is_plat("macosx") then
         -- AccessKit/accesskit#835 preserves AppKit's KVO subclass when an
         -- observed Slint window closes. Keep the fixed runtime in its own cache.
