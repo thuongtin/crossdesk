@@ -130,6 +130,33 @@ bool TestDisplayChoice() {
   choice = ChooseCaptureDisplay({}, builtin, builtin, true, 0, unused, start);
   ok &= Expect(choice.index == -1 && !choice.gave_up_on_builtin,
                "an empty list must not pick a display");
+
+  // The built-in panel mirrors the external monitor, so ScreenCaptureKit
+  // lists only the monitor, which shows the same picture.
+  BuiltinPanelWait mirrored;
+  const std::vector<uint32_t> third_and_external = {3, external};
+  choice = ChooseCaptureDisplay(third_and_external, builtin, builtin, true, 0,
+                                mirrored, start, external);
+  ok &= Expect(choice.index == 1 && !choice.gave_up_on_builtin,
+               "a mirrored panel must capture its mirror source at once");
+  // The capturer now records the mirror source as the active display.
+  choice = ChooseCaptureDisplay(external_only, builtin, external, true, 0,
+                                mirrored, start + grace * 2, 0);
+  ok &= Expect(choice.index == 0 && !choice.gave_up_on_builtin,
+               "ending mirroring while the panel is absent must keep the source");
+  choice = ChooseCaptureDisplay(third_only, builtin, external, true, 0,
+                                mirrored, start + grace * 2, 0);
+  ok &= Expect(choice.index == -1,
+               "capturing a mirror source must not run down the panel's grace");
+  choice = ChooseCaptureDisplay(both, builtin, external, true, 0, mirrored,
+                                start + grace * 3, 0);
+  ok &= Expect(choice.index == 0,
+               "ending mirroring must return the slot to its own display");
+  BuiltinPanelWait unlisted_source;
+  choice = ChooseCaptureDisplay(external_only, builtin, builtin, true, 0,
+                                unlisted_source, start, 3);
+  ok &= Expect(choice.index == -1,
+               "an unlisted mirror source must not replace the panel's wait");
   return ok;
 }
 
@@ -166,6 +193,46 @@ bool TestFallbackReturnProbe() {
   probe.Reset();
   ok &= Expect(!probe.Due(true, later + interval * 3),
                "a restarted capture must wait a full interval again");
+  return ok;
+}
+
+bool TestFallbackReturnListed() {
+  using crossdesk::BuiltinPanelWait;
+  using crossdesk::ChooseCaptureDisplay;
+  using crossdesk::FallbackReturnListed;
+  using Displays = std::vector<uint32_t>;
+
+  constexpr uint32_t kMirrored = 1;
+  constexpr uint32_t kSource = 2;
+  constexpr uint32_t kFallback = 3;
+  const auto now = BuiltinPanelWait::Clock::now();
+  bool ok = true;
+
+  ok &= Expect(FallbackReturnListed({kFallback, kMirrored}, kMirrored, kFallback),
+               "a listed requested display must end the fallback");
+  ok &= Expect(!FallbackReturnListed({kFallback}, kMirrored, kFallback),
+               "a list without the requested display must keep the fallback");
+
+  // The requested display mirrors |kSource|, which left ScreenCaptureKit's
+  // list for a moment, so the slot fell back to |kFallback|. ScreenCaptureKit
+  // never lists the mirrored display itself, so only its source can end that.
+  ok &= Expect(!FallbackReturnListed({kFallback}, kMirrored, kFallback, kSource),
+               "a mirror source that is still missing must keep the fallback");
+  ok &= Expect(FallbackReturnListed({kFallback, kSource}, kMirrored, kFallback, kSource),
+               "a mirror source that is listed again must end a different fallback");
+  BuiltinPanelWait wait;
+  const auto choice = ChooseCaptureDisplay(Displays{kFallback, kSource}, kMirrored,
+                                           kFallback, false, 0, wait, now, kSource);
+  ok &= Expect(choice.index == 1,
+               "the return enumeration must capture the listed mirror source");
+
+  // The stream captures the mirror source now: probing it again changes nothing.
+  ok &= Expect(!FallbackReturnListed({kSource}, kMirrored, kSource, kSource),
+               "a mirror source the stream already captures must not trigger a return");
+  ok &= Expect(FallbackReturnListed({kSource, kMirrored}, kMirrored, kSource),
+               "a display that stops mirroring must take its slot back from its source");
+  ok &= Expect(!FallbackReturnListed({kFallback}, 0, kFallback),
+               "a slot without a requested display has nothing to return to");
   return ok;
 }
 
@@ -481,6 +548,7 @@ int main() {
   bool ok = TestGracePeriod();
   ok &= TestDisplayChoice();
   ok &= TestFallbackReturnProbe();
+  ok &= TestFallbackReturnListed();
   ok &= TestReturnEnumeration();
   ok &= TestEnumerationFailure();
   ok &= TestConfigurationTimeout();

@@ -20,7 +20,7 @@ Bản chuyển Slint cho HarmonyOS PC biên dịch trực tiếp giao diện và
 Cài workload “Desktop development with C++”, Windows SDK và thành phần “C++ Clang Compiler for Windows” của Visual Studio 2022, cùng Xmake. libyuv Windows x64 dùng clang-cl để bật chuyển đổi và co giãn hình ảnh SIMD; chương trình chính vẫn dùng MSVC. Thực hiện trong Developer PowerShell:
 
 ```powershell
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 xmake f -c -p windows -a x64 -m release --CROSSDESK_VERSION=1.4.3 --USE_CUDA=false -y
 xmake b -vy crossdesk
@@ -42,7 +42,7 @@ Xem quy trình đầy đủ trong [script Windows](../apps/desktop/scripts/windo
 Cài Xcode cùng công cụ dòng lệnh và Xmake, rồi thực hiện:
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 xmake f -c -m release --target_minver=14.0 --CROSSDESK_VERSION=1.4.3 --USE_CUDA=false -y
 xmake b -vy crossdesk
@@ -135,7 +135,7 @@ sudo apt-get update
 sudo apt-get install -y \
   git curl unzip build-essential gcc-10 g++-10 python3-pip \
   pkg-config binutils dpkg-dev \
-  libx11-dev libxext-dev libxrender-dev libxft-dev libxrandr-dev \
+  libx11-dev libxext-dev libxrender-dev libxft-dev libfribidi-dev libxrandr-dev \
   libxinerama-dev libxcursor-dev libxi-dev libxfixes-dev libxv-dev \
   libxtst-dev libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev \
   libxcb-shape0-dev libxcb-xkb-dev libxcb-xfixes0-dev libxcb-shm0-dev \
@@ -152,7 +152,7 @@ vì vậy lệnh trên cũng cài GCC 10 và chỉ định nó khi cấu hình s
 Tải submodule và biên dịch bản Release:
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 
 # Chạy dòng này nếu đã clone kho mã

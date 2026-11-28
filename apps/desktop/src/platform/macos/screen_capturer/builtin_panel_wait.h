@@ -87,15 +87,20 @@ struct CaptureDisplayChoice {
 // |requested| is the display the slot was opened for (0 if none was known)
 // and |active| the one it captures now, which differs after a fallback.
 // |requested_builtin_online| is true when |requested| is the built-in panel
-// and CoreGraphics still reports it online.
+// and CoreGraphics still reports it online. |requested_mirror_source| is the
+// display |requested| mirrors (0 if none); ScreenCaptureKit lists only the
+// source, which shows the same picture.
 //
 // The requested display wins whenever it is listed, so a slot that fell back
-// returns to it once it is back. While it stays absent, a fallback that is
-// still listed is kept instead of being picked again.
+// returns to it once it is back. A mirrored display is captured through its
+// listed source at once, without the built-in grace period. While the
+// requested display stays absent, a fallback that is still listed is kept
+// instead of being picked again.
 inline CaptureDisplayChoice ChooseCaptureDisplay(
     const std::vector<uint32_t>& listed, uint32_t requested, uint32_t active,
     bool requested_builtin_online, int logical_index, BuiltinPanelWait& wait,
-    BuiltinPanelWait::Clock::time_point now) {
+    BuiltinPanelWait::Clock::time_point now,
+    uint32_t requested_mirror_source = 0) {
   const auto find = [&listed](uint32_t display) {
     if (display == 0) return -1;
     const auto it = std::find(listed.begin(), listed.end(), display);
@@ -108,6 +113,12 @@ inline CaptureDisplayChoice ChooseCaptureDisplay(
   if (const int requested_index = find(requested); requested_index >= 0) {
     wait.Reset();
     choice.index = requested_index;
+    return choice;
+  }
+  if (const int mirror_index = find(requested_mirror_source);
+      mirror_index >= 0) {
+    wait.Reset();
+    choice.index = mirror_index;
     return choice;
   }
   if (active != requested) {
@@ -125,6 +136,23 @@ inline CaptureDisplayChoice ChooseCaptureDisplay(
           ? logical_index
           : 0;
   return choice;
+}
+
+// Whether a return probe whose display list is |listed| ends the fallback of a
+// slot that asks for |requested| and captures |active| now.
+// ChooseCaptureDisplay prefers |requested| and then the display it mirrors,
+// |requested_mirror_source| (0 if none), which ScreenCaptureKit lists in its
+// place, so either one being listed ends the fallback. A display the stream
+// already captures is left out: listing it changes nothing, and a return for
+// it would only restart the same capture on every probe.
+inline bool FallbackReturnListed(const std::vector<uint32_t>& listed,
+                                 uint32_t requested, uint32_t active,
+                                 uint32_t requested_mirror_source = 0) {
+  const auto ends_fallback = [&listed, active](uint32_t display) {
+    return display != 0 && display != active &&
+           std::find(listed.begin(), listed.end(), display) != listed.end();
+  };
+  return ends_fallback(requested) || ends_fallback(requested_mirror_source);
 }
 
 // Paces the checks that end a fallback. A display coming back into

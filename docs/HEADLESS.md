@@ -61,13 +61,13 @@ Sau khi chương trình chạy, nhập lệnh trong cùng terminal rồi nhấn 
 | `help` | Hiện trợ giúp |
 | `quit` | Đóng CrossDesk; ở chế độ tái sử dụng không đóng màn hình gốc |
 
-Menu cài đặt dùng chung `config.ini` với GUI; mỗi thay đổi được lưu ngay sau khi xác minh hợp lệ, không cần lệnh lưu riêng. Nhập `cancel` để bỏ giá trị đang sửa. Trạng thái console, menu, lời nhắc mật khẩu và trợ giúp theo cài đặt ngôn ngữ, hỗ trợ cùng 11 ngôn ngữ với GUI, gồm tiếng Việt; tên lệnh không đổi.
+Menu cài đặt dùng chung `config.ini` với GUI; mỗi thay đổi được lưu ngay sau khi xác minh hợp lệ, không cần lệnh lưu riêng. Nhập `cancel` để bỏ giá trị đang sửa. Trạng thái console, menu, lời nhắc mật khẩu và trợ giúp dùng ngôn ngữ giao diện đã chọn, gồm cả tiếng Việt; mọi ngôn ngữ dùng chung tên lệnh.
 
 H.264 tự ưu tiên mã hóa và giải mã phần cứng, quay về phần mềm nếu không khả dụng hoặc khởi tạo thất bại; AV1 dùng mã hóa và giải mã phần mềm. Tăng tốc phần cứng không còn công tắc riêng, cấu hình cũ `hardware_video_codec` được tự dọn.
 
 | Tên cài đặt | Giá trị / định dạng | Cách có hiệu lực |
 | --- | --- | --- |
-| `language` | `system` / `zh-CN` / `en-US` / `ru-RU` / `zh-Hant` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `vi` | Chuyển ngôn ngữ console và GUI ngay, giữ ở lần khởi động sau |
+| `language` | `system` / `zh-CN` / `en-US` / `ru-RU` / `zh-Hant` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `vi` / `tr` / `he` | Chuyển ngôn ngữ console và GUI ngay, giữ ở lần khởi động sau |
 | `codec` | `h264` / `av1` | Kết nối lại sau khi lưu |
 | `turn` | `off` / `auto` / `udp` / `tcp` | Kết nối lại sau khi lưu; `udp` / `tcp` nghĩa là buộc dùng relay |
 | `server_host` | Tên máy, IP hoặc địa chỉ signaling HTTPS/WSS, hỗ trợ đường dẫn và cổng rõ ràng | Nếu chưa bật self-host thì lưu dự phòng, nếu đã bật thì kết nối lại |

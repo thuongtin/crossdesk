@@ -9,6 +9,7 @@
  */
 
 #include "screen_capturer_sck.h"
+#include "../virtual_display/headless_display.h"
 
 #include <AppKit/AppKit.h>
 #include <ApplicationServices/ApplicationServices.h>
@@ -175,6 +176,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
 
  public:
   int Init(const int fps, cb_desktop_data cb) override;
+  void SetCaptureFrameRate(int fps) override;
   void SetPrivacyController(PrivacyController* privacy) override { privacy_ = privacy; }
 
   int Start(bool show_cursor) override;
@@ -277,9 +279,13 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
            suspended_since_ == Clock::time_point{};
   }
   // Asks ScreenCaptureKit for its display list without touching the stream,
-  // and reports back through |helper| if |requested| is in it.
+  // and reports back through |helper| if it lists |requested| or the display
+  // |requested| mirrors (|mirror_source|), other than |active|, the display
+  // the stream captures now.
   static void ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
-                                    CGDirectDisplayID requested);
+                                    CGDirectDisplayID requested,
+                                    CGDirectDisplayID mirror_source,
+                                    CGDirectDisplayID active);
   void RecoverCapture(uint64_t generation, const std::string& reason,
                       CaptureInterruption cause = CaptureInterruption::failure,
                       SCStream* stopped_stream = nil);
@@ -323,6 +329,9 @@ static std::string GetAppKitDisplayName(CGDirectDisplayID display_id) {
 }
 
 std::string GetDisplayName(CGDirectDisplayID display_id) {
+  // WindowServer can publish the new ID before NSScreen updates its names.
+  if (const char* name = MacHeadlessDisplay::NameFor(display_id)) return name;
+
   // IODisplayConnect is no longer exposed for some external displays on
   // modern Apple Silicon Macs. NSScreen is the system-owned source for the
   // user-visible name and maps directly to CGDirectDisplayID.
@@ -470,7 +479,7 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
   }
   const CGDirectDisplayID primary = CGMainDisplayID();
   const MainDisplayState main_display{
-      primary, CGDisplayIsBuiltin(primary) != 0, CGDisplayIsOnline(primary) != 0,
+      primary, CGDisplayIsBuiltin(primary) == 1, CGDisplayIsOnline(primary) == 1,
       CGDisplayMirrorsDisplay(primary) != kCGNullDirectDisplay};
   const std::vector<CGDirectDisplayID> display_ids =
       PlanCaptureDisplays(std::move(listed), std::move(online), main_display);
@@ -638,6 +647,15 @@ int ScreenCapturerSckImpl::Destroy() {
   return 0;
 }
 
+void ScreenCapturerSckImpl::SetCaptureFrameRate(int fps) {
+  {
+    std::lock_guard lock(lock_);
+    if (fps <= 0 || fps_ == fps) return;
+    fps_ = fps;
+  }
+  StartOrReconfigureCapturer();
+}
+
 int ScreenCapturerSckImpl::Stop() {
   std::lock_guard<std::mutex> lock(lock_);
   capture_requested_ = false;
@@ -748,12 +766,19 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
     const CGDirectDisplayID requested =
         requested_it == display_id_map_.end() ? kCGNullDirectDisplay
                                               : requested_it->second;
-    const bool requested_builtin_online = requested != kCGNullDirectDisplay &&
-                                          CGDisplayIsBuiltin(requested) &&
-                                          CGDisplayIsOnline(requested);
+    // WindowServer returns UINT32_MAX for queries against a retired display,
+    // so a removed placeholder must not count as an online or mirrored panel.
+    const bool requested_online =
+        requested != kCGNullDirectDisplay && CGDisplayIsOnline(requested) == 1;
+    const bool requested_builtin_online =
+        requested_online && CGDisplayIsBuiltin(requested) == 1;
+    // A display that mirrors another is not listed. Its mirror source shows
+    // the same picture, and the slot returns once mirroring ends.
+    const CGDirectDisplayID mirror_source =
+        requested_online ? CGDisplayMirrorsDisplay(requested) : kCGNullDirectDisplay;
     const CaptureDisplayChoice choice = ChooseCaptureDisplay(
         listed, requested, current_display_, requested_builtin_online,
-        logical_index, builtin_panel_wait_, Clock::now());
+        logical_index, builtin_panel_wait_, Clock::now(), mirror_source);
     if (choice.gave_up_on_builtin) {
       LOG_WARN("Built-in display {} is still missing from ScreenCaptureKit; "
                "falling back to another display",
@@ -767,7 +792,9 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
     }
 
     if (captured_display) {
-      const CGDirectDisplayID old_display = current_display_;
+      // The slot's published geometry names the display viewers see now.
+      const auto old_display = static_cast<CGDirectDisplayID>(
+          reinterpret_cast<uintptr_t>(display_info_list_[logical_index].handle));
       const CGDirectDisplayID new_display = captured_display.displayID;
       const std::string stable_stream_id = ResolveDisplayStreamId(
           current_stream_id_.c_str(), display_info_list_.size(), logical_index);
@@ -877,9 +904,8 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
   config.width = filter.contentRect.size.width * filter.pointPixelScale;
   config.height = filter.contentRect.size.height * filter.pointPixelScale;
   config.captureResolution = SCCaptureResolutionAutomatic;
-  config.minimumFrameInterval = CMTimeMake(1, fps_);
-
   std::unique_lock<std::mutex> lock(lock_);
+  config.minimumFrameInterval = CMTimeMake(1, fps_);
   if (!capture_requested_ || generation != configuration_generation_) return;
   if (configuration_in_flight_) { reconfigure_pending_ = true; return; }
   if (GetMacPrivacyCaptureState().revision != revision) {
@@ -1063,6 +1089,8 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
   const char* failure = nullptr;
   SckHelper* probe_helper = nil;
   CGDirectDisplayID probe_display = kCGNullDirectDisplay;
+  CGDirectDisplayID probe_mirror_source = kCGNullDirectDisplay;
+  CGDirectDisplayID probe_active = kCGNullDirectDisplay;
   {
     std::lock_guard lock(lock_);
     if (!capture_requested_ || session != capture_session_) return false;
@@ -1107,20 +1135,30 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
         !failure && !recovery_pending_ && !configuration_in_flight_ &&
         DeliveringFramesLocked() &&
         requested != kCGNullDirectDisplay && requested != current_display_ &&
-        CGDisplayIsOnline(requested);
+        CGDisplayIsOnline(requested) == 1;
     if (fallback_return_probe_.Due(fallback_active, now)) {
       probe_helper = helper_;
       probe_display = requested;
+      // ScreenCaptureKit lists a mirrored display only through its source, so
+      // the probe also looks for that source. Mirroring can start or end during
+      // a fallback, so resolve it again on every probe.
+      probe_mirror_source = CGDisplayMirrorsDisplay(requested);
+      probe_active = current_display_;
     }
   }
   if (failure) RecoverCapture(generation, failure);
   if (retry) StartOrReconfigureCapturer();
-  if (probe_helper) ProbeRequestedDisplay(probe_helper, session, probe_display);
+  if (probe_helper) {
+    ProbeRequestedDisplay(probe_helper, session, probe_display, probe_mirror_source,
+                          probe_active);
+  }
   return true;
 }
 
 void ScreenCapturerSckImpl::ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
-                                                  CGDirectDisplayID requested) {
+                                                  CGDirectDisplayID requested,
+                                                  CGDirectDisplayID mirror_source,
+                                                  CGDirectDisplayID active) {
   if (!CGPreflightScreenCaptureAccess()) return;
   // Only the display list matters, so leave out desktop and off-screen windows.
   [SCShareableContent getShareableContentExcludingDesktopWindows:YES
@@ -1128,11 +1166,13 @@ void ScreenCapturerSckImpl::ProbeRequestedDisplay(SckHelper* helper, uint64_t se
                                              completionHandler:^(SCShareableContent* content,
                                                                  NSError* error) {
     if (error || !content) return;
+    std::vector<uint32_t> listed;
+    listed.reserve(content.displays.count);
     for (SCDisplay* display in content.displays) {
-      if (display.displayID == requested) {
-        [helper requestedDisplayListed:session];
-        return;
-      }
+      listed.push_back(display.displayID);
+    }
+    if (FallbackReturnListed(listed, requested, active, mirror_source)) {
+      [helper requestedDisplayListed:session];
     }
   }];
 }
@@ -1142,7 +1182,8 @@ void ScreenCapturerSckImpl::RequestedDisplayListed(uint64_t session) {
     std::lock_guard lock(lock_);
     if (!capture_requested_ || session != capture_session_) return;
   }
-  LOG_INFO("Requested display is listed by ScreenCaptureKit again; leaving the fallback");
+  LOG_INFO("Requested display or its mirror source is listed by ScreenCaptureKit again; "
+           "leaving the fallback");
   // The new enumeration lists the requested display, which ChooseCaptureDisplay
   // prefers over the fallback. If it fails instead, the fallback keeps running.
   StartOrReconfigureCapturer(/*return_check=*/true);

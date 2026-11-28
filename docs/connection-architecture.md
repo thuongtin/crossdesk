@@ -14,8 +14,8 @@ Hai chế độ dùng lại ghi màn hình, mã hóa, truyền âm thanh và vid
 
 | Hạng mục | Chế độ kết nối ID | Chế độ IP trực tiếp |
 | --- | --- | --- |
-| Người dùng nhập | ID thiết bị 9 chữ số và mật khẩu | Địa chỉ IPv4/IPv6 dạng số, cổng tùy chọn và mật khẩu |
-| Định vị thiết bị | Thiết bị và trạng thái trực tuyến do dịch vụ signaling quản lý | Kết nối thẳng `IP:cổng` chỉ định |
+| Người dùng nhập | ID thiết bị 9 chữ số và mật khẩu | IPv4, IPv6 hoặc tên miền, cổng tùy chọn và mật khẩu |
+| Định vị thiết bị | Thiết bị và trạng thái trực tuyến do dịch vụ signaling quản lý | Kết nối tới cổng chỉ định qua IP hoặc tên miền |
 | Nơi xác minh mật khẩu | Máy điều khiển gửi Join, dịch vụ signaling trả kết quả xác minh | Máy được điều khiển xác minh mật khẩu nhận được trên máy đó |
 | Kênh signaling | Cả hai kết nối WSS dịch vụ chính thức hoặc tự triển khai | Máy điều khiển kết nối thẳng WSS máy được điều khiển |
 | Chính sách ICE | `ManagedServers`, dùng cấu hình ICE máy chủ gửi xuống | `HostOnly`, giới hạn IPv4/IPv6 hai bên của kết nối WSS này |
@@ -114,7 +114,7 @@ Kênh thương lượng LAN dùng TLS 1.3, đường dẫn `/crossdesk/lan/v2` v
 
 `GuiRuntime::InitializeLan()` tạo `lan::SessionManager` khi tính năng bật và môi trường chủ hỗ trợ. Trình quản lý tải danh tính LAN, chứng chỉ, mật khẩu và cấu hình cổng cục bộ; nếu chưa có mật khẩu, tạo bất đồng bộ mật khẩu sáu chữ cái tiếng Anh hoặc chữ số trước, bắt đầu nhận kết nối khi chuẩn bị xong.
 
-- `LocalIpInterfaces()` liệt kê IPv4/IPv6 unicast không loopback trên giao diện bật, gồm VPN và giao diện ảo; chế độ lắng nghe riêng khi tắt lắng nghe mọi giao diện dùng `physical_only` lọc card vật lý. Chỉ nhận địa chỉ IP dạng số, không phân giải tên máy; IPv6 chuẩn hóa dạng nén, địa chỉ link-local giữ scope ID máy này.
+- `LocalIpInterfaces()` liệt kê IPv4/IPv6 unicast không loopback trên giao diện bật, gồm VPN và giao diện ảo; chế độ lắng nghe riêng khi tắt lắng nghe mọi giao diện dùng `physical_only` lọc card vật lý. Cấu hình lắng nghe dùng địa chỉ IP dạng số. IPv6 chuẩn hóa dạng nén, địa chỉ link-local giữ scope ID máy này.
 - Trình quản lý làm mới ảnh chụp giao diện khoảng mỗi 2 giây. Mặc định dùng một bộ lắng nghe dual-stack `::` (tắt `IPV6_V6ONLY`), nếu IPv6 không khả dụng thì về `0.0.0.0`; giao diện cho chọn IPv4/IPv6 thực, gồm VPN, để chia sẻ. Tắt “Lắng nghe trên tất cả interface mạng” trong “Cài đặt → Chung → Kết nối mạng” rồi lưu sẽ chuyển sang lắng nghe riêng địa chỉ card vật lý, giao diện cũng chỉ liệt kê chúng. Địa chỉ wildcard chỉ dùng bind, không làm đích kết nối hay ICE candidate.
 - Cấu hình mỗi IP lần đầu ưu tiên thử `52888`; nếu không bind được, yêu cầu hệ điều hành cấp cổng và lưu cổng thực khi vẫn giữ socket để tránh tranh chấp “dò rồi nhả, lúc dùng bị chiếm”.
 - Cổng đã lưu xung đột sẽ báo lỗi và thử lại cổng cũ, không tự đổi số. Sửa cổng thủ công theo thứ tự “bind cổng mới → lưu cấu hình → thay lắng nghe”, giữ cài đặt cũ khi thất bại.
@@ -127,6 +127,10 @@ Kênh thương lượng LAN dùng TLS 1.3, đường dẫn `/crossdesk/lan/v2` v
 Chính sách LAN ở đây giới hạn địa chỉ ICE candidate, không dựa “có mạng bên ngoài không” để xác định chế độ, cũng không chỉ kiểm tra địa chỉ thuộc dải riêng. Kết nối thực vẫn cần đường TCP và UDP đến IPv4/IPv6 hai bên dùng cho kết nối WSS này thông suốt.
 
 Endpoint IPv6 hiển thị và lưu vào văn bản chia sẻ dạng `[địa-chỉ%phạm-vi-cục-bộ]:cổng`, IPv6 trần dùng cổng mặc định; lịch sử gần đây lưu riêng địa chỉ chuẩn hóa và cổng. Địa chỉ socket IPv4-mapped được lắng nghe wildcard nhận sẽ chuyển về IPv4 thường; đầu vào người dùng không chấp nhận địa chỉ mapped, loopback, chưa xác định hoặc multicast. Lắng nghe IPv6 từng địa chỉ bật `IPV6_V6ONLY` để tránh chồng lắng nghe IPv4.
+
+Đích kết nối đi lưu riêng tên đã chuẩn hóa và cổng. Mỗi lần kết nối, máy điều khiển gọi bộ phân giải của hệ thống để lấy kết quả A/AAAA, lọc địa chỉ không phù hợp rồi thử xen kẽ theo họ địa chỉ hệ thống ưu tiên. Hai lần thử liền nhau cách 250 mili giây, khi thất bại rõ ràng thì thử ngay địa chỉ tiếp theo, tối đa hai kết nối WSS đồng thời. Chỉ kênh được chọn đã qua kiểm tra địa chỉ, subprotocol, chứng chỉ và khóa công khai kỳ vọng mới được gửi khung xác thực. Bắt tay DNS, TCP, TLS và WebSocket dùng chung ngân sách 8 giây. ICE dùng địa chỉ dạng số thực tế của kênh được chọn.
+
+Máy điều khiển Windows và Linux ưu tiên dùng phân giải của hệ thống cho `.local`. Khi truy vấn hệ thống thất bại, không có địa chỉ dùng được hoặc mọi địa chỉ đều không kết nối được, máy điều khiển gửi truy vấn A và AAAA tới nhóm multicast mDNS trên các giao diện đang hoạt động cho phép multicast. Nếu phân giải của hệ thống hoặc kết nối cứ chờ mãi, máy điều khiển bắt đầu truy vấn multicast ở giây thứ 4 để kịp thử địa chỉ trả về trong 8 giây sẵn có. Địa chỉ IPv6 link-local dùng scope của giao diện nhận. Lỗi kiểm tra khóa công khai, chứng chỉ hoặc subprotocol WebSocket không kích hoạt dự phòng multicast.
 
 ### 3.3 Trình tự xác thực và thương lượng
 
@@ -163,6 +167,8 @@ sequenceDiagram
 IP trực tiếp do **máy điều khiển** khởi tạo offer. ID nội bộ hai bên và `session_id` ngẫu nhiên dùng định tuyến phiên này, người dùng không cần điền ID thiết bị. Thông điệp thương lượng mang ID phiên và số thứ tự tăng nghiêm ngặt; trình quản lý kiểm tra thứ tự trạng thái rồi gọi `MiniRtcReceiveDirectSignal()`. MiniRTC kiểm tra thêm SDP, số ứng viên, địa chỉ, sự nhất quán định danh ICE và loại ứng viên trùng.
 
 SessionManager truyền IPv4/IPv6 cục bộ và máy từ xa của socket WSS hiện tại vào `MiniRtcInitDirectPeer()`, MiniRTC tạo chính sách `HostOnly`, khởi động ICE worker riêng, không đăng nhập đám mây. MiniRTC giao thông điệp thương lượng cho SessionManager qua callback `SignalSender`, rồi gửi bằng WSS.
+
+VPN tầng ứng dụng có thể khiến IP card ảo mà máy bên kia công bố khác với IP của đầu WSS bên kia. Khi nhận ứng viên UDP host hợp lệ cùng họ địa chỉ, MiniRTC dùng IP của đầu WSS đã xác thực kèm cổng mà ứng viên công bố để thực hiện kiểm tra ICE. Quy tắc này áp dụng cho cả ứng viên gửi riêng lẻ lẫn ứng viên trong SDP offer/answer.
 
 MiniRTC tắt truy cập máy chủ STUN/TURN, UPnP, ICE TCP và mở rộng xuyên mạng công cộng, chỉ thu ứng viên UDP host của IPv4/IPv6 cục bộ chỉ định. Bản vá `direct-peer-address` của libnice kiểm tra cả ứng viên từ xa và nguồn đến: từ chối IP không khớp trước khi phân tích kiểm tra kết nối STUN, học ứng viên mới hoặc trả dữ liệu. Bản tin kiểm tra STUN của chính ICE vẫn dùng giữa hai bên, khác với truy cập máy chủ STUN.
 
@@ -212,10 +218,10 @@ IP trực tiếp dùng **gửi mật khẩu trong TLS, máy được điều khi
 
 - Mật khẩu gồm 6 chữ cái ASCII hoặc chữ số, phân biệt hoa thường. Bản ghi xác minh dùng salt ngẫu nhiên và Argon2id, tham số hiện tại `m=19456 KiB, t=2, p=1`; không dùng SPAKE2+ hoặc trao đổi chứng minh mật khẩu bổ sung.
 - Để hiện mật khẩu ở cửa sổ chính và khôi phục sau khởi động lại, cục bộ còn lưu bản sao mật khẩu mã hóa AES-256-GCM; khóa và tệp thông tin xác thực được quyền người dùng máy này bảo vệ. Tiến trình đọc được các tệp này vẫn khôi phục được mật khẩu.
-- LAN WSS nhận chứng chỉ tự ký vượt kiểm tra cơ bản như thời hạn, tự ký và mục đích chứng chỉ; không thực hiện tin cậy thiết bị lịch sử, TOFU, ghim chứng chỉ hoặc xác nhận danh tính thiết bị. Xác minh mật khẩu cấp quyền máy điều khiển truy cập máy được điều khiển, bản thân không chứng minh máy từ xa chính là thiết bị lần trước.
+- LAN WSS kiểm tra thời hạn, tính tự ký và mục đích của chứng chỉ. Khi lưu mật khẩu cho tên miền, ứng dụng gắn đích, mật khẩu và fingerprint khóa công khai TLS của phiên đã được cấp quyền với nhau. Với tên miền đã gắn, ứng dụng kiểm tra khóa công khai trước rồi mới gửi mật khẩu; sau khi người dùng xác nhận đã thay thiết bị, mật khẩu tự nhập chỉ được gửi tới khóa công khai mới đã chỉ định.
 - DTLS vẫn kiểm tra fingerprint chứng chỉ thương lượng trong SDP lần này. Trực tiếp yêu cầu thương lượng thành công SRTP video, âm thanh và dữ liệu, chỉ gửi `secure_ready` sau khi xuất khóa và cài phiên mã hóa thành công; runtime máy tính sau đó đặt `authorized`, mở callback nghiệp vụ.
 
-Điều này nghĩa là bắt gói thụ động không đọc thẳng được mật khẩu trong TLS, nhưng mô hình hiện tại không nhận diện máy được điều khiển bị giả mạo bằng tin cậy chứng chỉ bền vững. Xác minh fingerprint DTLS phiên hiện tại cũng không cung cấp bảo đảm danh tính lịch sử này.
+Ở lần kết nối đầu tiên, người dùng tự đối chiếu đúng máy đích. Bản ghi IP dạng số giữ cách xác minh mật khẩu như trước.
 
 Giới hạn xác thực đếm riêng theo IP nguồn tầng truyền tải và đích thông tin xác thực máy này, trần hiện tại là 20 lần thất bại nguồn và 5 lần đích. Mỗi nhóm đếm dùng **cửa sổ hiệu lực 900 giây**; nếu chưa đạt ngưỡng, hết cửa sổ xóa số thất bại cũ. Khi một nhóm đạt ngưỡng, tính lại từ lúc lần xác minh thất bại đó hoàn tất, vào **thời gian chờ đủ 900 giây**, yêu cầu bị chặn trong thời gian này không kéo dài nó. Bất kỳ chiều nào đang chờ đều chặn xác minh mật khẩu.
 
@@ -294,7 +300,7 @@ Mã tương ứng: [cấu hình toàn cục](../apps/desktop/src/config_center/c
 
 ## 7. Phạm vi hỗ trợ và điểm vào khắc phục
 
-Ứng dụng máy tính thường trên Windows, macOS, Linux có thể khởi tạo và nhận kết nối IP trực tiếp. Ứng dụng di động Android, iOS, HarmonyOS khởi tạo kết nối qua trình quản lý phiên phía máy điều khiển dùng chung, giữ nguyên quy trình xác thực TLS, đàm phán MiniRTC và ghép đôi thiết bị của bản máy tính. Ứng dụng di động không mở lắng nghe trong mạng LAN. Trình duyệt, dịch vụ Windows trước đăng nhập và console Linux headless dùng đầu vào ID. IPv4/IPv6 dạng số và ứng viên UDP host là ràng buộc hiện tại. Chế độ mọi giao diện nhận được kết nối VPN hoặc card ảo, máy điều khiển cũng có thể khởi tạo qua chúng nhưng vẫn cần đường TCP, UDP hai bên thông suốt; không có phân giải tên máy, điều khiển loopback hay xuyên NAT mạng công cộng.
+Ứng dụng máy tính thường trên Windows, macOS, Linux có thể khởi tạo và nhận kết nối IP trực tiếp. Ứng dụng di động Android, iOS, HarmonyOS khởi tạo kết nối qua trình quản lý phiên phía máy điều khiển dùng chung, giữ nguyên quy trình xác thực TLS, đàm phán MiniRTC và ghép đôi thiết bị của bản máy tính. Ứng dụng di động không mở lắng nghe trong mạng LAN. Trình duyệt, dịch vụ Windows trước đăng nhập và console Linux headless dùng đầu vào ID. Tên miền kết nối trực tiếp có thể phân giải ra IPv4 hoặc IPv6, nội dung đa phương tiện dùng ứng viên UDP host. Chế độ mọi giao diện nhận được kết nối VPN hoặc card ảo, máy điều khiển cũng có thể khởi tạo qua chúng nhưng vẫn cần đường TCP, UDP hai bên thông suốt; điều khiển loopback và xuyên NAT mạng công cộng nằm ngoài khả năng của chế độ trực tiếp.
 
 | Hiện tượng | Tầng kiểm tra đầu tiên |
 | --- | --- |

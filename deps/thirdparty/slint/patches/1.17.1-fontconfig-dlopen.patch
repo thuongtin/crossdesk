@@ -1,0 +1,26 @@
+--- a/api/cpp/Cargo.toml
++++ b/api/cpp/Cargo.toml
+@@ -82,6 +82,13 @@
+ [target.'cfg(target_os = "android")'.dependencies]
+ i-slint-backend-android-activity = { workspace = true, features = ["native-activity", "aa-06"] }
+ 
++[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
++# Load the system libfontconfig.so.1 at runtime instead of linking a private copy. A
++# statically linked fontconfig looks for fonts.conf under its build prefix, which does
++# not exist on user machines, so generic families such as sans-serif resolve to an
++# arbitrary (often serif) font.
++fontique = { workspace = true, features = ["fontconfig-dlopen"] }
++
+ [build-dependencies]
+ anyhow = "1.0"
+ cbindgen = { workspace = true }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -10494,6 +10494,7 @@
+  "cbindgen",
+  "esp-backtrace",
+  "esp-println",
++ "fontique",
+  "i-slint-backend-android-activity",
+  "i-slint-backend-selector",
+  "i-slint-backend-testing",

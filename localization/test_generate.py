@@ -115,8 +115,9 @@ class LocalizationTest(unittest.TestCase):
 #include "localization.h"
 int main() {
   using namespace crossdesk::localization;
-  assert(kSystemLanguage == 10);
-  assert(kVietnameseLanguage == 11);
+  assert(kSystemLanguage == 13);
+  assert(kVietnameseLanguage == 12);
+  assert(kHebrewLanguage == 11);
   assert(MatchLanguage("vi-VN") == kVietnameseLanguage);
   assert(MatchLanguage("VI_vn.UTF-8") == kVietnameseLanguage);
   assert(MatchLanguage("zh-CN") == 0);
@@ -124,24 +125,32 @@ int main() {
   assert(MatchLanguage("ru") == 2);
   assert(MatchLanguage("zh-Hant") == 3);
   assert(MatchLanguage("pt-PT") == 9);
+  assert(MatchLanguage("tr-TR") == 10);
+  assert(MatchLanguage("he-IL") == kHebrewLanguage);
+  assert(MatchLanguage("iw_IL.UTF-8") == kHebrewLanguage);
   assert(MatchLanguage("unsupported") == -1);
   assert(MatchPreferredLanguages({}) == kVietnameseLanguage);
   assert(MatchPreferredLanguages({"unsupported"}) == kVietnameseLanguage);
   assert(MatchPreferredLanguages({"unsupported", "en-US"}) == 1);
-  assert(detail::ClampLanguageIndex(10) == SystemLanguage());
-  assert(detail::ClampLanguageIndex(11) == 11);
-  assert(detail::ClampLanguageIndex(-1) == 11);
-  assert(detail::ClampLanguageIndex(100) == 11);
-  assert(Literal("连接", 11) == "Kết nối");
-  assert(Literal("连接", detail::ClampLanguageIndex(11)) == "Kết nối");
+  assert(detail::ClampLanguageIndex(13) == SystemLanguage());
+  assert(detail::ClampLanguageIndex(12) == 12);
+  assert(detail::ClampLanguageIndex(10) == 10);
+  assert(detail::ClampLanguageIndex(-1) == 12);
+  assert(detail::ClampLanguageIndex(100) == 12);
+  assert(Literal("连接", 12) == "Kết nối");
+  assert(Literal("连接", detail::ClampLanguageIndex(12)) == "Kết nối");
   assert(Literal("连接", 1) == "Connect");
-  assert(Literal("unknown", 11).empty());
+  assert(!Literal("连接", 10).empty() && Literal("连接", 10) != "Kết nối");
+  assert(Literal("unknown", 12).empty());
+  assert(GetSupportedLanguages().size() == static_cast<size_t>(kSystemLanguage));
   assert(GetSupportedLanguages().back().display_name == "Tiếng Việt");
   assert(SupportedLanguage(kVietnameseLanguage).code == "vi");
   assert(SupportedLanguage(-1).code == "vi");
   assert(SupportedLanguage(100).code == "vi");
   assert(SupportedLanguage(1).code == "en-US");
   assert(SupportedLanguage(9).code == "pt-BR");
+  assert(SupportedLanguage(10).code == "tr");
+  assert(SupportedLanguage(kHebrewLanguage).code == "he");
   assert(SupportedLanguage(kSystemLanguage).code == SupportedLanguage(SystemLanguage()).code);
 }
 '''

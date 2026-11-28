@@ -1,4 +1,4 @@
-import { currentLanguage } from './Localization';
+import { currentLanguage, VIETNAMESE_LANGUAGE } from './Localization';
 
 function policySection(text: string, heading: string): string {
   const match = new RegExp('^## ' + heading + '[ \\t]*$', 'm').exec(text);
@@ -12,6 +12,7 @@ export function selectPrivacyPolicy(body: string, language: number = currentLang
   const text = body.replace(/\r\n/g, '\n');
   const vietnamese = policySection(text, 'Tiếng Việt') || policySection(text, '中文');
   const english = policySection(text, 'English');
-  const useEnglish = language >= 0 && language < 10;
+  // Chính sách chỉ có bản tiếng Việt và English: mọi ngôn ngữ khác tiếng Việt đều dùng English.
+  const useEnglish = language >= 0 && language !== VIETNAMESE_LANGUAGE;
   return (useEnglish ? english || vietnamese : vietnamese || english) || text.trim();
 }
