@@ -577,7 +577,15 @@ bool VerifySquareRecentPreview(RenderTestPlatform& platform) {
              "Recent overflow must open Rename without reconnecting")) return false;
   main->set_alias_open(false);
   screen.Click(157, 29);
-  if (!Check(main->get_lan_mode() && color_near(114, 11, 189, 65, 24),
+  // Thanh chuyển chế độ nở theo nhãn dài nhất đo bằng font đang chạy (DejaVu Sans trên Linux
+  // rộng hơn font Mac), nên nửa IP không luôn bắt đầu ở x 113. Tìm mép trái vùng tô ở hàng 15,
+  // dưới góc và trên chữ, bắt đầu từ giữa nửa ID để tránh viền focus, rồi kiểm tra điểm sát góc
+  // trên trái như trước: góc vuông thì điểm đó vẫn được tô.
+  int ip_fill_left = -1;
+  for (int x = 60; x < 28 + 400 && ip_fill_left < 0; ++x)
+    if (color_near(x, 15, 189, 65, 24)) ip_fill_left = x;
+  if (!Check(main->get_lan_mode() && ip_fill_left >= 28 + 85 &&
+                 color_near(ip_fill_left + 1, 11, 189, 65, 24),
              "Active IP mode must also fill its square inset corner")) return false;
   return WritePopupEvidence(screen, "postcard-ip-square-selected");
 }
