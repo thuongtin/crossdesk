@@ -80,6 +80,8 @@ constexpr float kEmptyTextRightInset = 20.0f;
 // Tiêu đề và lời gợi ý của thẻ trống cách nhau spacing 14px nên khoảng trống giữa hai khối
 // chữ luôn từ 13px trở lên, còn các dòng trong cùng một khối chỉ cách nhau 0 tới 2px.
 constexpr float kEmptyParagraphGap = 8.0f;
+constexpr float kEmptyHeadingSize = 14.0f;
+constexpr float kEmptyHintSize = 12.0f;
 
 const std::vector<DisplayCase>& DisplayCases() {
   static const std::vector<DisplayCase> cases = SelectDisplayCases(kDisplayEnv);
@@ -310,6 +312,9 @@ bool EndsWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, int y1
       }
   const float dot_limit = std::max(2.0f, 0.25f * font_px);
   if (high - low + 1 > dot_limit) return false;
+  // Chấm luôn có khoảng trống phía trên trong vùng quét; khối chạm hàng đầu của vùng là phần
+  // đáy của một chữ cái bị vùng quét cắt ngang.
+  if (low <= y0) return false;
   // Tách khối theo cột chỉ trong dải hàng của chấm, để móc của chữ cái đứng trước
   // (chữ "r" trong "Ver…") không dính vào chấm đầu tiên.
   const int band_top = std::max(y0, low - 1);
@@ -341,6 +346,53 @@ bool EndsWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, int y1
     if (column >= x0 && column_has_ink(column, band_top, band_bottom) && !ink_above(column))
       return true;
   return false;
+}
+
+// Chữ word-wrap có overflow: elide kết thúc dòng cuối bằng "…" khi hết chỗ. Xét từng dòng
+// (dải hàng có nét) vì dòng trên có thể dài hơn dòng cuối. Chân chữ dòng trên có thể chạm
+// dấu của dòng dưới làm hai dòng dính thành một dải; khi đó xét thêm phần đáy cao 0.6em của
+// dải. Dấu "…" nằm trên đường chân chữ, cách đáy dải nhiều nhất chừng 0.25em (phần chân của
+// g, p, y), còn chân chữ dòng trên dừng cao hơn đường chân chữ dòng dưới ít nhất chừng 0.9em
+// nên không lọt vào phần đáy đó và không che được dấu "…" của một dòng cuối ngắn hơn.
+bool LinesEndWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, int y1,
+                          const slint::Rgb8Pixel& background, float font_px) {
+  bool elided = false;
+  for (const Span& line : InkRowBands(screen, x0, x1, y0, y1, background, 1)) {
+    elided |= EndsWithEllipsis(screen, x0, x1, line.begin, line.end, background, font_px);
+    if (line.Width() > 1.5f * font_px)
+      elided |= EndsWithEllipsis(screen, x0, x1, line.end - int(std::lround(0.6f * font_px)),
+                                 line.end, background, font_px);
+  }
+  return elided;
+}
+
+// Tự kiểm bộ dò "…" trên hình vẽ tay: hai dòng dính nhau, chân chữ dòng trên nằm bên phải
+// dấu "…" của dòng cuối ngắn hơn. Không có dấu "…" thì bộ dò không được báo nhầm.
+bool VerifyEllipsisDetector() {
+  static constexpr int kWidth = 120, kHeight = 32;
+  static constexpr float kFontPx = 13.0f;
+  const slint::Rgb8Pixel paper{255, 255, 255};
+  const auto draw = [](ScaledWindow& screen, int x0, int x1, int y0, int y1) {
+    for (int y = y0; y <= y1; ++y)
+      for (int x = x0; x <= x1; ++x) screen.pixels[std::size_t(y) * kWidth + x] = {0, 0, 0};
+  };
+  bool ok = true;
+  for (const bool with_dots : {true, false}) {
+    ScaledWindow screen;
+    screen.extent = slint::PhysicalSize({kWidth, kHeight});
+    screen.pixels.assign(std::size_t(kWidth) * kHeight, paper);
+    draw(screen, 2, 90, 2, 11);    // thân chữ dòng trên
+    draw(screen, 88, 90, 12, 15);  // chân chữ dòng trên, ở bên phải dấu "…"
+    draw(screen, 10, 12, 14, 16);  // dấu của dòng cuối chạm chân chữ dòng trên
+    draw(screen, 2, 50, 17, 26);   // thân chữ dòng cuối, đường chân chữ ở hàng 26
+    if (with_dots)
+      for (const int x : {54, 58, 62}) draw(screen, x, x + 1, 25, 26);
+    const bool found = LinesEndWithEllipsis(screen, 0, kWidth - 1, 0, kHeight - 1, paper, kFontPx);
+    ok &= Check(found == with_dots,
+                with_dots ? "The ellipsis detector must find a trailing ellipsis under a merged line"
+                          : "The ellipsis detector must not report an ellipsis that is not there");
+  }
+  return ok;
 }
 
 // Chữ một dòng có overflow: elide: phải hiện ra, không kết thúc bằng "…" và không bị
@@ -445,18 +497,10 @@ bool VerifyLanRow(Fixture& fixture, const std::string& where, float card_left, f
   const auto label = FindInk(screen, label_x0, label_x1, label_y0, label_y1, background);
   ok &= Check(label.Found(), where + ": the LAN address label must be visible");
   // Nhãn có word-wrap và overflow: elide: khi hai dòng không đủ chỗ thì dòng cuối kết thúc
-  // bằng "…". Xét từng dòng vì dòng trên có thể dài hơn dòng cuối; nếu hai dòng dính thành
-  // một dải thì xét thêm phần đáy cao bằng cỡ chữ, nơi có chân dòng cuối và dấu "…".
-  const float font_px = kLanLabelSize * unit;
-  bool elided = false;
-  for (const Span& line : InkRowBands(screen, label_x0, label_x1, label_y0, label_y1, background, 1)) {
-    elided |= EndsWithEllipsis(screen, label_x0, label_x1, line.begin, line.end, background, font_px);
-    if (line.Width() > 1.5f * font_px)
-      elided |= EndsWithEllipsis(screen, label_x0, label_x1,
-                                 line.end - int(std::lround(font_px)), line.end, background,
-                                 font_px);
-  }
-  ok &= Check(!elided, where + ": the LAN address label must not be elided");
+  // bằng "…".
+  ok &= Check(!LinesEndWithEllipsis(screen, label_x0, label_x1, label_y0, label_y1, background,
+                                    kLanLabelSize * unit),
+              where + ": the LAN address label must not be elided");
   return ok;
 }
 
@@ -510,6 +554,14 @@ bool VerifyEmptyState(Fixture& fixture, bool lan_mode, int group, const std::str
                                   Px(fixture, top), Px(fixture, top + kEmptyCardHeight) - 1,
                                   background, Px(fixture, kEmptyParagraphGap));
   ok &= Check(blocks.size() >= 2, where + ": the empty state hint must show below its heading");
+  // Hai khối chữ chỉ có word-wrap nên Slint không vẽ "…"; vẫn xét để test bắt được khi ai đó
+  // thêm overflow: elide mà khung không đủ chỗ.
+  for (std::size_t i = 0; i < blocks.size() && i < 2; ++i)
+    ok &= Check(!LinesEndWithEllipsis(screen, Px(fixture, text_left), Px(fixture, text_right) - 1,
+                                      blocks[i].begin, blocks[i].end, background,
+                                      fixture.Physical(i == 0 ? kEmptyHeadingSize : kEmptyHintSize)),
+                where + (i == 0 ? ": the empty state heading" : ": the empty state hint") +
+                    " must not be elided");
   if (!ok) WriteFailureFrame(screen, kEvidenceEnv, where);
   return ok;
 }
@@ -687,7 +739,7 @@ int main() {
     return 1;
   }
 
-  bool ok = true;
+  bool ok = VerifyEllipsisDetector();
   for (const auto& display : DisplayCases()) {
     for (const auto& language : AllLanguages()) {
       Fixture fixture(*platform, display, language.index);
