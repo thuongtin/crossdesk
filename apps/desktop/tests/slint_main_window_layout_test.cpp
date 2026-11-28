@@ -612,6 +612,34 @@ bool VerifyConnectRow(Fixture& fixture, bool lan_mode, const std::string& label,
   return ok;
 }
 
+// Nhãn "Đang kết nối…" thay cho "Kết nối" khi nút bị khóa trong lúc chờ: connection-pending
+// ở chế độ ID, lan-connecting ở chế độ IP. Nút rộng sẵn cho nhãn dài hơn trong hai nhãn, nên
+// bấm Kết nối không được làm nút đổi bề rộng; mép phải cố định nên mép trái cũng phải đứng
+// yên. Chừa 1px cho khử răng cưa ở mép.
+bool VerifyConnecting(Fixture& fixture, bool lan_mode, const Span& idle_button,
+                      const std::string& label) {
+  fixture.main().set_lan_mode(lan_mode);
+  if (lan_mode)
+    fixture.main().set_lan_connecting(true);
+  else
+    fixture.main().set_connection_pending(true);
+  fixture.ParkPointer();
+  const std::string where = label + (lan_mode ? " IP mode" : " ID mode") + " connecting";
+  const auto hero_background = fixture.screen().At(
+      Px(fixture, kHeroLeft + 8.0f), Px(fixture, fixture.ContentTop() + kConnectRowTop - 6.0f));
+  Span button{};
+  bool ok = VerifyConnectButton(fixture, where, hero_background, &button);
+  ok &= Check(std::abs(button.begin - idle_button.begin) <= 1 &&
+                  std::abs(button.end - idle_button.end) <= 1,
+              where + ": the Connect button must keep its width (idle " +
+                  std::to_string(idle_button.Width()) + "px, connecting " +
+                  std::to_string(button.Width()) + "px)");
+  if (!ok) WriteFailureFrame(fixture.screen(), kEvidenceEnv, where);
+  fixture.main().set_lan_connecting(false);
+  fixture.main().set_connection_pending(false);
+  return ok;
+}
+
 bool VerifyToolbar(Fixture& fixture, bool lan_mode, const std::string& label) {
   auto& screen = fixture.screen();
   fixture.main().set_lan_mode(lan_mode);
@@ -757,34 +785,11 @@ int main() {
       const std::string label = std::string(display.name) + "/" + language.name;
       ok &= VerifyToolbar(fixture, false, label);
       ok &= VerifyToolbar(fixture, true, label);
-      Span idle_button{};
-      ok &= VerifyConnectRow(fixture, false, label, &idle_button);
-      ok &= VerifyConnectRow(fixture, true, label);
-      // Nhãn "Đang kết nối…" thay cho "Kết nối" khi nút bị khóa trong lúc chờ.
-      fixture.main().set_lan_mode(false);
-      fixture.main().set_connection_pending(true);
-      fixture.ParkPointer();
-      {
-        const auto hero_background = fixture.screen().At(
-            Px(fixture, kHeroLeft + 8.0f),
-            Px(fixture, fixture.ContentTop() + kConnectRowTop - 6.0f));
-        Span connecting_button{};
-        bool connecting_ok = VerifyConnectButton(fixture, label + " connecting", hero_background,
-                                                 &connecting_button);
-        // Nút rộng sẵn cho nhãn dài hơn trong hai nhãn, nên bấm Kết nối không được làm nút
-        // đổi bề rộng; mép phải cố định nên mép trái cũng phải đứng yên. Chừa 1px cho khử
-        // răng cưa ở mép.
-        connecting_ok &= Check(
-            std::abs(connecting_button.begin - idle_button.begin) <= 1 &&
-                std::abs(connecting_button.end - idle_button.end) <= 1,
-            label + ": the Connect button must keep its width while connecting (idle " +
-                std::to_string(idle_button.Width()) + "px, connecting " +
-                std::to_string(connecting_button.Width()) + "px)");
-        if (!connecting_ok)
-          WriteFailureFrame(fixture.screen(), kEvidenceEnv, label + " connecting");
-        ok &= connecting_ok;
-      }
-      fixture.main().set_connection_pending(false);
+      Span id_button{}, ip_button{};
+      ok &= VerifyConnectRow(fixture, false, label, &id_button);
+      ok &= VerifyConnectRow(fixture, true, label, &ip_button);
+      ok &= VerifyConnecting(fixture, false, id_button, label);
+      ok &= VerifyConnecting(fixture, true, ip_button, label);
       fixture.ClearRecentConnections();
       ok &= VerifyEmptyState(fixture, false, 0, label);
       ok &= VerifyEmptyState(fixture, false, 1, label);
