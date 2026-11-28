@@ -692,6 +692,22 @@ bool VerifyGalleryPopups(RenderTestPlatform& platform) {
   auto network = std::make_shared<slint::VectorModel<crossdesk::ui::GalleryNetworkDevice>>();
   wall->set_gallery_network_devices(network);
   wall->show();
+  // Do fork sở hữu: nút "网络状态" nằm ngay sau chữ đếm kết nối, mà độ rộng chữ
+  // này tùy font CJK của máy (rootfs build Linux không có font CJK nên chữ Hán
+  // rộng 0). Lấy tâm nút từ mặt trắng ngay dưới viền trên của nó (chân trang ở
+  // y 566 đến 590) thay vì hoành độ đo bằng font của macOS.
+  const auto network_button_x = [&] {
+    for (int x = 0, start = -1; x < 450; ++x) {
+      const auto p = screen.pixels.at(568 * screen.extent.width + x);
+      const bool face = p.r == 255 && p.g == 255 && p.b == 255;
+      if (face && start < 0) start = x;
+      if (!face && start >= 0) {
+        if (x - start >= 48) return (start + x) / 2;
+        start = -1;
+      }
+    }
+    return -1;
+  };
   unsigned ticks = 0;
   slint::Timer sync;
   sync.start(slint::TimerMode::Repeated, 16ms, [&] {
@@ -703,8 +719,10 @@ bool VerifyGalleryPopups(RenderTestPlatform& platform) {
   screen.Settle();
   if (!WriteEnglishEvidence(screen, wall, "deskhub")) return false;
   const auto baseline = screen.Region(75, 100, 740, 400);
+  const int network_x = network_button_x();
+  if (!Check(network_x > 0, "DeskHub network button must be painted in the footer")) return false;
   for (int repeat = 0; repeat < 2; ++repeat) {
-    screen.Click(160, 578);
+    screen.Click(network_x, 578);
     if (!Check(wall->get_gallery_network_open() && screen.Region(75, 100, 740, 400) != baseline,
                "DeskHub network dialog must paint immediately during live refresh")) return false;
     // Eight rows fill the available height, placing the dialog 16 px from the top.
