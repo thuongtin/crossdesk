@@ -13,10 +13,15 @@ import re
 import sys
 from pathlib import Path
 
-# Tiêu đề ATX hợp lệ: thụt tối đa ba dấu cách, có thể có chuỗi '#' đóng như "## Changes ##".
-CHANGES_HEADING = re.compile(r"^ {0,3}##[ \t]+Changes(?:[ \t]+#+)?[ \t]*$")
+# Ranh giới mục chỉ tính tiêu đề ATX ở cột 0: ngoài fence ở cột 0, dòng như vậy không thể nằm trong
+# mục list, trích dẫn hay khối code thụt lề, nên theo CommonMark nó luôn là tiêu đề thật.
+# Tiêu đề mở mục, có thể có chuỗi '#' đóng như "## Changes ##".
+CHANGES_HEADING = re.compile(r"^##[ \t]+Changes(?:[ \t]+#+)?[ \t]*$")
 # Mục Changes kết thúc ở tiêu đề cấp 1 hoặc 2 kế tiếp; tiêu đề cấp 3 trở xuống thuộc về mục.
-SECTION_END = re.compile(r"^ {0,3}#{1,2}(?:[ \t]|$)")
+SECTION_END = re.compile(r"^#{1,2}(?:[ \t]|$)")
+# Tiêu đề cấp 1 hoặc 2 thụt một tới ba dấu cách có thể là tiêu đề thật, tiêu đề trong mục list hay chữ
+# trong code fence của mục list; trong mục Changes nó bị từ chối để ranh giới mục không phải đoán.
+INDENTED_SECTION_HEADING = re.compile(r"^ {1,3}#{1,2}(?:[ \t]|$)")
 # Dòng mở code fence, chỉ nhận ở cột 0 (xem nested_fence); dòng trông như tiêu đề bên trong fence
 # chỉ là chữ, ví dụ chú thích shell.
 OPENING_FENCE = re.compile(r"^(`{3,}|~{3,})(.*)$")
@@ -48,8 +53,9 @@ def nested_fence(line):
     """True khi dòng mở code fence sau phần thụt lề, tab, dấu list hay dấu trích dẫn.
 
     Theo CommonMark, fence như vậy thuộc mục list hay trích dẫn chứa nó và kết thúc cùng mục đó,
-    tính theo cột có tab. Extractor và InstalledBlocks chỉ hiểu fence ở cột 0, nên notes có fence
-    lồng bị từ chối thay vì bị tách sai ranh giới mục.
+    tính theo cột có tab. InstalledBlocks chỉ hiểu fence ở cột 0, nên mục Changes có dòng như vậy
+    bị từ chối thay vì hiện sai trong hộp thoại. Dòng giống fence trong khối code thụt lề cũng bị
+    từ chối: tách được hai trường hợp phải theo dõi cả mục list, mà chỉ mục Changes cần kiểm tra.
     """
     prefix = CONTAINER_PREFIX.match(line).end()
     return prefix > 0 and opening_fence(line[prefix:]) is not None
@@ -81,16 +87,18 @@ def extract(text, publish=False):
     candidates = outside_fences(lines)
     start = next((index for index in candidates if CHANGES_HEADING.match(lines[index])), None)
     if start is None:
-        raise ValueError("release notes have no '## Changes' section")
+        raise ValueError("release notes have no '## Changes' heading at column 0")
     end = next((index for index in candidates if index > start and SECTION_END.match(lines[index])),
                len(lines))
-    # Fence lồng từ đầu notes tới hết mục có thể giấu hay tạo ra tiêu đề quyết định ranh giới mục.
-    nested = next((index for index in candidates if index < end and nested_fence(lines[index])), None)
-    if nested is not None:
-        raise ValueError(f"line {nested + 1}: start code fences at column 0, "
-                         "not indented or inside a list item or quote")
+    section_indexes = [index for index in candidates if start < index < end]
+    for index in section_indexes:
+        if INDENTED_SECTION_HEADING.match(lines[index]):
+            raise ValueError(f"line {index + 1}: start level 1 and 2 headings at column 0")
+        if nested_fence(lines[index]):
+            raise ValueError(f"line {index + 1}: start code fences at column 0, "
+                             "not indented or inside a list item or quote")
     # Chỉ dòng ngoài code fence mới là chỗ giữ chỗ; ví dụ trong khối code được phép chứa "- TODO".
-    if publish and any(lines[index].strip() == PLACEHOLDER for index in candidates if start < index < end):
+    if publish and any(lines[index].strip() == PLACEHOLDER for index in section_indexes):
         raise ValueError(f"the '## Changes' section still has the '{PLACEHOLDER}' placeholder")
     section = normalize("\n".join(lines[start + 1:end]))
     if not section:

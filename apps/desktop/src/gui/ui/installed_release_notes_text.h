@@ -23,8 +23,8 @@ namespace crossdesk::release_notes_text {
 //   trong khối code không bị đọc thành đường kẻ, danh sách hay tiêu đề rồi mất đi. Dòng trống
 //   trong fence thành khoảng cách như dòng trống bên ngoài.
 // Fence chỉ mở ở cột 0 và đóng ở dòng thụt tối đa ba dấu cách, khớp
-// scripts/release/installed_release_notes.py. Extractor từ chối notes có fence thụt vào hay lồng
-// trong mục list hoặc trích dẫn, nên notes nhúng không có loại fence đó.
+// scripts/release/installed_release_notes.py. Extractor từ chối mục Changes có fence thụt vào hay
+// lồng trong mục list hoặc trích dẫn, nên notes nhúng không có loại fence đó.
 inline std::vector<Block> InstalledBlocks(std::string_view markdown) {
   static constexpr std::string_view kBlank = " \t";
   std::vector<Block> blocks;

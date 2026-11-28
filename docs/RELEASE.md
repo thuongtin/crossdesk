@@ -21,6 +21,7 @@ Tài liệu này mô tả quy trình phát hành lặp lại được cho fork `
 | `scripts/release/build_windows.sh` + `windows/build.ps1` | Build bộ cài NSIS trên máy Windows qua SSH |
 | `scripts/release/build_linux.sh` + `linux/*` | Build hai gói `.deb` trong bubblewrap trên máy Linux qua SSH |
 | `scripts/release/installed_release_notes.py` | Tách mục `## Changes` của release notes để nhúng vào hộp thoại Release Notes của app |
+| `scripts/release/test_installed_release_notes.py` | Unit test của `installed_release_notes.py` (xem bước 3 của mục 4) |
 | `scripts/release/check_conformance.py` | Fork-conformance gate trên file thực thi trong từng gói |
 | `scripts/release/make_release_feed.py` | Ký payload Ed25519 và sinh feed mới, không push |
 | `scripts/release/publish.sh` | Tạo release, đọc lại asset, công bố, rồi mới cập nhật feed |
@@ -255,10 +256,11 @@ Giữ câu nhắc máy đang chạy v1.7.7-1 hoặc v1.7.7-2 phải cài tay m�
 
 Nội dung này vừa là mô tả GitHub release vừa là `releaseNotes` trong feed mà app hiển thị.
 
-Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp nằm ngoài code fence) còn được
-nhúng vào chính bản build: app mở hộp thoại **Release Notes** một lần sau khi cài mới hoặc nâng cấp
-lên bản này và hiện đúng mục đó, hiển thị Markdown giống lời nhắc cập nhật. Tiêu đề con trong mục
-(ví dụ `### Linux`) hiện thành dòng in đậm, còn dòng trong code fence hiện nguyên chữ. Vì vậy:
+Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp, cả hai ở cột 0 và nằm ngoài
+code fence) còn được nhúng vào chính bản build: app mở hộp thoại **Release Notes** một lần sau khi
+cài mới hoặc nâng cấp lên bản này và hiện đúng mục đó, hiển thị Markdown giống lời nhắc cập nhật.
+Tiêu đề con trong mục (ví dụ `### Linux`) hiện thành dòng in đậm, còn dòng trong code fence hiện
+nguyên chữ. Vì vậy:
 
 - Notes phải hoàn chỉnh trước lần build publish. `release.sh` tách mục này bằng
   `installed_release_notes.py` vào `dist/<version>/INSTALLED_RELEASE_NOTES.md` trước khi build và
@@ -267,10 +269,14 @@ lên bản này và hiện đúng mục đó, hiển thị Markdown giống lờ
 - Mục phải có ít nhất một dòng; thiếu mục thì dừng trước khi build. Khi `--publish`, dòng giữ chỗ
   `- TODO` của bản nháp bị từ chối, kể cả khi có khoảng trắng thừa. Dry-run không có `--notes` nhúng bản nháp, nên muốn soát hộp
   thoại với notes thật thì dry-run kèm `--notes`.
-- Code fence (```` ``` ```` hoặc `~~~`) phải mở ở cột 0, không thụt lề, không đứng sau dấu list
-  hay `>`. `installed_release_notes.py` dừng ở dòng đầu tiên mở fence kiểu đó (từ đầu notes tới
-  hết mục Changes), vì theo CommonMark fence lồng kết thúc cùng mục list chứa nó, còn extractor và
+- Tiêu đề `## Changes` và mọi tiêu đề cấp 1 hoặc 2 phải ở cột 0. Trong mục Changes, code fence
+  (```` ``` ```` hoặc `~~~`) phải mở ở cột 0, không thụt lề, không đứng sau dấu list hay `>`.
+  `installed_release_notes.py` dừng ở dòng đầu tiên của mục vi phạm, gồm tiêu đề cấp 1 hoặc 2
+  thụt lề và mọi dòng giống fence đứng sau thụt lề, dấu list hay `>` (kể cả dòng nằm trong khối
+  code thụt lề), vì theo CommonMark fence lồng kết thúc cùng mục list chứa nó, còn extractor và
   hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một mục list thì đặt fence ra ngoài list.
+  Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm. Sửa script này thì chạy
+  `python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py`.
 - Sửa notes sau khi đã build thì phải build lại. `--skip-build` sinh lại
   `INSTALLED_RELEASE_NOTES.md` từ notes hiện tại, nên gate báo lệch nếu notes đã đổi.
 - Viết bằng tiếng Anh như phần còn lại của release notes: hộp thoại hiện nguyên văn ở mọi ngôn ngữ
