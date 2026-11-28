@@ -11,6 +11,7 @@
 #include <mutex>
 #include <set>
 #include <thread>
+#include <utility>
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/config/asio_client.hpp>
@@ -246,7 +247,7 @@ struct Transport::Impl {
     std::set<std::string> candidates;
     ChannelPtr channel;
     unsigned port = 0;
-    std::string expected_key, error;
+    std::string expected_key, error, relative_name;
     bool resolving = true, local_name = false;
     unsigned attempted = 0;
     long long dns_ms = 0;
@@ -549,6 +550,9 @@ struct Transport::Impl {
       });
     }
     dial->expected_key = key;
+    // Tên .local đã có multicast dự phòng; giữ nguyên nhịp đó, không tra lại.
+    if (!(kUseMulticastFallback && dial->local_name))
+      dial->relative_name = target.host;
     dials[c->id] = dial;
     c->state->close = [this, weak = std::weak_ptr<Dial>(dial)] {
       if (auto current = weak.lock()) EndDial(current);
@@ -578,15 +582,24 @@ struct Transport::Impl {
   }
   void Resolved(const std::shared_ptr<Dial>& dial, const Error& e,
                 const ResolveResults& results) {
+    std::vector<asio::ip::address> addresses;
+    for (const auto& entry : results)
+      addresses.push_back(entry.endpoint().address());
+    QueueAddresses(dial, addresses, false);
+    // Backend files của glibc không khớp "name." với /etc/hosts, nên lượt tra
+    // tuyệt đối bỏ sót tên chỉ có trong hosts. Khi lượt đó không cho địa chỉ
+    // dùng được thì tra lại đúng một lần với tên người dùng nhập, vẫn trong
+    // cùng deadline; khoá đã ghim (nếu có) vẫn kiểm tra máy trả lời.
+    if (dial->candidates.empty() && !dial->relative_name.empty() &&
+        NameLookup::Start(dial->lookup, std::exchange(dial->relative_name, {}),
+                          dial->port))
+      return;
+    dial->relative_name.clear();
     dial->resolving = false;
     dial->resolver_error = e.value();
     dial->dns_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                        Clock::now() - dial->channel->state->created)
                        .count();
-    std::vector<asio::ip::address> addresses;
-    for (const auto& entry : results)
-      addresses.push_back(entry.endpoint().address());
-    QueueAddresses(dial, addresses, false);
     if (dial->candidates.empty())
       dial->error = e ? (dial->local_name ? "LocalNameFailed" : "DnsFailed")
                       : "DnsNoUsableAddress";
