@@ -315,7 +315,8 @@ LangString CD_DriverRemoveFailed ${LANG_TURKISH} "usbmmidd sürücüsü kaldır�
 LangString CD_DriverRemoveFailed ${LANG_HEBREW} "לא ניתן להסיר את מנהל ההתקן usbmmidd. אם 'USB Mobile Monitor Virtual Display' עדיין מופיע, הסר אותו ב'מנהל ההתקנים'. קוד יציאה:"
 
 ; Shown when deviceinstaller64.exe reports that Windows removes the driver at
-; the next restart. CD_RestartToFinishUninstall then offers that restart.
+; the next restart. After the uninstaller closes, CD_RestartToFinishUninstall
+; asks the user to restart; the uninstaller never restarts by itself.
 LangString CD_DriverRemovedOnRestart ${LANG_ENGLISH} "Windows will finish removing the usbmmidd driver when the computer restarts."
 LangString CD_DriverRemovedOnRestart ${LANG_VIETNAMESE} "Windows sẽ gỡ xong trình điều khiển usbmmidd khi máy tính khởi động lại."
 LangString CD_DriverRemovedOnRestart ${LANG_SIMPCHINESE} "计算机重新启动后，Windows 将完成 usbmmidd 驱动程序的移除。"
@@ -330,19 +331,19 @@ LangString CD_DriverRemovedOnRestart ${LANG_PORTUGUESEBR} "O Windows concluirá 
 LangString CD_DriverRemovedOnRestart ${LANG_TURKISH} "Windows, bilgisayar yeniden başlatıldığında usbmmidd sürücüsünü kaldırmayı tamamlayacak."
 LangString CD_DriverRemovedOnRestart ${LANG_HEBREW} "Windows תסיים להסיר את מנהל ההתקן usbmmidd כשהמחשב יופעל מחדש."
 
-LangString CD_RestartToFinishUninstall ${LANG_ENGLISH} "Windows needs to restart to finish removing the usbmmidd virtual display driver. Restart now?"
-LangString CD_RestartToFinishUninstall ${LANG_VIETNAMESE} "Windows cần khởi động lại để gỡ xong trình điều khiển màn hình ảo usbmmidd. Khởi động lại ngay bây giờ?"
-LangString CD_RestartToFinishUninstall ${LANG_SIMPCHINESE} "需要重新启动 Windows 才能完成 usbmmidd 虚拟显示器驱动程序的移除。是否立即重新启动？"
-LangString CD_RestartToFinishUninstall ${LANG_TRADCHINESE} "需要重新啟動 Windows 才能完成 usbmmidd 虛擬顯示器驅動程式的移除。是否立即重新啟動？"
-LangString CD_RestartToFinishUninstall ${LANG_RUSSIAN} "Чтобы завершить удаление драйвера виртуального дисплея usbmmidd, необходимо перезагрузить Windows. Перезагрузить сейчас?"
-LangString CD_RestartToFinishUninstall ${LANG_JAPANESE} "usbmmidd 仮想ディスプレイ ドライバーの削除を完了するには、Windows を再起動する必要があります。今すぐ再起動しますか?"
-LangString CD_RestartToFinishUninstall ${LANG_KOREAN} "usbmmidd 가상 디스플레이 드라이버 제거를 완료하려면 Windows를 다시 시작해야 합니다. 지금 다시 시작하시겠습니까?"
-LangString CD_RestartToFinishUninstall ${LANG_GERMAN} "Um das Entfernen des virtuellen Anzeigetreibers usbmmidd abzuschließen, muss Windows neu gestartet werden. Jetzt neu starten?"
-LangString CD_RestartToFinishUninstall ${LANG_FRENCH} "Windows doit redémarrer pour terminer la suppression du pilote d'affichage virtuel usbmmidd. Redémarrer maintenant ?"
-LangString CD_RestartToFinishUninstall ${LANG_SPANISH} "Windows debe reiniciarse para terminar de quitar el controlador de pantalla virtual usbmmidd. ¿Desea reiniciar ahora?"
-LangString CD_RestartToFinishUninstall ${LANG_PORTUGUESEBR} "O Windows precisa ser reiniciado para concluir a remoção do driver de vídeo virtual usbmmidd. Reiniciar agora?"
-LangString CD_RestartToFinishUninstall ${LANG_TURKISH} "usbmmidd sanal ekran sürücüsünü kaldırmayı tamamlamak için Windows'un yeniden başlatılması gerekiyor. Şimdi yeniden başlatılsın mı?"
-LangString CD_RestartToFinishUninstall ${LANG_HEBREW} "יש להפעיל מחדש את Windows כדי לסיים להסיר את מנהל ההתקן של התצוגה הווירטואלית usbmmidd. להפעיל מחדש עכשיו?"
+LangString CD_RestartToFinishUninstall ${LANG_ENGLISH} "Restart Windows to finish removing the usbmmidd virtual display driver."
+LangString CD_RestartToFinishUninstall ${LANG_VIETNAMESE} "Hãy khởi động lại Windows để gỡ xong trình điều khiển màn hình ảo usbmmidd."
+LangString CD_RestartToFinishUninstall ${LANG_SIMPCHINESE} "请重新启动 Windows 以完成 usbmmidd 虚拟显示器驱动程序的移除。"
+LangString CD_RestartToFinishUninstall ${LANG_TRADCHINESE} "請重新啟動 Windows 以完成 usbmmidd 虛擬顯示器驅動程式的移除。"
+LangString CD_RestartToFinishUninstall ${LANG_RUSSIAN} "Перезагрузите Windows, чтобы завершить удаление драйвера виртуального дисплея usbmmidd."
+LangString CD_RestartToFinishUninstall ${LANG_JAPANESE} "usbmmidd 仮想ディスプレイ ドライバーの削除を完了するには、Windows を再起動してください。"
+LangString CD_RestartToFinishUninstall ${LANG_KOREAN} "usbmmidd 가상 디스플레이 드라이버 제거를 완료하려면 Windows를 다시 시작하세요."
+LangString CD_RestartToFinishUninstall ${LANG_GERMAN} "Starten Sie Windows neu, um das Entfernen des virtuellen Anzeigetreibers usbmmidd abzuschließen."
+LangString CD_RestartToFinishUninstall ${LANG_FRENCH} "Redémarrez Windows pour terminer la suppression du pilote d'affichage virtuel usbmmidd."
+LangString CD_RestartToFinishUninstall ${LANG_SPANISH} "Reinicie Windows para terminar de quitar el controlador de pantalla virtual usbmmidd."
+LangString CD_RestartToFinishUninstall ${LANG_PORTUGUESEBR} "Reinicie o Windows para concluir a remoção do driver de vídeo virtual usbmmidd."
+LangString CD_RestartToFinishUninstall ${LANG_TURKISH} "usbmmidd sanal ekran sürücüsünü kaldırmayı tamamlamak için Windows'u yeniden başlatın."
+LangString CD_RestartToFinishUninstall ${LANG_HEBREW} "הפעל מחדש את Windows כדי לסיים להסיר את מנהל ההתקן של התצוגה הווירטואלית usbmmidd."
 
 LangString CD_RemovingMachineData ${LANG_ENGLISH} "Removing CrossDesk unattended access data, system settings and firewall rules"
 LangString CD_RemovingMachineData ${LANG_VIETNAMESE} "Đang gỡ dữ liệu truy cập không giám sát, cấu hình hệ thống và quy tắc tường lửa của CrossDesk"

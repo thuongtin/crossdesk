@@ -121,14 +121,14 @@ Function un.onInit
     !insertmacro CROSSDESK_SELECT_LANGUAGE
 FunctionEnd
 
-; Offers the restart that un.RemoveUsbmmiddDriver asked for, after the user
-; closed the uninstaller. Silent uninstalls never restart.
+; Asks for the restart that un.RemoveUsbmmiddDriver needs, after the user
+; closed the uninstaller. The uninstaller never restarts by itself: the NSIS
+; Reboot instruction signs out every other user by force, which loses their
+; unsaved work.
 Function un.onUninstSuccess
     ${If} ${RebootFlag}
-        MessageBox MB_ICONQUESTION|MB_YESNO "$(CD_RestartToFinishUninstall)" /SD IDNO IDNO done
-        Reboot
+        MessageBox MB_ICONINFORMATION|MB_OK "$(CD_RestartToFinishUninstall)" /SD IDOK
     ${EndIf}
-done:
 FunctionEnd
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -545,15 +545,21 @@ unplug_loop:
     ${EndIf}
     nsExec::ExecToLog '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" stop usbmmidd'
     Pop $2
-    nsExec::ExecToLog '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" remove usbmmidd'
+    nsExec::ExecToStack '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" remove usbmmidd'
     Pop $2
-    ; deviceinstaller64.exe is the devcon sample: remove exits with 1 when
-    ; Windows accepted the removal and finishes it at the next restart, and
-    ; with 0 when no device is left, but also when removing one failed
-    ; ("Remove failed"). So after 0, check that no usbmmidd device is present;
-    ; find prints only this English line when there is none.
+    Call un.PrintDriverRemoveOutput
+    Pop $6
+    ; deviceinstaller64.exe is the devcon sample: remove prints one line per
+    ; device, ending with "Removed", "Removed on reboot" or "Remove failed".
+    ; It exits with 1 when any device waits for the next restart, even if
+    ; removing another one failed, and otherwise with 0, also when every
+    ; removal failed. So a "Remove failed" line always means the driver stays,
+    ; and after 0, check that no usbmmidd device is present; find prints only
+    ; this English line when there is none.
     StrCpy $3 $2
-    ${If} $2 == "0"
+    ${If} $6 <> 0
+        StrCpy $3 "failed"
+    ${ElseIf} $2 == "0"
         nsExec::ExecToStack '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" find usbmmidd'
         Pop $4
         Pop $5
@@ -565,21 +571,23 @@ unplug_loop:
     ${EndIf}
     SetOutPath "$TEMP"
 
+    ; Windows finishes the removals it accepted at the next restart, also when
+    ; another device could not be removed.
+    ${If} $2 == "1"
+        DetailPrint "$(CD_DriverRemovedOnRestart)"
+        SetRebootFlag true
+    ${EndIf}
     ; Keep the marker while the driver may still be installed: the app does
     ; not set it again for a driver that is already present, so without it
     ; no later uninstall would remove the driver. Retire it when no device is
     ; left, which also clears a marker that outlived a driver removed from
-    ; Device Manager, and when the removal waits for a restart: Windows
-    ; completes that without CrossDesk, so a usbmmidd driver installed after
-    ; the restart is not CrossDesk's.
+    ; Device Manager, and when every remaining device waits for a restart:
+    ; Windows completes that without CrossDesk, so a usbmmidd driver
+    ; installed after the restart is not CrossDesk's.
     ${If} $3 == "0"
     ${OrIf} $3 == "1"
         DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
         DeleteRegKey /ifempty HKLM "Software\${PRODUCT_NAME}"
-        ${If} $3 == "1"
-            DetailPrint "$(CD_DriverRemovedOnRestart)"
-            SetRebootFlag true
-        ${EndIf}
     ${Else}
         DetailPrint "$(CD_DriverRemoveFailed) $2"
         StrCpy $UninstallIncomplete 1
@@ -587,6 +595,47 @@ unplug_loop:
     SetRegView lastused
 
 done:
+FunctionEnd
+
+; Takes the output of "deviceinstaller64.exe remove" from the stack, prints
+; it to the details one line at a time as nsExec::ExecToLog would, and pushes
+; the number of lines that end with "Remove failed".
+Function un.PrintDriverRemoveOutput
+    Exch $0
+    Push $1
+    Push $2
+    Push $3
+    Push $4
+    StrCpy $1 0
+    StrCpy $3 ""
+    StrCpy $4 0
+next_char:
+    StrCpy $2 $0 1 $1
+    ${If} $2 == ""
+    ${OrIf} $2 == "$\n"
+        ${If} $3 != ""
+            DetailPrint "$3"
+            StrCpy $3 $3 "" -13
+            ${If} $3 == "Remove failed"
+                IntOp $4 $4 + 1
+            ${EndIf}
+            StrCpy $3 ""
+        ${EndIf}
+        ${If} $2 == ""
+            Goto finished
+        ${EndIf}
+    ${ElseIf} $2 != "$\r"
+        StrCpy $3 "$3$2"
+    ${EndIf}
+    IntOp $1 $1 + 1
+    Goto next_char
+finished:
+    StrCpy $0 $4
+    Pop $4
+    Pop $3
+    Pop $2
+    Pop $1
+    Exch $0
 FunctionEnd
 
 ; Removes what CrossDesk keeps outside the install folder and the user
