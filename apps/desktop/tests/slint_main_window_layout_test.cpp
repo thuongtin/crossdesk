@@ -563,10 +563,14 @@ bool VerifyEmptyState(Fixture& fixture, bool lan_mode, int group, const std::str
                                   background, Px(fixture, kEmptyParagraphGap));
   ok &= Check(blocks.size() >= 2, where + ": the empty state hint must show below its heading");
   // Hai khối chữ chỉ có word-wrap nên Slint không vẽ "…"; vẫn xét để test bắt được khi ai đó
-  // thêm overflow: elide mà khung không đủ chỗ.
+  // thêm overflow: elide mà khung không đủ chỗ. Vùng quét bắt đầu từ hàng trống ngay trên khối:
+  // khối chỉ còn mỗi dấu "…" có chấm nằm ở hàng đầu khối, và LinesEndWithEllipsis không nhìn
+  // lên quá mép trên vùng quét nên sẽ coi chấm đó là đáy chữ cái bị cắt. Hàng đó luôn trống vì
+  // InkRowBands quét từ mép trên thẻ và các khối cách nhau ít nhất kEmptyParagraphGap.
   for (std::size_t i = 0; i < blocks.size() && i < 2; ++i)
     ok &= Check(!LinesEndWithEllipsis(screen, Px(fixture, text_left), Px(fixture, text_right) - 1,
-                                      blocks[i].begin, blocks[i].end, background,
+                                      std::max(Px(fixture, top), blocks[i].begin - 1),
+                                      blocks[i].end, background,
                                       fixture.Physical(i == 0 ? kEmptyHeadingSize : kEmptyHintSize)),
                 where + (i == 0 ? ": the empty state heading" : ": the empty state hint") +
                     " must not be elided");
