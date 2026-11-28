@@ -141,7 +141,7 @@ Ghi chú cập nhật trong `apps/desktop/resources/release-notes.json` không �
 | `README.md`, `docs/*.md` không có hậu tố | Bản tiếng Việt. Dịch nội dung mới của upstream sang tiếng Việt, giữ cấu trúc và anchor của upstream. |
 | `README_EN.md`, `docs/*_EN.md` | Khớp với bản tiếng Anh của upstream (`README_EN.md` của fork là `README.md` của upstream). |
 | `README_ZH.md` | Bản tiếng Trung của upstream. |
-| `README_JA.md` | Bản tiếng Nhật của upstream; liên kết tải, badge Release và phần phản hồi theo fork, nhãn liên kết tới `docs/*.md` ghi là bản tiếng Việt. |
+| `README_JA.md` | Bản tiếng Nhật của upstream; liên kết tải, badge Release và phần phản hồi theo fork, nhãn liên kết tới `docs/*.md` ghi là bản tiếng Việt; đường dẫn ghép đôi ghi **信頼済みデバイス → 管理** như hàng Settings của fork (PR 9). |
 | README trong `apps/*` | Bản tiếng Việt; dịch nội dung mới của upstream. |
 
 Quy tắc liên kết:
@@ -211,4 +211,4 @@ Quy tắc liên kết:
 | Ngày | Dải upstream | Số commit | Ghi chú |
 | --- | --- | --- | --- |
 | 2026-11-26 | `ff369cd0..2c046f51` | 106 | 34 tệp xung đột: catalog, 3 tài nguyên sinh, 24 tài liệu, 6 tệp code. Dịch 16 chuỗi mới, thêm mục `vi` cho ghi chú cập nhật. Thêm script merge catalog và script xem trước này. |
-| 2026-11-28 | `2c046f51..26b56503` | 59 | 40 tệp xung đột: catalog và `generate.py`, 15 tài nguyên sinh, 10 tài liệu, 13 tệp code. Upstream thêm tiếng Thổ Nhĩ Kỳ và tiếng Hebrew: tiếng Việt dời sang cột 12, “Theo hệ thống” sang 13, giá trị cấu hình cũ giữ nguyên. Dịch 24 chuỗi mới; thêm `README_JA.md` theo chính sách tài liệu của fork. Sau đó merge lại `mcp` (PR 9, PR 10): script merge catalog dừng vì danh sách `slint` đã đổi thứ tự, nên áp tay phần thay đổi của `mcp` lên catalog đã đồng bộ; nút chế độ tiếng Việt giữ "Theo ID" / "Theo IP" (ngắn hơn "Chế độ ID", cùng kiểu với tr, he), thêm tr và he cho `管理`, `管理系统权限`. |
+| 2026-11-28 | `2c046f51..26b56503` | 59 | 40 tệp xung đột: catalog và `generate.py`, 15 tài nguyên sinh, 10 tài liệu, 13 tệp code. Upstream thêm tiếng Thổ Nhĩ Kỳ và tiếng Hebrew: tiếng Việt dời sang cột 12, “Theo hệ thống” sang 13, giá trị cấu hình cũ giữ nguyên. Dịch 24 chuỗi mới; thêm `README_JA.md` theo chính sách tài liệu của fork. Sau đó merge lại `mcp` (PR 9, PR 10): script merge catalog dừng vì danh sách `slint` đã đổi thứ tự, nên áp tay phần thay đổi của `mcp` lên catalog đã đồng bộ; nút chế độ tiếng Việt giữ "Theo ID" / "Theo IP" (ngắn hơn "Chế độ ID", cùng kiểu với tr, he), thêm tr và he cho `管理`, `管理系统权限`; `slint_settings_layout_test` tra chỉ số ngôn ngữ theo mã (số 11 cũ của tiếng Việt nay là tiếng Hebrew) và phủ thêm tr, he. |
