@@ -41,7 +41,11 @@ struct NameLookup {
   }
   static bool Start(std::shared_ptr<NameLookup> lookup, std::string host,
                     unsigned port) {
-    static asio::thread_pool workers(4);
+    // Cố ý không huỷ pool khi thoát: destructor của thread_pool join mọi
+    // getaddrinfo đang chặn, nên một resolver không trả lời sẽ giữ tiến trình
+    // sống sau khi main return (và updater phải chờ). Truy vấn đã bị huỷ
+    // không còn callback, nên các luồng còn lại kết thúc cùng tiến trình.
+    static asio::thread_pool& workers = *new asio::thread_pool(4);
     static std::atomic<unsigned> pending{0};
     if (pending.fetch_add(1) >= 24) {
       --pending;
