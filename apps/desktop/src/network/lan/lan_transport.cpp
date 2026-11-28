@@ -33,7 +33,8 @@ using ResolveResults = asio::ip::tcp::resolver::results_type;
 // session state and can only post results while its transport is attached.
 struct NameLookup {
   std::mutex mutex;
-  std::function<void(Error, ResolveResults, std::vector<std::string>)> deliver;
+  std::function<void(Error, ResolveResults, std::vector<asio::ip::address>)>
+      deliver;
   void Cancel() {
     std::lock_guard lock(mutex);
     deliver = {};
@@ -55,19 +56,28 @@ struct NameLookup {
               return;
             }
           }
-          asio::io_context io;
-          asio::ip::tcp::resolver resolver(io);
-          Error error;
-          // Tên tuyệt đối ("name.") để resolver không ghép search suffix.
-          auto results =
-              resolver.resolve(host + ".", std::to_string(port),
-                               asio::ip::tcp::resolver::numeric_service, error);
           // Backend files của glibc không khớp "name." với /etc/hosts, nên
-          // tên chỉ có trong hosts bị bỏ sót. Khi đó đọc thẳng file hosts cho
-          // đúng tên đã nhập; không tra lại resolver bằng tên tương đối, vì
-          // search suffix có thể đưa kết nối chưa ghim khoá tới máy khác.
-          std::vector<std::string> hosts_file;
-          if (results.empty()) hosts_file = ReadHostsFileAddresses(host);
+          // tra tên tuyệt đối sẽ bỏ qua file hosts. Đọc file hosts trước cho
+          // đúng tên đã nhập, giữ thứ tự "files trước dns" của nsswitch; chỉ
+          // khi file không có địa chỉ hợp lệ mới hỏi resolver. Không bao giờ
+          // hỏi bằng tên tương đối, vì search suffix có thể đưa kết nối chưa
+          // ghim khoá tới máy khác.
+          std::vector<asio::ip::address> hosts_file;
+          for (const auto& text : ReadHostsFileAddresses(host)) {
+            asio::error_code parse_error;
+            const auto address = asio::ip::make_address(text, parse_error);
+            if (!parse_error) hosts_file.push_back(address);
+          }
+          Error error;
+          ResolveResults results;
+          if (hosts_file.empty()) {
+            asio::io_context io;
+            asio::ip::tcp::resolver resolver(io);
+            // Tên tuyệt đối ("name.") để resolver không ghép search suffix.
+            results = resolver.resolve(host + ".", std::to_string(port),
+                                       asio::ip::tcp::resolver::numeric_service,
+                                       error);
+          }
           --pending;
           std::lock_guard lock(lookup->mutex);
           if (lookup->deliver)
@@ -574,7 +584,7 @@ struct Transport::Impl {
     });
     dial->lookup->deliver = [this, weak = std::weak_ptr<Dial>(dial)](
                                 Error e, ResolveResults results,
-                                std::vector<std::string> hosts_file) {
+                                std::vector<asio::ip::address> hosts_file) {
       asio::post(io, [this, weak, e, results = std::move(results),
                       hosts_file = std::move(hosts_file)] {
         if (auto current = weak.lock();
@@ -589,22 +599,17 @@ struct Transport::Impl {
   }
   void Resolved(const std::shared_ptr<Dial>& dial, const Error& e,
                 const ResolveResults& results,
-                const std::vector<std::string>& hosts_file) {
+                const std::vector<asio::ip::address>& hosts_file) {
     dial->resolving = false;
     dial->resolver_error = e.value();
     dial->dns_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                        Clock::now() - dial->channel->state->created)
                        .count();
-    std::vector<asio::ip::address> addresses;
+    // Địa chỉ từ file hosts cục bộ (do quản trị máy đặt) thay cho resolver
+    // khi có; khoá đã ghim (nếu có) vẫn kiểm tra máy trả lời.
+    std::vector<asio::ip::address> addresses = hosts_file;
     for (const auto& entry : results)
       addresses.push_back(entry.endpoint().address());
-    // Địa chỉ từ file hosts cục bộ (do quản trị máy đặt), chỉ có khi lượt tra
-    // tuyệt đối không trả về gì; khoá đã ghim (nếu có) vẫn kiểm tra máy đó.
-    for (const auto& text : hosts_file) {
-      asio::error_code parse_error;
-      const auto address = asio::ip::make_address(text, parse_error);
-      if (!parse_error) addresses.push_back(address);
-    }
     QueueAddresses(dial, addresses, false);
     if (dial->candidates.empty())
       dial->error = e ? (dial->local_name ? "LocalNameFailed" : "DnsFailed")
