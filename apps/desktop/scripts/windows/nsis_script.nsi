@@ -44,7 +44,15 @@ BrandingText "${PRODUCT_NAME}"
 
 !insertmacro MUI_PAGE_FINISH
 
+; Set by the uninstall functions when CrossDesk data or the driver stays.
+Var UninstallIncomplete
+; Header of the last uninstaller page, set at the end of the Uninstall section.
+Var UninstallFinishTitle
+Var UninstallFinishSubtitle
+
 !insertmacro MUI_UNPAGE_CONFIRM
+!define MUI_INSTFILESPAGE_FINISHHEADER_TEXT "$UninstallFinishTitle"
+!define MUI_INSTFILESPAGE_FINISHHEADER_SUBTEXT "$UninstallFinishSubtitle"
 !insertmacro MUI_UNPAGE_INSTFILES
 
 ; Every language the app ships, plus Turkish and Hebrew, which the app does not
@@ -73,8 +81,6 @@ BrandingText "${PRODUCT_NAME}"
 !include /CHARSET=UTF8 "installer_strings.nsh"
 Var UpdateMode
 Var ExistingInstall
-; Set by the uninstall functions when CrossDesk data or the driver stays.
-Var UninstallIncomplete
 
 ; NSIS picks the language matching the Windows display language exactly,
 ; then by primary language, so zh-HK and zh-MO would get Simplified Chinese.
@@ -286,10 +292,16 @@ uninstallApp:
     RMDir /r "$LOCALAPPDATA\CrossDesk"
 
     ; The details list names everything the uninstall functions left behind;
-    ; open it so the user does not see only "Completed".
+    ; open it so the user does not see only "Completed", and do not call the
+    ; uninstall complete in the page header.
     ${If} $UninstallIncomplete = 1
+        StrCpy $UninstallFinishTitle "$(CD_UninstallIncompleteTitle)"
+        StrCpy $UninstallFinishSubtitle "$(CD_UninstallIncompleteSubtitle)"
         SetDetailsView show
         MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_UninstallIncomplete)" /SD IDOK
+    ${Else}
+        StrCpy $UninstallFinishTitle "$(MUI_UNTEXT_FINISH_TITLE)"
+        StrCpy $UninstallFinishSubtitle "$(MUI_UNTEXT_FINISH_SUBTITLE)"
     ${EndIf}
 SectionEnd
 
