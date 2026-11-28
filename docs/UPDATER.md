@@ -70,9 +70,9 @@ Bản CrossDesk Postcard không phát hành bằng GitHub Actions. Gói, chữ k
 
 1. Người dùng nhấn “Cài đặt bản cập nhật” và xác nhận kết nối và truyền tệp sẽ bị ngắt.
 2. Chương trình chính tải bất đồng bộ, hiện tiến độ và xác minh chữ ký, kích thước, SHA-256.
-3. Trình nâng cấp khởi động từ thư mục tạm riêng, lấy khóa bảo trì cho thư mục cài đặt tương ứng.
+3. Trình nâng cấp khởi động từ thư mục tạm riêng. Trên Windows, tiến trình điều phối lấy khóa bảo trì cho thư mục cài đặt tương ứng.
 4. macOS/Linux yêu cầu quyền hệ thống trước, sau đó tiến trình cài đã nâng quyền xác minh lại chữ ký,
-   sao chép gói vào thư mục riêng chỉ quản trị viên ghi được và xác minh bản sao. Chỉ sau các bước này mới
+   sao chép gói vào thư mục riêng chỉ quản trị viên ghi được, xác minh bản sao rồi lấy khóa bảo trì hệ thống cho đường dẫn cài đặt. Chỉ sau các bước này mới
    thông báo chương trình chính thoát; trong khi chờ cấp quyền, kết nối từ xa vẫn chạy, hủy cấp quyền không đóng
    chương trình chính. Giai đoạn chuẩn bị chờ tối đa năm phút.
 5. Khi nhận thông báo sẵn sàng, chương trình chính gửi xác nhận cài và thoát bình thường. Windows giữ quy trình cũ:
@@ -193,7 +193,7 @@ Gói portable và di động không có tùy chọn tự cài này.
   phát hiện chương trình vẫn chạy sẽ hủy nâng cấp, không đoán hay dừng dịch vụ khác.
 
 Chờ thoát có giới hạn thời gian; nếu còn chương trình chạy thuộc người dùng khác sẽ báo thất bại. Hệ thống nhả khóa bảo trì khi tiến trình
-thoát, tệp khóa POSIX còn lại không bị coi là đang nâng cấp.
+thoát. Trên macOS/Linux, khóa nằm trong thư mục chạy của hệ thống và chỉ tiến trình cài đã nâng quyền mới giữ được. Từng người dùng truy vấn trạng thái bảo trì qua FIFO trạng thái; trạng thái tự xóa sau khi tiến trình cài thoát.
 
 ## Xử lý thất bại và kiểm chứng
 

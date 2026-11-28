@@ -119,17 +119,42 @@ struct LanguageCase {
   int index;
 };
 
-// Chỉ số khớp danh sách ngôn ngữ của ứng dụng (10 là "theo hệ thống").
+// Tra chỉ số theo mã trong danh sách ngôn ngữ của ứng dụng thay vì ghi số cứng:
+// đợt đồng bộ upstream chèn tr và he trước vi, khiến số 11 cũ của tiếng Việt
+// trỏ sang tiếng Hebrew mà test vẫn qua.
+int LanguageIndex(std::string_view code) {
+  const auto& languages = crossdesk::localization::GetSupportedLanguages();
+  for (std::size_t i = 0; i < languages.size(); ++i)
+    if (languages[i].code == code) return static_cast<int>(i);
+  std::cerr << "Unknown language code " << code << "\n";
+  std::exit(9);
+}
+
 const std::vector<LanguageCase>& LayoutLanguages() {
   static const std::vector<LanguageCase> languages = {
-      {"en", 1}, {"vi", 11}, {"de", 6}};
+      {"en", LanguageIndex("en-US")}, {"vi", LanguageIndex("vi")},
+      {"de", LanguageIndex("de")},    {"tr", LanguageIndex("tr")},
+      {"he", LanguageIndex("he")}};
   return languages;
 }
 
 const std::vector<LanguageCase>& AllLanguages() {
-  static const std::vector<LanguageCase> languages = {
-      {"zh-Hans", 0}, {"en", 1}, {"ru", 2}, {"zh-Hant", 3}, {"ja", 4}, {"ko", 5},
-      {"de", 6}, {"fr", 7}, {"es", 8}, {"pt-BR", 9}, {"vi", 11}};
+  static const std::vector<LanguageCase> languages = [] {
+    // Mọi ngôn ngữ ứng dụng hỗ trợ, đúng thứ tự của danh sách chọn ngôn ngữ.
+    static const std::pair<const char*, const char*> kNamesAndCodes[] = {
+        {"zh-Hans", "zh-CN"}, {"en", "en-US"}, {"ru", "ru-RU"}, {"zh-Hant", "zh-Hant"},
+        {"ja", "ja"},         {"ko", "ko"},    {"de", "de"},    {"fr", "fr"},
+        {"es", "es"},         {"pt-BR", "pt-BR"}, {"tr", "tr"}, {"he", "he"},
+        {"vi", "vi"}};
+    std::vector<LanguageCase> result;
+    for (const auto& [name, code] : kNamesAndCodes)
+      result.push_back({name, LanguageIndex(code)});
+    if (result.size() != crossdesk::localization::GetSupportedLanguages().size()) {
+      std::cerr << "AllLanguages must list every supported language\n";
+      std::exit(9);
+    }
+    return result;
+  }();
   return languages;
 }
 

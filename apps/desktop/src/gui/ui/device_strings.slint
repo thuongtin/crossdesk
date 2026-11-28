@@ -1,5 +1,5 @@
 export global GalleryStrings {
-    in-out property <int> language: 11;
+    in-out property <int> language: 12;
     in-out property <[string]> texts;
     in-out property <string> retry-prefix;
     in-out property <string> retry-suffix;
@@ -11,7 +11,7 @@ export global GalleryStrings {
         return self.language == 0 ? zh : self.language == 2 ? ru : en;
     }
     public pure function device-count(count: int) -> string {
-        if self.language == 11 { return count + " thiết bị"; }
+        if self.language == 12 { return count + " thiết bị"; }
         if self.language == 0 { return count + " 台设备"; }
         if self.language == 3 { return count + " 臺裝置"; }
         if self.language == 4 { return count + " 台"; }
@@ -20,6 +20,8 @@ export global GalleryStrings {
         if self.language == 7 { return count + (count == 1 ? " appareil" : " appareils"); }
         if self.language == 8 { return count + (count == 1 ? " dispositivo" : " dispositivos"); }
         if self.language == 9 { return count + (count == 1 ? " dispositivo" : " dispositivos"); }
+        if self.language == 10 { return count + " cihaz"; }
+        if self.language == 11 { return count == 1 ? "מכשיר אחד" : count + " מכשירים"; }
         if self.language == 2 {
             let last-two = mod(count, 100);
             let last = mod(count, 10);

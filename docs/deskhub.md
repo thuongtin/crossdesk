@@ -50,9 +50,9 @@ Mở **Cài đặt → DeskHub** ở cửa sổ chính, sửa rồi nhấn **Lư
 
 | Cài đặt | Cách chọn |
 | --- | --- |
-| Giới hạn độ phân giải | Chế độ tự động điều chỉnh theo hình thu nhỏ và hình phóng to; tăng giới hạn khi cần chi tiết, giảm khi cần tiết kiệm mạng |
+| Độ phân giải tối đa | Chế độ tự động điều chỉnh theo hình thu nhỏ và hình phóng to; tăng giới hạn khi cần chi tiết, giảm khi cần tiết kiệm mạng |
 | Tốc độ khung hình | Theo cài đặt thiết bị hoặc chọn 15 / 30 / 60 FPS; có thể giảm khi chủ yếu quan sát |
-| Tổng băng thông video | Mặc định 20 Mbps, chọn 2 / 5 / 10 / 20 / 50 / 100 Mbps; hình phóng to được ưu tiên băng thông |
+| Tổng băng thông | Mặc định 20 Mbps, chọn 2 / 5 / 10 / 20 / 50 / 100 Mbps; hình phóng to được ưu tiên băng thông |
 
 Ở đây điều chỉnh hình truyền đi, không đổi độ phân giải hiển thị hệ thống từ xa. Tổng băng thông video là mục tiêu duy trì chung của kết nối DeskHub hỗ trợ tính năng này, không gồm âm thanh, truyền tệp, kết nối thường và ứng dụng cũ không hỗ trợ, cũng không phải trần cứng lưu lượng tức thời.
 
@@ -83,7 +83,7 @@ Khi kết nối máy được điều khiển cũ, nếu chỉ khai báo `suppor
 
 ### Phân bổ băng thông video
 
-“Cài đặt → DeskHub → Tổng băng thông video” cấu hình ngân sách video chung cho mọi phiên DeskHub hỗ trợ thương lượng băng thông, mặc định 20 Mbps, chọn 2, 5, 10, 20, 50, 100 Mbps. Lưu áp dụng ngay, hủy không có hiệu lực, giữ sau khởi động lại; khôi phục mặc định cần lưu. Đây là ngân sách mục tiêu video duy trì, gồm phần bên gửi dành cho sửa lỗi video, truyền lại và chi phí RTP; âm thanh, truyền tệp, kết nối thường và thiết bị cũ không hỗ trợ thương lượng không tính vào, tốc độ tức thời khi gửi khung khóa và chuyển đổi có thể vượt ngân sách.
+“Cài đặt → DeskHub → Tổng băng thông” cấu hình ngân sách video chung cho mọi phiên DeskHub hỗ trợ thương lượng băng thông, mặc định 20 Mbps, chọn 2, 5, 10, 20, 50, 100 Mbps. Lưu áp dụng ngay, hủy không có hiệu lực, giữ sau khởi động lại; khôi phục mặc định cần lưu. Đây là ngân sách mục tiêu video duy trì, gồm phần bên gửi dành cho sửa lỗi video, truyền lại và chi phí RTP; âm thanh, truyền tệp, kết nối thường và thiết bị cũ không hỗ trợ thương lượng không tính vào, tốc độ tức thời khi gửi khung khóa và chuyển đổi có thể vượt ngân sách.
 
 Máy điều khiển ước lượng trần nhu cầu từng thiết bị theo độ phân giải và tốc độ khung hình yêu cầu. Trước hết dành tối đa 100 Kbps cơ sở cho mỗi thiết bị đang hiển thị (chia đều nếu tổng ngân sách không đủ), rồi chia phần còn lại theo trọng số: hình mở rộng hoặc cửa sổ luồng riêng đang hiển thị có trọng số gấp 4 hình thu nhỏ. Thiết bị cùng quy cách và ưu tiên được chia gần đều; thiết bị đạt trần nhu cầu nhường phần còn lại, không bắt buộc dùng hết tổng ngân sách. Hình thu nhỏ mặc định giới hạn 320 × 320, 30 FPS có ngân sách nhu cầu 500 Kbps. Phân bổ cập nhật theo kết nối, trang, nhóm, khả năng hiển thị cửa sổ và thay đổi độ phân giải／tốc độ khung hình; cửa sổ luồng riêng và hình trong DeskHub dùng chung ngân sách thiết bị. Khi nhu cầu và tổng ngân sách không đổi, tái dùng kết quả, không tính lặp theo làm mới UI.
 

@@ -9,7 +9,7 @@ Tài liệu này giúp bạn chọn phương thức kết nối, quản lý thi�
 | Phương thức | Tình huống phù hợp | Cần chuẩn bị trước kết nối |
 | --- | --- | --- |
 | ID thiết bị | Truy cập qua các mạng khác nhau, hoặc kết nối từ trình duyệt, điện thoại, terminal | Máy tính được điều khiển trực tuyến, hai bên kết nối cùng máy chủ, chuẩn bị ID gồm 9 chữ số và mật khẩu |
-| IP trực tiếp | Máy tính, điện thoại hoặc máy tính bảng truy cập được máy tính được điều khiển qua mạng LAN hoặc VPN | Máy tính được điều khiển bật IP trực tiếp, chuẩn bị IP, cổng và mật khẩu của chế độ này trên máy đó |
+| IP trực tiếp | Máy tính, điện thoại hoặc máy tính bảng truy cập được máy tính được điều khiển qua mạng LAN hoặc VPN | Máy tính được điều khiển bật IP trực tiếp, chuẩn bị IP hoặc tên miền, cổng và mật khẩu của chế độ này trên máy đó |
 
 Kết nối ID tự thử truyền trực tiếp giữa các thiết bị; nếu không thể kết nối trực tiếp thì có thể dùng relay. IP trực tiếp không phụ thuộc signaling server, cũng không tự xuyên qua bộ định tuyến Internet. IP trực tiếp hiện dành cho ứng dụng máy tính thông thường Windows, macOS, Linux; ứng dụng di động Android, iOS và HarmonyOS cũng có thể làm máy điều khiển. Web và CLI terminal dùng kết nối ID.
 
@@ -33,9 +33,9 @@ Xem [cấu hình self-host](SELF_HOSTING.md) và [sao lưu danh tính](#backup).
 
 1. Trên ứng dụng máy tính, bật **IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
 2. Chuyển sang chế độ IP trực tiếp ở cửa sổ chính, sao chép `IP:cổng` hiển thị trên máy được điều khiển.
-3. Dán địa chỉ trên máy điều khiển và kết nối. Điện thoại hoặc máy tính bảng dùng ô **ID thiết bị hoặc địa chỉ IP** ở màn hình chính. Nhập mật khẩu sáu ký tự của máy được điều khiển ở chế độ IP.
+3. Dán địa chỉ trên máy điều khiển và kết nối. Điện thoại hoặc máy tính bảng dùng ô **ID thiết bị, IP hoặc tên miền** ở màn hình chính. Nhập mật khẩu sáu ký tự của máy được điều khiển ở chế độ IP.
 
-Cổng mặc định là `52888`; thực tế hãy căn cứ hiển thị trên máy được điều khiển. Hỗ trợ IPv4 và IPv6, không hỗ trợ tên máy; khi chỉ định cổng IPv6 dùng dấu ngoặc vuông, ví dụ `[2001:db8::20]:52888`. Mật khẩu ID và IP độc lập với nhau.
+Cổng mặc định là `52888`; thực tế hãy căn cứ hiển thị trên máy được điều khiển. Có thể nhập IPv4, IPv6 hoặc tên miền. `home.example.net` dùng cổng mặc định, `home.example.net:55001` dùng cổng chỉ định. Trong cùng mạng LAN có thể nhập tên mà máy được điều khiển công bố, ví dụ `mini.local`. Khi hệ thống phân giải thất bại hoặc địa chỉ trả về không kết nối được, máy điều khiển Windows và Linux sẽ truy vấn lại một lần qua multicast trong mạng LAN. Khi chỉ định cổng IPv6 dùng dấu ngoặc vuông, ví dụ `[2001:db8::20]:52888`. Mật khẩu ID và IP độc lập với nhau.
 
 Mặc định lắng nghe mọi giao diện mạng, có thể truy cập qua địa chỉ mạng dây, Wi-Fi hoặc VPN. Tường lửa cần cho phép TCP và UDP liên lạc. Chỉ chuyển lại chế độ ID không dừng lắng nghe IP; để dừng, tắt IP trực tiếp trong cài đặt rồi lưu, việc này cũng ngắt các phiên IP hiện có. Xem đầy đủ cách dùng địa chỉ, cổng và IPv6 trong [hướng dẫn IP trực tiếp](USER_GUIDE.md#lan-direct).
 
@@ -45,7 +45,7 @@ Sau khi kết nối, mở **Trạng thái mạng** trên thanh công cụ phiên
 
 IP trực tiếp yêu cầu truyền mã hóa. Để tương thích ứng dụng cũ, kết nối ID native có thể dùng truyền không mã hóa hoặc chỉ mã hóa một phần; không chỉ dựa vào “Đã kết nối máy chủ” để xác định trạng thái mã hóa phiên điều khiển từ xa. Nên dùng các phiên bản gần đây tương thích trên cả hai bên; nếu chưa xác nhận trạng thái, kiểm tra phiên bản và thông tin mạng trước.
 
-IP trực tiếp không xác minh danh tính chứng chỉ của máy tính được điều khiển dựa trên lịch sử kết nối trước đây. Tên, địa chỉ hoặc mật khẩu đã lưu không chứng minh đang kết nối đúng máy tính cũ; hãy dùng mạng đáng tin cậy và đối chiếu địa chỉ bên kia. Giới hạn thiết bị đáng tin cậy dưới đây dùng để máy được điều khiển xác minh máy điều khiển, không thay thế xác nhận danh tính máy tính được điều khiển.
+Khi lưu mật khẩu cho một tên miền, máy điều khiển đồng thời ghi lại fingerprint SHA-256 của khóa công khai TLS trên máy được điều khiển. Sau khi DDNS đổi địa chỉ, bạn vẫn kết nối lại được từ cùng một mục lịch sử. Nếu khóa công khai của thiết bị thay đổi, máy điều khiển hiển thị fingerprint cũ và mới trước khi gửi mật khẩu. Sau khi xác nhận đã thay thiết bị, chọn **Kết nối thiết bị mới** và nhập lại mật khẩu. Ở lần kết nối đầu tiên và khi nhập trực tiếp địa chỉ IP dạng số, bạn cần tự đối chiếu đúng máy đích.
 
 <a id="43-可选可信设备认证"></a>
 <a id="trusted-devices"></a>

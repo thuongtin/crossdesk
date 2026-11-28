@@ -126,8 +126,8 @@ component BrowserSortHeader inherits FlatSurface {
     forward-focus: focus;
     accessible-role: button;
     accessible-enabled: root.enabled;
-    accessible-label: root.text + (root.active ? (root.descending ? (GalleryStrings.texts[220]) : (GalleryStrings.texts[221])) : "")
-        + (root.next-descending ? (GalleryStrings.texts[222]) : (GalleryStrings.texts[223]));
+    accessible-label: root.text + (root.active ? (root.descending ? (GalleryStrings.texts[238]) : (GalleryStrings.texts[239])) : "")
+        + (root.next-descending ? (GalleryStrings.texts[240]) : (GalleryStrings.texts[241]));
     accessible-action-default => { if root.enabled { root.clicked(); } }
     label := Text {
         x: root.right-aligned ? parent.width - self.width - (root.active ? 14px : 0px) : 0px;
@@ -225,15 +225,15 @@ component BrowserPane inherits WorkbenchCard {
             Text { text: root.heading; color: WorkbenchStyle.text; font-size: ImGuiFontStyle.prominent; font-weight: 600; vertical-alignment: center; }
             Text {
                 horizontal-stretch: 1;
-                text: root.destination ? (GalleryStrings.texts[224])
-                    : root.selected-count > 0 ? (GalleryStrings.texts[156] + root.selected-count + GalleryStrings.texts[267]) : root.subtitle;
+                text: root.destination ? (GalleryStrings.texts[242])
+                    : root.selected-count > 0 ? (GalleryStrings.texts[156] + root.selected-count + GalleryStrings.texts[285]) : root.subtitle;
                 color: root.destination ? WorkbenchStyle.accent : WorkbenchStyle.muted;
                 font-size: ImGuiFontStyle.body; horizontal-alignment: right; vertical-alignment: center; overflow: elide;
             }
             RoundedLineEdit {
                 width: min(164px, root.width * 0.4); height: 24px;
                 text <=> root.filter-text; tint-opacity: 0.15;
-                placeholder-text: GalleryStrings.texts[225];
+                placeholder-text: GalleryStrings.texts[243];
                 enabled: root.enabled && !root.busy && !root.dragging;
                 edited => { root.filter(self.text); }
                 accepted => { self.clear-focus(); }
@@ -243,7 +243,7 @@ component BrowserPane inherits WorkbenchCard {
             height: 32px; spacing: 6px;
             BrowserButton {
                 width: 32px; height: 32px; quiet: true; icon: FontAwesomeIcons.arrow-up;
-                tooltip: GalleryStrings.texts[226];
+                tooltip: GalleryStrings.texts[244];
                 tooltip-above: true; tooltip-align-left: true;
                 accessible-label: self.tooltip;
                 enabled: root.can-up && !root.busy && root.enabled && !root.dragging;
@@ -264,14 +264,14 @@ component BrowserPane inherits WorkbenchCard {
                     width: parent.width; height: parent.height; text <=> root.path;
                     tint-opacity: 0.2;
                     enabled: root.enabled && !root.dragging;
-                    placeholder-text: GalleryStrings.texts[227];
+                    placeholder-text: GalleryStrings.texts[245];
                     accepted => { root.navigate(self.text); self.clear-focus(); }
                 }
             }
             tree-trigger := BrowserButton {
                 width: 28px; height: 32px; quiet: true; icon: FontAwesomeIcons.folder-open;
                 enabled: root.enabled && !root.dragging;
-                accessible-label: GalleryStrings.texts[228];
+                accessible-label: GalleryStrings.texts[246];
                 clicked => { if directory-popup.is-open { directory-popup.close(); } else { directory-popup.show(); } }
             }
         }
@@ -288,25 +288,25 @@ component BrowserPane inherits WorkbenchCard {
                             BrowserCheckBox {
                                 width: 24px; height: 28px; checked: root.all-selected;
                                 indeterminate: root.selected-count > 0 && !root.all-selected;
-                                label: (GalleryStrings.texts[229])
-                                    + (self.indeterminate ? (GalleryStrings.texts[230]) : "");
+                                label: (GalleryStrings.texts[247])
+                                    + (self.indeterminate ? (GalleryStrings.texts[248]) : "");
                                 enabled: root.enabled && root.entries.length > 0 && !root.busy && root.error == "" && !root.dragging;
                                 toggled => { root.select-all(); }
                             }
                             BrowserSortHeader {
-                                horizontal-stretch: 1; text: GalleryStrings.texts[231]; chinese: root.chinese;
+                                horizontal-stretch: 1; text: GalleryStrings.texts[249]; chinese: root.chinese;
                                 active: root.sort-column == 0; descending: root.sort-descending;
                                 enabled: root.enabled && !root.busy && root.error == "" && !root.dragging;
                                 clicked => { root.sort(0); }
                             }
                             BrowserSortHeader {
-                                width: root.modified-column-width; text: GalleryStrings.texts[232]; chinese: root.chinese;
+                                width: root.modified-column-width; text: GalleryStrings.texts[250]; chinese: root.chinese;
                                 active: root.sort-column == 1; descending: root.sort-descending; default-descending: true; right-aligned: true;
                                 enabled: root.enabled && !root.busy && root.error == "" && !root.dragging;
                                 clicked => { root.sort(1); }
                             }
                             BrowserSortHeader {
-                                width: root.size-column-width; text: GalleryStrings.texts[233]; chinese: root.chinese;
+                                width: root.size-column-width; text: GalleryStrings.texts[251]; chinese: root.chinese;
                                 active: root.sort-column == 2; descending: root.sort-descending; default-descending: true; right-aligned: true;
                                 enabled: root.enabled && !root.busy && root.error == "" && !root.dragging;
                                 clicked => { root.sort(2); }
@@ -387,7 +387,7 @@ component BrowserPane inherits WorkbenchCard {
                                         clicked => { if !self.drag-started { root.select-entry(index); } }
                                         double-clicked => { if !self.drag-started { root.open-entry(index); } }
                                     }
-                                    BrowserCheckBox { x: 6px; y: (parent.height - self.height) / 2; width: 24px; checked: entry.selected; label: (GalleryStrings.texts[234]) + entry.name; enabled: !entry.link && root.enabled && !root.busy && root.error == "" && !root.dragging; toggled => { root.select-entry(index); } }
+                                    BrowserCheckBox { x: 6px; y: (parent.height - self.height) / 2; width: 24px; checked: entry.selected; label: (GalleryStrings.texts[252]) + entry.name; enabled: !entry.link && root.enabled && !root.busy && root.error == "" && !root.dragging; toggled => { root.select-entry(index); } }
                                 }
                             }
                         }
@@ -398,13 +398,13 @@ component BrowserPane inherits WorkbenchCard {
                 x: 12px; y: 34px; width: parent.width - 24px; height: parent.height - 40px;
                 alignment: center; spacing: 10px;
                 Text {
-                    text: root.filter-text != "" ? (GalleryStrings.texts[235])
-                        : (GalleryStrings.texts[236]);
+                    text: root.filter-text != "" ? (GalleryStrings.texts[253])
+                        : (GalleryStrings.texts[254]);
                     color: WorkbenchStyle.muted; font-size: ImGuiFontStyle.base; horizontal-alignment: center;
                 }
                 if root.filter-text != "": HorizontalLayout {
                     alignment: center;
-                    BrowserButton { width: 112px; height: 28px; text-size: ImGuiFontStyle.base; text: GalleryStrings.texts[237]; clicked => { root.filter-text = ""; root.filter(""); } }
+                    BrowserButton { width: 112px; height: 28px; text-size: ImGuiFontStyle.base; text: GalleryStrings.texts[255]; clicked => { root.filter-text = ""; root.filter(""); } }
                 }
             }
             if root.error != "" && !root.busy: Rectangle {
@@ -412,11 +412,11 @@ component BrowserPane inherits WorkbenchCard {
                 TouchArea {}
                 VerticalLayout {
                     padding: 16px; spacing: 10px; alignment: center;
-                    Text { text: GalleryStrings.texts[238]; color: WorkbenchStyle.text; font-size: ImGuiFontStyle.base; font-weight: 600; horizontal-alignment: center; }
+                    Text { text: GalleryStrings.texts[256]; color: WorkbenchStyle.text; font-size: ImGuiFontStyle.base; font-weight: 600; horizontal-alignment: center; }
                     Text { text: root.error; color: WorkbenchStyle.muted; font-size: ImGuiFontStyle.body; wrap: word-wrap; horizontal-alignment: center; }
                     HorizontalLayout {
                         alignment: center;
-                        BrowserButton { width: 128px; height: 28px; text-size: ImGuiFontStyle.base; text: GalleryStrings.texts[239]; clicked => { root.navigate(""); } }
+                        BrowserButton { width: 128px; height: 28px; text-size: ImGuiFontStyle.base; text: GalleryStrings.texts[257]; clicked => { root.navigate(""); } }
                     }
                 }
             }
@@ -432,7 +432,7 @@ component BrowserPane inherits WorkbenchCard {
                     background: ControlStyle.surface; border-radius: UiRadius.control;
                     VerticalLayout {
                         padding: 9px; spacing: 4px;
-                        Text { text: GalleryStrings.texts[297] + root.drag-count + GalleryStrings.texts[298]; color: WorkbenchStyle.accent; font-size: ImGuiFontStyle.base; font-weight: 600; horizontal-alignment: center; }
+                        Text { text: GalleryStrings.texts[315] + root.drag-count + GalleryStrings.texts[316]; color: WorkbenchStyle.accent; font-size: ImGuiFontStyle.base; font-weight: 600; horizontal-alignment: center; }
                         Text { text: root.path; color: WorkbenchStyle.text; font-size: ImGuiFontStyle.body; overflow: elide; horizontal-alignment: center; }
                     }
                 }
@@ -441,9 +441,9 @@ component BrowserPane inherits WorkbenchCard {
         Text {
             height: 16px;
             text: root.busy ? root.status
-                : root.path != root.current-path ? (GalleryStrings.texts[240])
-                : root.error != "" ? (GalleryStrings.texts[241])
-                : root.filter-text != "" ? (GalleryStrings.texts[242]) + root.status : root.status;
+                : root.path != root.current-path ? (GalleryStrings.texts[258])
+                : root.error != "" ? (GalleryStrings.texts[259])
+                : root.filter-text != "" ? (GalleryStrings.texts[260]) + root.status : root.status;
             color: root.path != root.current-path ? WorkbenchStyle.accent : WorkbenchStyle.muted;
             font-size: ImGuiFontStyle.body; overflow: elide;
         }
@@ -457,8 +457,8 @@ component BrowserPane inherits WorkbenchCard {
                 padding: 12px; spacing: 10px;
                 HorizontalLayout {
                     height: 28px; spacing: 8px;
-                    BrowserButton { text: GalleryStrings.texts[243]; quiet: true; height: 28px; clicked => { root.navigate(""); directory-popup.close(); } }
-                    BrowserButton { text: GalleryStrings.texts[244]; quiet: true; height: 28px; clicked => { root.navigate("@roots"); directory-popup.close(); } }
+                    BrowserButton { text: GalleryStrings.texts[261]; quiet: true; height: 28px; clicked => { root.navigate(""); directory-popup.close(); } }
+                    BrowserButton { text: GalleryStrings.texts[262]; quiet: true; height: 28px; clicked => { root.navigate("@roots"); directory-popup.close(); } }
                 }
                 tree-list := Rectangle {
                     out property <length> content-gutter: 18px;
@@ -478,24 +478,24 @@ component BrowserPane inherits WorkbenchCard {
                         }
                     }
                 }
-                BrowserCheckBox { width: parent.width; show-label: true; label: GalleryStrings.texts[245]; checked: root.show-hidden; toggled => { root.toggle-hidden(); } }
+                BrowserCheckBox { width: parent.width; show-label: true; label: GalleryStrings.texts[263]; checked: root.show-hidden; toggled => { root.toggle-hidden(); } }
             }
         }
     }
 }
 
 export component FileBrowserWindow inherits Window {
-    title: GalleryStrings.texts[246];
+    title: GalleryStrings.texts[264];
     icon: @image-url("../../../resources/linux/crossdesk_256x256.png");
     preferred-width: 900px; preferred-height: 620px;
     min-width: 760px; min-height: 500px;
     background: WorkbenchStyle.canvas;
     default-font-size: ImGuiFontStyle.base;
     in property <bool> chinese: true;
-    in property <string> send-local-text: GalleryStrings.texts[247];
-    in property <string> send-remote-text: GalleryStrings.texts[248];
-    in property <string> clear-completed-text: GalleryStrings.texts[249];
-    in property <string> open-directory-text: GalleryStrings.texts[250];
+    in property <string> send-local-text: GalleryStrings.texts[265];
+    in property <string> send-remote-text: GalleryStrings.texts[266];
+    in property <string> clear-completed-text: GalleryStrings.texts[267];
+    in property <string> open-directory-text: GalleryStrings.texts[268];
     in property <bool> connected: true;
     in property <string> peer-name;
     in property <string> local-role;
@@ -614,16 +614,16 @@ export component FileBrowserWindow inherits Window {
             spacing: 12px; padding: 16px;
             HorizontalLayout {
                 height: 32px; spacing: 12px;
-                Text { text: GalleryStrings.texts[246]; font-size: ImGuiFontStyle.section-title; font-weight: 600; color: WorkbenchStyle.text; vertical-alignment: center; horizontal-stretch: 1; }
+                Text { text: GalleryStrings.texts[264]; font-size: ImGuiFontStyle.section-title; font-weight: 600; color: WorkbenchStyle.text; vertical-alignment: center; horizontal-stretch: 1; }
                 Text { text: root.peer-name; color: WorkbenchStyle.muted; vertical-alignment: center; font-size: ImGuiFontStyle.base; overflow: elide; }
                 Rectangle {
                     width: root.chinese ? 104px : 144px;
                     BrowserButton {
                         y: (parent.height - self.height) / 2;
                         width: parent.width; height: 28px; icon: FontAwesomeIcons.rotate;
-                        text: GalleryStrings.texts[251];
+                        text: GalleryStrings.texts[269];
                         text-size: ImGuiFontStyle.base;
-                        accessible-label: GalleryStrings.texts[252];
+                        accessible-label: GalleryStrings.texts[270];
                         enabled: root.connected && !root.drag-active && !root.local-busy && !root.remote-busy;
                         clicked => { root.refresh(false); root.refresh(true); }
                     }
@@ -633,7 +633,7 @@ export component FileBrowserWindow inherits Window {
                 vertical-stretch: 1; spacing: 12px;
                 local-pane := BrowserPane {
                     width: (parent.width - 12px) / 2;
-                    horizontal-stretch: 1; chinese: root.chinese; heading: GalleryStrings.texts[253]; subtitle: root.local-role;
+                    horizontal-stretch: 1; chinese: root.chinese; heading: GalleryStrings.texts[271]; subtitle: root.local-role;
                     path <=> root.local-path; status: root.local-status; error: root.local-error; busy: root.local-busy;
                     open-directory-text: root.open-directory-text;
                     open-directory(path) => { root.open-directory(false, path); }
@@ -657,7 +657,7 @@ export component FileBrowserWindow inherits Window {
                 }
                 remote-pane := BrowserPane {
                     width: (parent.width - 12px) / 2;
-                    horizontal-stretch: 1; chinese: root.chinese; heading: GalleryStrings.texts[254]; subtitle: root.remote-role; enabled: root.connected;
+                    horizontal-stretch: 1; chinese: root.chinese; heading: GalleryStrings.texts[272]; subtitle: root.remote-role; enabled: root.connected;
                     path <=> root.remote-path; status: root.remote-status; error: root.remote-error; busy: root.remote-busy;
                     open-directory-text: root.open-directory-text;
                     open-directory(path) => { root.open-directory(true, path); }
@@ -689,18 +689,18 @@ export component FileBrowserWindow inherits Window {
                         VerticalLayout {
                             alignment: center; spacing: 3px; horizontal-stretch: 1;
                             Text {
-                                text: root.path-pending ? (GalleryStrings.texts[255])
-                                    : root.drag-active ? (GalleryStrings.texts[256])
+                                text: root.path-pending ? (GalleryStrings.texts[273])
+                                    : root.drag-active ? (GalleryStrings.texts[274])
                                     : root.notice-error ? root.notice
-                                    : root.selected-count > 0 ? (GalleryStrings.texts[156] + root.selected-count + GalleryStrings.texts[296] + (root.source-remote ? GalleryStrings.texts[299] : GalleryStrings.texts[300]))
+                                    : root.selected-count > 0 ? (GalleryStrings.texts[156] + root.selected-count + GalleryStrings.texts[314] + (root.source-remote ? GalleryStrings.texts[317] : GalleryStrings.texts[318]))
                                     : root.notice-visible ? root.notice
-                                    : (GalleryStrings.texts[257]);
+                                    : (GalleryStrings.texts[275]);
                                 color: root.notice-error && !root.drag-active && !root.path-pending ? UiSurface.error
                                     : root.selected-count > 0 ? WorkbenchStyle.text : WorkbenchStyle.muted;
                                 font-size: ImGuiFontStyle.base; font-weight: 400; overflow: elide;
                             }
                             if root.selected-count > 0 && !root.path-pending && !root.drag-active && !root.notice-error: Text {
-                                text: (GalleryStrings.texts[258]) + (root.source-remote ? root.local-current-path : root.remote-current-path);
+                                text: (GalleryStrings.texts[276]) + (root.source-remote ? root.local-current-path : root.remote-current-path);
                                 color: WorkbenchStyle.muted;
                                 font-size: ImGuiFontStyle.body; overflow: elide;
                             }
@@ -709,7 +709,7 @@ export component FileBrowserWindow inherits Window {
                             width: root.chinese ? 76px : 100px;
                             BrowserButton {
                                 y: (parent.height - self.height) / 2; width: parent.width; height: 28px; quiet: true;
-                                text-size: ImGuiFontStyle.base; text: GalleryStrings.texts[259];
+                                text-size: ImGuiFontStyle.base; text: GalleryStrings.texts[277];
                                 enabled: !root.drag-active; clicked => { root.clear-selection(); }
                             }
                         }
@@ -738,7 +738,7 @@ export component FileBrowserWindow inherits Window {
                                 horizontal-stretch: 1;
                                 BrowserButton { x: 0px; width: min(parent.width, task-label.preferred-width + 46px); height: 32px; quiet: true; accessible-label: task-label.text; clicked => { root.tasks-expanded = !root.tasks-expanded; } }
                                 Text { x: 8px; width: 14px; height: parent.height; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: ImGuiFontStyle.base; color: ControlStyle.icon; vertical-alignment: center; text: root.tasks-expanded ? FontAwesomeIcons.angle-down : FontAwesomeIcons.angle-right; }
-                                task-label := Text { x: 30px; width: parent.width - 40px; height: parent.height; font-size: ImGuiFontStyle.base; color: WorkbenchStyle.muted; vertical-alignment: center; overflow: elide; text: (GalleryStrings.texts[260]) + " · " + (root.tasks.length == 0 ? (GalleryStrings.texts[261]) : root.task-summary != "" ? root.task-summary : root.tasks.length); }
+                                task-label := Text { x: 30px; width: parent.width - 40px; height: parent.height; font-size: ImGuiFontStyle.base; color: WorkbenchStyle.muted; vertical-alignment: center; overflow: elide; text: (GalleryStrings.texts[278]) + " · " + (root.tasks.length == 0 ? (GalleryStrings.texts[279]) : root.task-summary != "" ? root.task-summary : root.tasks.length); }
                             }
                             if root.tasks-expanded: Rectangle {
                                 width: max(100px, clear-label-measure.preferred-width + 24px);
@@ -755,7 +755,7 @@ export component FileBrowserWindow inherits Window {
                         visible: root.tasks-expanded;
                         clip: true;
                         SurfaceSeparator { x: 12px; y: 0px; width: parent.width - 24px; }
-                        if root.tasks.length == 0: Text { text: GalleryStrings.texts[262]; color: WorkbenchStyle.muted; font-size: ImGuiFontStyle.base; horizontal-alignment: center; vertical-alignment: center; }
+                        if root.tasks.length == 0: Text { text: GalleryStrings.texts[280]; color: WorkbenchStyle.muted; font-size: ImGuiFontStyle.base; horizontal-alignment: center; vertical-alignment: center; }
                         task-list := BrowserScrollView {
                             x: 16px; width: parent.width - 32px; height: parent.height;
                             visible: root.tasks.length > 0;

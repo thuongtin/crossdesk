@@ -21,15 +21,9 @@
 namespace crossdesk {
 namespace localization {
 
-inline constexpr int kSystemLanguage = 10;
-inline constexpr int kEnglishLanguage = 1;
-// Value 10 remains the persisted system choice; Vietnamese uses column 10.
-inline constexpr int kVietnameseLanguage = 11;
-inline constexpr int kVietnameseColumn = 10;
-
-inline int TranslationColumn(int language) {
-  return language == kVietnameseLanguage ? kVietnameseColumn : language;
-}
+inline constexpr int kSystemLanguage = 13;
+inline constexpr int kVietnameseLanguage = 12;
+inline constexpr int kHebrewLanguage = 11;
 
 // Keep 0/1/2 compatible with existing Chinese/English/Russian config files.
 inline int MatchLanguage(std::string tag) {
@@ -48,9 +42,11 @@ inline int MatchLanguage(std::string tag) {
                    parts.find("-hk-") != std::string::npos ||
                    parts.find("-mo-") != std::string::npos ? 3 : 0;
   }
-  const char* codes[] = {"zh", "en", "ru", "zh", "ja", "ko", "de", "fr", "es", "pt"};
+  const char* codes[] = {"zh", "en", "ru", "zh", "ja", "ko", "de", "fr", "es", "pt", "tr", "he", "vi"};
   for (int i = 1; i < kSystemLanguage; ++i)
     if (i != 3 && base == codes[i]) return i;
+  // iw là mã ISO cũ của tiếng Hebrew, Java và glibc đời cũ vẫn trả về mã này.
+  if (base == "iw") return kHebrewLanguage;
   return -1;
 }
 

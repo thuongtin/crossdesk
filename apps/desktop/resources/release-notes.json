@@ -49,6 +49,16 @@
     "No macOS e no Windows, agora é possível escolher uma tela de privacidade totalmente preta nas configurações.",
     "O botão flutuante de controle remoto esmaece e se recolhe após três segundos de inatividade."
   ],
+  "tr": [
+    "Her uzak cihaz ayrı bir denetim penceresinde açılır. Yeniden bağlandığınızda pencere o cihazda en son kullandığınız boyuta döner.",
+    "macOS ve Windows’ta Ayarlar’dan gizlilik ekranını tamamen siyah gösterebilirsiniz.",
+    "Üç saniye boyunca işlem yapılmadığında yüzer denetim düğmesi soluklaşarak küçülür."
+  ],
+  "he": [
+    "כל מכשיר מרוחק נפתח בחלון שליטה משלו. בהתחברות מחדש החלון חוזר לגודל האחרון שהיה לו באותו מכשיר.",
+    "ב-macOS וב-Windows אפשר עכשיו לבחור בהגדרות מסך פרטיות שחור לגמרי.",
+    "כפתור השליטה הצף מתעמעם ומתכווץ אחרי שלוש שניות בלי פעילות, כדי שלא יסתיר את המסך המרוחק."
+  ],
   "vi": [
     "Mỗi thiết bị từ xa mở trong một cửa sổ điều khiển riêng. Khi kết nối lại, cửa sổ trở về kích thước đã dùng lần trước cho thiết bị đó.",
     "Trên macOS và Windows, giờ bạn có thể chọn chế độ riêng tư với màn hình đen hoàn toàn trong Cài đặt.",
