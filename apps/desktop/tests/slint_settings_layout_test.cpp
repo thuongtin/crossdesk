@@ -387,6 +387,18 @@ const std::vector<RowProbe>& RowProbes() {
        [](crossdesk::ui::MainWindow& main) { main.set_self_hosted_enabled(true); }},
       {"trusted devices Manage", 1, kToggleInset,
        [](crossdesk::ui::MainWindow& main) { main.set_trusted_devices_only(true); }},
+      // Hai hàng chỉ có trên một nền tảng, nằm ngay dưới hàng thiết bị tin cậy: quyền
+      // hệ thống (macOS) và dịch vụ portable (Windows, không có hàng quyền hệ thống).
+      {"system permissions Manage", 2, kToggleInset,
+       [](crossdesk::ui::MainWindow& main) {
+         main.set_trusted_devices_only(true);
+         main.set_mac_permission_settings_visible(true);
+       }},
+      {"portable service", 2, kToggleInset,
+       [](crossdesk::ui::MainWindow& main) {
+         main.set_trusted_devices_only(true);
+         main.set_portable_service_settings_visible(true);
+       }},
       {"file save path", 1, kToggleInset,
        [](crossdesk::ui::MainWindow& main) { main.set_save_remote_previews(true); }},
   };

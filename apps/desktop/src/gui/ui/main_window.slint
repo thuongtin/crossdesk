@@ -123,6 +123,7 @@ export global UiStrings {
     in-out property <string> accessibility-permission: "Accessibility permission";
     in-out property <string> system-permissions: "System permissions";
     in-out property <string> manage: "Manage";
+    in-out property <string> manage-system-permissions: "Manage system permissions";
     in-out property <string> permission-migration-running: "Migrating permissions…";
     in-out property <string> permission-migration-failed;
     in-out property <string> retry-permission-migration: "Retry migration";
@@ -3225,6 +3226,7 @@ export component MainWindow inherits Window {
                                     x: parent.width - self.width - 12px; y: (parent.height - self.height) / 2;
                                     width: max(88px, self.label-width); height: 28px;
                                     text: UiStrings.manage;
+                                    accessible-label: UiStrings.manage-system-permissions;
                                     clicked => { root.open-permissions(); }
                                 }
                             }

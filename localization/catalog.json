@@ -11232,6 +11232,19 @@
       "pt-BR": "Gerenciar",
       "vi": "Quản lý"
     },
+    "管理系统权限": {
+      "zh-Hans": "管理系统权限",
+      "en": "Manage system permissions",
+      "ru": "Управление системными разрешениями",
+      "zh-Hant": "管理系統權限",
+      "ja": "システム権限を管理",
+      "ko": "시스템 권한 관리",
+      "de": "Systemberechtigungen verwalten",
+      "fr": "Gérer les autorisations système",
+      "es": "Administrar permisos del sistema",
+      "pt-BR": "Gerenciar permissões do sistema",
+      "vi": "Quản lý quyền hệ thống"
+    },
     "可添加的已连接设备": {
       "zh-Hans": "可添加的已连接设备",
       "en": "Connected devices available to trust",
@@ -15068,6 +15081,7 @@
       "仅允许可信设备控制",
       "管理可信设备",
       "管理",
+      "管理系统权限",
       "可添加的已连接设备",
       "信任此设备",
       "移除信任",
