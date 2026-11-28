@@ -1172,6 +1172,12 @@ export component StreamWindow inherits Window {
                 text: root.receiving-text != "" ? root.receiving-text : root.status-text;
                 color: root.receiving-text != "" ? #ffffffea : white;
                 font-size: root.receiving-text != "" ? 14px : ImGuiFontStyle.prominent;
+                // Explanations of a missing picture span several lines.
+                width: max(0px, min(parent.width - 48px, 560px));
+                height: parent.height;
+                x: (parent.width - self.width) / 2;
+                y: 0px;
+                wrap: word-wrap;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }

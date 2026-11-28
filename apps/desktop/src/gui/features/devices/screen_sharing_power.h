@@ -21,6 +21,9 @@ class ScreenSharingPower {
   ScreenSharingPower& operator=(const ScreenSharingPower&) = delete;
 
   void SetSharing(bool sharing);
+  // Turns a sleeping display back on while sharing, so capture can resume.
+  // Only macOS can wake it this way; elsewhere this does nothing.
+  void WakeDisplay();
 
  private:
   struct Impl;

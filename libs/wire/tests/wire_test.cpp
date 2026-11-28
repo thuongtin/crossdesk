@@ -305,5 +305,68 @@ int main() {
                    crossdesk::ResolveDisplayStreamId("invalid", 3, 1) ==
                        "Display2",
                "display stream fallback changed");
+  // Fork extensions keep their reserved values and string states.
+  ok &= Expect(static_cast<int>(crossdesk::ControlType::capture_status_request) == 1000 &&
+                   static_cast<int>(crossdesk::ControlType::capture_status) == 1001,
+               "capture status wire values changed");
+  crossdesk::RemoteAction capture_request{};
+  capture_request.type = crossdesk::ControlType::capture_status_request;
+  crossdesk::RemoteAction parsed_capture_request{};
+  ok &= Expect(capture_request.to_json() == "{\"type\":1000}" &&
+                   parsed_capture_request.from_json(capture_request.to_json()) &&
+                   parsed_capture_request.type ==
+                       crossdesk::ControlType::capture_status_request,
+               "capture status request round trip failed");
+  for (const auto state : {crossdesk::CaptureState::unknown,
+                           crossdesk::CaptureState::starting,
+                           crossdesk::CaptureState::capturing,
+                           crossdesk::CaptureState::permission_denied,
+                           crossdesk::CaptureState::display_unavailable,
+                           crossdesk::CaptureState::failed}) {
+    crossdesk::RemoteAction capture_status{};
+    capture_status.type = crossdesk::ControlType::capture_status;
+    capture_status.cps.state = state;
+    crossdesk::RemoteAction parsed_capture_status{};
+    ok &= Expect(parsed_capture_status.from_json(capture_status.to_json()) &&
+                     parsed_capture_status.type ==
+                         crossdesk::ControlType::capture_status &&
+                     parsed_capture_status.cps.state == state,
+                 "capture status round trip changed its state");
+  }
+  crossdesk::RemoteAction denied_status{};
+  ok &= Expect(denied_status.from_json(
+                   "{\"type\":1001,\"capture_status\":{\"state\":"
+                   "\"permission_denied\"}}") &&
+                   denied_status.cps.state ==
+                       crossdesk::CaptureState::permission_denied,
+               "capture status state name changed");
+  crossdesk::RemoteAction newer_status{};
+  ok &= Expect(newer_status.from_json(
+                   "{\"type\":1001,\"capture_status\":{\"state\":"
+                   "\"from_a_newer_peer\"}}") &&
+                   newer_status.cps.state == crossdesk::CaptureState::unknown,
+               "unrecognized capture state should decode as unknown");
+  crossdesk::RemoteAction missing_state{};
+  ok &= Expect(!missing_state.from_json("{\"type\":1001}"),
+               "capture status without a state should be rejected");
+
+  auto capture_host = crossdesk::MakeHostInformation(
+      "host", {}, false, "1.0.0", crossdesk::HostPlatform::MacOS);
+  ok &= Expect(!capture_host.i.supports_capture_status,
+               "host information should not advertise capture status by default");
+  capture_host.i.supports_capture_status = true;
+  crossdesk::RemoteAction parsed_capture_host{};
+  ok &= Expect(parsed_capture_host.from_json(capture_host.to_json()) &&
+                   parsed_capture_host.i.supports_capture_status,
+               "capture status capability should round trip");
+  crossdesk::FreeRemoteAction(parsed_capture_host);
+  crossdesk::FreeRemoteAction(capture_host);
+  crossdesk::RemoteAction legacy_host{};
+  ok &= Expect(legacy_host.from_json(
+                   "{\"type\":3,\"host_info\":{\"host_name\":\"legacy\","
+                   "\"display_num\":0,\"displays\":[]}}") &&
+                   !legacy_host.i.supports_capture_status,
+               "legacy host information should not advertise capture status");
+  crossdesk::FreeRemoteAction(legacy_host);
   return ok ? 0 : 1;
 }
