@@ -369,9 +369,22 @@ bool LinesEndWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, in
   return elided;
 }
 
+// Một khối chữ (dải hàng do InkRowBands tách với khoảng cách đoạn) có kết thúc bằng "…" không.
+// Vùng quét bắt đầu từ hàng trống ngay trên khối, không vượt mép trên `area_top` của vùng đã
+// tách khối: khối chỉ còn mỗi dấu "…" có chấm nằm ở hàng đầu khối, và LinesEndWithEllipsis
+// không nhìn lên quá mép trên vùng quét nên sẽ coi chấm đó là đáy chữ cái bị cắt. Hàng đó luôn
+// trống khi khối không chạm mép trên vùng, vì InkRowBands tách khối ngay tại hàng có nét đầu.
+bool BlockEndsWithEllipsis(const ScaledWindow& screen, int x0, int x1, int area_top,
+                           const Span& block, const slint::Rgb8Pixel& background, float font_px) {
+  return LinesEndWithEllipsis(screen, x0, x1, std::max(area_top, block.begin - 1), block.end,
+                              background, font_px);
+}
+
 // Tự kiểm bộ dò "…" trên hình vẽ tay: hai dòng dính nhau, chân chữ dòng trên nằm bên phải
 // dấu "…" của dòng cuối ngắn hơn. Không có dấu "…" thì bộ dò không được báo nhầm. Dòng cuối
-// chỉ còn mỗi dấu "…" (không có chữ cái nào vừa chỗ) cũng phải bị phát hiện.
+// chỉ còn mỗi dấu "…" (không có chữ cái nào vừa chỗ) cũng phải bị phát hiện. Phần sau kiểm
+// đúng đường quét của thẻ trống: vùng bị cắt (không bắt đầu ở hàng 0), tách thành hai khối
+// theo khoảng cách đoạn, và một trong hai khối chỉ còn mỗi dấu "…".
 bool VerifyEllipsisDetector() {
   static constexpr int kWidth = 120, kHeight = 32;
   static constexpr float kFontPx = 13.0f;
@@ -400,6 +413,35 @@ bool VerifyEllipsisDetector() {
               "The ellipsis detector must not report an ellipsis that is not there");
   ok &= Check(detect(false, true),
               "The ellipsis detector must find a last line that holds only an ellipsis");
+
+  // Thẻ giả: vùng tách khối là hàng 4 tới 47, giống VerifyEmptyState quét từ mép trên thẻ chứ
+  // không từ đầu ảnh. dots_first đặt khối chỉ có "…" lên trên (tiêu đề), còn không thì xuống
+  // dưới (lời gợi ý); khối còn lại là chữ thường không có "…".
+  static constexpr int kAreaTop = 4, kAreaBottom = 47, kGap = 8;
+  const auto detect_blocks = [&paper](bool dots_first) {
+    ScaledWindow screen;
+    screen.extent = slint::PhysicalSize({kWidth, kAreaBottom + 1});
+    screen.pixels.assign(std::size_t(kWidth) * (kAreaBottom + 1), paper);
+    const auto draw = [&screen](int x0, int x1, int y0, int y1) {
+      for (int y = y0; y <= y1; ++y)
+        for (int x = x0; x <= x1; ++x) screen.pixels[std::size_t(y) * kWidth + x] = {0, 0, 0};
+    };
+    const int dots_top = dots_first ? 10 : 34;
+    for (const int x : {54, 58, 62}) draw(x, x + 1, dots_top, dots_top + 1);
+    if (dots_first) draw(2, 60, 22, 31);
+    else draw(2, 60, 10, 19);
+    const auto blocks = InkRowBands(screen, 0, kWidth - 1, kAreaTop, kAreaBottom, paper, kGap);
+    std::vector<bool> elided;
+    for (const Span& block : blocks)
+      elided.push_back(BlockEndsWithEllipsis(screen, 0, kWidth - 1, kAreaTop, block, paper,
+                                             kFontPx));
+    return elided;
+  };
+  ok &= Check(detect_blocks(true) == std::vector<bool>{true, false},
+              "The ellipsis detector must find an empty-state heading that holds only an "
+              "ellipsis");
+  ok &= Check(detect_blocks(false) == std::vector<bool>{false, true},
+              "The ellipsis detector must find an empty-state hint that holds only an ellipsis");
   return ok;
 }
 
@@ -563,17 +605,15 @@ bool VerifyEmptyState(Fixture& fixture, bool lan_mode, int group, const std::str
                                   background, Px(fixture, kEmptyParagraphGap));
   ok &= Check(blocks.size() >= 2, where + ": the empty state hint must show below its heading");
   // Hai khối chữ chỉ có word-wrap nên Slint không vẽ "…"; vẫn xét để test bắt được khi ai đó
-  // thêm overflow: elide mà khung không đủ chỗ. Vùng quét bắt đầu từ hàng trống ngay trên khối:
-  // khối chỉ còn mỗi dấu "…" có chấm nằm ở hàng đầu khối, và LinesEndWithEllipsis không nhìn
-  // lên quá mép trên vùng quét nên sẽ coi chấm đó là đáy chữ cái bị cắt. Hàng đó luôn trống vì
-  // InkRowBands quét từ mép trên thẻ và các khối cách nhau ít nhất kEmptyParagraphGap.
-  for (std::size_t i = 0; i < blocks.size() && i < 2; ++i)
-    ok &= Check(!LinesEndWithEllipsis(screen, Px(fixture, text_left), Px(fixture, text_right) - 1,
-                                      std::max(Px(fixture, top), blocks[i].begin - 1),
-                                      blocks[i].end, background,
-                                      fixture.Physical(i == 0 ? kEmptyHeadingSize : kEmptyHintSize)),
+  // thêm overflow: elide mà khung không đủ chỗ, kể cả khi khối chỉ còn mỗi dấu "…".
+  for (std::size_t i = 0; i < blocks.size() && i < 2; ++i) {
+    const float font_px = fixture.Physical(i == 0 ? kEmptyHeadingSize : kEmptyHintSize);
+    ok &= Check(!BlockEndsWithEllipsis(screen, Px(fixture, text_left),
+                                       Px(fixture, text_right) - 1, Px(fixture, top), blocks[i],
+                                       background, font_px),
                 where + (i == 0 ? ": the empty state heading" : ": the empty state hint") +
                     " must not be elided");
+  }
   if (!ok) WriteFailureFrame(screen, kEvidenceEnv, where);
   return ok;
 }
