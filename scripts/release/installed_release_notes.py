@@ -266,12 +266,13 @@ def match_containers(line, containers):
 def scan(lines):
     """Phân loại từng dòng theo khối của cmark-gfm để tìm ranh giới mục và HTML.
 
-    Trả về (kinds, unclosed, inline). kinds[i] là "code" cho dòng nằm trong code fence cấp cao nhất
+    Trả về (kinds, unclosed, inline, quotes). kinds[i] là "code" cho dòng nằm trong code fence cấp cao nhất
     (kể cả dòng đóng, trừ dòng mở), "footnote" cho dòng mở định nghĩa footnote ở mọi cấp, "html" cho
     các dòng khác của khối HTML ở mọi cấp, "setext" cho dòng gạch dưới biến đoạn văn ở mọi cấp thành
     tiêu đề, và "text" cho mọi dòng khác. unclosed là (chỉ số dòng mở, tên khối) của fence hay khối
     HTML loại 1 tới 5 cấp cao nhất vẫn mở khi hết notes, hoặc None. inline là kết quả của
-    inline_lines cho nội dung nội dòng của đoạn văn, tiêu đề và ô bảng ở mọi cấp.
+    inline_lines cho nội dung nội dòng của đoạn văn, tiêu đề và ô bảng ở mọi cấp. quotes là tập chỉ số
+    các dòng mở trích dẫn ở mọi cấp.
 
     Fence thụt một tới ba dấu cách vẫn ở cấp cao nhất, trừ khi nó thuộc một mục list hay trích dẫn,
     như dòng đóng "  ```" của mục "- ```sh". Vì vậy scan giữ ngăn xếp khối chứa đang mở cùng khối lá
@@ -290,6 +291,8 @@ def scan(lines):
     header = ""  # dòng cuối của đoạn văn đang mở, thành hàng tiêu đề khi dòng sau là dòng phân cách
     table_visited = False  # đoạn văn đang mở đã gặp dòng phân cách lệch số ô nên không thành bảng nữa
     table = False  # khối lá đang mở là bảng GFM
+    table_width = 0  # số ô của hàng tiêu đề của bảng đang mở; GitHub bỏ các ô thừa của hàng thân bảng
+    quotes = set()
     unclosed = None
     footnote_labels = []  # khoá label_key của nhãn mọi định nghĩa footnote
     for index, raw in enumerate(lines):
@@ -411,13 +414,14 @@ def scan(lines):
             paragraph.append((index, raw_text_at(raw, len(expanded) - len(body))))
             header = body
         elif table_row:
-            units.extend(("cell", [(index, cell)]) for cell in table_cells(body))
+            units.extend(("cell", [(index, cell)]) for cell in table_cells(body)[:table_width])
         else:
             if leaf == "table":
                 # Dòng cuối của đoạn văn thành hàng tiêu đề của bảng, các dòng trước vẫn là đoạn văn.
                 header_index, header_text = paragraph.pop()
                 # cmark-gfm tạo đoạn văn đứng trước bảng mà không tách định nghĩa link tham chiếu.
                 units[-1] = ("text", paragraph)
+                table_width = len(table_cells(header_text))
                 units.extend(("cell", [(header_index, cell)]) for cell in table_cells(header_text))
             paragraph = None
             table = leaf == "table"
@@ -444,8 +448,10 @@ def scan(lines):
             kind = "setext"
         if FOOTNOTE in opened:
             kind = "footnote"
+        if None in opened:
+            quotes.add(index)
         kinds.append(kind)
-    return kinds, unclosed, inline_lines(units, frozenset(footnote_labels))
+    return kinds, unclosed, inline_lines(units, frozenset(footnote_labels)), quotes
 
 
 def link_destination_end(text, position):
@@ -917,7 +923,7 @@ def extract(text, publish=False):
     dòng giữ chỗ của bản nháp cũng bị từ chối.
     """
     lines = text.replace("\r\n", "\n").split("\n")
-    kinds, unclosed, inline = scan(lines)
+    kinds, unclosed, inline, quotes = scan(lines)
     candidates = [index for index, kind in enumerate(kinds) if kind == "text"]
     start = next((index for index in candidates if CHANGES_HEADING.match(lines[index])), None)
     end = len(lines) if start is None else next(
@@ -971,6 +977,12 @@ def extract(text, publish=False):
         if index in inline["wrapped"]:
             raise ValueError(f"line {index + 1}: the Release Notes dialog reads each line on its own and "
                              "cannot show a link that wraps to the next line, so keep this link on one line")
+        # Markdown của Slint báo lỗi với trích dẫn, nên hộp thoại hiện cả dòng thành chữ thô với dấu
+        # ">", kể cả link trong đó mà người đọc không bấm được, còn GitHub hiện khối trích dẫn. Mọi
+        # dòng khác của trích dẫn đứng sau dòng mở nó, nên chỉ cần chặn dòng mở.
+        if index in quotes:
+            raise ValueError(f"line {index + 1}: the Release Notes dialog cannot show block quotes, so "
+                             "remove the '>' and write this as plain text or a list item")
     if publish and any(lines[index].strip() == PLACEHOLDER for index in section_indexes):
         raise ValueError(f"the '## Changes' section still has the '{PLACEHOLDER}' placeholder")
     section = normalize("\n".join(lines[start + 1:end]))

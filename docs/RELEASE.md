@@ -293,7 +293,7 @@ GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình du
     cùng mục list chứa nó, còn extractor và hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một
     mục list thì đặt fence ra ngoài list.
   - Không có tiêu đề cấp 1 hoặc 2 thụt lề, và không có dòng toàn `=` hay `-` ngay dưới một dòng chữ,
-    kể cả trong mục list hay sau `>` (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một
+    kể cả trong mục list (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một
     dòng trống phía trên nó. Dòng cuối của bảng GFM không phải dòng chữ, nên `---` ngay dưới bảng vẫn
     là đường kẻ.
   - Không có định nghĩa footnote (`[^note]: ...`), kể cả trong mục list hay sau `>`: GitHub đưa nó
@@ -309,8 +309,8 @@ GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình du
     định nghĩa. Viết link nội dòng `[text](url)`. Ngoặc vuông không có định nghĩa như `[beta]` thì
     GitHub cũng hiện nguyên chữ, nên không bị chặn. Ô đánh dấu đầu mục list (`- [x]`, `- [ ]`) cũng
     không phải link tham chiếu, nên không bị chặn dù notes có định nghĩa `[x]`. Script theo đúng quy
-    tắc task list của cmark-gfm, nên `[x]` đứng sau dấu list lồng (`- - [x]`), trong `>` hay ở mục list
-    không có chữ phía sau thì vẫn là ngoặc vuông thường.
+    tắc task list của cmark-gfm, nên `[x]` đứng sau dấu list lồng (`- - [x]`) hay ở mục list không có
+    chữ phía sau thì vẫn là ngoặc vuông thường.
   - Không có URL trần mà GitHub tự biến thành link (`https://...`, `http://...`, `ftp://...` hay
     `www....`): Markdown của hộp thoại không tự nhận URL trần nên hiện nó thành chữ không bấm được.
     Viết `<https://...>`, GitHub hiện y như URL trần, hoặc `[text](https://...)`, ví dụ
@@ -325,6 +325,10 @@ GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình du
   - Không có ảnh (`![alt](src)`), kể cả ảnh trong chữ của link như badge `[![alt](src)](url)`:
     Markdown của hộp thoại không hiện ảnh nên hiện cả dòng thành chữ thô, còn GitHub hiện ảnh. Bỏ ảnh
     hoặc link tới nó bằng `[text](https://...)`.
+  - Không có trích dẫn (dòng mở bằng `>`), kể cả trích dẫn trong mục list (`- > ...`) hay ngay dưới
+    một dòng chữ: Markdown của hộp thoại báo lỗi với trích dẫn nên hiện cả dòng thành chữ thô kèm dấu
+    `>`, link trong đó không bấm được, còn GitHub hiện khối trích dẫn. Bỏ dấu `>` và viết thành chữ
+    thường hay một mục list. Dấu `>` giữa dòng (`a > b`) hay trong code fence vẫn dùng được.
   - Link nội dòng (`[text](url)`) phải nằm gọn trên một dòng, kể cả phần chữ, đích và tiêu đề: hộp
     thoại đọc từng dòng riêng nên link kéo sang dòng sau hiện thành cú pháp thô không bấm được, còn
     GitHub hiện link. Chữ nhấn mạnh hay code span kéo sang dòng sau không bị chặn
@@ -337,7 +341,8 @@ GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình du
     dùng được.
 - Bảng GFM trong mục Changes không bị chặn, nhưng hộp thoại đọc từng dòng riêng nên không dựng lại
   bảng: mỗi hàng, kể cả dòng phân cách `| --- |`, hiện thành một dòng chữ có dấu `|`. Nên viết mục
-  Changes bằng list.
+  Changes bằng list. Ô của hàng thân bảng vượt quá số ô của hàng tiêu đề thì GitHub bỏ đi, nên script
+  không kiểm các ô đó, nhưng hộp thoại vẫn hiện chúng trong dòng chữ của hàng.
 - Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm, trừ fence hay khối HTML chưa đóng nằm
   trước mục. Sửa script này thì chạy
   `python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py`.

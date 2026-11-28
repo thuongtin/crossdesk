@@ -844,6 +844,11 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   }
   if (!Check(blocks_match,
              "Installed release notes must keep lines that look like link definitions")) return false;
+  // Markdown của Slint báo lỗi với trích dẫn, kể cả trích dẫn trong mục list, nên hộp thoại hiện cả
+  // dòng thành chữ thô và link trong đó không bấm được. Vì vậy extractor từ chối trích dẫn.
+  if (!Check(!slint::StyledText::from_markdown("> See [the guide](https://example.com)") &&
+                 !slint::StyledText::from_markdown("- > See [the guide](https://example.com)"),
+             "Slint Markdown must reject the block quotes that the extractor rejects")) return false;
   std::vector<crossdesk::ui::ReleaseNoteBlock> installed_notes;
   for (const auto& parsed : installed_blocks) {
     crossdesk::ui::ReleaseNoteBlock block{};

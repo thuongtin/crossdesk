@@ -30,6 +30,7 @@ DEFINITION = ("line {}: the Release Notes dialog cannot use link reference defin
 BARE_URL = ("line {}: the Release Notes dialog shows bare URLs as plain text, so write this link as <https://...> "
             "or [text](https://...), or put an address that has no https form in backticks")
 IMAGE = "line {}: the Release Notes dialog cannot show images, so remove this image or link to it as [text](https://...)"
+QUOTE = "line {}: the Release Notes dialog cannot show block quotes, so remove the '>' and write this as plain text or a list item"
 WRAPPED = ("line {}: the Release Notes dialog reads each line on its own and cannot show a link that wraps to the "
            "next line, so keep this link on one line")
 # Ví dụ notes nằm trong một khối trước mục thật; mục giả không được thay mục thật.
@@ -212,10 +213,10 @@ class ExtractTest(unittest.TestCase):
         for underline in ("---", "==="):
             with self.subTest(underline=underline):
                 self.assert_rejected(f"## Changes\n\n- A\n\nDownloads\n{underline}\n- x", SETEXT.format(6))
-        # Như cmark-gfm, dòng gạch dưới trong mục list hay trích dẫn cũng biến dòng trên thành tiêu đề.
-        for body in ("- Linux\n  ---", "> a\n> ---", "- > a\n  > ==="):
+        # Như cmark-gfm, dòng gạch dưới trong mục list cũng biến dòng trên thành tiêu đề.
+        for body in ("- Linux\n  ---", "- A\n\n  B\n  ==="):
             with self.subTest(body=body):
-                self.assert_rejected("## Changes\n\n" + body, SETEXT.format(4))
+                self.assert_rejected("## Changes\n\n" + body, SETEXT.format(body.count("\n") + 3))
         # Đường kẻ ngang sau dòng trống hay sau mục list không biến dòng trên thành tiêu đề.
         self.assertEqual(notes.extract("## Changes\n\nText\n\n---\n- A\n---"), "Text\n\n---\n- A\n---")
 
@@ -239,6 +240,30 @@ class ExtractTest(unittest.TestCase):
             with self.subTest(cell=cell):
                 self.assertEqual(notes.extract("## Changes\n\n" + table), table)
         self.assert_rejected("## Changes\n\n| a |\n| - |\n| b \\| <i> |", HTML.format(5))
+
+    def test_cells_beyond_the_header_are_not_checked(self):
+        # GitHub bỏ các ô của hàng thân bảng vượt quá số ô của hàng tiêu đề, nên URL hay ảnh trong đó
+        # không thành link hay ảnh. Ô nằm trong số cột của hàng tiêu đề vẫn được kiểm.
+        table = "| Change |\n| - |\n| Fixed login | https://example.com | ![i](https://example.com/i.png) |"
+        self.assertEqual(notes.extract("## Changes\n\n" + table), table)
+        for cell, error in (("https://example.com", BARE_URL), ("![i](https://example.com/i.png)", IMAGE)):
+            with self.subTest(cell=cell):
+                self.assert_rejected(f"## Changes\n\n| Change | Link |\n| - | - |\n| Fixed login | {cell} |",
+                                     error.format(5))
+
+    def test_block_quotes_are_rejected(self):
+        # Markdown của Slint báo lỗi với trích dẫn, nên hộp thoại hiện cả dòng thành chữ thô và link
+        # trong đó không bấm được. Trích dẫn trong mục list, ngay sau đoạn văn hay chỉ có ">" cũng vậy.
+        for body, line in (("> Note", 3), ("- > See [the guide](https://example.com/upgrade)", 3),
+                           ("- A\n  > b", 4), ("A\n> b", 4), ("- A\n\n>", 5)):
+            with self.subTest(body=body):
+                self.assert_rejected(f"## Changes\n\n{body}", QUOTE.format(line))
+        # Lỗi khác trên dòng mở trích dẫn được báo trước, như URL trần.
+        self.assert_rejected("## Changes\n\n> See https://example.com", BARE_URL.format(3))
+        # Trích dẫn ngoài mục Changes, ">" trong code fence hay khối code thụt lề và dấu ">" giữa dòng
+        # không bị chặn.
+        allowed = f"- A\n\n{FENCE}\n> x\n{FENCE}\n\n    > y\n\n- a > b"
+        self.assertEqual(notes.extract(f"> Intro\n\n## Changes\n\n{allowed}\n\n## Downloads\n\n> z"), allowed)
 
     def test_reference_links_are_rejected(self):
         # Hộp thoại đọc từng dòng riêng nên hiện nguyên chữ "[text][ref]" mà GitHub hiện thành link,
@@ -380,17 +405,15 @@ class ExtractTest(unittest.TestCase):
         self.assert_rejected("## Changes\n\n- [x] [x]: /u", DEFINITION.format(3))
         # Khi dòng gốc trông như mục task, tiện ích tasklist của cmark-gfm bỏ ba ký tự gốc tính từ chỗ
         # đang đọc của mục list trong cùng, như "\v[x" sau dấu list hay "-\v[" ở dòng nối tiếp một mục
-        # không còn đoạn văn hay bảng mở, kể cả khi dòng đó nối lười vào trích dẫn trong mục.
-        for body in ("- \v[x] Done", "- \f[ ] Todo", "- A\n\n  -\v[x] Done", "- # H\n  -\v[x] Done",
-                     "- > q\n  -\v[x] Done"):
+        # không còn đoạn văn hay bảng mở.
+        for body in ("- \v[x] Done", "- \f[ ] Todo", "- A\n\n  -\v[x] Done", "- # H\n  -\v[x] Done"):
             with self.subTest(body=body):
                 self.assertEqual(notes.extract(f"## Changes\n\n{body}{downloads}"), body)
         # Ba ký tự đó có thể chừa lại "[x]" (tab chỉ tính là một ký tự), và không có ô đánh dấu khi đoạn
         # văn, bảng hay mục list lồng của mục còn mở, hoặc khi khối trong cùng không phải mục list.
         for body, line in (("- A\n\n \t-\v[x] Done", 5), ("- A\n\n  1234567890. [x] Done", 5),
-                           ("- > q\n      -\v[x] Done", 4), ("- A\n  -\v[x] Done", 4),
-                           ("- A\n  | a | b |\n  | - | - |\n  -\v[x] | Done", 6),
-                           ("- A\n  - B\n\n  -\v[x] Done", 6), ("> q\n-\v[x] Done", 4), ("-\v[x] Done", 3)):
+                           ("- A\n  -\v[x] Done", 4), ("- A\n  | a | b |\n  | - | - |\n  -\v[x] | Done", 6),
+                           ("- A\n  - B\n\n  -\v[x] Done", 6), ("-\v[x] Done", 3)):
             with self.subTest(body=body):
                 self.assert_rejected(f"## Changes\n\n{body}{downloads}", REFERENCE.format(line))
 
