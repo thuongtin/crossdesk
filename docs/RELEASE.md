@@ -341,8 +341,10 @@ GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình du
     dùng được.
 - Bảng GFM trong mục Changes không bị chặn, nhưng hộp thoại đọc từng dòng riêng nên không dựng lại
   bảng: mỗi hàng, kể cả dòng phân cách `| --- |`, hiện thành một dòng chữ có dấu `|`. Nên viết mục
-  Changes bằng list. Ô của hàng thân bảng vượt quá số ô của hàng tiêu đề thì GitHub bỏ đi, nên script
-  không kiểm các ô đó, nhưng hộp thoại vẫn hiện chúng trong dòng chữ của hàng.
+  Changes bằng list. Ô của hàng thân bảng vượt quá số ô của hàng tiêu đề thì GitHub bỏ đi, nên trong
+  các ô đó script chỉ từ chối ảnh và HTML: Markdown của Slint báo lỗi với chúng và hiện cả hàng thành
+  chữ thô, làm link ở các ô còn lại không bấm được. Thứ khác trong ô thừa, như URL trần, không bị
+  kiểm, và hộp thoại vẫn hiện nó trong dòng chữ của hàng.
 - Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm, trừ fence hay khối HTML chưa đóng nằm
   trước mục. Sửa script này thì chạy
   `python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py`.
