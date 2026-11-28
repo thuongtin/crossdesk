@@ -13,7 +13,8 @@ import re
 import sys
 from pathlib import Path
 
-CHANGES_HEADING = re.compile(r"^##[ \t]+Changes[ \t]*$")
+# Tiêu đề ATX hợp lệ: thụt tối đa ba dấu cách, có thể có chuỗi '#' đóng như "## Changes ##".
+CHANGES_HEADING = re.compile(r"^ {0,3}##[ \t]+Changes(?:[ \t]+#+)?[ \t]*$")
 # Mục Changes kết thúc ở tiêu đề cấp 1 hoặc 2 kế tiếp; tiêu đề cấp 3 trở xuống thuộc về mục.
 SECTION_END = re.compile(r"^ {0,3}#{1,2}(?:[ \t]|$)")
 # Dòng mở hoặc đóng code fence; dòng trông như tiêu đề bên trong fence chỉ là chữ, ví dụ chú thích shell.

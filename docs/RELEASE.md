@@ -237,7 +237,11 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
 - `INSTALLED_RELEASE_NOTES.md`: mục `## Changes` của `RELEASE_NOTES.md`, được viết trước khi build
   và nhúng vào app của cả ba nền tảng (bước 3).
 
-Nên cài thử từng gói trên máy thật trước khi publish.
+Nên cài thử từng gói trên máy thật trước khi publish. Với Linux, cài từng gói `.deb` bằng
+`apt install ./<gói>.deb` trên Ubuntu 20.04, 22.04 và 24.04 tối giản (container hay rootfs sạch,
+không cài thêm thư viện bằng tay) rồi mở app, ví dụ dưới Xvfb. Gate chỉ kiểm tên trong `Depends`,
+còn `apt-simulate` chỉ giả lập cài trên 20.04; thư viện nạp bằng `dlopen` còn thiếu chỉ lộ ra khi
+app thật sự chạy trên máy không có sẵn nó.
 
 ### Bước 3: Viết release notes
 
@@ -254,7 +258,7 @@ Nội dung này vừa là mô tả GitHub release vừa là `releaseNotes` trong
 Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp nằm ngoài code fence) còn được
 nhúng vào chính bản build: app mở hộp thoại **Release Notes** một lần sau khi cài mới hoặc nâng cấp
 lên bản này và hiện đúng mục đó, hiển thị Markdown giống lời nhắc cập nhật. Tiêu đề con trong mục
-(ví dụ `### Linux`) hiện thành dòng in đậm. Vì vậy:
+(ví dụ `### Linux`) hiện thành dòng in đậm, còn dòng trong code fence hiện nguyên chữ. Vì vậy:
 
 - Notes phải hoàn chỉnh trước lần build publish. `release.sh` tách mục này bằng
   `installed_release_notes.py` vào `dist/<version>/INSTALLED_RELEASE_NOTES.md` trước khi build và
@@ -269,6 +273,9 @@ lên bản này và hiện đúng mục đó, hiển thị Markdown giống lờ
   giao diện, giống release notes trong lời nhắc cập nhật.
 - Bản build không qua `release.sh` (build tay, build dev) không nhúng notes và không mở hộp thoại
   này. Hộp thoại không còn đọc `apps/desktop/resources/release-notes.json` của upstream.
+- Dry-run `--ref` một commit cũ hơn option `CROSSDESK_RELEASE_NOTES` vẫn build được: script build
+  ghi cảnh báo, không truyền option đó cho xmake, và gate báo file thực thi thiếu notes. `--publish`
+  luôn build `mcp` nên luôn có option này.
 
 ### Bước 4: Publish
 
@@ -284,7 +291,8 @@ scripts/release/release.sh v1.7.7-3-20261126 --publish --notes ~/release-notes/v
 2. Chạy gate ở chế độ nghiêm ngặt và tính `SHA256SUMS.txt`.
 3. `publish.sh` kiểm điều kiện: `gh` đã đăng nhập, `origin` trỏ đúng fork, remote `upstream` (nếu
    có) giữ push URL `DISABLED_no_push_to_upstream`, tag và release chưa tồn tại, checksum khớp,
-   có `CROSSDESK_UPDATE_PRIVATE_KEY_FILE`.
+   có `CROSSDESK_UPDATE_PRIVATE_KEY_FILE`, rồi chạy lại gate nghiêm ngặt với cùng tham số (kể cả
+   `--notes`), nên `gate/CONFORMANCE.txt` cuối cùng vẫn có kết quả kiểm notes.
 4. Sinh feed mới từ feed hiện tại của `origin/desktop-updates` (`make_release_feed.py`): kiểm
    OpenSSL 3, quyền file khoá (600), phiên bản mới hơn feed đang công bố, kiểm gói macOS
    (`spctl`, `stapler`, `codesign`, `lipo`, `CFBundleVersion`), ký payload

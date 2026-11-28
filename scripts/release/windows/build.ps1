@@ -149,9 +149,18 @@ Write-Step "Building CrossDesk $AppVersion for Windows x64"
 $env:CROSSDESK_UPDATE_PUBLIC_KEY = $PublicKey
 Push-Location $src
 try {
-  Invoke-Native xmake @("f", "-y", "-p", "windows", "-a", "x64", "-m", "release",
-    "--CROSSDESK_VERSION=$AppVersion", "--CROSSDESK_UPDATE_PUBLIC_KEY=$PublicKey",
-    "--CROSSDESK_RELEASE_NOTES=$ReleaseNotes", "--USE_CUDA=true")
+  $configureArgs = @("f", "-y", "-p", "windows", "-a", "x64", "-m", "release",
+    "--CROSSDESK_VERSION=$AppVersion", "--CROSSDESK_UPDATE_PUBLIC_KEY=$PublicKey", "--USE_CUDA=true")
+  # Ref cũ hơn option CROSSDESK_RELEASE_NOTES (dry-run với --ref) không nhận tham số này, xmake sẽ
+  # từ chối cấu hình; khi đó build không nhúng notes và gate báo thiếu.
+  $optionsFile = Join-Path $src "apps\desktop\xmake\options.lua"
+  if ((Test-Path -PathType Leaf $optionsFile) -and
+      (Select-String -Path $optionsFile -SimpleMatch -Quiet 'option("CROSSDESK_RELEASE_NOTES")')) {
+    $configureArgs += "--CROSSDESK_RELEASE_NOTES=$ReleaseNotes"
+  } else {
+    Write-Step "WARNING: $Commit has no CROSSDESK_RELEASE_NOTES option; the build embeds no release notes"
+  }
+  Invoke-Native xmake $configureArgs
   Invoke-Native xmake @("b", "-vy", "crossdesk")
 } finally {
   Pop-Location

@@ -54,9 +54,17 @@ has_pipewire_headers || { echo "Build image is missing the PipeWire SDK headers"
 APP_VERSION="${VERSION#v}"
 step "Building CrossDesk $APP_VERSION for Linux amd64"
 export CROSSDESK_UPDATE_PUBLIC_KEY="$PUBLIC_KEY"
+# Ref cũ hơn option CROSSDESK_RELEASE_NOTES (dry-run với --ref) không nhận tham số này, xmake sẽ từ
+# chối cấu hình; khi đó build không nhúng notes và gate báo thiếu.
+NOTES_ARGS=()
+if grep -qs 'option("CROSSDESK_RELEASE_NOTES")' apps/desktop/xmake/options.lua; then
+    NOTES_ARGS=(--CROSSDESK_RELEASE_NOTES="$RELEASE_NOTES")
+else
+    step "WARNING: this commit has no CROSSDESK_RELEASE_NOTES option; the build embeds no release notes"
+fi
 # Chế độ verbose giúp Xmake 3.1.1 cài phụ thuộc tuần tự, giống CI upstream.
 xmake f -v --CROSSDESK_VERSION="$APP_VERSION" --CROSSDESK_UPDATE_PUBLIC_KEY="$PUBLIC_KEY" \
-    --CROSSDESK_RELEASE_NOTES="$RELEASE_NOTES" \
+    ${NOTES_ARGS[@]+"${NOTES_ARGS[@]}"} \
     --USE_CUDA=true --USE_WAYLAND=true --cc=gcc-10 --cxx=g++-10 --root -y
 xmake b -vy --root crossdesk
 
