@@ -528,6 +528,14 @@ int main() {
   auto* platform = owned.get();
   slint::platform::set_platform(std::move(owned));
 
+  // Tên cấu hình gõ sai thì danh sách rỗng: báo lỗi thay vì "đạt" mà không kiểm gì.
+  if (DisplayCases().empty()) {
+    std::cerr << "Unknown CROSSDESK_SETTINGS_DISPLAY; expected one of:";
+    for (const auto& display : AllDisplayCases()) std::cerr << ' ' << display.name;
+    std::cerr << '\n';
+    return 1;
+  }
+
   bool ok = true;
   for (const auto& display : DisplayCases()) {
     for (const auto& language : LayoutLanguages()) {
@@ -546,9 +554,10 @@ int main() {
     for (const auto& display : DisplayCases())
       for (const auto& language : LayoutLanguages())
         ok &= WriteEvidence(*platform, root, display, language);
-    // Mọi ngôn ngữ ở cấu hình mặc định để soát chữ dài hay bị cắt.
+    // Mọi ngôn ngữ ở cấu hình mặc định (100%) để soát chữ dài hay bị cắt, kể cả khi
+    // CROSSDESK_SETTINGS_DISPLAY chọn cấu hình khác cho phần trên.
     for (const auto& language : AllLanguages())
-      ok &= WriteEvidence(*platform, root / "all-languages", DisplayCases().front(), language);
+      ok &= WriteEvidence(*platform, root / "all-languages", AllDisplayCases().front(), language);
   }
   return ok ? 0 : 1;
 }
