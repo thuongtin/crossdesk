@@ -1,50 +1,50 @@
 {
-  "latest_version": "1.7.7-3-20261126",
-  "version": "1.7.7-3-20261126",
-  "releaseDate": "2026-11-26",
-  "patch": 3,
-  "releaseName": "CrossDesk v1.7.7-3-20261126",
-  "releaseNotes": "## Downloads\n\n- macOS 14 or later, Apple Silicon: signed, notarized and stapled Developer ID installer (`.pkg`).\n- Windows 10/11, x64: unsigned NSIS installer (`.exe`) with optional NVIDIA CUDA support; installation is manual.\n- **New: Linux x64.** Two `.deb` packages for Debian/Ubuntu amd64, built on Ubuntu 20.04 (glibc 2.31 or later):\n  - `crossdesk-linux-amd64-v1.7.7-3-20261126.deb`: the standard package, uses the existing desktop session.\n  - the `virtual-desktop-xfce` package: the same app, and APT also installs Xvfb, Xfce and the D-Bus session tools for hosts without a desktop.\n\n  Install only one of the two with `sudo apt install ./<package>.deb`.\n- Verify the downloads with `SHA256SUMS.txt`.\n\n## Install this release manually once\n\nThis release signs the fork's update feed with a new key. **v1.7.7-1 and v1.7.7-2 only trust the old key**, so the in-app updater on those versions cannot verify the new feed and will not offer this update. Download and install v1.7.7-3 by hand once; later releases arrive in the app again.\n\n## Changes\n\n- Upstream CrossDesk changes since v1.7.7-2:\n  - Device groups can be deleted; their devices and connection history are kept.\n  - When launched at login, CrossDesk starts in the system tray by default (configurable), and older autostart settings are migrated on upgrade.\n  - Connection history is kept separately for each signaling server.\n  - Display-change fixes on macOS, Windows and Linux X11: privacy screens stay covered and the pointer stays aligned when displays are added, removed or woken from idle.\n- English stays the default language for new installs. The Vietnamese translation is now complete and can be selected in Settings; installs that already saved a language keep it.\n- The GitHub button in **Feedback & suggestions** has been removed, so diagnostic logs are never sent to a public issue tracker. Export the logs there and send the ZIP to your CrossDesk administrator.\n- Update checks only report a new version when that release has a package for your platform, and large update downloads get 30 minutes again before timing out.\n- First Linux build of CrossDesk Postcard. All three platforms are built from the same source commit by the fork's release pipeline, which checks every binary for the fork update channel and signaling defaults before publishing.\n- Keeps Postcard, DeskHub and the fork update channel. The default signaling endpoint remains `crossdesk.ecom.io.vn:9099`.\n",
-  "tagName": "v1.7.7-3-20261126",
+  "latest_version": "1.7.7-4-20261128",
+  "version": "1.7.7-4-20261128",
+  "releaseDate": "2026-11-28",
+  "patch": 4,
+  "releaseName": "CrossDesk v1.7.7-4-20261128",
+  "releaseNotes": "## Downloads\n\n- macOS 14 or later, Apple Silicon: signed, notarized and stapled Developer ID installer (`.pkg`).\n- Windows 10/11, x64: unsigned NSIS installer (`.exe`) with optional NVIDIA CUDA support; installation is manual. The installer now shows its pages in your Windows display language (English when there is no match).\n- Linux x64: two `.deb` packages for Debian/Ubuntu amd64, built on Ubuntu 20.04 (glibc 2.31 or later):\n  - `crossdesk-linux-amd64-v1.7.7-4-20261128.deb`: the standard package, uses the existing desktop session.\n  - the `virtual-desktop-xfce` package: the same app, and APT also installs Xvfb, Xfce and the D-Bus session tools for hosts without a desktop.\n\n  Install only one of the two with `sudo apt install ./<package>.deb`.\n- Verify the downloads with `SHA256SUMS.txt`.\n\n## Upgrading\n\n- From v1.7.7-3: the in-app updater offers this release.\n- From v1.7.7-1 or v1.7.7-2: those versions only trust the old feed key, so install v1.7.7-3 or this release by hand once. Later releases arrive in the app again.\n\n## Changes\n\nThis release is based on upstream CrossDesk `mcp` at `26b56503` (\"[perf] use native macOS frame scaling from MiniRTC\"). It is not an upstream release: upstream has not tagged a version since v1.7.7-20261124.\n\nUpstream changes since v1.7.7-3:\n- New languages: Turkish and Hebrew (right-to-left).\n- IP direct connections accept hostnames (including `.local` names). A saved password is bound to the host's identity, and CrossDesk warns when that identity changes. Translated VPN addresses work.\n- Remote connections show their progress, signaling is checked again after the computer wakes, and wired network paths are preferred.\n- Screen capture is paced to the viewer's frame rate on Windows, macOS and Linux, with faster capture paths on Windows (DXGI, Intel Quick Sync) and macOS.\n- Headless Macs can use Snug virtual displays; the HiDPI mode and display layout are restored after reconnects and wake.\n- Device groups can be renamed and managed from the group dialogs.\n- Keyboard and pointer fixes: Caps Lock on macOS, Shift with pointer gestures, horizontal scrolling, key releases and pointer control across Windows display changes.\n- The Windows service repairs its machine identity folder permissions, retained tray icons are recovered, and the autostart migration finishes for every user on a shared machine.\n- Updates are protected against two users updating at once on macOS and Linux. The unused macOS camera and microphone permissions are gone.\n\nCrossDesk Postcard changes:\n- The connection window fits small or scaled displays, for example 1366x768 at 125% (https://github.com/thuongtin/crossdesk/pull/6).\n- A Mac host whose display was asleep now wakes it when a viewer connects, so the viewer no longer waits on a black \"Receiving screen...\" view. If there is still no picture, the viewer explains why: missing screen recording permission, a sleeping display, or a capture failure (https://github.com/thuongtin/crossdesk/pull/8).\n- Settings: in-row buttons are centered and no longer cross the row divider; several dialogs opened from Settings no longer cut off their buttons or logo (https://github.com/thuongtin/crossdesk/pull/9).\n- The Windows installer is no longer Chinese only: it follows the Windows display language in 13 languages, and new installations go to `C:\\Program Files\\CrossDesk`. Existing installations are upgraded in place (https://github.com/thuongtin/crossdesk/pull/10).\n- Linux UI text uses the system sans-serif font; v1.7.7-3 rendered Latin text in a serif font (https://github.com/thuongtin/crossdesk/pull/13).\n- The Vietnamese translation covers all new strings, and on macOS and Linux a hostname listed in `/etc/hosts` is used before DNS (https://github.com/thuongtin/crossdesk/pull/7).\n- Keeps Postcard, DeskHub, the fork update channel and English as the default for new installs. The default signaling endpoint remains `crossdesk.ecom.io.vn:9099`. The GitHub button in **Feedback & suggestions** stays removed: export the logs there and send the ZIP to your CrossDesk administrator.\n",
+  "tagName": "v1.7.7-4-20261128",
   "downloads": {
     "macos-arm64": {
-      "version": "1.7.7-3-20261126",
-      "releaseDate": "2026-11-26",
-      "filename": "crossdesk-macos-arm64-v1.7.7-3-20261126.pkg",
-      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-macos-arm64-v1.7.7-3-20261126.pkg",
+      "version": "1.7.7-4-20261128",
+      "releaseDate": "2026-11-28",
+      "filename": "crossdesk-macos-arm64-v1.7.7-4-20261128.pkg",
+      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-macos-arm64-v1.7.7-4-20261128.pkg",
       "update": {
-        "payload": "{\"filename\":\"crossdesk-macos-arm64-v1.7.7-3-20261126.pkg\",\"platform\":\"macos-arm64\",\"schema\":1,\"sha256\":\"2153f0894b81aad2e864c5d9f75471ea1cf00112343df8426faa0d108751eed4\",\"size\":28383088,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-macos-arm64-v1.7.7-3-20261126.pkg\",\"version\":\"1.7.7-3-20261126\"}",
-        "signature": "fb3a82e827540c24e4ad2a0d903b7559eb4f39ba167bb93992ea197ca225dac0326d798ad813f4fe02a386f0304face2dcea9f31f09cdd79b5495b61942cdb00"
+        "payload": "{\"filename\":\"crossdesk-macos-arm64-v1.7.7-4-20261128.pkg\",\"platform\":\"macos-arm64\",\"schema\":1,\"sha256\":\"846d50ddc625013e6497eba66a45172e5285e0080cb5232df15fed0fc09be66d\",\"size\":28578370,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-macos-arm64-v1.7.7-4-20261128.pkg\",\"version\":\"1.7.7-4-20261128\"}",
+        "signature": "d5a3ae9f235517b07131a8ad68206bd0d01e95542b9e3b784444375c9dcd3b5be2eb71569d2ffaab6ae9bba1003d1a13863c8b4ee9ae3617e43bbe07f35ee006"
       }
     },
     "windows-x64": {
-      "version": "1.7.7-3-20261126",
-      "releaseDate": "2026-11-26",
-      "filename": "crossdesk-win-x64-v1.7.7-3-20261126.exe",
-      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-win-x64-v1.7.7-3-20261126.exe",
+      "version": "1.7.7-4-20261128",
+      "releaseDate": "2026-11-28",
+      "filename": "crossdesk-win-x64-v1.7.7-4-20261128.exe",
+      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-win-x64-v1.7.7-4-20261128.exe",
       "update": {
-        "payload": "{\"filename\":\"crossdesk-win-x64-v1.7.7-3-20261126.exe\",\"platform\":\"windows-x64\",\"schema\":1,\"sha256\":\"a4734683064b649999cc68b8b4c3b8653bfbf7aa77fe66cd8ae520cec0d35158\",\"size\":19936140,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-win-x64-v1.7.7-3-20261126.exe\",\"version\":\"1.7.7-3-20261126\"}",
-        "signature": "b0cd71095c9b214f15f162aab1706f08a89fd677793b299637f92a5001e3335489374c197c09de40b02e5ad125fa9169ece578efc1dfb21e0984612523105b00"
+        "payload": "{\"filename\":\"crossdesk-win-x64-v1.7.7-4-20261128.exe\",\"platform\":\"windows-x64\",\"schema\":1,\"sha256\":\"c8a3555473bc0884cc53cd0d65f235387e378042ba8600373d9e945dcef21b2a\",\"size\":20202309,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-win-x64-v1.7.7-4-20261128.exe\",\"version\":\"1.7.7-4-20261128\"}",
+        "signature": "677a4bbb26b88f67566246dbb15527476426d13b76ec8048b15973ac3151289ed7fbb154ea5a8525efebd43bc67d02827b7927c1d0a9cffda1d3ffb0efce7d0e"
       }
     },
     "linux-amd64": {
-      "version": "1.7.7-3-20261126",
-      "releaseDate": "2026-11-26",
-      "filename": "crossdesk-linux-amd64-v1.7.7-3-20261126.deb",
-      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-linux-amd64-v1.7.7-3-20261126.deb",
+      "version": "1.7.7-4-20261128",
+      "releaseDate": "2026-11-28",
+      "filename": "crossdesk-linux-amd64-v1.7.7-4-20261128.deb",
+      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-linux-amd64-v1.7.7-4-20261128.deb",
       "update": {
-        "payload": "{\"filename\":\"crossdesk-linux-amd64-v1.7.7-3-20261126.deb\",\"platform\":\"linux-amd64\",\"schema\":1,\"sha256\":\"5338dea6ddbf902ec9f1dd3271ca12e2c187c09934d12791d406f01cb8f9a74d\",\"size\":22242096,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-linux-amd64-v1.7.7-3-20261126.deb\",\"version\":\"1.7.7-3-20261126\"}",
-        "signature": "0996fb5705ad3f157542c2e333b6750e14699e2bc61eae96cd903b80b793661e7a465b9d513e586fc7b0117bfc1b15935cf14be180f831783c8a354dd3916e0c"
+        "payload": "{\"filename\":\"crossdesk-linux-amd64-v1.7.7-4-20261128.deb\",\"platform\":\"linux-amd64\",\"schema\":1,\"sha256\":\"e67e3014761bb5c88c5ccd0b1e5ddea357668bc04e47d217834679c0f037005a\",\"size\":22301316,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-linux-amd64-v1.7.7-4-20261128.deb\",\"version\":\"1.7.7-4-20261128\"}",
+        "signature": "962487d56b4feadebcb5f917285a81182062e4f9b4381e574e208d1975f4db587d1bc086e501fd60a558347dec4fee373978f66eac7d1f65d98d9a0605b70000"
       }
     },
     "linux-amd64-virtual-desktop-xfce": {
-      "version": "1.7.7-3-20261126",
-      "releaseDate": "2026-11-26",
-      "filename": "crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-3-20261126.deb",
-      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-3-20261126.deb",
+      "version": "1.7.7-4-20261128",
+      "releaseDate": "2026-11-28",
+      "filename": "crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-4-20261128.deb",
+      "url": "https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-4-20261128.deb",
       "update": {
-        "payload": "{\"filename\":\"crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-3-20261126.deb\",\"platform\":\"linux-amd64-virtual-desktop-xfce\",\"schema\":1,\"sha256\":\"592f3330b69c9f90879e87a07c3ae414bd8f1f5cde87b51f5cae15aee4600eee\",\"size\":22242152,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-3-20261126/crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-3-20261126.deb\",\"version\":\"1.7.7-3-20261126\"}",
-        "signature": "8d7b604df3e8cdd1fd025a35405609d66cf18f9e6bd028b046398d3a6677133788da52c5e0b16f4f121228d8646138668df1427d1b14c9edd7e2f857c60ae802"
+        "payload": "{\"filename\":\"crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-4-20261128.deb\",\"platform\":\"linux-amd64-virtual-desktop-xfce\",\"schema\":1,\"sha256\":\"8d3095ff05515078633f8277042f945619f4820bf6ba6dce23d26461f5c55667\",\"size\":22301380,\"url\":\"https://github.com/thuongtin/crossdesk/releases/download/v1.7.7-4-20261128/crossdesk-virtual-desktop-xfce-linux-amd64-v1.7.7-4-20261128.deb\",\"version\":\"1.7.7-4-20261128\"}",
+        "signature": "93c8b1d350d7562c3fe30f22ed8b4b0aff1da3fef13342b9ae34313a6c24d924fb592a0049c30a2b2147fe37901f7f9d3c3b6603424b8e7cb4179fe5c7b21708"
       }
     }
   }
