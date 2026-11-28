@@ -132,10 +132,47 @@ bool TestDisplayChoice() {
   return ok;
 }
 
+bool TestFallbackReturnProbe() {
+  using crossdesk::FallbackReturnProbe;
+  using std::chrono::milliseconds;
+
+  const auto start = FallbackReturnProbe::Clock::now();
+  const auto interval = FallbackReturnProbe::kInterval;
+  bool ok = true;
+
+  FallbackReturnProbe probe;
+  ok &= Expect(!probe.Due(false, start),
+               "a slot on its requested display must never probe");
+  ok &= Expect(!probe.Due(true, start),
+               "a fresh fallback must not probe at once");
+  ok &= Expect(!probe.Due(true, start + interval - milliseconds(1)),
+               "a fallback must not probe before the interval");
+  ok &= Expect(probe.Due(true, start + interval),
+               "a healthy fallback must probe once the interval is over");
+  ok &= Expect(!probe.Due(true, start + interval + milliseconds(1)),
+               "a probe must not repeat right after it ran");
+  ok &= Expect(probe.Due(true, start + interval * 2),
+               "a fallback that stays must keep probing on the interval");
+
+  ok &= Expect(!probe.Due(false, start + interval * 3),
+               "returning to the requested display must stop probing");
+  const auto later = start + interval * 4;
+  ok &= Expect(!probe.Due(true, later),
+               "a new fallback must wait a full interval again");
+  ok &= Expect(probe.Due(true, later + interval),
+               "the new interval must count from the new fallback");
+
+  probe.Reset();
+  ok &= Expect(!probe.Due(true, later + interval * 3),
+               "a restarted capture must wait a full interval again");
+  return ok;
+}
+
 }  // namespace
 
 int main() {
   bool ok = TestGracePeriod();
   ok &= TestDisplayChoice();
+  ok &= TestFallbackReturnProbe();
   return ok ? 0 : 1;
 }

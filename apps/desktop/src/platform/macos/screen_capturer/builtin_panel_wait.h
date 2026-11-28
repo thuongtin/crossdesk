@@ -91,6 +91,38 @@ inline CaptureDisplayChoice ChooseCaptureDisplay(
   return choice;
 }
 
+// Paces the checks that end a fallback. A display coming back into
+// ScreenCaptureKit's list raises no event, and screen-parameter changes cover
+// only layout changes, so a healthy stream that captures a fallback asks for
+// the list on this interval to learn when its requested display is back.
+class FallbackReturnProbe {
+ public:
+  using Clock = std::chrono::steady_clock;
+  static constexpr Clock::duration kInterval = std::chrono::seconds(5);
+
+  // |fallback_active| is true while a healthy stream captures a display other
+  // than the one its slot asks for and that display is still online. Returns
+  // whether to check the display list now.
+  bool Due(bool fallback_active, Clock::time_point now) {
+    if (!fallback_active) {
+      next_check_.reset();
+      return false;
+    }
+    if (!next_check_) {
+      next_check_ = now + kInterval;
+      return false;
+    }
+    if (now < *next_check_) return false;
+    next_check_ = now + kInterval;
+    return true;
+  }
+
+  void Reset() { next_check_.reset(); }
+
+ private:
+  std::optional<Clock::time_point> next_check_;
+};
+
 }  // namespace crossdesk
 
 #endif

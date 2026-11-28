@@ -159,6 +159,7 @@ API_AVAILABLE(macos(14.0))
 - (void)releaseCapturer;
 - (void)privacyCoversChanged:(NSNotification*)notification;
 - (void)scheduleHealthCheck:(uint64_t)session;
+- (void)requestedDisplayListed:(uint64_t)session;
 - (void)configurationFinished:(SCStream*)stream generation:(uint64_t)generation
                      revision:(uint64_t)revision complete:(BOOL)complete
                 configuration:(SCStreamConfiguration*)configuration error:(NSError*)error;
@@ -218,6 +219,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   // Why the requested stream has no frames yet; frames override it.
   ScreenCaptureHealth interruption_ = ScreenCaptureHealth::starting;
   BuiltinPanelWait builtin_panel_wait_;
+  FallbackReturnProbe fallback_return_probe_;
   uint64_t capture_session_ = 0;
   using Clock = std::chrono::steady_clock;
   Clock::time_point capture_attempt_started_{};
@@ -244,6 +246,8 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
                              NSError* error);
   void RetryPrivacyFilter();
   bool CheckCaptureHealth(uint64_t session);
+  // A check started by a fallback found the slot's requested display listed.
+  void RequestedDisplayListed(uint64_t session);
   void CaptureConfigurationChanged() { StartOrReconfigureCapturer(); }
   void ScreenParametersChanged() {
     {
@@ -263,6 +267,10 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   // shareable content, and the completion-handler will either start a new stream, or reconfigure
   // the existing stream. Runs on the caller's thread.
   void StartOrReconfigureCapturer();
+  // Asks ScreenCaptureKit for its display list without touching the stream,
+  // and reports back through |helper| if |requested| is in it.
+  static void ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
+                                    CGDirectDisplayID requested);
   void RecoverCapture(uint64_t generation, const std::string& reason,
                       CaptureInterruption cause = CaptureInterruption::failure,
                       SCStream* stopped_stream = nil);
@@ -540,6 +548,7 @@ int ScreenCapturerSckImpl::Start(bool show_cursor) {
     recovery_attempt_ = 0;
     interruption_ = ScreenCaptureHealth::starting;
     builtin_panel_wait_.Reset();
+    fallback_return_probe_.Reset();
     suspended_since_ = {};
     capture_attempt_started_ = Clock::now();
     session = ++capture_session_;
@@ -628,6 +637,7 @@ int ScreenCapturerSckImpl::Stop() {
   stream_running_ = received_frame_ = recovery_pending_ = false;
   recovery_attempt_ = 0;
   builtin_panel_wait_.Reset();
+  fallback_return_probe_.Reset();
   suspended_since_ = {};
   ++capture_session_;
   configuration_in_flight_ = reconfigure_pending_ = false;
@@ -1007,6 +1017,8 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
   uint64_t generation;
   bool retry = false;
   const char* failure = nullptr;
+  SckHelper* probe_helper = nil;
+  CGDirectDisplayID probe_display = kCGNullDirectDisplay;
   {
     std::lock_guard lock(lock_);
     if (!capture_requested_ || session != capture_session_) return false;
@@ -1028,10 +1040,57 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
                now - suspended_since_ >= kCaptureStartTimeout) {
       failure = "ScreenCaptureKit frame updates remained suspended";
     }
+
+    // A healthy fallback raises no event that would bring the slot back to
+    // its requested display, so check the display list for it from here.
+    const auto requested_it = display_id_map_.find(current_monitor_index_);
+    const CGDirectDisplayID requested =
+        requested_it == display_id_map_.end() ? kCGNullDirectDisplay
+                                              : requested_it->second;
+    const bool fallback_active =
+        !failure && !recovery_pending_ && !configuration_in_flight_ &&
+        stream_running_ && received_frame_ &&
+        suspended_since_ == Clock::time_point{} &&
+        requested != kCGNullDirectDisplay && requested != current_display_ &&
+        CGDisplayIsOnline(requested);
+    if (fallback_return_probe_.Due(fallback_active, now)) {
+      probe_helper = helper_;
+      probe_display = requested;
+    }
   }
   if (failure) RecoverCapture(generation, failure);
   if (retry) StartOrReconfigureCapturer();
+  if (probe_helper) ProbeRequestedDisplay(probe_helper, session, probe_display);
   return true;
+}
+
+void ScreenCapturerSckImpl::ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
+                                                  CGDirectDisplayID requested) {
+  if (!CGPreflightScreenCaptureAccess()) return;
+  // Only the display list matters, so leave out desktop and off-screen windows.
+  [SCShareableContent getShareableContentExcludingDesktopWindows:YES
+                                           onScreenWindowsOnly:YES
+                                             completionHandler:^(SCShareableContent* content,
+                                                                 NSError* error) {
+    if (error || !content) return;
+    for (SCDisplay* display in content.displays) {
+      if (display.displayID == requested) {
+        [helper requestedDisplayListed:session];
+        return;
+      }
+    }
+  }];
+}
+
+void ScreenCapturerSckImpl::RequestedDisplayListed(uint64_t session) {
+  {
+    std::lock_guard lock(lock_);
+    if (!capture_requested_ || session != capture_session_) return;
+  }
+  LOG_INFO("Requested display is listed by ScreenCaptureKit again; leaving the fallback");
+  // The new enumeration lists the requested display, which ChooseCaptureDisplay
+  // prefers over the fallback.
+  StartOrReconfigureCapturer();
 }
 
 void ScreenCapturerSckImpl::CaptureStopped(SCStream* source, NSError* error) {
@@ -1194,6 +1253,12 @@ void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
     std::lock_guard<std::mutex> lock(self->_capturer_lock);
     if (self->_capturer && self->_capturer->CheckCaptureHealth(session))
       [self scheduleHealthCheck:session];
+  });
+}
+- (void)requestedDisplayListed:(uint64_t)session {
+  dispatch_async(_completion_queue, ^{
+    std::lock_guard<std::mutex> lock(self->_capturer_lock);
+    if (self->_capturer) self->_capturer->RequestedDisplayListed(session);
   });
 }
 - (void)screenParametersChanged:(NSNotification*)notification {
