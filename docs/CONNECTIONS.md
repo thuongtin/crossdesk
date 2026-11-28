@@ -54,8 +54,8 @@ IP trực tiếp không xác minh danh tính chứng chỉ của máy tính đư
 
 Tùy chọn này mặc định tắt. Sau khi bật, máy điều khiển bắt buộc nằm trong danh sách tin cậy của máy này và vẫn cần nhập đúng mật khẩu kết nối.
 
-1. **Sao chép thông tin ghép đôi trên máy điều khiển.** Trên máy tính, mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Quản lý thiết bị đáng tin cậy**; trên điện thoại và máy tính bảng, mở **Cài đặt → Thông tin ghép đôi máy này**.
-2. **Thêm trên máy được điều khiển.** Dán thông tin ghép đôi và thêm tại **Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy**, đối chiếu fingerprint với máy điều khiển qua kênh đáng tin cậy.
+1. **Sao chép thông tin ghép đôi trên máy điều khiển.** Trên máy tính, mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Thiết bị đáng tin cậy → Quản lý**; trên điện thoại và máy tính bảng, mở **Cài đặt → Thông tin ghép đôi máy này**.
+2. **Thêm trên máy được điều khiển.** Dán thông tin ghép đôi và thêm tại **Thiết bị đáng tin cậy → Quản lý → Thêm thiết bị đáng tin cậy**, đối chiếu fingerprint với máy điều khiển qua kênh đáng tin cậy.
 3. **Bật giới hạn.** Máy được điều khiển chọn **Chỉ cho phép thiết bị đáng tin cậy điều khiển** rồi lưu, sau đó kết nối theo quy trình bình thường.
 
 Thông tin ghép đôi không chứa mật khẩu kết nối hay khóa riêng. Tin cậy là một chiều; nếu muốn điều khiển lẫn nhau, cần thêm bên kia trên cả hai máy. Thêm và xóa được lưu ngay; khi bật giới hạn, xóa một thiết bị sẽ ngắt kết nối của nó; danh sách rỗng sẽ từ chối tất cả máy điều khiển.

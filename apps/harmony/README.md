@@ -21,7 +21,7 @@ Trang quản lý xử lý riêng nhập liệu cục bộ, hỗ trợ 16 tổ h�
 
 ## Xác thực thiết bị đáng tin cậy trên di động
 
-“Cài đặt → Thông tin ghép đôi máy này” trên điện thoại và máy tính bảng cho xem fingerprint và sao chép thông tin ghép nối. Dán vào “Quản lý thiết bị đáng tin cậy → Thêm thiết bị đáng tin cậy” trên máy được điều khiển và đối chiếu fingerprint, rồi có thể kết nối máy bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”; vẫn cần xác minh mật khẩu kết nối.
+“Cài đặt → Thông tin ghép đôi máy này” trên điện thoại và máy tính bảng cho xem fingerprint và sao chép thông tin ghép nối. Dán vào “Thiết bị đáng tin cậy → Quản lý → Thêm thiết bị đáng tin cậy” trên máy được điều khiển và đối chiếu fingerprint, rồi có thể kết nối máy bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”; vẫn cần xác minh mật khẩu kết nối.
 
 Chế độ di động dùng giao thức thách thức–đáp ứng Ed25519 chung; khóa riêng lưu bền qua AssetStore, cấm đồng bộ, không đưa vào bộ nhớ đệm, nhật ký hay thông tin ghép nối. Khởi động lại, xóa bộ nhớ đệm, đổi máy chủ và ID đăng nhập máy này không đổi khóa công khai; khóa đã khởi tạo hỏng, không khả dụng hoặc mất sẽ báo lỗi, không tự đổi khóa. Sau khi xóa dữ liệu ứng dụng hoặc cài lại, cần ghép nối lại.
 

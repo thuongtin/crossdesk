@@ -94,6 +94,8 @@ inline int ApplyMainWindowStrings(
   feedback.set_close(Text(localization::message_close[language]));
   auto& strings = window->global<ui::UiStrings>();
   strings.set_system_permissions(Text(localization::system_permissions[language]));
+  strings.set_manage(Text(localization::Literal("管理", language)));
+  strings.set_manage_system_permissions(Text(localization::Literal("管理系统权限", language)));
   strings.set_permission_migration_running(Text(localization::permission_migration_running[language]));
   strings.set_permission_migration_failed(Text(localization::permission_migration_failed[language]));
   strings.set_retry_permission_migration(Text(localization::retry_permission_migration[language]));
