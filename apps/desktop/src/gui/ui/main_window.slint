@@ -3831,15 +3831,22 @@ export component MainWindow inherits Window {
                             vertical-alignment: center;
                         }
                         Rectangle { horizontal-stretch: 1; }
+                        // Chừa vài px vì ở tỉ lệ không nguyên (ví dụ 150% sau khi thu
+                        // cửa sổ cho vừa màn hình) chuỗi vẽ ra rộng hơn preferred-width
+                        // làm tròn, khiến chữ "s" cuối của "Releases" bị cắt; căn phải để
+                        // mép chữ vẫn thẳng hàng với khung ghi chú bên dưới.
                         Rectangle {
-                            width: update-website-label.preferred-width;
+                            width: update-website-label.preferred-width + 4px;
                             accessible-role: button;
                             accessible-label: update-website-label.text;
                             accessible-action-default => { root.open-update-channel(); }
                             update-website-label := Text {
+                                x: 0px;
+                                width: parent.width;
                                 text: UiStrings.access-website + "GitHub Releases";
                                 color: website-touch.has-hover ? #254cc0 : WorkbenchStyle.accent;
                                 font-size: 13px;
+                                horizontal-alignment: right;
                                 vertical-alignment: center;
                             }
                             website-touch := TouchArea { mouse-cursor: pointer; clicked => { root.open-update-channel(); } }
