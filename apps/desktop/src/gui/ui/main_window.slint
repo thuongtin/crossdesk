@@ -1515,7 +1515,9 @@ export component MainWindow inherits Window {
             local-card := WorkbenchCard {
                 x: parent.width - 330px; y: 252px;
                 width: 330px; height: 224px;
-                Text { x: 16px; y: 14px; width: parent.width - 32px; height: 24px; overflow: elide; text: UiStrings.local-desktop; font-size: 25px; font-weight: 600; color: WorkbenchStyle.text; }
+                // Khung cao hơn cỡ chữ để chân chữ (y, g) của font sans-serif hệ thống không bị cắt;
+                // chữ vẫn canh trên nên vị trí không đổi.
+                Text { x: 16px; y: 14px; width: parent.width - 32px; height: 30px; overflow: elide; text: UiStrings.local-desktop; font-size: 25px; font-weight: 600; color: WorkbenchStyle.text; }
                 Text { x: 16px; y: 38px; width: parent.width - 32px; height: 18px; text: root.lan-mode ? GalleryStrings.texts[69] : GalleryStrings.texts[70]; font-size: 11px; color: WorkbenchStyle.muted; overflow: elide; }
                 local-address-label := Text {
                     x: 16px; y: 62px;
