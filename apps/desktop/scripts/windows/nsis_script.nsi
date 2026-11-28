@@ -13,6 +13,8 @@ Unicode true
 !define APP_NAME "CrossDesk"
 !define UNINSTALL_REG_KEY "CrossDesk"
 !define PRODUCT_SERVICE_NAME "CrossDeskService"
+; IDs of the firewall rules AddFirewallRules creates start with this text.
+!define FIREWALL_RULE_ID_PREFIX "CrossDesk Installer "
 
 ; Installer and uninstaller icon path
 !define MUI_ICON "${__FILEDIR__}\..\..\resources\windows\crossdesk.ico"
@@ -44,7 +46,15 @@ BrandingText "${PRODUCT_NAME}"
 
 !insertmacro MUI_PAGE_FINISH
 
+; Set by the uninstall functions when CrossDesk data or the driver stays.
+Var UninstallIncomplete
+; Header of the last uninstaller page, set at the end of the Uninstall section.
+Var UninstallFinishTitle
+Var UninstallFinishSubtitle
+
 !insertmacro MUI_UNPAGE_CONFIRM
+!define MUI_INSTFILESPAGE_FINISHHEADER_TEXT "$UninstallFinishTitle"
+!define MUI_INSTFILESPAGE_FINISHHEADER_SUBTEXT "$UninstallFinishSubtitle"
 !insertmacro MUI_UNPAGE_INSTFILES
 
 ; Every language the app ships, plus Turkish and Hebrew, which the app does not
@@ -69,6 +79,7 @@ BrandingText "${PRODUCT_NAME}"
 ; Include LogicLib for process handling
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
+!include "x64.nsh"
 !include /CHARSET=UTF8 "installer_strings.nsh"
 Var UpdateMode
 Var ExistingInstall
@@ -110,6 +121,16 @@ FunctionEnd
 
 Function un.onInit
     !insertmacro CROSSDESK_SELECT_LANGUAGE
+FunctionEnd
+
+; Asks for the restart that un.RemoveUsbmmiddDriver needs, after the user
+; closed the uninstaller. The uninstaller never restarts by itself: the NSIS
+; Reboot instruction signs out every other user by force, which loses their
+; unsaved work.
+Function un.onUninstSuccess
+    ${If} ${RebootFlag}
+        MessageBox MB_ICONINFORMATION|MB_OK "$(CD_RestartToFinishUninstall)" /SD IDOK
+    ${EndIf}
 FunctionEnd
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -179,6 +200,9 @@ installApp:
     ; output directory after building crossdesk; its License.txt ships with it.
     File /r "..\..\..\..\build\windows\x64\release\usbmmidd_v2"
 
+    ; Before the service starts, because it starts CrossDesk.exe again when
+    ; unattended access is enabled.
+    Call AddFirewallRules
     Call RegisterInstalledService
 
     ; Import the previous user's startup preference after installing service
@@ -242,6 +266,7 @@ cancelUninstall:
     Abort
 
 uninstallApp:
+    StrCpy $UninstallIncomplete 0
     ClearErrors
     ExecWait '"$INSTDIR\CrossDesk.exe" --autostart-uninstall' $0
     ${If} ${Errors}
@@ -250,6 +275,7 @@ uninstallApp:
     ${EndIf}
     Call un.UnregisterInstalledService
     Call un.RemoveUsbmmiddDriver
+    Call un.RemoveMachineData
 
     ; Delete main executable and uninstaller
     Delete "$INSTDIR\CrossDesk.exe"
@@ -279,6 +305,19 @@ uninstallApp:
     ; Recursively delete CrossDesk folder in user AppData
     RMDir /r "$APPDATA\CrossDesk"
     RMDir /r "$LOCALAPPDATA\CrossDesk"
+
+    ; The details list names everything the uninstall functions left behind;
+    ; open it so the user does not see only "Completed", and do not call the
+    ; uninstall complete in the page header.
+    ${If} $UninstallIncomplete = 1
+        StrCpy $UninstallFinishTitle "$(CD_UninstallIncompleteTitle)"
+        StrCpy $UninstallFinishSubtitle "$(CD_UninstallIncompleteSubtitle)"
+        SetDetailsView show
+        MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_UninstallIncomplete)" /SD IDOK
+    ${Else}
+        StrCpy $UninstallFinishTitle "$(MUI_UNTEXT_FINISH_TITLE)"
+        StrCpy $UninstallFinishSubtitle "$(MUI_UNTEXT_FINISH_SUBTITLE)"
+    ${EndIf}
 SectionEnd
 
 ; ------ Functions ------
@@ -442,6 +481,30 @@ missing_service_binary:
     Abort
 FunctionEnd
 
+; Allows inbound TCP and UDP to CrossDesk.exe on every network profile, so
+; that Windows Defender Firewall never asks whether to allow CrossDesk. Every
+; install and upgrade replaces the rules for this path, so exactly one TCP
+; and one UDP rule remain. The Allow rules Windows added when a user answered
+; its prompt for this path go too, as these rules cover them. Its Block rules
+; stay, although they override these Allow rules: Windows adds them when the
+; user cancels the prompt or leaves a network type unchecked, and a silent
+; update must not reverse that choice. Rules an administrator or a policy
+; created stay as well. netsh cannot select rules by ID, so PowerShell's
+; NetSecurity module does it. The path goes through the environment, so no
+; quoting can break it.
+Function AddFirewallRules
+    DetailPrint "$(CD_AddingFirewallRules)"
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", w "$INSTDIR\CrossDesk.exe")'
+    ${DisableX64FSRedirection}
+    nsExec::ExecToLog `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; try { $$program = $$env:CROSSDESK_FIREWALL_PROGRAM; Get-NetFirewallRule -PolicyStore PersistentStore -Name '${FIREWALL_RULE_ID_PREFIX}*', 'TCP Query User{*', 'UDP Query User{*' | Where-Object { $$_.Action -eq 'Allow' -and ($$_ | Get-NetFirewallApplicationFilter).Program -eq $$program } | Remove-NetFirewallRule; foreach ($$protocol in 'TCP', 'UDP') { New-NetFirewallRule -PolicyStore PersistentStore -Name ('${FIREWALL_RULE_ID_PREFIX}' + $$protocol + ' {' + [guid]::NewGuid() + '}') -DisplayName '${PRODUCT_NAME}' -Group '${PRODUCT_NAME}' -Direction Inbound -Action Allow -Profile Domain, Private, Public -Program $$program -Protocol $$protocol | Out-Null } } catch { exit 1 }"`
+    Pop $0
+    ${EnableX64FSRedirection}
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", p 0)'
+    ${If} $0 != "0"
+        DetailPrint "$(CD_FirewallRulesNotAdded)"
+    ${EndIf}
+FunctionEnd
+
 Function un.UnregisterInstalledService
     ; Also disarm unattended startup when removal must fall back to sc.exe.
     SetRegView 64
@@ -511,16 +574,312 @@ unplug_loop:
     ${EndIf}
     nsExec::ExecToLog '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" stop usbmmidd'
     Pop $2
-    nsExec::ExecToLog '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" remove usbmmidd'
+    nsExec::ExecToStack '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" remove usbmmidd'
     Pop $2
-    ${If} $2 != 0
-        DetailPrint "$(CD_DriverRemoveFailed) $2"
+    Call un.PrintDriverRemoveOutput
+    Pop $6
+    ; deviceinstaller64.exe is the devcon sample: remove prints one line per
+    ; device, ending with "Removed", "Removed on reboot" or "Remove failed".
+    ; It exits with 1 when any device waits for the next restart, even if
+    ; removing another one failed, and otherwise with 0, also when every
+    ; removal failed. So a "Remove failed" line always means the driver stays,
+    ; and after 0, check that no usbmmidd device is present; find prints only
+    ; this English line when there is none.
+    StrCpy $3 $2
+    ${If} $6 <> 0
+        StrCpy $3 "failed"
+    ${ElseIf} $2 == "0"
+        nsExec::ExecToStack '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" find usbmmidd'
+        Pop $4
+        Pop $5
+        StrCpy $5 $5 26
+        ${If} $4 != "0"
+        ${OrIf} $5 != "No matching devices found."
+            StrCpy $3 "present"
+        ${EndIf}
     ${EndIf}
     SetOutPath "$TEMP"
 
-    DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
-    DeleteRegKey /ifempty HKLM "Software\${PRODUCT_NAME}"
+    ; Windows finishes the removals it accepted at the next restart, also when
+    ; another device could not be removed.
+    ${If} $2 == "1"
+        DetailPrint "$(CD_DriverRemovedOnRestart)"
+        SetRebootFlag true
+    ${EndIf}
+    ; Keep the marker while the driver may still be installed: the app does
+    ; not set it again for a driver that is already present, so without it
+    ; no later uninstall would remove the driver. Retire it when no device is
+    ; left, which also clears a marker that outlived a driver removed from
+    ; Device Manager, and when every remaining device waits for a restart:
+    ; Windows completes that without CrossDesk, so a usbmmidd driver
+    ; installed after the restart is not CrossDesk's.
+    ${If} $3 == "0"
+    ${OrIf} $3 == "1"
+        DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
+        DeleteRegKey /ifempty HKLM "Software\${PRODUCT_NAME}"
+    ${Else}
+        DetailPrint "$(CD_DriverRemoveFailed) $2"
+        StrCpy $UninstallIncomplete 1
+    ${EndIf}
     SetRegView lastused
 
 done:
+FunctionEnd
+
+; Takes the output of "deviceinstaller64.exe remove" from the stack, prints
+; it to the details one line at a time as nsExec::ExecToLog would, and pushes
+; the number of lines that end with "Remove failed".
+Function un.PrintDriverRemoveOutput
+    Exch $0
+    Push $1
+    Push $2
+    Push $3
+    Push $4
+    StrCpy $1 0
+    StrCpy $3 ""
+    StrCpy $4 0
+next_char:
+    StrCpy $2 $0 1 $1
+    ${If} $2 == ""
+    ${OrIf} $2 == "$\n"
+        ${If} $3 != ""
+            DetailPrint "$3"
+            StrCpy $3 $3 "" -13
+            ${If} $3 == "Remove failed"
+                IntOp $4 $4 + 1
+            ${EndIf}
+            StrCpy $3 ""
+        ${EndIf}
+        ${If} $2 == ""
+            Goto finished
+        ${EndIf}
+    ${ElseIf} $2 != "$\r"
+        StrCpy $3 "$3$2"
+    ${EndIf}
+    IntOp $1 $1 + 1
+    Goto next_char
+finished:
+    StrCpy $0 $4
+    Pop $4
+    Pop $3
+    Pop $2
+    Pop $1
+    Exch $0
+FunctionEnd
+
+; Removes what CrossDesk keeps outside the install folder and the user
+; profiles, and lists in the details what stays. Upgrades never run the
+; uninstaller, so all of this survives them.
+Function un.RemoveMachineData
+    DetailPrint "$(CD_RemovingMachineData)"
+
+    ; --service-uninstall writes Unattended\Enabled=0 again after
+    ; un.UnregisterInstalledService deleted the key, so remove it only now.
+    ; Keep the usbmmidd marker that un.RemoveUsbmmiddDriver left because the
+    ; driver could not be removed, so that a later uninstall still removes it.
+    SetRegView 64
+    ClearErrors
+    ReadRegDWORD $0 HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
+    ${If} ${Errors}
+    ${OrIf} $0 <> 1
+        DeleteRegKey HKLM "Software\${PRODUCT_NAME}"
+    ${Else}
+        DeleteRegKey HKLM "Software\${PRODUCT_NAME}\Unattended"
+        DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "LastAttachedDisplayModeV2"
+        DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "LastAttachedDisplayMode"
+    ${EndIf}
+    SetRegView lastused
+
+    ; The service and the unattended host run as SYSTEM and create folders
+    ; whose DACL allows only SYSTEM, such as CrossDeskUnattended\host, which
+    ; an administrator can neither list nor delete without these privileges.
+    Push 2
+    Call un.SetBackupPrivileges
+    Pop $0
+    ${If} $0 <> 1
+        DetailPrint "$(CD_BackupPrivilegesUnavailable)"
+    ${EndIf}
+
+    ; The identity and trusted devices published for the unattended host, and
+    ; staging folders an interrupted elevated update left behind.
+    SetShellVarContext all
+    StrCpy $R6 $APPDATA
+    SetShellVarContext current
+    StrCpy $R9 "$R6\CrossDeskUnattended"
+    Call un.RemovePrivateMachineDirectory
+    FindFirst $R5 $R4 "$R6\CrossDesk-update-*"
+    ${DoWhile} $R4 != ""
+        StrCpy $R9 "$R6\$R4"
+        Call un.RemovePrivateMachineDirectory
+        FindNext $R5 $R4
+    ${Loop}
+    FindClose $R5
+
+    ; The service and the unattended host run as SYSTEM and keep their logs,
+    ; cache and settings in its profile. The uninstaller is a 32-bit process:
+    ; reach System32 itself, not SysWOW64.
+    ${DisableX64FSRedirection}
+    StrCpy $R9 "$SYSDIR\config\systemprofile\AppData\Local\${PRODUCT_NAME}"
+    Call un.RemoveMachineDirectory
+    StrCpy $R9 "$SYSDIR\config\systemprofile\AppData\Roaming\${PRODUCT_NAME}"
+    Call un.RemoveMachineDirectory
+    ${EnableX64FSRedirection}
+
+    ; Disabling privileges the token holds does not fail.
+    Push 0
+    Call un.SetBackupPrivileges
+    Pop $0
+
+    ; Remove the rules AddFirewallRules created for this copy's path and the
+    ; ones Windows added when a user answered the Windows Defender Firewall
+    ; prompt for it, whose IDs start with "TCP Query User{" and
+    ; "UDP Query User{" (installs from before AddFirewallRules, or where it
+    ; failed). Rules an administrator or a policy created stay. netsh cannot
+    ; select rules by ID, so PowerShell's NetSecurity module does it. The
+    ; path goes through the environment, so no quoting can break it.
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", w "$INSTDIR\CrossDesk.exe")'
+    ${DisableX64FSRedirection}
+    nsExec::ExecToLog `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; try { Get-NetFirewallRule -PolicyStore PersistentStore -Name '${FIREWALL_RULE_ID_PREFIX}*', 'TCP Query User{*', 'UDP Query User{*' | Where-Object { ($$_ | Get-NetFirewallApplicationFilter).Program -eq $$env:CROSSDESK_FIREWALL_PROGRAM } | Remove-NetFirewallRule } catch { exit 1 }"`
+    Pop $0
+    ${EnableX64FSRedirection}
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", p 0)'
+    ${If} $0 != "0"
+        DetailPrint "$(CD_FirewallRulesNotRemoved)"
+        StrCpy $UninstallIncomplete 1
+    ${EndIf}
+FunctionEnd
+
+; Removes the folder in $R9 and reports it when anything of it is left.
+Function un.RemoveMachineDirectory
+    RMDir /r "$R9"
+    System::Call 'kernel32::GetFileAttributesW(w R9) i .r0'
+    ${If} $0 <> -1
+        DetailPrint "$(CD_MachineDataNotRemoved) $R9"
+        StrCpy $UninstallIncomplete 1
+    ${EndIf}
+FunctionEnd
+
+; Removes the folder in $R9 only if it is a real directory, not a junction
+; or symbolic link, owned by SYSTEM or Administrators, whose DACL only allows
+; those two: the folders CrossDesk creates, and what PrivateDirectory in
+; unattended_config.cpp and OwnedJobDirectory in update_platform.cpp accept.
+; Standard users can create folders in ProgramData and RMDir /r follows
+; junctions it finds inside, so the elevated uninstaller must not empty a
+; folder anyone else could write to. Such a folder is not CrossDesk's and is
+; kept.
+Function un.RemovePrivateMachineDirectory
+    System::Call 'kernel32::GetFileAttributesW(w R9) i .r0'
+    ${If} $0 = -1
+        Return
+    ${EndIf}
+    StrCpy $5 0
+    ; FILE_ATTRIBUTE_DIRECTORY set, FILE_ATTRIBUTE_REPARSE_POINT clear.
+    IntOp $1 $0 & 0x410
+    ${If} $1 = 0x10
+        ; SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION.
+        System::Call 'advapi32::GetNamedSecurityInfoW(w R9, i 1, i 5, *p .r1, p 0, *p .r2, p 0, *p .r3) i .r0'
+        ${If} $0 = 0
+            StrCpy $R8 $1
+            Call un.IsTrustedSid
+            ; A NULL DACL grants everyone full access.
+            ${If} $R7 = 1
+            ${AndIf} $2 <> 0
+                StrCpy $5 1
+                ; ACL header: AclRevision, Sbz1, AclSize, AceCount.
+                System::Call '*$2(&i1 .r6, &i1 .r6, &i2 .r6, &i2 .r4)'
+                StrCpy $6 0
+                ${DoWhile} $6 < $4
+                    System::Call 'advapi32::GetAce(p r2, i r6, *p .r7) i .r0'
+                    ${If} $0 = 0
+                        StrCpy $5 0
+                        ${ExitDo}
+                    ${EndIf}
+                    ; ACE header: AceType, AceFlags, AceSize. The SID of an
+                    ; ACCESS_ALLOWED_ACE follows the header and the 4-byte mask.
+                    System::Call '*$7(&i1 .r0, &i1 .r1)'
+                    ${If} $0 <> 0
+                        StrCpy $5 0
+                        ${ExitDo}
+                    ${EndIf}
+                    IntPtrOp $R8 $7 + 8
+                    Call un.IsTrustedSid
+                    ${If} $R7 <> 1
+                        StrCpy $5 0
+                        ${ExitDo}
+                    ${EndIf}
+                    IntOp $6 $6 + 1
+                ${Loop}
+            ${EndIf}
+            System::Call 'kernel32::LocalFree(p r3)'
+        ${EndIf}
+    ${EndIf}
+    ${If} $5 = 1
+        Call un.RemoveMachineDirectory
+    ${Else}
+        DetailPrint "$(CD_MachineDataKept) $R9"
+        StrCpy $UninstallIncomplete 1
+    ${EndIf}
+FunctionEnd
+
+; Enables (2, SE_PRIVILEGE_ENABLED) or disables (0) SeBackupPrivilege and
+; SeRestorePrivilege in the uninstaller's token, per the value on the stack,
+; and replaces that value with 1 when both were set, else 0. Administrators
+; hold both, disabled, unless a policy took them away. While they are
+; enabled, FindFirstFile, DeleteFile and RemoveDirectory, which open with
+; backup intent, ignore DACLs, so they stay enabled only while RMDir /r
+; removes the folders that un.RemovePrivateMachineDirectory and the SYSTEM
+; profile path vouch for.
+Function un.SetBackupPrivileges
+    Exch $0
+    Push $1
+    Push $2
+    Push $3
+    Push $4
+    Push $5
+    StrCpy $5 0
+    ; TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY on the current process.
+    System::Call 'advapi32::OpenProcessToken(p -1, i 0x28, *p .r1) i .r4'
+    ${If} $4 <> 0
+        ; TOKEN_PRIVILEGES: PrivilegeCount, then two LUID_AND_ATTRIBUTES of
+        ; LUID (two DWORDs) and Attributes.
+        System::Call '*(i 2, i 0, i 0, i r0, i 0, i 0, i r0) p .r2'
+        IntPtrOp $3 $2 + 4
+        System::Call 'advapi32::LookupPrivilegeValueW(p 0, w "SeBackupPrivilege", p r3) i .r4'
+        ${If} $4 <> 0
+            IntPtrOp $3 $2 + 16
+            System::Call 'advapi32::LookupPrivilegeValueW(p 0, w "SeRestorePrivilege", p r3) i .r4'
+            ${If} $4 <> 0
+                ; It also succeeds when the token lacks a privilege, leaves
+                ; that one unchanged and sets ERROR_NOT_ALL_ASSIGNED.
+                System::Call 'advapi32::AdjustTokenPrivileges(p r1, i 0, p r2, i 0, p 0, p 0) i .r4 ?e'
+                Pop $3
+                ${If} $4 <> 0
+                ${AndIf} $3 = 0
+                    StrCpy $5 1
+                ${EndIf}
+            ${EndIf}
+        ${EndIf}
+        System::Free $2
+        System::Call 'kernel32::CloseHandle(p r1)'
+    ${EndIf}
+    StrCpy $0 $5
+    Pop $5
+    Pop $4
+    Pop $3
+    Pop $2
+    Pop $1
+    Exch $0
+FunctionEnd
+
+; Sets $R7 to 1 when the SID at address $R8 is LocalSystem or the
+; Administrators group, else to 0.
+Function un.IsTrustedSid
+    ; WinLocalSystemSid, WinBuiltinAdministratorsSid.
+    System::Call 'advapi32::IsWellKnownSid(p R8, i 22) i .R7'
+    ${If} $R7 = 0
+        System::Call 'advapi32::IsWellKnownSid(p R8, i 26) i .R7'
+    ${EndIf}
+    ${If} $R7 <> 0
+        StrCpy $R7 1
+    ${EndIf}
 FunctionEnd
