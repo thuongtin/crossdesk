@@ -19,7 +19,7 @@ cd /workspace
 step "Verifying build image"
 EXPECTED_ARCH=amd64 bash docker/linux-build/verify-build-image.sh
 
-# Giống bước "Ensure Wayland and clipboard build dependencies" của CI: image ghim
+# Giống bước "Ensure Linux desktop build dependencies" của CI: image ghim
 # digest chưa có các gói dev này nên cài bổ sung một lần vào rootfs. Trong user
 # namespace không chuyển sang user _apt được nên đặt APT::Sandbox::User=root.
 PIPEWIRE_HEADERS=(
@@ -32,20 +32,20 @@ has_pipewire_headers() {
         [[ -f "$header" ]] || return 1
     done
 }
-if ! pkg-config --exists dbus-1 libdrm fuse fuse3; then
-    step "Installing dbus, libdrm and fuse development packages"
+if ! pkg-config --exists dbus-1 fribidi libdrm fuse fuse3; then
+    step "Installing dbus, fribidi, libdrm and fuse development packages"
     export DEBIAN_FRONTEND=noninteractive
     apt-get -o APT::Sandbox::User=root -qq update
     apt-get -o APT::Sandbox::User=root install -y --no-install-recommends \
-        libdbus-1-dev libdrm-dev libfuse-dev libfuse3-dev
+        libdbus-1-dev libfribidi-dev libdrm-dev libfuse-dev libfuse3-dev
     rm -rf /var/lib/apt/lists/*
 fi
 if ! has_pipewire_headers; then
     step "Installing the PipeWire SDK"
     install-crossdesk-pipewire-sdk
 fi
-pkg-config --exists dbus-1 libdrm fuse fuse3 ||
-    { echo "Build image is missing dbus-1, libdrm, fuse or fuse3 development files" >&2; exit 1; }
+pkg-config --exists dbus-1 fribidi libdrm fuse fuse3 ||
+    { echo "Build image is missing dbus-1, fribidi, libdrm, fuse or fuse3 development files" >&2; exit 1; }
 has_pipewire_headers || { echo "Build image is missing the PipeWire SDK headers" >&2; exit 1; }
 
 APP_VERSION="${VERSION#v}"
