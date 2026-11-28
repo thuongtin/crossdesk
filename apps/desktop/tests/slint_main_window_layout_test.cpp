@@ -63,6 +63,7 @@ constexpr float kLanRowTop = 62.0f;
 constexpr float kLanRowHeight = 36.0f;
 constexpr float kLanLabelReserve = 64.0f;
 constexpr float kLanGap = 6.0f;
+constexpr float kLanLabelSize = 13.0f;
 // Tiêu đề lớn của hero: cỡ chữ 62px trong khung cao 76px, ngay dưới dòng CROSSDESK.
 constexpr float kHeadingTop = kHeroTop + 28.0f;
 constexpr float kHeadingHeight = 76.0f;
@@ -76,6 +77,9 @@ constexpr float kEmptyCardTop = 322.0f + 50.0f + 6.0f;
 constexpr float kEmptyCardHeight = 124.0f;
 constexpr float kEmptyTextLeft = 84.0f;
 constexpr float kEmptyTextRightInset = 20.0f;
+// Tiêu đề và lời gợi ý của thẻ trống cách nhau spacing 14px nên khoảng trống giữa hai khối
+// chữ luôn từ 13px trở lên, còn các dòng trong cùng một khối chỉ cách nhau 0 tới 2px.
+constexpr float kEmptyParagraphGap = 8.0f;
 
 const std::vector<DisplayCase>& DisplayCases() {
   static const std::vector<DisplayCase> cases = SelectDisplayCases(kDisplayEnv);
@@ -264,9 +268,27 @@ InkBox FindInk(const ScaledWindow& screen, int x0, int x1, int y0, int y1,
 
 int Px(const Fixture& fixture, float canvas) { return int(std::lround(fixture.Physical(canvas))); }
 
-// Dấu "…" của chữ bị rút gọn là ba chấm nhỏ nằm cùng một dải hàng ở cuối dòng, phía
-// trên chúng không có nét nào. Chữ kết thúc bằng một dấu chấm thường (ko) chỉ có một
-// chấm như vậy, còn nét chữ cái luôn cao hơn dải chấm.
+// Các dải hàng có nét chữ trong vùng [x0, x1] x [y0, y1], tách nhau bởi ít nhất `min_gap`
+// hàng trống liên tiếp. Với min_gap = 1 mỗi dải thường là một dòng chữ; hai dòng có dấu
+// chồng cao sát nhau có thể dính thành một dải.
+std::vector<Span> InkRowBands(const ScaledWindow& screen, int x0, int x1, int y0, int y1,
+                              const slint::Rgb8Pixel& background, int min_gap) {
+  std::vector<Span> bands;
+  int blank = 0;
+  for (int y = y0; y <= y1; ++y) {
+    bool ink = false;
+    for (int x = x0; x <= x1 && !ink; ++x) ink = InkOn(screen.At(x, y), background);
+    if (!ink) { ++blank; continue; }
+    if (bands.empty() || blank >= min_gap) bands.push_back({y, y});
+    else bands.back().end = y;
+    blank = 0;
+  }
+  return bands;
+}
+
+// Dấu "…" của chữ bị rút gọn là ba chấm nhỏ cách đều nhau, nằm cùng một dải hàng ở cuối
+// dòng, phía trên chúng không có nét nào. Chữ kết thúc bằng một dấu chấm thường (ko) chỉ
+// có một chấm như vậy, còn nét chữ cái luôn cao hơn dải chấm.
 bool EndsWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, int y1,
                       const slint::Rgb8Pixel& background, float font_px) {
   const auto column_has_ink = [&](int x, int top, int bottom) {
@@ -292,18 +314,33 @@ bool EndsWithEllipsis(const ScaledWindow& screen, int x0, int x1, int y0, int y1
   // (chữ "r" trong "Ver…") không dính vào chấm đầu tiên.
   const int band_top = std::max(y0, low - 1);
   const int band_bottom = std::min(y1, high + 1);
-  int dots = 0;
-  for (x = right; x >= x0 && dots < 3;) {
+  const auto ink_above = [&](int column) {
+    return band_top - 1 >= y0 && column_has_ink(column, y0, band_top - 1);
+  };
+  // Hai chấm cuối luôn tách rời nhau và khỏi chữ cái.
+  Span dots[2];
+  int found = 0;
+  for (x = right; x >= x0 && found < 2;) {
     if (!column_has_ink(x, band_top, band_bottom)) { --x; continue; }
     const int end = x;
     while (x - 1 >= x0 && column_has_ink(x - 1, band_top, band_bottom)) --x;
     if (end - x + 1 > std::max(2.0f, 0.3f * font_px)) return false;
     for (int column = x; column <= end; ++column)
-      if (band_top - 1 >= y0 && column_has_ink(column, y0, band_top - 1)) return false;
-    ++dots;
+      if (ink_above(column)) return false;
+    dots[found++] = {x, end};
     --x;
   }
-  return dots == 3;
+  if (found < 2) return false;
+  // Chấm đầu có thể dính vào móc chân của chữ cái đứng trước trong dải chấm (chữ "t"
+  // trong "Port…"), nên chỉ xét cột giữa của nó, cách chấm giữa đúng một bước như giữa
+  // hai chấm cuối: cột đó có nét trong dải chấm và không có nét phía trên. Cho lệch một
+  // cột vì vị trí chấm được làm tròn tới pixel.
+  const int pitch = dots[0].begin - dots[1].begin;
+  const int center = (dots[1].begin + dots[1].end) / 2 - pitch;
+  for (int column = center - 1; column <= center + 1; ++column)
+    if (column >= x0 && column_has_ink(column, band_top, band_bottom) && !ink_above(column))
+      return true;
+  return false;
 }
 
 // Chữ một dòng có overflow: elide: phải hiện ra, không kết thúc bằng "…" và không bị
@@ -375,7 +412,7 @@ bool VerifyConnectButton(Fixture& fixture, const std::string& where,
 }
 
 // Hàng địa chỉ LAN: hai nút có viền nằm sát mép phải thẻ, chữ trong nút chừa lề, và
-// nhãn bên trái vẫn hiện ra với ít nhất kLanLabelReserve.
+// nhãn bên trái vẫn hiện ra trọn vẹn (không có "…") với ít nhất kLanLabelReserve.
 bool VerifyLanRow(Fixture& fixture, const std::string& where, float card_left, float card_top,
                   const slint::Rgb8Pixel& background) {
   auto& screen = fixture.screen();
@@ -403,9 +440,23 @@ bool VerifyLanRow(Fixture& fixture, const std::string& where, float card_left, f
               where + ": the LAN address label must keep " +
                   std::to_string(int(kLanLabelReserve)) + "px beside the buttons (width " +
                   std::to_string(label_width) + ")");
-  const auto label = FindInk(screen, Px(fixture, text_left), switch_ip.begin - 1, Px(fixture, top),
-                             Px(fixture, top + kLanRowHeight) - 1, background);
+  const int label_x0 = Px(fixture, text_left), label_x1 = switch_ip.begin - 1;
+  const int label_y0 = Px(fixture, top), label_y1 = Px(fixture, top + kLanRowHeight) - 1;
+  const auto label = FindInk(screen, label_x0, label_x1, label_y0, label_y1, background);
   ok &= Check(label.Found(), where + ": the LAN address label must be visible");
+  // Nhãn có word-wrap và overflow: elide: khi hai dòng không đủ chỗ thì dòng cuối kết thúc
+  // bằng "…". Xét từng dòng vì dòng trên có thể dài hơn dòng cuối; nếu hai dòng dính thành
+  // một dải thì xét thêm phần đáy cao bằng cỡ chữ, nơi có chân dòng cuối và dấu "…".
+  const float font_px = kLanLabelSize * unit;
+  bool elided = false;
+  for (const Span& line : InkRowBands(screen, label_x0, label_x1, label_y0, label_y1, background, 1)) {
+    elided |= EndsWithEllipsis(screen, label_x0, label_x1, line.begin, line.end, background, font_px);
+    if (line.Width() > 1.5f * font_px)
+      elided |= EndsWithEllipsis(screen, label_x0, label_x1,
+                                 line.end - int(std::lround(font_px)), line.end, background,
+                                 font_px);
+  }
+  ok &= Check(!elided, where + ": the LAN address label must not be elided");
   return ok;
 }
 
@@ -429,8 +480,8 @@ bool VerifyLocalCard(Fixture& fixture, const std::string& where, bool lan_mode) 
   return ok;
 }
 
-// Thẻ trống của danh sách gần đây: tiêu đề và lời gợi ý xuống dòng trong cột chữ,
-// không chạm mép phải cột và không lọt ra dưới đáy thẻ.
+// Thẻ trống của danh sách gần đây: tiêu đề và lời gợi ý đều hiện ra, xuống dòng trong
+// cột chữ, không chạm mép phải cột và không lọt ra dưới đáy thẻ.
 bool VerifyEmptyState(Fixture& fixture, bool lan_mode, int group, const std::string& label) {
   auto& screen = fixture.screen();
   fixture.main().set_lan_mode(lan_mode);
@@ -453,6 +504,12 @@ bool VerifyEmptyState(Fixture& fixture, bool lan_mode, int group, const std::str
                            background);
   ok &= Check(ink.Found() && ink.bottom < Px(fixture, top + kEmptyCardHeight - 4.0f),
               where + ": the empty state text must stay inside its card");
+  // Kiểm tra gộp ở trên vẫn đạt khi chỉ còn tiêu đề, nên lời gợi ý phải hiện thành một
+  // khối chữ riêng bên dưới tiêu đề.
+  const auto blocks = InkRowBands(screen, Px(fixture, text_left), Px(fixture, text_right) - 1,
+                                  Px(fixture, top), Px(fixture, top + kEmptyCardHeight) - 1,
+                                  background, Px(fixture, kEmptyParagraphGap));
+  ok &= Check(blocks.size() >= 2, where + ": the empty state hint must show below its heading");
   if (!ok) WriteFailureFrame(screen, kEvidenceEnv, where);
   return ok;
 }

@@ -176,6 +176,9 @@ inline float PrepareMainWindow(const slint::ComponentHandle<crossdesk::ui::MainW
   // Software renderer bỏ qua transform-scale của ui-scaler. Phép thu nhỏ đó
   // đồng đều nên gộp vào hệ số scale của thiết bị cho ra đúng kích thước pixel
   // vật lý của cửa sổ thật: canvas giữ kích thước thiết kế, fit-scale giữ 1.
+  // Đường fit-scale thật (kích thước cửa sổ, ui-scale, canvas đủ kích thước thiết kế) do
+  // VerifyMainWindowFitScale trong slint_popup_render_test kiểm tra, còn công thức
+  // FitScale do window_fit_scale_test kiểm tra.
   screen.SetScale(display.scale * fit_scale);
   main->window().set_size(slint::LogicalSize(
       {main->get_minimum_window_width(), main->get_minimum_window_height()}));
