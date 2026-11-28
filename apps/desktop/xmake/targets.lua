@@ -195,6 +195,13 @@ function setup_targets()
         add_includedirs("apps/desktop/src/gui")
         add_files("apps/desktop/tests/window_fit_scale_test.cpp")
 
+    target("lan_hosts_file_test")
+        set_kind("binary")
+        set_languages("c++20")
+        set_default(false)
+        add_includedirs("apps/desktop/src/network/lan")
+        add_files("apps/desktop/tests/lan_hosts_file_test.cpp")
+
     target("single_instance")
         set_kind("object")
         add_includedirs("apps/desktop/src", {public = true})

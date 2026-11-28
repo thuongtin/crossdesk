@@ -1,5 +1,6 @@
 #include "lan_transport.h"
 
+#include "lan_hosts_file.h"
 #include "lan_mdns.h"
 
 #include <asio/thread_pool.hpp>
@@ -11,7 +12,6 @@
 #include <mutex>
 #include <set>
 #include <thread>
-#include <utility>
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/config/asio_client.hpp>
@@ -33,12 +33,12 @@ using ResolveResults = asio::ip::tcp::resolver::results_type;
 // session state and can only post results while its transport is attached.
 struct NameLookup {
   std::mutex mutex;
-  std::function<void(Error, ResolveResults)> deliver;
+  std::function<void(Error, ResolveResults, std::vector<std::string>)> deliver;
   void Cancel() {
     std::lock_guard lock(mutex);
     deliver = {};
   }
-  static bool Start(std::shared_ptr<NameLookup> lookup, std::string name,
+  static bool Start(std::shared_ptr<NameLookup> lookup, std::string host,
                     unsigned port) {
     static asio::thread_pool workers(4);
     static std::atomic<unsigned> pending{0};
@@ -47,7 +47,7 @@ struct NameLookup {
       return false;
     }
     asio::post(
-        workers, [lookup = std::move(lookup), name = std::move(name), port] {
+        workers, [lookup = std::move(lookup), host = std::move(host), port] {
           {
             std::lock_guard lock(lookup->mutex);
             if (!lookup->deliver) {
@@ -58,12 +58,20 @@ struct NameLookup {
           asio::io_context io;
           asio::ip::tcp::resolver resolver(io);
           Error error;
+          // Tên tuyệt đối ("name.") để resolver không ghép search suffix.
           auto results =
-              resolver.resolve(name, std::to_string(port),
+              resolver.resolve(host + ".", std::to_string(port),
                                asio::ip::tcp::resolver::numeric_service, error);
+          // Backend files của glibc không khớp "name." với /etc/hosts, nên
+          // tên chỉ có trong hosts bị bỏ sót. Khi đó đọc thẳng file hosts cho
+          // đúng tên đã nhập; không tra lại resolver bằng tên tương đối, vì
+          // search suffix có thể đưa kết nối chưa ghim khoá tới máy khác.
+          std::vector<std::string> hosts_file;
+          if (results.empty()) hosts_file = ReadHostsFileAddresses(host);
           --pending;
           std::lock_guard lock(lookup->mutex);
-          if (lookup->deliver) lookup->deliver(error, std::move(results));
+          if (lookup->deliver)
+            lookup->deliver(error, std::move(results), std::move(hosts_file));
         });
     return true;
   }
@@ -247,7 +255,7 @@ struct Transport::Impl {
     std::set<std::string> candidates;
     ChannelPtr channel;
     unsigned port = 0;
-    std::string expected_key, error, relative_name;
+    std::string expected_key, error;
     bool resolving = true, local_name = false;
     unsigned attempted = 0;
     long long dns_ms = 0;
@@ -550,9 +558,6 @@ struct Transport::Impl {
       });
     }
     dial->expected_key = key;
-    // Tên .local đã có multicast dự phòng; giữ nguyên nhịp đó, không tra lại.
-    if (!(kUseMulticastFallback && dial->local_name))
-      dial->relative_name = target.host;
     dials[c->id] = dial;
     c->state->close = [this, weak = std::weak_ptr<Dial>(dial)] {
       if (auto current = weak.lock()) EndDial(current);
@@ -568,38 +573,39 @@ struct Transport::Impl {
       EndDial(dial);
     });
     dial->lookup->deliver = [this, weak = std::weak_ptr<Dial>(dial)](
-                                Error e, ResolveResults results) {
-      asio::post(io, [this, weak, e, results = std::move(results)] {
+                                Error e, ResolveResults results,
+                                std::vector<std::string> hosts_file) {
+      asio::post(io, [this, weak, e, results = std::move(results),
+                      hosts_file = std::move(hosts_file)] {
         if (auto current = weak.lock();
             current && dials.count(current->channel->id))
-          Resolved(current, e, results);
+          Resolved(current, e, results, hosts_file);
       });
     };
-    if (!NameLookup::Start(dial->lookup, target.host + ".", target.port)) {
+    if (!NameLookup::Start(dial->lookup, target.host, target.port)) {
       dial->error = "Busy";
       EndDial(dial);
     }
   }
   void Resolved(const std::shared_ptr<Dial>& dial, const Error& e,
-                const ResolveResults& results) {
-    std::vector<asio::ip::address> addresses;
-    for (const auto& entry : results)
-      addresses.push_back(entry.endpoint().address());
-    QueueAddresses(dial, addresses, false);
-    // Backend files của glibc không khớp "name." với /etc/hosts, nên lượt tra
-    // tuyệt đối bỏ sót tên chỉ có trong hosts. Khi lượt đó không cho địa chỉ
-    // dùng được thì tra lại đúng một lần với tên người dùng nhập, vẫn trong
-    // cùng deadline; khoá đã ghim (nếu có) vẫn kiểm tra máy trả lời.
-    if (dial->candidates.empty() && !dial->relative_name.empty() &&
-        NameLookup::Start(dial->lookup, std::exchange(dial->relative_name, {}),
-                          dial->port))
-      return;
-    dial->relative_name.clear();
+                const ResolveResults& results,
+                const std::vector<std::string>& hosts_file) {
     dial->resolving = false;
     dial->resolver_error = e.value();
     dial->dns_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                        Clock::now() - dial->channel->state->created)
                        .count();
+    std::vector<asio::ip::address> addresses;
+    for (const auto& entry : results)
+      addresses.push_back(entry.endpoint().address());
+    // Địa chỉ từ file hosts cục bộ (do quản trị máy đặt), chỉ có khi lượt tra
+    // tuyệt đối không trả về gì; khoá đã ghim (nếu có) vẫn kiểm tra máy đó.
+    for (const auto& text : hosts_file) {
+      asio::error_code parse_error;
+      const auto address = asio::ip::make_address(text, parse_error);
+      if (!parse_error) addresses.push_back(address);
+    }
+    QueueAddresses(dial, addresses, false);
     if (dial->candidates.empty())
       dial->error = e ? (dial->local_name ? "LocalNameFailed" : "DnsFailed")
                       : "DnsNoUsableAddress";
