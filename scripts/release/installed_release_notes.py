@@ -19,6 +19,8 @@ CHANGES_HEADING = re.compile(r"^ {0,3}##[ \t]+Changes(?:[ \t]+#+)?[ \t]*$")
 SECTION_END = re.compile(r"^ {0,3}#{1,2}(?:[ \t]|$)")
 # Dòng mở hoặc đóng code fence; dòng trông như tiêu đề bên trong fence chỉ là chữ, ví dụ chú thích shell.
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+# Code fence mở ngay sau một hay nhiều dấu list, ví dụ "- ```sh"; nhóm 1 dài đúng bằng cột nội dung của mục.
+LIST_FENCE = re.compile(r"^( {0,3}(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)+)(`{3,}|~{3,})(.*)$")
 # Dòng giữ chỗ trong bản nháp release.sh tự viết khi chưa có --notes.
 PLACEHOLDER = "- TODO"
 # Khớp string:trim() của xmake (lớp %s của Lua) để gate so được từng byte với bản nhúng.
@@ -30,18 +32,47 @@ def normalize(text):
     return text.replace("\r\n", "\n").strip(WHITESPACE)
 
 
+def opening_fence(line):
+    """Trả về (chuỗi fence, cột nội dung của mục list chứa fence) khi dòng mở code fence, ngược lại None.
+
+    Fence thụt tối đa ba dấu cách có cột 0. Fence đứng ngay sau dấu list thuộc về mục list đó,
+    nên cột của nó là cột nội dung của mục.
+    """
+    match = FENCE.match(line)
+    if match:
+        column, fence, info = 0, match.group(1), match.group(2)
+    else:
+        match = LIST_FENCE.match(line)
+        if not match:
+            return None
+        column, fence, info = len(match.group(1)), match.group(2), match.group(3)
+    # Dòng mở fence bằng backtick không được chứa backtick trong phần info.
+    if fence[0] == "`" and "`" in info:
+        return None
+    return fence, column
+
+
 def outside_fences(lines):
-    """Trả về chỉ số các dòng nằm ngoài code fence (bản thân dòng fence cũng bị loại)."""
+    """Trả về chỉ số các dòng nằm ngoài code fence (bản thân dòng fence cũng bị loại).
+
+    Với fence nằm trong mục list, dòng đóng được tính từ cột nội dung của mục, và một dòng không
+    trống thụt ít hơn cột đó kết thúc mục list cùng fence của nó, như CommonMark.
+    """
     indexes = []
     fence = None
+    column = 0
     for index, line in enumerate(lines):
-        match = FENCE.match(line)
+        if fence is not None and column and line.strip() and len(line) - len(line.lstrip(" ")) < column:
+            fence = None
         if fence is None:
-            if match and not (match.group(1)[0] == "`" and "`" in match.group(2)):
-                fence = match.group(1)
+            opened = opening_fence(line)
+            if opened:
+                fence, column = opened
             else:
                 indexes.append(index)
-        elif match and match.group(1)[0] == fence[0] and len(match.group(1)) >= len(fence) \
+            continue
+        match = FENCE.match(line[column:])
+        if match and match.group(1)[0] == fence[0] and len(match.group(1)) >= len(fence) \
                 and not match.group(2).strip():
             fence = None
     return indexes
@@ -74,7 +105,9 @@ def main():
     except (OSError, UnicodeDecodeError, ValueError) as error:
         print(f"ERROR: {args.notes}: {error}", file=sys.stderr)
         return 1
-    if args.publish and any(line.strip() == PLACEHOLDER for line in section.split("\n")):
+    # Chỉ dòng ngoài code fence mới là chỗ giữ chỗ; ví dụ trong khối code được phép chứa "- TODO".
+    lines = section.split("\n")
+    if args.publish and any(lines[index].strip() == PLACEHOLDER for index in outside_fences(lines)):
         print(f"ERROR: {args.notes}: the '## Changes' section still has the '{PLACEHOLDER}' placeholder",
               file=sys.stderr)
         return 1
