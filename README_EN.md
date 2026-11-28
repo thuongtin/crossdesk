@@ -96,7 +96,7 @@ Choose the package for your operating system and processor. Some development fea
 The desktop client uses Xmake. Install Git, Xmake 3.1.1 or newer, and the toolchain and dependencies for your platform, then clone the source and submodules:
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 ```
 

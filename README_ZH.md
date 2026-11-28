@@ -96,7 +96,7 @@ CrossDesk Postcard 桌面版（macOS、Windows、Linux）请从 [本 fork 的 Re
 桌面客户端使用 Xmake 构建。准备 Git、Xmake 3.1.1 或更新版本，并按对应平台安装编译工具链与依赖，然后获取源码及子模块：
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 ```
 

@@ -96,7 +96,7 @@ Bạn hãy chọn gói cài đặt khớp hệ điều hành và chip của mìn
 Ứng dụng máy tính sử dụng Xmake để biên dịch. Chuẩn bị Git, Xmake 3.1.1 hoặc mới hơn, cài chuỗi công cụ biên dịch và các phụ thuộc cho nền tảng tương ứng, sau đó lấy mã nguồn và các submodule:
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 ```
 

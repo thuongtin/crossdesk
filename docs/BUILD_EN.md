@@ -20,7 +20,7 @@ The HarmonyOS Slint desktop port compiles the shared desktop UI and application 
 Install Visual Studio 2022 with the **Desktop development with C++** workload, Windows SDK, and **C++ Clang Compiler for Windows** component, plus Xmake. Windows x64 builds use clang-cl for libyuv to enable SIMD conversion and scaling; the application still uses MSVC. In a developer PowerShell, run:
 
 ```powershell
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 xmake f -c -p windows -a x64 -m release --CROSSDESK_VERSION=1.4.3 --USE_CUDA=false -y
 xmake b -vy crossdesk
@@ -42,7 +42,7 @@ See the [Windows packaging script](../apps/desktop/scripts/windows/pkg_x64.ps1) 
 Install Xcode and its command-line tools, plus Xmake, then run:
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 xmake f -c -m release --target_minver=14.0 --CROSSDESK_VERSION=1.4.3 --USE_CUDA=false -y
 xmake b -vy crossdesk
@@ -156,7 +156,7 @@ below selects it explicitly.
 Clone the submodules and build a release binary:
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 
 # Run this when the repository has already been cloned

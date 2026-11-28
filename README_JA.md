@@ -96,7 +96,7 @@ CrossDesk Postcard のデスクトップ版（macOS、Windows、Linux）は [フ
 デスクトップクライアントは Xmake を使用します。Git、Xmake 3.1.1 以降、お使いのプラットフォーム用のツールチェーンと依存関係をインストールしてから、ソースとサブモジュールをクローンします。
 
 ```bash
-git clone --recurse-submodules https://github.com/kunkundi/crossdesk.git
+git clone --recurse-submodules https://github.com/thuongtin/crossdesk.git
 cd crossdesk
 ```
 
