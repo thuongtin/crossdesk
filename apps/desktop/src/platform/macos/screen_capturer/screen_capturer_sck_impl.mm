@@ -458,15 +458,6 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
   if (completed && !capture_error) {
     for (SCDisplay *display in content.displays)
       display_ids.push_back(display.displayID);
-
-    // During wake, ScreenCaptureKit may list only a secondary display.
-    // Reserve the primary built-in display's slot before negotiating streams.
-    const CGDirectDisplayID primary = CGMainDisplayID();
-    if (CGDisplayIsBuiltin(primary) && CGDisplayIsOnline(primary) &&
-        std::find(display_ids.begin(), display_ids.end(), primary) ==
-            display_ids.end()) {
-      display_ids.insert(display_ids.begin(), primary);
-    }
   }
 
   if (display_ids.empty()) {
@@ -475,6 +466,16 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
     GetOnlineCaptureDisplays(display_ids);
     LOG_WARN("ScreenCaptureKit display enumeration unavailable; found {} online displays",
              display_ids.size());
+  } else {
+    // During wake, ScreenCaptureKit may list only a secondary display.
+    // Reserve the primary built-in display's slot before negotiating streams.
+    const CGDirectDisplayID primary = CGMainDisplayID();
+    if (CGDisplayIsBuiltin(primary) && CGDisplayIsOnline(primary) &&
+        CGDisplayMirrorsDisplay(primary) == kCGNullDirectDisplay &&
+        std::find(display_ids.begin(), display_ids.end(), primary) ==
+            display_ids.end()) {
+      display_ids.insert(display_ids.begin(), primary);
+    }
   }
   std::lock_guard lock(lock_);
   SetCaptureDisplays(display_ids);
