@@ -121,6 +121,16 @@ Function un.onInit
     !insertmacro CROSSDESK_SELECT_LANGUAGE
 FunctionEnd
 
+; Offers the restart that un.RemoveUsbmmiddDriver asked for, after the user
+; closed the uninstaller. Silent uninstalls never restart.
+Function un.onUninstSuccess
+    ${If} ${RebootFlag}
+        MessageBox MB_ICONQUESTION|MB_YESNO "$(CD_RestartToFinishUninstall)" /SD IDNO IDNO done
+        Reboot
+    ${EndIf}
+done:
+FunctionEnd
+
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "crossdesk-win-x64-${PRODUCT_VERSION}.exe"
 VIProductVersion "${PRODUCT_VERSION_NUMERIC}"
@@ -537,16 +547,39 @@ unplug_loop:
     Pop $2
     nsExec::ExecToLog '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" remove usbmmidd'
     Pop $2
+    ; deviceinstaller64.exe is the devcon sample: remove exits with 1 when
+    ; Windows accepted the removal and finishes it at the next restart, and
+    ; with 0 when no device is left, but also when removing one failed
+    ; ("Remove failed"). So after 0, check that no usbmmidd device is present;
+    ; find prints only this English line when there is none.
+    StrCpy $3 $2
+    ${If} $2 == "0"
+        nsExec::ExecToStack '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" find usbmmidd'
+        Pop $4
+        Pop $5
+        StrCpy $5 $5 26
+        ${If} $4 != "0"
+        ${OrIf} $5 != "No matching devices found."
+            StrCpy $3 "present"
+        ${EndIf}
+    ${EndIf}
     SetOutPath "$TEMP"
 
     ; Keep the marker while the driver may still be installed: the app does
     ; not set it again for a driver that is already present, so without it
-    ; no later uninstall would remove the driver. remove exits with 0 when no
-    ; usbmmidd device is left, which also clears a marker that outlived a
-    ; driver removed from Device Manager.
-    ${If} $2 == "0"
+    ; no later uninstall would remove the driver. Retire it when no device is
+    ; left, which also clears a marker that outlived a driver removed from
+    ; Device Manager, and when the removal waits for a restart: Windows
+    ; completes that without CrossDesk, so a usbmmidd driver installed after
+    ; the restart is not CrossDesk's.
+    ${If} $3 == "0"
+    ${OrIf} $3 == "1"
         DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
         DeleteRegKey /ifempty HKLM "Software\${PRODUCT_NAME}"
+        ${If} $3 == "1"
+            DetailPrint "$(CD_DriverRemovedOnRestart)"
+            SetRebootFlag true
+        ${EndIf}
     ${Else}
         DetailPrint "$(CD_DriverRemoveFailed) $2"
         StrCpy $UninstallIncomplete 1
