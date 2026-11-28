@@ -267,6 +267,10 @@ lên bản này và hiện đúng mục đó, hiển thị Markdown giống lờ
 - Mục phải có ít nhất một dòng; thiếu mục thì dừng trước khi build. Khi `--publish`, dòng giữ chỗ
   `- TODO` của bản nháp bị từ chối, kể cả khi có khoảng trắng thừa. Dry-run không có `--notes` nhúng bản nháp, nên muốn soát hộp
   thoại với notes thật thì dry-run kèm `--notes`.
+- Code fence (```` ``` ```` hoặc `~~~`) phải mở ở cột 0, không thụt lề, không đứng sau dấu list
+  hay `>`. `installed_release_notes.py` dừng ở dòng đầu tiên mở fence kiểu đó (từ đầu notes tới
+  hết mục Changes), vì theo CommonMark fence lồng kết thúc cùng mục list chứa nó, còn extractor và
+  hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một mục list thì đặt fence ra ngoài list.
 - Sửa notes sau khi đã build thì phải build lại. `--skip-build` sinh lại
   `INSTALLED_RELEASE_NOTES.md` từ notes hiện tại, nên gate báo lệch nếu notes đã đổi.
 - Viết bằng tiếng Anh như phần còn lại của release notes: hộp thoại hiện nguyên văn ở mọi ngôn ngữ

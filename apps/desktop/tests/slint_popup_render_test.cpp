@@ -766,8 +766,8 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   main->set_current_version("1.7.6");
   // Do fork sở hữu: notes nhúng đi qua cùng đường dựng khối như app. Tiêu đề con phải thành
   // dòng in đậm, còn mọi dòng trong code fence ("# ...", "---", "- ...") phải giữ nguyên chữ
-  // thay vì bị đọc thành tiêu đề, đường kẻ hay danh sách. Fence mở ngay sau dấu list đóng ở cột
-  // nội dung của mục, hoặc kết thúc cùng mục list ở dòng thụt ít hơn cột đó.
+  // thay vì bị đọc thành tiêu đề, đường kẻ hay danh sách. Dòng đóng fence thụt tối đa ba dấu
+  // cách; thụt bốn dấu cách hay khác ký tự fence vẫn là nội dung của khối code.
   struct ExpectedBlock {
     std::string_view text;
     bool markdown;
@@ -784,12 +784,11 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
       {"```", false, false},
       {"**Windows**", true, true},
       {"- C# tooling", true, true},
-      {"- ```sh", false, false},
-      {"  # list example", false, false},
-      {"  ```", false, false},
       {"**macOS**", true, true},
-      {"* ~~~", false, true},
-      {"  ~~~ not a closing fence", false, false},
+      {"~~~", false, true},
+      {"``` not a closing fence", false, false},
+      {"    ~~~", false, false},
+      {"   ~~~", false, false},
       {"- Notarized", true, false},
   };
   if (!Check(*slint::StyledText::from_markdown("- not a list item") !=
@@ -797,8 +796,8 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
              "Markdown and literal list lines must differ for the fence check")) return false;
   const auto installed_blocks = crossdesk::release_notes_text::InstalledBlocks(
       "### Linux ###\n\n- Release highlights fixture\n\n```sh\n# Restart after updating\n"
-      "crossdesk\n---\n- not a list item\n```\n\n## Windows\n\n- C# tooling\n- ```sh\n"
-      "  # list example\n  ```\n\n## macOS\n\n* ~~~\n  ~~~ not a closing fence\n- Notarized");
+      "crossdesk\n---\n- not a list item\n```\n\n## Windows\n\n- C# tooling\n\n## macOS\n\n"
+      "~~~\n``` not a closing fence\n    ~~~\n   ~~~\n- Notarized");
   bool blocks_match = installed_blocks.size() == std::size(expected_blocks);
   for (size_t index = 0; blocks_match && index < installed_blocks.size(); ++index) {
     const auto& expected = expected_blocks[index];

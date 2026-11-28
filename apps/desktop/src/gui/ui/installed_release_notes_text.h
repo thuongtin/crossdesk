@@ -22,7 +22,9 @@ namespace crossdesk::release_notes_text {
 // - Mọi dòng trong code fence, kể cả hai dòng fence, giữ nguyên chữ: "---", "- x" hay "# ..."
 //   trong khối code không bị đọc thành đường kẻ, danh sách hay tiêu đề rồi mất đi. Dòng trống
 //   trong fence thành khoảng cách như dòng trống bên ngoài.
-// Nhận diện fence khớp scripts/release/installed_release_notes.py, kể cả fence mở ngay sau dấu list.
+// Fence chỉ mở ở cột 0 và đóng ở dòng thụt tối đa ba dấu cách, khớp
+// scripts/release/installed_release_notes.py. Extractor từ chối notes có fence thụt vào hay lồng
+// trong mục list hoặc trích dẫn, nên notes nhúng không có loại fence đó.
 inline std::vector<Block> InstalledBlocks(std::string_view markdown) {
   static constexpr std::string_view kBlank = " \t";
   std::vector<Block> blocks;
@@ -53,37 +55,9 @@ inline std::vector<Block> InstalledBlocks(std::string_view markdown) {
     }
     return run;
   };
-  // Cột nội dung sau một hay nhiều dấu list đầu dòng như "- ", "1. " hay "- * "; 0 khi không có.
-  const auto list_content_column = [](std::string_view line) -> size_t {
-    size_t column = line.find_first_not_of(' ');
-    if (column == std::string_view::npos || column > 3) return 0;
-    size_t content = 0;
-    while (column < line.size()) {
-      size_t marker_end = column;
-      if (line[column] == '-' || line[column] == '+' || line[column] == '*') {
-        marker_end = column + 1;
-      } else {
-        while (marker_end < line.size() && marker_end - column < 9 && line[marker_end] >= '0' &&
-               line[marker_end] <= '9') {
-          ++marker_end;
-        }
-        if (marker_end == column || marker_end == line.size() ||
-            (line[marker_end] != '.' && line[marker_end] != ')')) {
-          break;
-        }
-        ++marker_end;
-      }
-      const size_t next = line.find_first_not_of(kBlank, marker_end);
-      if (next == marker_end || next == std::string_view::npos) break;
-      content = column = next;
-    }
-    return content;
-  };
-  // Ký tự và độ dài của fence đang mở (0 khi đang ở ngoài fence), cùng cột nội dung của mục list
-  // chứa fence (0 với fence không mở ngay sau dấu list).
+  // Ký tự và độ dài của fence đang mở; 0 khi đang ở ngoài fence.
   char fence_char = 0;
   size_t fence_length = 0;
-  size_t fence_column = 0;
   size_t line_start = 0;
   while (line_start < markdown.size()) {
     const size_t newline = markdown.find('\n', line_start);
@@ -99,16 +73,12 @@ inline std::vector<Block> InstalledBlocks(std::string_view markdown) {
       continue;
     }
 
+    // Markdown chỉ nhận dòng đóng fence và tiêu đề thụt vào tối đa ba dấu cách.
     const size_t indent = line.find_first_not_of(' ');
-    // Dòng không trống thụt ít hơn cột nội dung kết thúc mục list, kéo theo fence mở trong mục.
-    if (fence_char != 0 && indent < fence_column) fence_char = 0;
-    // Markdown chỉ nhận fence và tiêu đề thụt vào tối đa ba dấu cách, tính từ cột nội dung của
-    // mục list chứa fence đang mở.
-    const size_t base = fence_char != 0 ? fence_column : 0;
-    const std::string_view body = indent - base > 3 ? std::string_view{} : line.substr(indent);
-    const size_t run = fence_run(body, fence_char == 0);
+    const std::string_view body = indent > 3 ? std::string_view{} : line.substr(indent);
 
     if (fence_char != 0) {
+      const size_t run = fence_run(body, false);
       if (run >= fence_length && body[0] == fence_char &&
           body.find_first_not_of(kBlank, run) == std::string_view::npos) {
         fence_char = 0;
@@ -116,22 +86,11 @@ inline std::vector<Block> InstalledBlocks(std::string_view markdown) {
       append(slint::StyledText::from_plain_text(line));
       continue;
     }
-    if (run > 0) {
-      fence_char = body[0];
+    if (const size_t run = fence_run(line, true); run > 0) {
+      fence_char = line[0];
       fence_length = run;
-      fence_column = 0;
       append(slint::StyledText::from_plain_text(line));
       continue;
-    }
-    // Fence mở ngay sau dấu list như "- ```sh" thuộc mục list đó.
-    if (const size_t column = list_content_column(line); column > 0) {
-      if (const size_t list_run = fence_run(line.substr(column), true); list_run > 0) {
-        fence_char = line[column];
-        fence_length = list_run;
-        fence_column = column;
-        append(slint::StyledText::from_plain_text(line));
-        continue;
-      }
     }
 
     if (!body.empty() && body[0] == '#') {
