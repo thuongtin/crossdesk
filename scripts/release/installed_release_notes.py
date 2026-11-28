@@ -196,6 +196,23 @@ def table_cells(text):
     return cells
 
 
+def table_row_end(text, width):
+    """Vị trí ngay sau dấu '|' đóng ô thứ width của hàng bảng text, hay None khi hàng không có ô thừa.
+
+    Tách ô y như table_cells, nên hàng có nhiều hơn width ô khi và chỉ khi sau dấu '|' đó còn chữ.
+    """
+    text = text.rstrip(" \t\v\f\r\n")
+    count = 0
+    index = 1 if text.startswith("|") else 0
+    while index < len(text):
+        if text[index] == "|" and text[index - 1:index] != "\\":
+            count += 1
+            if count == width:
+                return index + 1 if index + 1 < len(text) else None
+        index += 1
+    return None
+
+
 def raw_text_at(raw, column):
     """Phần của dòng gốc raw bắt đầu ở cột column của raw.expandtabs(4).
 
@@ -266,13 +283,15 @@ def match_containers(line, containers):
 def scan(lines):
     """Phân loại từng dòng theo khối của cmark-gfm để tìm ranh giới mục và HTML.
 
-    Trả về (kinds, unclosed, inline, quotes). kinds[i] là "code" cho dòng nằm trong code fence cấp cao nhất
+    Trả về (kinds, unclosed, inline, quotes, trimmed). kinds[i] là "code" cho dòng nằm trong code fence cấp cao nhất
     (kể cả dòng đóng, trừ dòng mở), "footnote" cho dòng mở định nghĩa footnote ở mọi cấp, "html" cho
     các dòng khác của khối HTML ở mọi cấp, "setext" cho dòng gạch dưới biến đoạn văn ở mọi cấp thành
     tiêu đề, và "text" cho mọi dòng khác. unclosed là (chỉ số dòng mở, tên khối) của fence hay khối
     HTML loại 1 tới 5 cấp cao nhất vẫn mở khi hết notes, hoặc None. inline là kết quả của
-    inline_lines cho nội dung nội dòng của đoạn văn, tiêu đề và ô bảng ở mọi cấp, kể cả ô thừa mà
-    GitHub bỏ đi. quotes là tập chỉ số các dòng mở trích dẫn ở mọi cấp.
+    inline_lines cho nội dung nội dòng của đoạn văn, tiêu đề và ô bảng ở mọi cấp, trừ ô thừa mà
+    GitHub bỏ đi. quotes là tập chỉ số các dòng mở trích dẫn ở mọi cấp. trimmed là dict từ chỉ số
+    dòng của hàng thân bảng có ô thừa, ở mọi cấp, tới dòng gốc đã cắt sau dấu '|' đóng ô cuối mà
+    GitHub giữ lại.
 
     Fence thụt một tới ba dấu cách vẫn ở cấp cao nhất, trừ khi nó thuộc một mục list hay trích dẫn,
     như dòng đóng "  ```" của mục "- ```sh". Vì vậy scan giữ ngăn xếp khối chứa đang mở cùng khối lá
@@ -281,9 +300,10 @@ def scan(lines):
     """
     kinds = []
     # Nội dung nội dòng cần tìm HTML: (loại, các (chỉ số dòng, chữ)). Loại "paragraph" có thể mở đầu
-    # bằng định nghĩa link tham chiếu; "text" là đoạn văn đứng trước bảng, "heading", "cell" và
-    # "surplus" (ô thừa của hàng thân bảng) chỉ một dòng.
+    # bằng định nghĩa link tham chiếu; "text" là đoạn văn đứng trước bảng, "heading" và "cell" chỉ
+    # một dòng.
     units = []
+    trimmed = {}
     # Khối chứa đang mở, từ ngoài vào trong: None là trích dẫn, list là mục list, FOOTNOTE là footnote.
     containers = []
     fence = None  # (ký tự, độ dài) của code fence đang mở trong khối chứa trong cùng
@@ -415,9 +435,16 @@ def scan(lines):
             paragraph.append((index, raw_text_at(raw, len(expanded) - len(body))))
             header = body
         elif table_row:
-            cells = table_cells(body)
-            units.extend(("cell", [(index, cell)]) for cell in cells[:table_width])
-            units.extend(("surplus", [(index, cell)]) for cell in cells[table_width:])
+            units.extend(("cell", [(index, cell)]) for cell in table_cells(body)[:table_width])
+            # GitHub bỏ các ô vượt quá số ô của hàng tiêu đề, còn hộp thoại đưa cả dòng cho Markdown
+            # của Slint: chữ của các ô đó vẫn hiện, và ảnh hay HTML trong đó làm Slint từ chối cả dòng
+            # nên link ở các ô còn lại không bấm được. Cắt chúng khỏi notes nhúng để hộp thoại hiện
+            # đúng các ô GitHub hiện. Tab không phải '|' hay '\', nên tách ô trên chữ gốc cũng cho
+            # cùng các ô, và phần sau chỗ cắt là đuôi của dòng gốc.
+            raw_body = raw_text_at(raw, len(expanded) - len(body))
+            end = table_row_end(raw_body, table_width)
+            if end is not None:
+                trimmed[index] = raw[:len(raw) - (len(raw_body) - end)]
         else:
             if leaf == "table":
                 # Dòng cuối của đoạn văn thành hàng tiêu đề của bảng, các dòng trước vẫn là đoạn văn.
@@ -454,7 +481,7 @@ def scan(lines):
         if None in opened:
             quotes.add(index)
         kinds.append(kind)
-    return kinds, unclosed, inline_lines(units, frozenset(footnote_labels)), quotes
+    return kinds, unclosed, inline_lines(units, frozenset(footnote_labels)), quotes, trimmed
 
 
 def link_destination_end(text, position):
@@ -859,22 +886,17 @@ def inline_lines(units, footnotes=frozenset()):
     "definition" cho các dòng của định nghĩa link tham chiếu mà GitHub bỏ khỏi trang. Như cmark-gfm,
     mọi định nghĩa trong notes được gom trước, nên link dùng được định nghĩa nằm ở bất kỳ đâu, kể cả
     phía sau nó.
-
-    Ô thừa của hàng thân bảng (loại "surplus") chỉ được tìm "image" và "html". GitHub bỏ các ô đó nên
-    URL trần hay link tham chiếu trong đó không đổi gì trên trang, nhưng hộp thoại đưa cả dòng cho
-    Markdown của Slint, và Slint báo lỗi với ảnh hay HTML ở bất kỳ ô nào, nên cả hàng thành chữ thô
-    và link ở các ô còn lại không bấm được nữa.
     """
     labels = []
     contents = []
     for unit_kind, entries in units:
         # Mỗi dòng kết thúc bằng xuống dòng như nội dung đoạn văn của cmark-gfm.
         text = "".join(content + "\n" for _, content in entries)
-        if unit_kind in ("cell", "surplus"):
+        if unit_kind == "cell":
             # cmark-gfm đổi "\|" trong ô thành "|" trước khi đọc nội dòng; ô chỉ có một dòng.
             text = text.replace("\\|", "|")
         start = reference_definitions_end(text, labels) if unit_kind == "paragraph" else 0
-        contents.append((text, start, entries, unit_kind == "surplus"))
+        contents.append((text, start, entries))
     definitions = frozenset(labels)
     found = {"html": set(), "reference": set(), "footnote": set(), "split": set(), "url": set(),
              "image": set(), "wrapped": set(), "definition": set()}
@@ -887,7 +909,7 @@ def inline_lines(units, footnotes=frozenset()):
                 return line_index
         return entries[-1][0]
 
-    for text, start, entries, surplus in contents:
+    for text, start, entries in contents:
         # Các dòng nằm trước start chỉ chứa định nghĩa.
         consumed = 0
         for line_index, content in entries:
@@ -896,8 +918,7 @@ def inline_lines(units, footnotes=frozenset()):
             found["definition"].add(line_index)
             consumed += len(content) + 1
         for offset, kind in inline_offsets(text, start, definitions, footnotes):
-            if not surplus or kind in ("image", "html"):
-                found[kind].add(line_of(offset, entries))
+            found[kind].add(line_of(offset, entries))
     return found
 
 
@@ -929,10 +950,11 @@ def extract(text, publish=False):
     """Trả về nội dung mục `## Changes` đã chuẩn hoá; báo ValueError khi notes không dùng được.
 
     Mọi kiểm tra chạy trên dòng gốc, trước khi normalize bỏ thụt lề của dòng đầu mục. Với publish,
-    dòng giữ chỗ của bản nháp cũng bị từ chối.
+    dòng giữ chỗ của bản nháp cũng bị từ chối. Hàng thân bảng có ô vượt quá số ô của hàng tiêu đề
+    vào kết quả ở dạng đã cắt bỏ các ô đó, như GitHub bỏ chúng khi hiện trang release.
     """
     lines = text.replace("\r\n", "\n").split("\n")
-    kinds, unclosed, inline, quotes = scan(lines)
+    kinds, unclosed, inline, quotes, trimmed = scan(lines)
     candidates = [index for index, kind in enumerate(kinds) if kind == "text"]
     start = next((index for index in candidates if CHANGES_HEADING.match(lines[index])), None)
     end = len(lines) if start is None else next(
@@ -994,7 +1016,8 @@ def extract(text, publish=False):
                              "remove the '>' and write this as plain text or a list item")
     if publish and any(lines[index].strip() == PLACEHOLDER for index in section_indexes):
         raise ValueError(f"the '## Changes' section still has the '{PLACEHOLDER}' placeholder")
-    section = normalize("\n".join(lines[start + 1:end]))
+    # Hàng thân bảng có ô thừa vào notes nhúng ở dạng đã cắt, chỉ còn các ô GitHub hiện.
+    section = normalize("\n".join(trimmed.get(index, lines[index]) for index in range(start + 1, end)))
     if not section:
         raise ValueError("the '## Changes' section of the release notes is empty")
     return section

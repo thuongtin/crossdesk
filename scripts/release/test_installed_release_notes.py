@@ -241,20 +241,32 @@ class ExtractTest(unittest.TestCase):
                 self.assertEqual(notes.extract("## Changes\n\n" + table), table)
         self.assert_rejected("## Changes\n\n| a |\n| - |\n| b \\| <i> |", HTML.format(5))
 
-    def test_cells_beyond_the_header_only_reject_what_breaks_the_row(self):
-        # GitHub bỏ các ô của hàng thân bảng vượt quá số ô của hàng tiêu đề, nên URL trần trong đó không
-        # thành link và không cần viết lại. Ô nằm trong số cột của hàng tiêu đề vẫn được kiểm đủ.
-        table = "| Change |\n| - |\n| [Guide](https://example.com/guide) | https://example.com |"
-        self.assertEqual(notes.extract("## Changes\n\n" + table), table)
-        for cell, error in (("https://example.com", BARE_URL), ("![i](https://example.com/i.png)", IMAGE)):
+    def test_cells_beyond_the_header_are_dropped(self):
+        # GitHub bỏ các ô của hàng thân bảng vượt quá số ô của hàng tiêu đề, nên extractor cắt chúng
+        # khỏi notes nhúng và không kiểm gì trong đó. Hộp thoại đưa cả dòng cho Markdown của Slint, mà
+        # Slint báo lỗi với ảnh hay HTML ở bất kỳ ô nào, nên để lại ô thừa sẽ làm link "Guide" không bấm
+        # được; còn "<u>" hay code span có "<b>" thì GitHub hiện được nên không được làm hỏng bản phát hành.
+        head = "| Change |\n| - |\n"
+        kept = head + "| [Guide](https://example.com/guide) |"
+        for cell in ("https://example.com", "![i](https://example.com/i.png)", "<b>new</b>", "<u>new</u>",
+                     "`printf x | grep '<b>'`", " ", "a | b"):
+            with self.subTest(cell=cell):
+                self.assertEqual(notes.extract(f"## Changes\n\n{kept} {cell} |"), kept)
+                self.assertEqual(notes.extract(f"## Changes\n\n{kept} {cell}"), kept)
+        # Hàng không có '|' ở hai đầu, '|' thoát bằng '\\' trong ô giữ lại, tab và hàng trong mục list
+        # cũng chỉ mất phần sau ô cuối mà GitHub hiện; hàng đủ ô hay thiếu ô giữ nguyên.
+        for body, expected in (("a | x\n--|--\nb | c | <b>d</b>", "a | x\n--|--\nb | c |"),
+                               ("| a |\n| - |\n| b \\| c | <i> |", "| a |\n| - |\n| b \\| c |"),
+                               ("| a |\n| - |\n|\tb\t|\t<i>\t|", "| a |\n| - |\n|\tb\t|"),
+                               ("- | a |\n  | - |\n  | b | <i> |", "- | a |\n  | - |\n  | b |"),
+                               ("| a | b |\n| - | - |\n| c | d |\n| e |", "| a | b |\n| - | - |\n| c | d |\n| e |")):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract(f"## Changes\n\n{body}"), expected)
+        # Ô nằm trong số cột của hàng tiêu đề vẫn được kiểm đủ.
+        for cell, error in (("https://example.com", BARE_URL), ("![i](https://example.com/i.png)", IMAGE),
+                            ("<b>new</b>", HTML)):
             with self.subTest(cell=cell):
                 self.assert_rejected(f"## Changes\n\n| Change | Link |\n| - | - |\n| Fixed login | {cell} |",
-                                     error.format(5))
-        # Hộp thoại vẫn đưa cả dòng cho Markdown của Slint, mà Slint báo lỗi với ảnh hay HTML ở bất kỳ ô
-        # nào và hiện cả hàng thành chữ thô, nên link "Guide" ở ô giữ lại không bấm được nữa.
-        for cell, error in (("![i](https://example.com/i.png)", IMAGE), ("<b>new</b>", HTML)):
-            with self.subTest(surplus=cell):
-                self.assert_rejected(f"## Changes\n\n| Change |\n| - |\n| [Guide](https://example.com/guide) | {cell} |",
                                      error.format(5))
 
     def test_block_quotes_are_rejected(self):

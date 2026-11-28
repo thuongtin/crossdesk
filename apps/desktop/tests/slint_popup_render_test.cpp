@@ -849,9 +849,9 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   if (!Check(!slint::StyledText::from_markdown("> See [the guide](https://example.com)") &&
                  !slint::StyledText::from_markdown("- > See [the guide](https://example.com)"),
              "Slint Markdown must reject the block quotes that the extractor rejects")) return false;
-  // Hộp thoại đưa cả dòng của hàng bảng cho Markdown của Slint, kể cả ô thừa mà GitHub bỏ đi. Slint
-  // báo lỗi với ảnh hay HTML ở bất kỳ ô nào, nên cả hàng thành chữ thô và link "Guide" không bấm được.
-  // Vì vậy extractor từ chối ảnh và HTML cả trong ô thừa.
+  // Hộp thoại đưa cả dòng của hàng bảng cho Markdown của Slint. Slint báo lỗi với ảnh hay HTML ở
+  // bất kỳ ô nào, nên cả hàng thành chữ thô và link "Guide" không bấm được. Vì vậy extractor từ chối
+  // ảnh và HTML trong các ô GitHub hiện, và cắt khỏi notes nhúng các ô thừa mà GitHub bỏ đi.
   const bool image_rejected = !slint::StyledText::from_markdown(
       "| [Guide](https://example.com/guide) | ![i](https://example.com/i.png) |");
   const bool html_rejected =
