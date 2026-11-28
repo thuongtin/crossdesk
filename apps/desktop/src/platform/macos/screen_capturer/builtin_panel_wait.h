@@ -3,8 +3,10 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace crossdesk {
@@ -185,6 +187,46 @@ inline EnumerationFailure ResolveConfigurationTimeout(
   }
   return action;
 }
+
+// Holds the geometry a stream slot moves to until ScreenCaptureKit confirms
+// that the stream captures the new display. Remote input maps through the
+// slot's published geometry, so publishing it when the display is chosen
+// would aim clicks at a display the viewer does not see yet, for example
+// while a fallback returns to its requested display.
+template <typename Info>
+class PendingSlotGeometry {
+ public:
+  // Holds |info| for |slot| until configuration |generation| is confirmed.
+  // A later hold replaces this one.
+  void Hold(uint64_t generation, size_t slot, Info info) {
+    pending_ = Entry{generation, slot, std::move(info)};
+  }
+
+  // Called once configuration |generation| has switched the stream. Publishes
+  // the hold into |published| when that configuration made it. Generations
+  // only grow, so an older hold can never be confirmed and is dropped.
+  // Returns whether the hold was published.
+  bool Confirm(uint64_t generation, std::vector<Info>& published) {
+    if (!pending_ || pending_->generation > generation) return false;
+    Entry entry = std::move(*pending_);
+    pending_.reset();
+    if (entry.generation != generation || entry.slot >= published.size()) {
+      return false;
+    }
+    published[entry.slot] = std::move(entry.info);
+    return true;
+  }
+
+  void Reset() { pending_.reset(); }
+
+ private:
+  struct Entry {
+    uint64_t generation;
+    size_t slot;
+    Info info;
+  };
+  std::optional<Entry> pending_;
+};
 
 }  // namespace crossdesk
 

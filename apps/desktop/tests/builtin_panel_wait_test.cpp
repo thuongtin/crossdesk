@@ -295,6 +295,68 @@ bool TestConfigurationTimeout() {
   return ok;
 }
 
+struct SlotInfo {
+  uint32_t display = 0;
+  int width = 0;
+  bool operator==(const SlotInfo& other) const {
+    return display == other.display && width == other.width;
+  }
+};
+
+bool TestPendingSlotGeometry() {
+  using crossdesk::PendingSlotGeometry;
+  bool ok = true;
+
+  // Slot 0 captures the fallback display 2 while it asks for the panel 1.
+  const SlotInfo fallback{2, 1920};
+  const SlotInfo panel{1, 1512};
+  std::vector<SlotInfo> published{fallback, SlotInfo{3, 2560}};
+
+  PendingSlotGeometry<SlotInfo> geometry;
+  geometry.Hold(4, 0, panel);
+  // Remote input maps through the published geometry. Until ScreenCaptureKit
+  // confirms the switch, the viewer still sees the fallback.
+  ok &= Expect(published[0] == fallback,
+               "held geometry must not reach input before the switch is confirmed");
+  ok &= Expect(geometry.Confirm(4, published),
+               "the configuration that captured the slot must publish it");
+  ok &= Expect(published[0] == panel,
+               "a confirmed switch must publish the new display's geometry");
+  ok &= Expect(published[1] == SlotInfo{3, 2560},
+               "a confirmed switch must leave the other slots alone");
+  ok &= Expect(!geometry.Confirm(4, published),
+               "held geometry must be published only once");
+
+  // A failed or superseded configuration never confirms. The next one holds
+  // its own choice, which replaces the earlier hold.
+  published[0] = fallback;
+  geometry.Hold(5, 0, panel);
+  geometry.Hold(6, 0, fallback);
+  ok &= Expect(!geometry.Confirm(5, published) && published[0] == fallback,
+               "a replaced hold must not be published by its old configuration");
+  ok &= Expect(geometry.Confirm(6, published) && published[0] == fallback,
+               "the newest hold must be published by its own configuration");
+
+  // Generations only grow, so a hold older than the confirmed configuration
+  // can never be confirmed and is dropped without being published.
+  geometry.Hold(7, 0, panel);
+  ok &= Expect(!geometry.Confirm(8, published) && published[0] == fallback,
+               "a newer configuration must not publish an older hold");
+  ok &= Expect(!geometry.Confirm(7, published) && published[0] == fallback,
+               "an older hold must be dropped once a newer one is confirmed");
+
+  // A hold for a slot the display list no longer has is dropped safely.
+  geometry.Hold(9, 5, panel);
+  ok &= Expect(!geometry.Confirm(9, published) && published.size() == 2,
+               "a hold for a missing slot must not be published");
+
+  geometry.Hold(10, 0, panel);
+  geometry.Reset();
+  ok &= Expect(!geometry.Confirm(10, published) && published[0] == fallback,
+               "a stopped or recovering stream must drop its hold");
+  return ok;
+}
+
 }  // namespace
 
 int main() {
@@ -304,5 +366,6 @@ int main() {
   ok &= TestReturnEnumeration();
   ok &= TestEnumerationFailure();
   ok &= TestConfigurationTimeout();
+  ok &= TestPendingSlotGeometry();
   return ok ? 0 : 1;
 }

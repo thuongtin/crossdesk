@@ -220,6 +220,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   ScreenCaptureHealth interruption_ = ScreenCaptureHealth::starting;
   BuiltinPanelWait builtin_panel_wait_;
   FallbackReturnProbe fallback_return_probe_;
+  PendingSlotGeometry<DisplayInfo> pending_slot_geometry_;
   uint64_t capture_session_ = 0;
   using Clock = std::chrono::steady_clock;
   Clock::time_point capture_attempt_started_{};
@@ -557,6 +558,7 @@ int ScreenCapturerSckImpl::Start(bool show_cursor) {
     interruption_ = ScreenCaptureHealth::starting;
     builtin_panel_wait_.Reset();
     fallback_return_probe_.Reset();
+    pending_slot_geometry_.Reset();
     suspended_since_ = {};
     capture_attempt_started_ = Clock::now();
     session = ++capture_session_;
@@ -646,6 +648,7 @@ int ScreenCapturerSckImpl::Stop() {
   recovery_attempt_ = 0;
   builtin_panel_wait_.Reset();
   fallback_return_probe_.Reset();
+  pending_slot_geometry_.Reset();
   suspended_since_ = {};
   ++capture_session_;
   configuration_in_flight_ = reconfigure_pending_ = false;
@@ -755,7 +758,8 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
     }
     if (choice.index >= 0) {
       // The viewer and input still use the selected slot, even when SCK
-      // falls back to another display. Bind that slot to the new geometry.
+      // falls back to another display. Bind that slot to the new geometry
+      // once the stream captures it.
       captured_display = content.displays[choice.index];
     }
 
@@ -780,7 +784,7 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
       }
 
       CGRect bounds = CGDisplayBounds(new_display);
-      auto& info = display_info_list_[logical_index];
+      DisplayInfo info = display_info_list_[logical_index];
       info.handle = (void *)(uintptr_t)new_display;
       info.is_primary = CGDisplayIsMain(new_display);
       info.left = static_cast<int>(bounds.origin.x);
@@ -793,6 +797,10 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
       if (!refreshed_name.empty()) {
         info.name = refreshed_name;
       }
+      // Remote input maps through the slot's published geometry. Publish the
+      // new display's geometry only once ScreenCaptureKit confirms the stream
+      // captures it, so clicks keep aiming at the display the viewer sees.
+      pending_slot_geometry_.Hold(generation, logical_index, std::move(info));
 
       if (old_display != new_display) {
         LOG_INFO("macOS display mapping refreshed: slot={}, old_id={}, "
@@ -959,6 +967,7 @@ void ScreenCapturerSckImpl::ConfigurationFinished(SCStream* source, uint64_t gen
     if (!error) {
       stream_running_ = true;
       applied_configuration_ = configuration;
+      pending_slot_geometry_.Confirm(generation, display_info_list_);
       if (privacy_) privacy_->CaptureChanged(true);
       if (complete && !refresh) {
         if (AcknowledgeMacPrivacyCapture(revision))
@@ -995,6 +1004,7 @@ void ScreenCapturerSckImpl::RecoverCapture(uint64_t generation,
     stream_running_ = received_frame_ = false;
     configuration_in_flight_ = reconfigure_pending_ = false;
     applied_configuration_ = nil;
+    pending_slot_geometry_.Reset();
     suspended_since_ = {};
     ++configuration_generation_; // Revoke pending completions and frames.
     recovery_pending_ = cause != CaptureInterruption::user_stop;
