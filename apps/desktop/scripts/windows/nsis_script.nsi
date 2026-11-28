@@ -13,6 +13,8 @@ Unicode true
 !define APP_NAME "CrossDesk"
 !define UNINSTALL_REG_KEY "CrossDesk"
 !define PRODUCT_SERVICE_NAME "CrossDeskService"
+; IDs of the firewall rules AddFirewallRules creates start with this text.
+!define FIREWALL_RULE_ID_PREFIX "CrossDesk Installer "
 
 ; Installer and uninstaller icon path
 !define MUI_ICON "${__FILEDIR__}\..\..\resources\windows\crossdesk.ico"
@@ -198,6 +200,9 @@ installApp:
     ; output directory after building crossdesk; its License.txt ships with it.
     File /r "..\..\..\..\build\windows\x64\release\usbmmidd_v2"
 
+    ; Before the service starts, because it starts CrossDesk.exe again when
+    ; unattended access is enabled.
+    Call AddFirewallRules
     Call RegisterInstalledService
 
     ; Import the previous user's startup preference after installing service
@@ -476,6 +481,27 @@ missing_service_binary:
     Abort
 FunctionEnd
 
+; Allows inbound TCP and UDP to CrossDesk.exe on every network profile, so
+; that Windows Defender Firewall never asks whether to allow CrossDesk. Every
+; install and upgrade replaces the rules for this path, so exactly one TCP
+; and one UDP rule remain. The rules Windows added when a user answered its
+; prompt for this path go too: a Block rule among them would override these
+; Allow rules. Rules an administrator or a policy created stay. netsh cannot
+; select rules by ID, so PowerShell's NetSecurity module does it. The path
+; goes through the environment, so no quoting can break it.
+Function AddFirewallRules
+    DetailPrint "$(CD_AddingFirewallRules)"
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", w "$INSTDIR\CrossDesk.exe")'
+    ${DisableX64FSRedirection}
+    nsExec::ExecToLog `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; try { $$program = $$env:CROSSDESK_FIREWALL_PROGRAM; Get-NetFirewallRule -PolicyStore PersistentStore -Name '${FIREWALL_RULE_ID_PREFIX}*', 'TCP Query User{*', 'UDP Query User{*' | Where-Object { ($$_ | Get-NetFirewallApplicationFilter).Program -eq $$program } | Remove-NetFirewallRule; foreach ($$protocol in 'TCP', 'UDP') { New-NetFirewallRule -PolicyStore PersistentStore -Name ('${FIREWALL_RULE_ID_PREFIX}' + $$protocol + ' {' + [guid]::NewGuid() + '}') -DisplayName '${PRODUCT_NAME}' -Group '${PRODUCT_NAME}' -Direction Inbound -Action Allow -Profile Domain, Private, Public -Program $$program -Protocol $$protocol | Out-Null } } catch { exit 1 }"`
+    Pop $0
+    ${EnableX64FSRedirection}
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", p 0)'
+    ${If} $0 != "0"
+        DetailPrint "$(CD_FirewallRulesNotAdded)"
+    ${EndIf}
+FunctionEnd
+
 Function un.UnregisterInstalledService
     ; Also disarm unattended startup when removal must fall back to sc.exe.
     SetRegView 64
@@ -701,15 +727,16 @@ Function un.RemoveMachineData
     Call un.SetBackupPrivileges
     Pop $0
 
-    ; When a user answers the Windows Defender Firewall prompt for
-    ; CrossDesk.exe, Windows adds a TCP and a UDP inbound rule whose IDs start
-    ; with "TCP Query User{" and "UDP Query User{". Remove only those for this
-    ; copy's path; rules an administrator or a policy created stay. netsh
-    ; cannot select rules by ID, so PowerShell's NetSecurity module does it.
-    ; The path goes through the environment, so no quoting can break it.
+    ; Remove the rules AddFirewallRules created for this copy's path and the
+    ; ones Windows added when a user answered the Windows Defender Firewall
+    ; prompt for it, whose IDs start with "TCP Query User{" and
+    ; "UDP Query User{" (installs from before AddFirewallRules, or where it
+    ; failed). Rules an administrator or a policy created stay. netsh cannot
+    ; select rules by ID, so PowerShell's NetSecurity module does it. The
+    ; path goes through the environment, so no quoting can break it.
     System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", w "$INSTDIR\CrossDesk.exe")'
     ${DisableX64FSRedirection}
-    nsExec::ExecToLog `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; try { Get-NetFirewallRule -PolicyStore PersistentStore -Name 'TCP Query User{*', 'UDP Query User{*' | Where-Object { ($$_ | Get-NetFirewallApplicationFilter).Program -eq $$env:CROSSDESK_FIREWALL_PROGRAM } | Remove-NetFirewallRule } catch { exit 1 }"`
+    nsExec::ExecToLog `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; try { Get-NetFirewallRule -PolicyStore PersistentStore -Name '${FIREWALL_RULE_ID_PREFIX}*', 'TCP Query User{*', 'UDP Query User{*' | Where-Object { ($$_ | Get-NetFirewallApplicationFilter).Program -eq $$env:CROSSDESK_FIREWALL_PROGRAM } | Remove-NetFirewallRule } catch { exit 1 }"`
     Pop $0
     ${EnableX64FSRedirection}
     System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", p 0)'
