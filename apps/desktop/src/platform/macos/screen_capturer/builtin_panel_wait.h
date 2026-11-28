@@ -142,6 +142,50 @@ class FallbackReturnProbe {
   std::optional<uint64_t> return_generation_;
 };
 
+// What the capturer does with a display enumeration that failed, listed no
+// displays or ran past its timeout.
+enum class EnumerationFailure {
+  // Stop the stream and retry on the recovery backoff.
+  recover,
+  // Keep the fallback stream, which still delivers frames.
+  keep_stream,
+  // Keep it, and start the reconfiguration another change queued meanwhile.
+  keep_stream_and_reconfigure,
+};
+
+// Decides for a failed enumeration. Only a return enumeration whose fallback
+// still delivers frames keeps the stream, and it then takes over the queued
+// reconfiguration, which the capturer must start. Recovery leaves
+// |reconfigure_pending| to RecoverCapture.
+inline EnumerationFailure ResolveEnumerationFailure(bool return_enumeration,
+                                                    bool delivering_frames,
+                                                    bool& reconfigure_pending) {
+  if (!return_enumeration || !delivering_frames) {
+    return EnumerationFailure::recover;
+  }
+  const bool queued = reconfigure_pending;
+  reconfigure_pending = false;
+  return queued ? EnumerationFailure::keep_stream_and_reconfigure
+                : EnumerationFailure::keep_stream;
+}
+
+// Decides for the configuration in flight once it ran past its timeout. The
+// capturer passes its own |generation|, |in_flight| and |reconfigure_pending|.
+// A return enumeration that has not answered while its fallback still
+// delivers frames is abandoned: the flight ends and moves to a new generation,
+// so its late answer is ignored as stale.
+inline EnumerationFailure ResolveConfigurationTimeout(
+    FallbackReturnProbe& probe, uint64_t& generation, bool& in_flight,
+    bool& reconfigure_pending, bool delivering_frames) {
+  const EnumerationFailure action = ResolveEnumerationFailure(
+      probe.ReturnAnswered(generation), delivering_frames, reconfigure_pending);
+  if (action != EnumerationFailure::recover) {
+    in_flight = false;
+    ++generation;
+  }
+  return action;
+}
+
 }  // namespace crossdesk
 
 #endif

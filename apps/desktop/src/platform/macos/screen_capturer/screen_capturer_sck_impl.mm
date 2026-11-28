@@ -275,9 +275,6 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
     return stream_ && stream_running_ && received_frame_ &&
            suspended_since_ == Clock::time_point{};
   }
-  // Keeps a working fallback after its return enumeration failed, and starts
-  // the enumeration another change asked for in the meantime.
-  void KeepFallback(const std::string& reason);
   // Asks ScreenCaptureKit for its display list without touching the stream,
   // and reports back through |helper| if |requested| is in it.
   static void ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
@@ -667,7 +664,7 @@ int ScreenCapturerSckImpl::Stop() {
 void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *content,
                                                      uint64_t generation, uint64_t revision,
                                                      NSError* error) {
-  bool keep_fallback = false;
+  bool return_enumeration = false;
   {
     std::lock_guard<std::mutex> lock(lock_);
     if (!capture_requested_ || generation != configuration_generation_) {
@@ -675,8 +672,7 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
       return;
     }
     configuration_in_flight_ = false;
-    keep_fallback = fallback_return_probe_.ReturnAnswered(generation) &&
-                    DeliveringFramesLocked();
+    return_enumeration = fallback_return_probe_.ReturnAnswered(generation);
   }
 
   // The window list belongs to the privacy revision present when the request
@@ -687,11 +683,24 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
   }
 
   // An enumeration that only tried to end a fallback must not stop the
-  // fallback when it fails: the stream still delivers frames.
-  if (keep_fallback && (error || !content || content.displays.count == 0)) {
-    KeepFallback(error || !content ? "getShareableContent failed: " + NSErrorToString(error)
-                                   : "getShareableContent returned no displays");
-    return;
+  // fallback when it fails while the stream still delivers frames.
+  if (return_enumeration && (error || !content || content.displays.count == 0)) {
+    EnumerationFailure action;
+    {
+      std::lock_guard<std::mutex> lock(lock_);
+      action = ResolveEnumerationFailure(true, DeliveringFramesLocked(),
+                                         reconfigure_pending_);
+    }
+    if (action != EnumerationFailure::recover) {
+      LOG_WARN("ScreenCaptureKit display check for the requested display failed: {}; "
+               "keeping the fallback",
+               error || !content ? "getShareableContent failed: " + NSErrorToString(error)
+                                 : std::string("getShareableContent returned no displays"));
+      if (action == EnumerationFailure::keep_stream_and_reconfigure) {
+        StartOrReconfigureCapturer();
+      }
+      return;
+    }
   }
 
   if (error || !content) {
@@ -1054,19 +1063,18 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
       }
     } else if (configuration_in_flight_ &&
                now - configuration_started_ >= kCaptureStartTimeout) {
-      if (fallback_return_probe_.ReturnAnswered(generation) &&
-          DeliveringFramesLocked()) {
-        // The return enumeration has not answered, but the fallback still
-        // delivers frames. Abandon the enumeration and keep the stream; the
-        // new generation makes a late answer stale.
+      // A return enumeration that has not answered is abandoned while the
+      // fallback still delivers frames; its new generation makes a late
+      // answer stale. Anything else recovers.
+      const EnumerationFailure action = ResolveConfigurationTimeout(
+          fallback_return_probe_, configuration_generation_,
+          configuration_in_flight_, reconfigure_pending_, DeliveringFramesLocked());
+      if (action == EnumerationFailure::recover) {
+        failure = "ScreenCaptureKit configuration timed out";
+      } else {
         LOG_WARN("ScreenCaptureKit display check for the requested display timed out; "
                  "keeping the fallback");
-        configuration_in_flight_ = false;
-        ++configuration_generation_;
-        retry = reconfigure_pending_;
-        reconfigure_pending_ = false;
-      } else {
-        failure = "ScreenCaptureKit configuration timed out";
+        retry = action == EnumerationFailure::keep_stream_and_reconfigure;
       }
     } else if ((!stream_running_ || !received_frame_) &&
                now - capture_attempt_started_ >= kCaptureStartTimeout) {
@@ -1125,19 +1133,6 @@ void ScreenCapturerSckImpl::RequestedDisplayListed(uint64_t session) {
   // The new enumeration lists the requested display, which ChooseCaptureDisplay
   // prefers over the fallback. If it fails instead, the fallback keeps running.
   StartOrReconfigureCapturer(/*return_check=*/true);
-}
-
-void ScreenCapturerSckImpl::KeepFallback(const std::string& reason) {
-  bool pending;
-  {
-    std::lock_guard lock(lock_);
-    pending = reconfigure_pending_;
-    reconfigure_pending_ = false;
-  }
-  LOG_WARN("ScreenCaptureKit display check for the requested display failed: {}; "
-           "keeping the fallback",
-           reason);
-  if (pending) StartOrReconfigureCapturer();
 }
 
 void ScreenCapturerSckImpl::CaptureStopped(SCStream* source, NSError* error) {

@@ -202,6 +202,99 @@ bool TestReturnEnumeration() {
   return ok;
 }
 
+bool TestEnumerationFailure() {
+  using crossdesk::EnumerationFailure;
+  using crossdesk::ResolveEnumerationFailure;
+
+  bool ok = true;
+  bool pending = true;
+  ok &= Expect(ResolveEnumerationFailure(false, true, pending) ==
+                   EnumerationFailure::recover,
+               "a failed normal enumeration must recover");
+  ok &= Expect(pending,
+               "recovery must leave the queued reconfiguration to RecoverCapture");
+  ok &= Expect(ResolveEnumerationFailure(true, false, pending) ==
+                   EnumerationFailure::recover,
+               "a failed return without frames must recover");
+
+  pending = false;
+  ok &= Expect(ResolveEnumerationFailure(true, true, pending) ==
+                   EnumerationFailure::keep_stream,
+               "a failed return must keep a fallback that delivers frames");
+  pending = true;
+  ok &= Expect(ResolveEnumerationFailure(true, true, pending) ==
+                   EnumerationFailure::keep_stream_and_reconfigure,
+               "a kept fallback must start the reconfiguration queued meanwhile");
+  ok &= Expect(!pending, "the queued reconfiguration must be taken once");
+  return ok;
+}
+
+bool TestConfigurationTimeout() {
+  using crossdesk::EnumerationFailure;
+  using crossdesk::FallbackReturnProbe;
+  using crossdesk::ResolveConfigurationTimeout;
+
+  bool ok = true;
+
+  // A normal configuration that ran past its timeout recovers. RecoverCapture
+  // revokes its generation, so the state is left for it.
+  FallbackReturnProbe probe;
+  uint64_t generation = 5;
+  bool in_flight = true;
+  bool pending = true;
+  ok &= Expect(ResolveConfigurationTimeout(probe, generation, in_flight, pending,
+                                           true) == EnumerationFailure::recover,
+               "a normal configuration that timed out must recover");
+  ok &= Expect(generation == 5 && in_flight && pending,
+               "recovery must leave the flight to RecoverCapture");
+
+  // The return enumeration hangs while the fallback delivers frames and a
+  // screen change queued a reconfiguration behind it.
+  generation = 6;
+  probe.ReturnStarted(generation);
+  ok &= Expect(ResolveConfigurationTimeout(probe, generation, in_flight, pending,
+                                           true) ==
+                   EnumerationFailure::keep_stream_and_reconfigure,
+               "a return that timed out must keep the fallback and reconfigure");
+  ok &= Expect(!in_flight, "an abandoned return must end the flight");
+  ok &= Expect(!pending, "the queued reconfiguration must be taken once");
+  ok &= Expect(generation == 7,
+               "an abandoned return must move to a new generation");
+  // OnShareableContentCreated ignores an answer whose generation is not the
+  // current one, and the mark is gone, so a late answer changes nothing.
+  ok &= Expect(generation != 6 && !probe.ReturnAnswered(6),
+               "a late answer to the abandoned return must be stale");
+
+  generation = 8;
+  in_flight = true;
+  pending = false;
+  probe.ReturnStarted(generation);
+  ok &= Expect(ResolveConfigurationTimeout(probe, generation, in_flight, pending,
+                                           true) == EnumerationFailure::keep_stream,
+               "a return that timed out alone must only keep the fallback");
+  ok &= Expect(generation == 9 && !in_flight,
+               "a kept fallback must still revoke the abandoned return");
+
+  generation = 10;
+  in_flight = true;
+  probe.ReturnStarted(generation);
+  ok &= Expect(ResolveConfigurationTimeout(probe, generation, in_flight, pending,
+                                           false) == EnumerationFailure::recover,
+               "a return that timed out without frames must recover");
+  ok &= Expect(generation == 10 && in_flight,
+               "recovery after a return must leave the flight to RecoverCapture");
+
+  // Once the return enumeration has answered, the same generation goes on to
+  // reconfigure the stream. A timeout there is a real failure.
+  generation = 11;
+  probe.ReturnStarted(generation);
+  probe.ReturnAnswered(generation);
+  ok &= Expect(ResolveConfigurationTimeout(probe, generation, in_flight, pending,
+                                           true) == EnumerationFailure::recover,
+               "a stream reconfiguration that timed out must recover");
+  return ok;
+}
+
 }  // namespace
 
 int main() {
@@ -209,5 +302,7 @@ int main() {
   ok &= TestDisplayChoice();
   ok &= TestFallbackReturnProbe();
   ok &= TestReturnEnumeration();
+  ok &= TestEnumerationFailure();
+  ok &= TestConfigurationTimeout();
   return ok ? 0 : 1;
 }
