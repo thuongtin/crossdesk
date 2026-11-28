@@ -33,7 +33,7 @@
 "公告加载失败，请重试。" = "Das Laden der Ankündigung ist fehlgeschlagen. Bitte versuchen Sie es erneut.";
 "公告详情" = "Einzelheiten zur Ankündigung";
 "共 %1$@ 条 · %2$@ 条未读" = "Insgesamt %1$@ Artikel ·%2$@ ungelesene Artikel";
-"关于" = "Ungefähr";
+"关于" = "Über";
 "关于 CrossDesk" = "Über CrossDesk";
 "关于，有新版本" = "Ungefähr, es gibt eine neue Version";
 "关闭" = "Schließen";
@@ -87,7 +87,7 @@
 "已勾选" = "Geprüft";
 "已发送 Ctrl+Alt+Del" = "Ctrl+Alt+Del gesendet";
 "已发送本机剪贴板" = "Lokale Zwischenablage gesendet";
-"已授权" = "Zugegeben";
+"已授权" = "Erteilt";
 "已接收 %1$@" = "%1$@ erhalten";
 "已接收远端剪贴板" = "Remote-Zwischenablage empfangen";
 "已读" = "Lesen";
@@ -155,7 +155,7 @@
 "未知连接状态" = "Unbekannter Verbindungsstatus";
 "未读" = "Ungelesen";
 "未连接" = "Nicht verbunden";
-"本应用使用 OpenFEC 提供前向纠错功能，遵循 CeCILL-C 1.0 许可。该许可规定了有限保证及责任限制，详情见许可全文。" = "Diese Anwendung verwendet OpenFEC zur Vorwärtsfehlerkorrektur unterCeCILL-C1.0, was eingeschränkte Garantien und Haftungsbeschränkungen bietet. Einzelheiten finden Sie in der vollständigen Lizenz.";
+"本应用使用 OpenFEC 提供前向纠错功能，遵循 CeCILL-C 1.0 许可。该许可规定了有限保证及责任限制，详情见许可全文。" = "Diese Anwendung verwendet OpenFEC zur Vorwärtsfehlerkorrektur unter CeCILL-C 1.0, was eingeschränkte Garantien und Haftungsbeschränkungen bietet. Einzelheiten finden Sie in der vollständigen Lizenz.";
 "本机 ID  %1$@" = "Lokale ID %1$@";
 "本机登录凭据暂时无法安全存取。请解锁设备后，在设置中点击“应用”重试。" = "Die Anmeldeinformationen für diesen Computer sind vorübergehend unsicher. Bitte entsperren Sie Ihr Gerät und klicken Sie in den Einstellungen auf „Übernehmen“, um es erneut zu versuchen.";
 "本版本源码与构建说明" = "Quellcode und Build-Anweisungen für diese Version";

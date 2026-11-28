@@ -122,6 +122,8 @@ export global UiStrings {
     in-out property <string> screen-recording-permission: "Screen recording permission";
     in-out property <string> accessibility-permission: "Accessibility permission";
     in-out property <string> system-permissions: "System permissions";
+    in-out property <string> manage: "Manage";
+    in-out property <string> manage-system-permissions: "Manage system permissions";
     in-out property <string> permission-migration-running: "Migrating permissions…";
     in-out property <string> permission-migration-failed;
     in-out property <string> retry-permission-migration: "Retry migration";
@@ -2989,11 +2991,19 @@ export component MainWindow inherits Window {
                                 }
                                 permission-action := Rectangle {
                                     x: parent.width - self.width - 16px; y: (parent.height - self.height) / 2;
-                                    width: max(96px, permission-action-metrics.preferred-width + 24px);
+                                    // Quyền đã cấp chỉ hiện dấu tích và chữ ngắn, nên chỉ chiếm đúng bề rộng đó;
+                                    // nhờ vậy tên quyền dài (tiếng Đức) không bị ngắt giữa từ.
+                                    width: permission.granted
+                                        ? permission-granted-metrics.preferred-width + 18px
+                                        : max(96px, permission-action-metrics.preferred-width + 24px);
                                     height: 36px;
                                     permission-action-metrics := Text {
                                         visible: false; font-size: 13px; font-weight: 600;
                                         text: GalleryStrings.texts[110];
+                                    }
+                                    permission-granted-metrics := Text {
+                                        visible: false; accessible-role: none; font-size: 12px;
+                                        text: GalleryStrings.texts[111];
                                     }
                                     if !permission.granted: WorkbenchButton {
                                         width: parent.width; height: parent.height; primary: true;
@@ -3174,8 +3184,8 @@ export component MainWindow inherits Window {
                                 label-reserve: self-host-edit.width + 84px;
                                 checked <=> root.self-hosted-enabled; enabled: !root.settings-session-active; divider: false;
                                 self-host-edit := SettingsButton {
-                                    x: parent.width - self.width - 60px; y: 4px;
-                                    width: self-host-edit-metrics.preferred-width + 24px; height: 38px;
+                                    x: parent.width - self.width - 60px; y: (parent.height - self.height) / 2;
+                                    width: self-host-edit-metrics.preferred-width + 24px; height: 28px;
                                     text: GalleryStrings.texts[118];
                                     enabled: !root.settings-session-active;
                                     clicked => { root.self-host-settings-open = true; }
@@ -3198,28 +3208,34 @@ export component MainWindow inherits Window {
                             SettingsToggleRow { label: TrustStrings.only; checked <=> root.trusted-devices-only; }
                             SettingsRow {
                                 label: TrustStrings.title; divider: root.mac-permission-settings-visible || root.portable-service-settings-visible;
-                                SettingsButton {
-                                    x: parent.width - self.width - 12px; y: 4px;
-                                    width: max(104px, self.label-width); height: 38px;
-                                    text: TrustStrings.manage;
+                                // Nhãn hàng đã nói "thiết bị tin cậy", nút chỉ cần "Manage"; trình đọc màn
+                                // hình vẫn nghe đủ câu. Chừa chỗ theo bề rộng nút cộng 12px khoảng trống,
+                                // để nhãn dài bị rút gọn trước nút thay vì chạy sát hoặc chui dưới nút.
+                                label-reserve: trusted-manage.width + 36px;
+                                trusted-manage := SettingsButton {
+                                    x: parent.width - self.width - 12px; y: (parent.height - self.height) / 2;
+                                    width: max(88px, self.label-width); height: 28px;
+                                    text: UiStrings.manage; accessible-label: TrustStrings.manage;
                                     clicked => { root.trusted-devices-open = true; root.trust-action("open", "", ""); }
                                 }
                             }
                             if root.mac-permission-settings-visible: SettingsRow {
                                 label: UiStrings.system-permissions; divider: false;
-                                SettingsButton {
-                                    x: parent.width - self.width - 12px; y: 4px;
-                                    width: max(104px, self.label-width); height: 38px;
-                                    text: TrustStrings.manage;
+                                label-reserve: permissions-manage.width + 36px;
+                                permissions-manage := SettingsButton {
+                                    x: parent.width - self.width - 12px; y: (parent.height - self.height) / 2;
+                                    width: max(88px, self.label-width); height: 28px;
+                                    text: UiStrings.manage;
+                                    accessible-label: UiStrings.manage-system-permissions;
                                     clicked => { root.open-permissions(); }
                                 }
                             }
                             if root.portable-service-settings-visible: SettingsRow {
                                 label: UiStrings.service-settings-label; divider: false;
-                                label-reserve: service-button.width + 24px;
+                                label-reserve: service-button.width + 36px;
                                 service-button := SettingsButton {
-                                    x: parent.width - self.width - 12px; y: 4px;
-                                    width: max(104px, self.label-width); height: 38px;
+                                    x: parent.width - self.width - 12px; y: (parent.height - self.height) / 2;
+                                    width: max(104px, self.label-width); height: 28px;
                                     text: root.portable-service-installed || root.portable-service-needs-repair
                                         ? UiStrings.repair-service : UiStrings.install-service;
                                     enabled: !root.portable-service-installing;
@@ -3232,7 +3248,8 @@ export component MainWindow inherits Window {
                             SettingsToggleRow { label: UiStrings.save-remote-previews; checked <=> root.save-remote-previews; }
                             SettingsRow {
                                 label: UiStrings.file-save-path; enabled: !root.settings-session-active; divider: false;
-                                SettingsButton { x: parent.width - 116px; y: 4px; width: 104px; height: 38px; text: root.file-save-path == "" ? UiStrings.default-desktop : root.file-save-path; enabled: !root.settings-session-active; clicked => { root.browse-save-path(); } }
+                                label-reserve: 140px;
+                                SettingsButton { x: parent.width - 116px; y: (parent.height - self.height) / 2; width: 104px; height: 28px; text: root.file-save-path == "" ? UiStrings.default-desktop : root.file-save-path; enabled: !root.settings-session-active; clicked => { root.browse-save-path(); } }
                             }
                         }
                         SettingsGroup {
@@ -3343,7 +3360,10 @@ export component MainWindow inherits Window {
                 }
             }
             SettingsButton {
-                x: 24px; y: parent.height - 48px; width: 112px;
+                // Nhãn "Làm mới trạng thái" (vi) và tiếng Đức dài hơn 112px, nên nút nở theo chữ
+                // nhưng không lấn sang nút OK ở mép phải.
+                x: 24px; y: parent.height - 48px;
+                width: min(max(112px, self.label-width), parent.width - 150px);
                 text: GalleryStrings.texts[129];
                 enabled: root.autostart-status != AutostartStatus.checking;
                 clicked => { root.refresh-autostart-status(); }
@@ -3373,15 +3393,20 @@ export component MainWindow inherits Window {
         background: #15223835;
         z: 49;
         TouchArea { clicked => { focus-sink.focus(); } }
+        // Text ẩn chỉ để đo bề rộng tiêu đề: bản es, pt-BR dài hơn 324px của dialog 360px.
+        self-host-title-metrics := Text { visible: false; accessible-role: none; text: UiStrings.self-hosted-settings; font-size: 16px; font-weight: 600; }
         DialogSurface {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            width: 360px; height: root.self-host-settings-error == "" ? 266px : 322px;
+            // Nới dialog theo tiêu đề nhưng không vượt cửa sổ; quá hẹp thì tiêu đề elide.
+            width: min(parent.width - 32px, max(360px, self-host-title-metrics.preferred-width + 36px));
+            height: root.self-host-settings-error == "" ? 266px : 322px;
             border-radius: UiRadius.surface; outline-color: WorkbenchStyle.separator; background: #f8fafc;
             TouchArea { clicked => { focus-sink.focus(); } }
             Text {
                 x: 18px; y: 18px; width: parent.width - 36px; height: 24px;
                 text: UiStrings.self-hosted-settings; font-size: 16px; font-weight: 600; color: #22324a;
+                overflow: elide;
             }
             Text { x: 18px; y: 56px; width: parent.width - 36px; height: 20px; text: UiStrings.server-host; color: #34445a; font-size: 12px; overflow: elide; vertical-alignment: center; }
             RoundedLineEdit {
@@ -3522,7 +3547,9 @@ export component MainWindow inherits Window {
                     // Keep the expanding scrollbar outside the content.
                     padding: 0px; padding-right: 22px; spacing: 16px;
                     FlatSurface {
-                        height: product-info.preferred-height + 16px;
+                        // Logo 56px cách mép 16px, nên thẻ cao ít nhất 88px; thông tin sản phẩm có
+                        // lề trên dưới 16px như logo, không bị ép thấp hơn nội dung của nó.
+                        height: max(88px, product-info.preferred-height + 32px);
                         background: WorkbenchStyle.surface;
                         border-radius: UiRadius.surface;
                         outline-color: WorkbenchStyle.separator;
@@ -3638,7 +3665,7 @@ export component MainWindow inherits Window {
                         clicked => { root.check-for-updates(); }
                         check-button-metrics := Text { visible: false; text: UiStrings.check-for-updates; font-size: 12px; }
                     }
-                    SettingsButton { width: 80px; primary: true; text: UiStrings.ok; clicked => { root.about-open = false; } }
+                    SettingsButton { width: max(80px, self.label-width); primary: true; text: UiStrings.ok; clicked => { root.about-open = false; } }
                 }
             }
         }

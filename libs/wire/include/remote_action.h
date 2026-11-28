@@ -36,6 +36,10 @@ enum ControlType {
   video_codec_status = 14,
   display_resolution = 15,
   display_resolution_status = 16,
+  // Fork extensions start at 1000, so later upstream values cannot collide.
+  // Send them only to peers whose host information advertises the feature.
+  capture_status_request = 1000,
+  capture_status = 1001,
 };
 
 enum MouseFlag {
@@ -152,6 +156,8 @@ struct HostInfo {
   bool supports_file_browser;
   bool supports_file_clipboard;
   int file_clipboard_version;
+  // Optional; the peer answers capture_status_request with capture_status.
+  bool supports_capture_status;
 };
 
 struct ServiceStatus {
@@ -194,6 +200,26 @@ struct VideoCodecStatus {
   char encoder[128];
 };
 
+// Whether the host's screen capture can currently deliver video. Unknown
+// covers hosts that cannot tell, and states added by newer peers.
+enum class CaptureState {
+  unknown = 0,
+  starting,
+  capturing,
+  // The host OS has not allowed CrossDesk to record the screen.
+  permission_denied,
+  // The display is asleep, turned off or not listed by the capture backend.
+  display_unavailable,
+  failed,
+};
+
+struct CaptureStatus {
+  CaptureState state;
+};
+
+// The wire name of |state|, also used in logs.
+const char* CaptureStateName(CaptureState state);
+
 inline bool ValidVideoSettings(const VideoSettings& settings) {
   return settings.quality >= 0 && settings.quality <= 2 &&
          (settings.frame_rate == 30 || settings.frame_rate == 60) &&
@@ -218,6 +244,7 @@ struct RemoteAction {
     PrivacyStatus ps;
     VideoSettings vs;
     VideoCodecStatus vcs;
+    CaptureStatus cps;
   };
 
   // Committed UTF-8 text. Kept outside the POD union for automatic ownership.

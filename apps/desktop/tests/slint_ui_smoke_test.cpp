@@ -41,6 +41,30 @@ bool WriteWindowSnapshot(const slint::Window &window, const char *path) {
   return output.good();
 }
 
+// Do fork sở hữu: tung độ logic ở giữa đoạn tô màu PrimaryButton (#3564e3) đầu
+// tiên trên cột x, dò từ top xuống; -1 nếu cột đó không cắt nút nào. Chọn cột
+// không đi qua nhãn để chữ trắng không cắt đôi đoạn màu.
+float PrimaryButtonCenterY(const slint::Window &window, float x, float top) {
+  const auto snapshot = window.take_snapshot();
+  const float scale = window.scale_factor();
+  if (!snapshot || x * scale >= snapshot->width()) {
+    return -1.0f;
+  }
+  const auto column = static_cast<std::size_t>(x * scale);
+  int first = -1;
+  for (int y = std::max(0, static_cast<int>(top * scale));
+       y < static_cast<int>(snapshot->height()); ++y) {
+    const auto pixel = snapshot->begin()[y * snapshot->width() + column];
+    const bool face = pixel.r == 0x35 && pixel.g == 0x64 && pixel.b == 0xe3;
+    if (face && first < 0) {
+      first = y;
+    } else if (!face && first >= 0) {
+      return (first + y) / (2.0f * scale);
+    }
+  }
+  return -1.0f;
+}
+
 bool RegisterFontAwesome(slint::Window &window) {
   return !window.window_handle()
               .register_font_from_data(fa_solid_900_ttf,
@@ -1241,8 +1265,23 @@ int main() {
   }
 
   stream->set_remote_update_visible(true);
-  const auto notice_button = slint::LogicalPosition(slint::Point<float>{
-      764.0f, stream->get_video_area_top() + notice_y - 24.0f + 124.0f});
+  // Do fork sở hữu: hộp thoại cao theo tiêu đề và nội dung đã xuống dòng, nên
+  // hàng nút phụ thuộc font của máy (DejaVu trên Linux ngắt thành nhiều dòng hơn
+  // macOS). Khi chạy headless, bấm vào nút đã vẽ thay vì tung độ đo bằng font của
+  // một nền tảng. Cột 724 nằm trong nút (x 712 đến 816) nhưng bên trái nhãn "Got it".
+  // Backend native giữ cửa sổ stream ẩn và đọc ngược GPU có thể ra ảnh đen, nên ở
+  // chế độ đó vẫn dùng tung độ đo trên macOS như trước.
+  float notice_button_y = stream->get_video_area_top() + notice_y - 24.0f + 124.0f;
+  if (headless) {
+    notice_button_y = PrimaryButtonCenterY(
+        stream->window(), 724.0f, stream->get_video_area_top() + notice_y - 24.0f);
+    if (notice_button_y < 0.0f) {
+      std::cerr << "Upgrade confirmation button must be painted\n";
+      return 9;
+    }
+  }
+  const auto notice_button = slint::LogicalPosition(
+      slint::Point<float>{764.0f, notice_button_y});
   stream->window().dispatch_pointer_press_event(
       notice_button, slint::PointerEventButton::Left);
   stream->window().dispatch_pointer_release_event(

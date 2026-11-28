@@ -161,7 +161,7 @@
     <string name="text_94bc3d40defef3e9" formatted="false">"Não autorizado"</string>
     <string name="text_4d0680f9efaef147" formatted="false">"Não lido"</string>
     <string name="text_d1fcb66a323a16f5" formatted="false">"Servidor não conectado · Clique para tentar novamente"</string>
-    <string name="text_7eea7966c0b746c5" formatted="false">"Este aplicativo usa OpenFEC para correção direta de erros noCeCILL-C1.0, que fornece garantias limitadas e limita a responsabilidade. Veja a licença completa para detalhes."</string>
+    <string name="text_7eea7966c0b746c5" formatted="false">"Este aplicativo usa OpenFEC para correção direta de erros sob a licença CeCILL-C 1.0, que fornece garantias limitadas e limita a responsabilidade. Veja a licença completa para detalhes."</string>
     <string name="text_c611b4e50b0dbc08" formatted="false">"ID local "</string>
     <string name="text_97d10220f08dd7fc" formatted="false">"ID local {0}"</string>
     <string name="text_91f15d505770d7a0" formatted="false">"Código-fonte e instruções de construção para esta versão"</string>

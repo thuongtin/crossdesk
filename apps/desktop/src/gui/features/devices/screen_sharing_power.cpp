@@ -89,9 +89,12 @@ struct ScreenSharingPower::Impl {
     request = INVALID_HANDLE_VALUE;
     display = system = false;
   }
+
+  void WakeDisplay() {}
 #elif defined(__APPLE__)
   IOPMAssertionID display = kIOPMNullAssertionID;
   IOPMAssertionID system = kIOPMNullAssertionID;
+  IOPMAssertionID user_activity = kIOPMNullAssertionID;
 
   void Start() {
     const auto reason = CFSTR("CrossDesk is sharing the desktop");
@@ -105,12 +108,27 @@ struct ScreenSharingPower::Impl {
         reason, &display);
     if (result != kIOReturnSuccess)
       LOG_WARN("Cannot prevent display idle sleep: {}", result);
+
+    // The idle-sleep assertion cannot turn an already sleeping display on.
+    // Wake it so ScreenCaptureKit can enumerate it on a locked reconnect.
+    WakeDisplay();
+  }
+
+  void WakeDisplay() {
+    // Reusing the ID reports new activity on the same assertion.
+    const auto result = IOPMAssertionDeclareUserActivity(
+        CFSTR("CrossDesk remote controller connected"), kIOPMUserActiveRemote,
+        &user_activity);
+    if (result != kIOReturnSuccess)
+      LOG_WARN("Cannot wake the display for screen sharing: {}", result);
   }
 
   void Stop() {
+    if (user_activity != kIOPMNullAssertionID)
+      IOPMAssertionRelease(user_activity);
     if (display != kIOPMNullAssertionID) IOPMAssertionRelease(display);
     if (system != kIOPMNullAssertionID) IOPMAssertionRelease(system);
-    display = system = kIOPMNullAssertionID;
+    user_activity = display = system = kIOPMNullAssertionID;
   }
 #elif defined(__linux__) && !defined(__OHOS__)
   BusConnection session;
@@ -187,6 +205,8 @@ struct ScreenSharingPower::Impl {
       LOG_WARN("Cannot inhibit system sleep while sharing the screen");
   }
 
+  void WakeDisplay() {}
+
   void Stop() {
     if (sleep_fd >= 0) {
       close(sleep_fd);
@@ -223,6 +243,7 @@ struct ScreenSharingPower::Impl {
       LOG_WARN("Cannot prevent display idle sleep: {}", SDL_GetError());
   }
   void Stop() { SDL_EnableScreenSaver(); }
+  void WakeDisplay() {}
 #endif
 };
 
@@ -240,6 +261,10 @@ void ScreenSharingPower::SetSharing(bool sharing) {
     impl_->Stop();
     LOG_INFO("Released screen sharing power inhibitors");
   }
+}
+
+void ScreenSharingPower::WakeDisplay() {
+  if (sharing_) impl_->WakeDisplay();
 }
 
 }  // namespace crossdesk

@@ -184,6 +184,21 @@ function setup_targets()
         add_includedirs("apps/desktop/src/gui")
         add_files("apps/desktop/tests/window_fit_scale_test.cpp")
 
+    target("frame_wait_hint_test")
+        set_kind("binary")
+        set_languages("c++20")
+        set_default(false)
+        add_deps("crossdesk_wire")
+        add_includedirs("apps/desktop/src/gui")
+        add_files("apps/desktop/tests/frame_wait_hint_test.cpp")
+
+    target("builtin_panel_wait_test")
+        set_kind("binary")
+        set_languages("c++20")
+        set_default(false)
+        add_includedirs("apps/desktop/src/platform/macos/screen_capturer")
+        add_files("apps/desktop/tests/builtin_panel_wait_test.cpp")
+
     target("single_instance")
         set_kind("object")
         add_includedirs("apps/desktop/src", {public = true})
@@ -327,6 +342,20 @@ function setup_targets()
         add_deps("crossdesk_ui")
         add_includedirs("apps/desktop/src/gui", "apps/desktop/src/gui/assets/localization")
         add_files("apps/desktop/tests/slint_popup_render_test.cpp")
+        add_rules("crossdesk.slint_runtime")
+
+    -- Do fork sở hữu: bố cục Settings ở 100%, 125%, 150% và vùng làm việc nhỏ.
+    target("slint_settings_layout_test")
+        set_kind("binary")
+        set_languages("c++20")
+        set_default(false)
+        if is_os("windows") then
+            add_cxxflags("/bigobj")
+        end
+        add_packages("slint")
+        add_deps("crossdesk_ui")
+        add_includedirs("apps/desktop/src/gui", "apps/desktop/src/gui/assets/localization")
+        add_files("apps/desktop/tests/slint_settings_layout_test.cpp")
         add_rules("crossdesk.slint_runtime")
 
     target("version_checker_test")
