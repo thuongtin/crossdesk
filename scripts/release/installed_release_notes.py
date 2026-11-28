@@ -30,11 +30,6 @@ OPENING_FENCE = re.compile(r"^(`{3,}|~{3,})(.*)$")
 CLOSING_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*$")
 # Phần thụt lề, dấu trích dẫn '>' và dấu list đứng trước nội dung của dòng, ví dụ "  ", "- ", "> 1. ".
 CONTAINER_PREFIX = re.compile(r"^[ \t>]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+[ \t>]*)*")
-# Đầu thẻ mở, thẻ đóng, comment, chỉ thị xử lý, khai báo hay CDATA của HTML trên dòng gốc. Thẻ chưa
-# đóng trên dòng (thuộc tính có thể sang dòng sau) cũng tính là HTML.
-INLINE_HTML = re.compile(r"<(?:[A-Za-z][A-Za-z0-9-]*(?:[ \t/>]|$)|/[A-Za-z][A-Za-z0-9-]*[ \t]*(?:>|$)"
-                         r"|!--|\?|![A-Za-z]|!\[CDATA\[)")
-
 # Các mẫu dưới đây chạy trên dòng đã đổi tab thành dấu cách và bỏ phần thụt lề.
 ATX_HEADING = re.compile(r"^#{1,6}(?: |$)")
 THEMATIC_BREAK = re.compile(r"^(?:(?:\* *){3,}|(?:- *){3,}|(?:_ *){3,})$")
@@ -48,19 +43,48 @@ HTML_CLOSED_BLOCKS = (
      re.compile(r"</(?:pre|script|style|textarea)>", re.I)),
     (re.compile(r"<!--"), re.compile(r"-->")),
     (re.compile(r"<\?"), re.compile(r"\?>")),
-    (re.compile(r"<![A-Za-z]"), re.compile(r">")),
+    (re.compile(r"<![A-Z]"), re.compile(r">")),
     (re.compile(r"<!\[CDATA\["), re.compile(r"\]\]>")),
 )
 # Khối HTML loại 6 (thẻ khối) và 7 (một thẻ đứng riêng trên dòng) kết thúc trước dòng trống kế tiếp.
 HTML_BLOCK_TAGS = ("address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|"
                    "details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|"
                    "h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|"
-                   "optgroup|option|p|param|search|section|source|summary|table|tbody|td|tfoot|th|thead|"
+                   "optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|"
                    "title|tr|track|ul")
 HTML_TAG_BLOCK = re.compile(rf"</?(?:{HTML_BLOCK_TAGS})(?:[ >]|/>|$)", re.I)
 HTML_ATTRIBUTE = r"""(?: +[A-Za-z_:][A-Za-z0-9_.:-]*(?: *= *(?:[^ "'=<>`]+|'[^']*'|"[^"]*"))?)"""
 HTML_LONE_TAG = re.compile(rf"(?:<[A-Za-z][A-Za-z0-9-]*{HTML_ATTRIBUTE}* */?>|</[A-Za-z][A-Za-z0-9-]* *>) *$")
 ENDS_AT_BLANK_LINE = "blank line"
+# Dòng phân cách của bảng GFM như "| --- | :-: |": dòng cuối của đoạn văn ngay trên thành hàng tiêu đề
+# khi hai dòng có cùng số ô. cmark-gfm chỉ thử mẫu này khi dòng không mở khối nào khác.
+TABLE_DELIMITER_ROW = re.compile(r"^\|?[ \t\v\f]*:?-+:?[ \t\v\f]*(?:\|[ \t\v\f]*:?-+:?[ \t\v\f]*)*\|?[ \t\v\f]*$")
+
+# Các mẫu dưới đây chạy trên nội dung nội dòng của một đoạn văn, tiêu đề hay ô bảng, theo cmark-gfm.
+ASCII_PUNCTUATION = frozenset("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+SPACE = r"[ \t\v\f\r\n]"
+SPACES = re.compile(f"{SPACE}*")
+# Khoảng trắng của định nghĩa link tham chiếu: dấu cách hay tab, tối đa một lần xuống dòng.
+LINK_SPACE = re.compile(r"[ \t]*(?:\n[ \t]*)?")
+# Autolink như <https://example.com> hay <team@example.com> là link, không phải HTML.
+AUTOLINK = re.compile(r"<[A-Za-z][A-Za-z0-9.+-]{1,31}:[^\x00-\x20<>]*>"
+                      r"|<[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                      r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*>")
+# HTML thô: thẻ mở, thẻ đóng, comment, chỉ thị xử lý, khai báo và CDATA; thẻ có thể sang dòng sau.
+TAG_NAME = r"[A-Za-z][A-Za-z0-9-]*"
+ATTRIBUTE = (rf"{SPACE}+[A-Za-z_:][A-Za-z0-9:._-]*"
+             rf"""(?:{SPACE}*={SPACE}*(?:[^ \t\r\n\v\f"'=<>`\x00]+|'[^'\x00]*'|"[^"\x00]*"))?""")
+RAW_HTML = re.compile(rf"<{TAG_NAME}(?:{ATTRIBUTE})*{SPACE}*/?>|</{TAG_NAME}{SPACE}*>"
+                      r"|<!---?>|<!--(?:[^-\x00]|-[^-\x00]|--[^>\x00])*-->"
+                      r"|<\?(?:[^?>\x00]|\?[^>\x00]|>)*\?>"
+                      rf"|<![A-Z]+{SPACE}+[^>\x00]*>"
+                      r"|<!\[CDATA\[(?:[^\]\x00]|\][^\]\x00]|\]\][^>\x00])*\]\]>")
+BACKTICK_RUN = re.compile(r"`+")
+MAX_BACKTICKS = 1000
+# Tiêu đề của link, đặt sau đích link và cách nó ít nhất một khoảng trắng.
+LINK_TITLE = re.compile(r'"(?:\\.|[^"\x00])*"|\'(?:\\.|[^\'\x00])*\'|\((?:\\.|[^()\x00])*\)')
+# Nhãn "[...]" của định nghĩa link tham chiếu, tối đa 999 ký tự và không chứa '[' hay ']' chưa thoát.
+LINK_LABEL = re.compile(r"\[((?:\\[!-/:-@\[-`{-~]|[^\[\]\\]|\\){0,999})\]:")
 
 # Dòng giữ chỗ trong bản nháp release.sh tự viết khi chưa có --notes.
 PLACEHOLDER = "- TODO"
@@ -123,6 +147,31 @@ def list_item(body, indent, paragraph):
     return [indent + match.end() + spaces, empty]
 
 
+def table_cells(text):
+    """Các ô của text khi đọc như một hàng bảng GFM; list rỗng khi text không phải hàng bảng.
+
+    Bỏ một dấu '|' mở đầu. Dấu '|' sau '\\' là chữ trong ô, còn '|' cuối dòng chỉ đóng ô cuối.
+    """
+    text = text.rstrip(" \t\v\f\r\n")
+    if text.startswith("|"):
+        text = text[1:]
+    if not text.strip(" \t\v\f"):
+        return []
+    cells = []
+    start = index = 0
+    while index < len(text):
+        if text[index] == "\\":
+            index += 2
+            continue
+        if text[index] == "|":
+            cells.append(text[start:index])
+            start = index + 1
+        index += 1
+    if start < len(text):
+        cells.append(text[start:])
+    return cells
+
+
 def match_containers(line, containers):
     """Bỏ tiền tố của các khối chứa mà line còn thuộc về; trả về (phần còn lại, số khối khớp).
 
@@ -153,44 +202,55 @@ def match_containers(line, containers):
 
 
 def scan(lines):
-    """Phân loại từng dòng theo khối cấp cao nhất của CommonMark để tìm ranh giới mục.
+    """Phân loại từng dòng theo khối của cmark-gfm để tìm ranh giới mục và HTML.
 
-    Trả về (kinds, unclosed). kinds[i] là "code" cho dòng nằm trong code fence cấp cao nhất (kể cả
-    dòng đóng, trừ dòng mở), "html" cho dòng của khối HTML cấp cao nhất, "setext" cho dòng gạch dưới
-    biến đoạn văn cấp cao nhất thành tiêu đề, và "text" cho mọi dòng khác. unclosed là (chỉ số dòng
-    mở, tên khối) của fence hay khối HTML loại 1 tới 5 cấp cao nhất vẫn mở khi hết notes, hoặc None.
+    Trả về (kinds, unclosed, html_lines). kinds[i] là "code" cho dòng nằm trong code fence cấp cao
+    nhất (kể cả dòng đóng, trừ dòng mở), "html" cho dòng của khối HTML ở mọi cấp, "setext" cho dòng
+    gạch dưới biến đoạn văn cấp cao nhất thành tiêu đề, và "text" cho mọi dòng khác. unclosed là (chỉ
+    số dòng mở, tên khối) của fence hay khối HTML loại 1 tới 5 cấp cao nhất vẫn mở khi hết notes, hoặc
+    None. html_lines là tập chỉ số dòng nơi HTML thô nội dòng bắt đầu, trong đoạn văn, tiêu đề hay ô
+    bảng ở mọi cấp.
 
     Fence thụt một tới ba dấu cách vẫn ở cấp cao nhất, trừ khi nó thuộc một mục list hay trích dẫn,
     như dòng đóng "  ```" của mục "- ```sh". Vì vậy scan giữ ngăn xếp khối chứa đang mở cùng khối lá
-    trong cùng (fence, HTML hay đoạn văn), để biết dòng ít thụt lề hơn có nối lười vào đoạn văn của
-    khối chứa hay kết thúc nó.
+    trong cùng (fence, HTML, đoạn văn hay bảng), để biết dòng ít thụt lề hơn có nối lười vào đoạn văn
+    của khối chứa hay kết thúc nó.
     """
     kinds = []
+    # Nội dung nội dòng cần tìm HTML: (loại, các (chỉ số dòng, chữ)). Loại "paragraph" có thể mở đầu
+    # bằng định nghĩa link tham chiếu; "text" là đoạn văn đứng trước bảng, "heading" và "cell" chỉ một dòng.
+    units = []
     containers = []  # khối chứa đang mở, từ ngoài vào trong: None là trích dẫn, list là mục list
     fence = None  # (ký tự, độ dài) của code fence đang mở trong khối chứa trong cùng
     html_end = None  # điều kiện đóng của khối HTML đang mở trong khối chứa trong cùng
-    paragraph = False  # khối lá đang mở là đoạn văn, nên dòng sau có thể nối lười vào nó
+    paragraph = None  # các (chỉ số dòng, chữ) của đoạn văn đang mở; dòng sau có thể nối lười vào nó
+    header = ""  # dòng cuối của đoạn văn đang mở, thành hàng tiêu đề khi dòng sau là dòng phân cách
+    table_visited = False  # đoạn văn đang mở đã gặp dòng phân cách lệch số ô nên không thành bảng nữa
+    table = False  # khối lá đang mở là bảng GFM
     unclosed = None
     for index, raw in enumerate(lines):
         rest, matched = match_containers(raw.expandtabs(4), containers)
         blank = not rest.strip(" ")
-        if matched == len(containers):
+        all_matched = matched == len(containers)
+        if all_matched:
             if fence is not None:
                 kinds.append("text" if containers else "code")
                 if closes_fence(rest, fence):
                     fence = unclosed = None
                 continue
             if html_end is not None and not (html_end is ENDS_AT_BLANK_LINE and blank):
-                kinds.append("text" if containers else "html")
+                kinds.append("html")
                 if html_end is not ENDS_AT_BLANK_LINE and html_end.search(rest):
                     html_end = unclosed = None
                 continue
-        # Mở các khối mới ở đầu phần còn lại, theo thứ tự ưu tiên của cmark.
-        in_paragraph = paragraph and matched == len(containers)
-        maybe_lazy = paragraph
+        body = rest.lstrip(" ")
+        # Bảng chỉ nhận tiếp dòng là một hàng bảng; dòng mở khối khác kết thúc bảng.
+        table_row = table and all_matched and bool(table_cells(body))
+        # Mở các khối mới ở đầu phần còn lại, theo thứ tự ưu tiên của cmark-gfm.
+        in_paragraph = paragraph is not None and all_matched
+        maybe_lazy = paragraph is not None
         opened = []
         leaf = None
-        body = rest.lstrip(" ")
         while body:
             indent = len(rest) - len(body)
             if indent > 3:
@@ -212,7 +272,10 @@ def scan(lines):
                 leaf = ("html", html_block(body, in_paragraph))
                 break
             elif in_paragraph and SETEXT_UNDERLINE.match(body):
-                leaf = "setext"
+                # Đoạn văn chỉ có định nghĩa link tham chiếu thì rỗng, nên dòng gạch dưới là chữ của nó.
+                text = "".join(content + "\n" for _, content in paragraph)
+                if reference_definitions_end(text) < len(text):
+                    leaf = "setext"
                 break
             elif THEMATIC_BREAK.match(body):
                 leaf = "break"
@@ -220,19 +283,49 @@ def scan(lines):
             else:
                 item = list_item(body, indent, in_paragraph)
                 if item is None:
+                    # Dòng phân cách cùng số ô với dòng cuối của đoạn văn biến dòng đó thành bảng.
+                    if in_paragraph and not table_visited and TABLE_DELIMITER_ROW.match(body):
+                        if len(table_cells(body)) == len(table_cells(header)):
+                            leaf = "table"
+                        else:
+                            table_visited = True
                     break
                 opened.append(item)
                 rest = rest[item[0]:]
             in_paragraph = maybe_lazy = False
             body = rest.lstrip(" ")
-        if body and paragraph and matched < len(containers) and not opened and leaf is None:
+        if body and paragraph is not None and not all_matched and not opened and leaf is None:
             # Dòng nối lười: chữ tiếp tục đoạn văn của khối chứa mà nó không thuộc về.
+            paragraph.append((index, body))
+            header = rest
             kinds.append("text")
             continue
+        continues_paragraph = paragraph is not None and all_matched and not opened and leaf is None
+        table_row = table_row and not opened and leaf is None
         del containers[matched:]
         containers.extend(opened)
         fence = html_end = None
-        paragraph = bool(body) and leaf is None
+        if continues_paragraph and body:
+            paragraph.append((index, body))
+            header = body
+        elif table_row:
+            units.extend(("cell", [(index, cell)]) for cell in table_cells(body))
+        else:
+            if leaf == "table":
+                # Dòng cuối của đoạn văn thành hàng tiêu đề của bảng, các dòng trước vẫn là đoạn văn.
+                header_index, header_text = paragraph.pop()
+                # cmark-gfm tạo đoạn văn đứng trước bảng mà không tách định nghĩa link tham chiếu.
+                units[-1] = ("text", paragraph)
+                units.extend(("cell", [(header_index, cell)]) for cell in table_cells(header_text))
+            paragraph = None
+            table = leaf == "table"
+            if body and leaf is None:
+                paragraph = [(index, body)]
+                units.append(("paragraph", paragraph))
+                header = body
+                table_visited = False
+            elif leaf == "heading":
+                units.append(("heading", [(index, body.lstrip("#"))]))
         kind = "text"
         if isinstance(leaf, tuple) and leaf[0] == "fence":
             fence = leaf[1]
@@ -244,11 +337,169 @@ def scan(lines):
                 html_end = end
                 if not containers and end is not ENDS_AT_BLANK_LINE:
                     unclosed = (index, "HTML block")
-            kind = "text" if containers else "html"
+            kind = "html"
         elif leaf == "setext" and not containers:
             kind = "setext"
         kinds.append(kind)
-    return kinds, unclosed
+    return kinds, unclosed, inline_html_lines(units)
+
+
+def link_destination_end(text, position):
+    """Vị trí ngay sau đích link bắt đầu tại position, hoặc None khi không có đích hợp lệ.
+
+    Đích "<...>" không chứa xuống dòng hay '<' chưa thoát; đích không có ngoặc nhọn dừng ở khoảng
+    trắng hay ')' không cặp, như manual_scan_link_url của cmark-gfm.
+    """
+    index = position
+    if text.startswith("<", position):
+        index += 1
+        while index < len(text):
+            if text[index] == ">":
+                return index + 1 if index + 1 < len(text) else None
+            if text[index] in "\n<":
+                return None
+            index += 2 if text[index] == "\\" else 1
+        return None
+    depth = 0
+    while index < len(text):
+        char = text[index]
+        if char == "\\" and text[index + 1:index + 2] in ASCII_PUNCTUATION:
+            index += 2
+            continue
+        if char == "(":
+            depth += 1
+            if depth > 32:
+                return None
+        elif char == ")":
+            if depth == 0:
+                break
+            depth -= 1
+        elif char in " \t\v\f\r\n":
+            break
+        index += 1
+    return index if index < len(text) else None
+
+
+def link_tail_end(text, position):
+    """Vị trí ngay sau phần "(đích "tiêu đề")" của link nội dòng mở tại position, hoặc None."""
+    if not text.startswith("(", position):
+        return None
+    url_end = link_destination_end(text, SPACES.match(text, position + 1).end())
+    if url_end is None:
+        return None
+    title_end = title_start = SPACES.match(text, url_end).end()
+    title = LINK_TITLE.match(text, title_start) if title_start > url_end else None
+    if title:
+        title_end = title.end()
+    end = SPACES.match(text, title_end).end()
+    return end + 1 if text.startswith(")", end) else None
+
+
+def line_end_after(text, position):
+    """Vị trí sau dấu xuống dòng khi từ position chỉ còn dấu cách hay tab tới hết dòng, ngược lại None."""
+    while text[position:position + 1] in (" ", "\t"):
+        position += 1
+    if text.startswith("\n", position):
+        return position + 1
+    return position if position == len(text) else None
+
+
+def reference_definitions_end(text):
+    """Vị trí sau các định nghĩa link tham chiếu như "[guide]: <docs/a b.md>" ở đầu đoạn văn text.
+
+    cmark-gfm bỏ các định nghĩa này khỏi đoạn văn, nên đích link trong ngoặc nhọn không phải HTML.
+    """
+    position = 0
+    while True:
+        label = LINK_LABEL.match(text, position)
+        if not label or not label.group(1).strip(" \t\v\f\r\n"):
+            return position
+        url_start = LINK_SPACE.match(text, label.end()).end()
+        url_end = link_destination_end(text, url_start)
+        if url_end is None or url_end == url_start:
+            return position
+        title_start = LINK_SPACE.match(text, url_end).end()
+        title = LINK_TITLE.match(text, title_start) if title_start > url_end else None
+        end = line_end_after(text, title.end()) if title else None
+        if end is None:
+            end = line_end_after(text, url_end)
+        if end is None:
+            return position
+        position = end
+
+
+def raw_html_offsets(text, position):
+    """Sinh vị trí bắt đầu của từng đoạn HTML thô trong nội dung nội dòng text, tính từ position.
+
+    Đọc từ trái sang như cmark-gfm: ký tự thoát, code span, autolink và phần "(đích "tiêu đề")" của
+    link không chứa HTML, còn '<' không mở được thẻ nào như trong "a < b" hay "x<limit" là chữ.
+    """
+    brackets = []  # [là ảnh, còn mở được link] của từng '[' hay '![' chưa đóng, trong cùng ở cuối
+    # Vị trí chuỗi backtick cuối cùng theo độ dài mà các lần tìm dấu đóng code span đã gặp. Như
+    # scan_to_closing_backticks của cmark-gfm, sau một lần tìm tới hết mà không thấy dấu đóng, chuỗi
+    # mở nằm sau vị trí đã ghi của độ dài đó là chữ thường dù phía sau vẫn có dấu đóng; GitHub cũng
+    # hiện y như vậy.
+    last_runs = {}
+    scanned_to_end = False
+    index = position
+    while index < len(text):
+        char = text[index]
+        if char == "\\" and text[index + 1:index + 2] in ASCII_PUNCTUATION:
+            index += 2
+        elif char == "`":
+            run_end = index
+            while run_end < len(text) and text[run_end] == "`":
+                run_end += 1
+            # Code span đóng ở chuỗi backtick kế tiếp dài đúng bằng chuỗi mở, kể cả ở dòng sau.
+            length = run_end - index
+            index = run_end
+            if length <= MAX_BACKTICKS and not (scanned_to_end and last_runs.get(length, 0) <= run_end):
+                for run in BACKTICK_RUN.finditer(text, run_end):
+                    if len(run.group()) <= MAX_BACKTICKS:
+                        last_runs[len(run.group())] = run.start()
+                    if len(run.group()) == length:
+                        index = run.end()
+                        break
+                else:
+                    scanned_to_end = True
+        elif char == "<":
+            link_or_html = AUTOLINK.match(text, index) or RAW_HTML.match(text, index)
+            if link_or_html is not None and link_or_html.re is RAW_HTML:
+                yield index
+            index = index + 1 if link_or_html is None else link_or_html.end()
+        elif char == "[" or text.startswith("![", index):
+            brackets.append([char == "!", True])
+            index += 1 if char == "[" else 2
+        elif char == "]" and brackets:
+            image, active = brackets.pop()
+            tail = link_tail_end(text, index + 1) if active else None
+            index = index + 1 if tail is None else tail
+            if tail is not None and not image:
+                # Link không lồng link, nên các '[' bao quanh nó không còn mở được link.
+                for bracket in brackets:
+                    if not bracket[0]:
+                        bracket[1] = False
+        else:
+            index += 1
+
+
+def inline_html_lines(units):
+    """Chỉ số các dòng nơi HTML thô bắt đầu, trong các nội dung nội dòng mà scan gom được."""
+    found = set()
+    for unit_kind, entries in units:
+        # Mỗi dòng kết thúc bằng xuống dòng như nội dung đoạn văn của cmark-gfm.
+        text = "".join(content + "\n" for _, content in entries)
+        if unit_kind == "cell":
+            # cmark-gfm đổi "\|" trong ô thành "|" trước khi đọc nội dòng; ô chỉ có một dòng.
+            text = text.replace("\\|", "|")
+        start = reference_definitions_end(text) if unit_kind == "paragraph" else 0
+        for offset in raw_html_offsets(text, start):
+            for line_index, content in entries:
+                offset -= len(content) + 1
+                if offset < 0:
+                    found.add(line_index)
+                    break
+    return found
 
 
 def nested_fence(line):
@@ -261,45 +512,6 @@ def nested_fence(line):
     return prefix > 0 and opening_fence(line[prefix:]) is not None
 
 
-def strip_code_spans(line):
-    """Thay code span và ký tự thoát bằng '\\' trên line bằng dấu cách, giữ nguyên độ dài dòng.
-
-    Code span tính trong từng dòng: chuỗi backtick mở khớp chuỗi backtick kế tiếp dài đúng bằng nó.
-    """
-    parts = []
-    position = 0
-    while position < len(line):
-        if line[position] == "\\":
-            parts.append("  "[:len(line) - position])
-            position += 2
-            continue
-        if line[position] != "`":
-            parts.append(line[position])
-            position += 1
-            continue
-        run_end = position
-        while run_end < len(line) and line[run_end] == "`":
-            run_end += 1
-        closing = re.compile(rf"(?<!`){line[position:run_end]}(?!`)").search(line, run_end)
-        if closing is None:
-            parts.append(line[position:run_end])
-            position = run_end
-        else:
-            parts.append(" " * (closing.end() - position))
-            position = closing.end()
-    return "".join(parts)
-
-
-def contains_html(line):
-    """True khi line có thẻ HTML, comment hay chỉ thị HTML nằm ngoài code span.
-
-    Slint chỉ hiểu vài thẻ nội dòng, nên hộp thoại hiện cả dòng có HTML thành chữ thô, kể cả comment
-    mà GitHub giấu đi. Autolink như <https://example.com> và dấu '<' trong "a < b" không phải HTML.
-    Dòng như vậy trong khối code thụt lề cũng bị từ chối cho đơn giản.
-    """
-    return INLINE_HTML.search(strip_code_spans(line)) is not None
-
-
 def extract(text, publish=False):
     """Trả về nội dung mục `## Changes` đã chuẩn hoá; báo ValueError khi notes không dùng được.
 
@@ -307,7 +519,7 @@ def extract(text, publish=False):
     dòng giữ chỗ của bản nháp cũng bị từ chối.
     """
     lines = text.replace("\r\n", "\n").split("\n")
-    kinds, unclosed = scan(lines)
+    kinds, unclosed, html_lines = scan(lines)
     candidates = [index for index, kind in enumerate(kinds) if kind == "text"]
     start = next((index for index in candidates if CHANGES_HEADING.match(lines[index])), None)
     end = len(lines) if start is None else next(
@@ -328,7 +540,7 @@ def extract(text, publish=False):
         if nested_fence(lines[index]):
             raise ValueError(f"line {index + 1}: start code fences at column 0, "
                              "not indented or inside a list item or quote")
-        if contains_html(lines[index]):
+        if kinds[index] == "html" or index in html_lines:
             raise ValueError(f"line {index + 1}: the Release Notes dialog shows HTML as plain text, "
                              "so remove the HTML or put it in backticks")
     if publish and any(lines[index].strip() == PLACEHOLDER for index in section_indexes):

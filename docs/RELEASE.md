@@ -281,10 +281,13 @@ nguyên chữ. Vì vậy:
     cùng mục list chứa nó, còn extractor và hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một
     mục list thì đặt fence ra ngoài list.
   - Không có tiêu đề cấp 1 hoặc 2 thụt lề, và không có dòng toàn `=` hay `-` ngay dưới một dòng chữ
-    (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một dòng trống phía trên nó.
-  - Không có HTML, dạng khối hay nội dòng, kể cả comment `<!-- -->` mà GitHub giấu đi: hộp thoại
-    hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì đặt nó trong backtick
-    (`` `<package>` ``); autolink như `<https://example.com>` và dấu `<` trong `a < b` vẫn dùng được.
+    (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một dòng trống phía trên nó. Dòng
+    cuối của bảng GFM không phải dòng chữ, nên `---` ngay dưới bảng vẫn là đường kẻ.
+  - Không có thứ GitHub đọc thành HTML, dạng khối hay nội dòng, kể cả trong ô bảng và comment
+    `<!-- -->` mà GitHub giấu đi: hộp thoại hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì
+    đặt nó trong backtick (`` `<package>` ``). Script kiểm theo cú pháp nội dòng của cmark-gfm, nên
+    autolink như `<https://example.com>`, đích link như `[guide](<docs/Upgrade Guide.md>)` và dấu `<`
+    trong `a < b` hay `x<limit` vẫn dùng được.
 - Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm, trừ fence hay khối HTML chưa đóng nằm
   trước mục. Sửa script này thì chạy
   `python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py`.

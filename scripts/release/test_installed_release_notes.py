@@ -140,6 +140,15 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(notes.extract("Intro\n<span>\n## Changes\n\n- A"), "- A")
         self.assertEqual(notes.extract("<details>\n<summary>Checksums</summary>\n\n## Changes\n\n- A"), "- A")
 
+    def test_only_github_html_block_starters_hide_headings(self):
+        # GitHub không coi <search> là thẻ khối loại 6, và khai báo loại 4 cần chữ hoa sau "<!".
+        for before in ("Compare the packages below.\n<search>Find a package</search>", "<!doctype html"):
+            with self.subTest(before=before):
+                self.assertEqual(notes.extract(f"## Downloads\n\n{before}\n## Changes\n\n- A"), "- A")
+        self.assertEqual(notes.extract(f"<!DOCTYPE x\n{FAKE_SECTION}\n>\n\n## Changes\n\n- A"), "- A")
+        self.assert_rejected("<!DOCTYPE html\n\n## Changes\n\n- A",
+                             "line 1: close the HTML block that starts here")
+
     def test_html_in_changes_is_rejected(self):
         cases = [
             ("- A\n<!-- note -->", 4),
@@ -151,12 +160,21 @@ class ExtractTest(unittest.TestCase):
             ("- Press <kbd>Ctrl</kbd> + C", 3),
             ("- Fixed `x` for <package>", 3),
             ("- Link <a\n  href=\"x\">", 3),
+            ("- Note <!X y>", 3),
+            ("| a |\n| - |\n| <b>x</b> |", 5),
+            # Thẻ đứng riêng ngay sau bảng mở khối HTML loại 7.
+            ("| a |\n| - |\n<span>", 5),
+            # Định nghĩa link trong đoạn văn đứng trước bảng không được GitHub đọc, nên <b c> là HTML.
+            ("[a]: <b c>\n| x |\n| - |", 3),
+            # Như GitHub, chuỗi ``` không có dấu đóng làm backtick đơn sau đó thành chữ thường dù có cặp.
+            ("Use ``` `x`\n`<b>`", 4),
         ]
         for body, line in cases:
             with self.subTest(body=body):
                 self.assert_rejected("## Changes\n\n" + body, HTML.format(line))
-        allowed = ("- See <https://example.com> and <team@example.com>\n- a < b, c<5\n"
-                   "- Renamed `<package>` and ``a ` <b>`` in \\<div>")
+        allowed = ("- See <https://example.com> and <team@example.com>\n- a < b, c<5, x<limit, <a/ >\n"
+                   "- Renamed `<package>` and ``a ` <b>`` in \\<div>\n"
+                   "- See [the guide](<docs/Upgrade Guide.md>)\n\n[guide]: <docs/a b.md>")
         self.assertEqual(notes.extract("## Changes\n\n" + allowed), allowed)
 
     def test_setext_heading_in_changes_is_rejected(self):
@@ -167,6 +185,16 @@ class ExtractTest(unittest.TestCase):
                                      "heading, so put a blank line before this line")
         # Đường kẻ ngang sau dòng trống hay sau mục list không biến dòng trên thành tiêu đề.
         self.assertEqual(notes.extract("## Changes\n\nText\n\n---\n- A\n---"), "Text\n\n---\n- A\n---")
+
+    def test_tables_end_at_a_dashed_line(self):
+        table = "| OS | Fix |\n| --- | --- |\n| Linux | Reconnect |\n---"
+        self.assertEqual(notes.extract("## Changes\n\n" + table), table)
+        # Đoạn chỉ có định nghĩa link không thành tiêu đề; GitHub hiện "---" sau nó thành chữ thường.
+        self.assertEqual(notes.extract("## Changes\n\n[a]: https://example.com\n---"), "[a]: https://example.com\n---")
+        # Dòng phân cách lệch số cột khiến đoạn văn không bao giờ thành bảng, kể cả khi sau đó có cặp khớp.
+        self.assert_rejected("## Changes\n\na | b\n-|-|-\nc | d\n-|-\n---",
+                             "line 7: a line of '=' or '-' under text makes it a level 1 or 2 "
+                             "heading, so put a blank line before this line")
 
     def test_fences_after_changes_are_ignored(self):
         text = f"## Changes\n\n- A\n\n## Downloads\n\n- {FENCE}sh\n  x\n  {FENCE}"
