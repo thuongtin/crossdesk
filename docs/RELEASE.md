@@ -244,7 +244,10 @@ Nên cài thử từng gói trên máy thật trước khi publish. Với Linux,
 từ ngoài môi trường thử: chạy Xvfb trên máy chủ và chỉ chia sẻ socket X (`/tmp/.X11-unix/X<n>`) vào
 container. Đừng tự cài `xvfb` hay gói khác vào chính container đó, vì nó kéo theo thư viện như
 `zlib1g` (qua `libxfont2`) và che mất thư viện mà gói CrossDesk quên khai báo; gói headless tự kéo
-`xvfb` qua `Depends` của nó thì không sao. Gate chỉ kiểm tên trong `Depends`, còn `apt-simulate`
+`xvfb` qua `Depends` của nó thì không sao. Trong container đặt `DISPLAY=:<n>` trỏ tới Xvfb đó, rồi
+xem cửa sổ app có hiện trên framebuffer của máy chủ không (chạy Xvfb với `-fbdir` và đọc file XWD):
+khi không mở được `DISPLAY`, gói headless tự chạy Xvfb riêng trong container và lần thử không còn
+dùng màn hình của máy chủ. Gate chỉ kiểm tên trong `Depends`, còn `apt-simulate`
 chỉ giả lập cài trên 20.04; thư viện nạp bằng `dlopen` còn thiếu chỉ lộ ra khi app thật sự chạy
 trên máy không có sẵn nó.
 
