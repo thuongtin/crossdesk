@@ -34,7 +34,7 @@
     <string name="text_00554b17c432937e" formatted="false">"Einzelheiten zur Ankündigung"</string>
     <string name="text_2428420e407fe2e8" formatted="false">"Insgesamt "</string>
     <string name="text_d977c7568cc5201e" formatted="false">"Insgesamt {0} Artikel ·{1} ungelesene Artikel"</string>
-    <string name="text_52d25a9e30ba94f1" formatted="false">"Ungefähr"</string>
+    <string name="text_52d25a9e30ba94f1" formatted="false">"Über"</string>
     <string name="text_459c1e980c1c8ce2" formatted="false">"Über CrossDesk"</string>
     <string name="text_390a95b65eb33052" formatted="false">"Ungefähr, es gibt eine neue Version"</string>
     <string name="text_3fd47edce45b3603" formatted="false">"Schließen"</string>
@@ -96,7 +96,7 @@
     <string name="text_8051ec2a0f80d127" formatted="false">"Gesendet, bitte am entfernten Ende einfügen"</string>
     <string name="text_c28d86acbedba3b6" formatted="false">"Hintergrund-Keep-Alive ist aktiviert, wechselnde Anwendungen können die Verbindung weiterhin aufrechterhalten"</string>
     <string name="text_506409ec08cb2a79" formatted="false">"Hintergrund-Keepalive aktiviert, um Verbindungsbenachrichtigungen zurückzugeben oder zu trennen"</string>
-    <string name="text_521e65ffc7d0ff2d" formatted="false">"Zugegeben"</string>
+    <string name="text_521e65ffc7d0ff2d" formatted="false">"Erteilt"</string>
     <string name="text_efdd1a47e4beb2f9" formatted="false">"Lesen"</string>
     <string name="text_1f672b9b18d18e87" formatted="false">"Verbunden "</string>
     <string name="text_9c05d9d7fa1b0abd" formatted="false">"Mit Server verbunden"</string>
@@ -161,7 +161,7 @@
     <string name="text_94bc3d40defef3e9" formatted="false">"Nicht autorisiert"</string>
     <string name="text_4d0680f9efaef147" formatted="false">"Ungelesen"</string>
     <string name="text_d1fcb66a323a16f5" formatted="false">"Server nicht verbunden · Klicken Sie, um es erneut zu versuchen"</string>
-    <string name="text_7eea7966c0b746c5" formatted="false">"Diese Anwendung verwendet OpenFEC zur Vorwärtsfehlerkorrektur unterCeCILL-C1.0, was eingeschränkte Garantien und Haftungsbeschränkungen bietet. Einzelheiten finden Sie in der vollständigen Lizenz."</string>
+    <string name="text_7eea7966c0b746c5" formatted="false">"Diese Anwendung verwendet OpenFEC zur Vorwärtsfehlerkorrektur unter CeCILL-C 1.0, was eingeschränkte Garantien und Haftungsbeschränkungen bietet. Einzelheiten finden Sie in der vollständigen Lizenz."</string>
     <string name="text_c611b4e50b0dbc08" formatted="false">"Lokale ID "</string>
     <string name="text_97d10220f08dd7fc" formatted="false">"Lokale ID {0}"</string>
     <string name="text_91f15d505770d7a0" formatted="false">"Quellcode und Build-Anweisungen für diese Version"</string>

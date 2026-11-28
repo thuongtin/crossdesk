@@ -358,6 +358,20 @@ function setup_targets()
         add_files("apps/desktop/tests/slint_popup_render_test.cpp")
         add_rules("crossdesk.slint_runtime")
 
+    -- Do fork sở hữu: bố cục Settings ở 100%, 125%, 150% và vùng làm việc nhỏ.
+    target("slint_settings_layout_test")
+        set_kind("binary")
+        set_languages("c++20")
+        set_default(false)
+        if is_os("windows") then
+            add_cxxflags("/bigobj")
+        end
+        add_packages("slint")
+        add_deps("crossdesk_ui")
+        add_includedirs("apps/desktop/src/gui", "apps/desktop/src/gui/assets/localization")
+        add_files("apps/desktop/tests/slint_settings_layout_test.cpp")
+        add_rules("crossdesk.slint_runtime")
+
     target("version_checker_test")
         set_kind("binary")
         set_default(false)

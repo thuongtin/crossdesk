@@ -161,7 +161,7 @@
     <string name="text_94bc3d40defef3e9" formatted="false">"無許可"</string>
     <string name="text_4d0680f9efaef147" formatted="false">"未読"</string>
     <string name="text_d1fcb66a323a16f5" formatted="false">"サーバーが接続されていません · クリックして再試行してください"</string>
-    <string name="text_7eea7966c0b746c5" formatted="false">"このアプリケーションは、限定保証を提供し、責任を制限するCeCILL-C1.0 に基づく前方誤り訂正にOpenFECを使用します。詳細については、完全なライセンスを参照してください。"</string>
+    <string name="text_7eea7966c0b746c5" formatted="false">"このアプリケーションは、限定保証を提供し、責任を制限するCeCILL-C 1.0 に基づく前方誤り訂正にOpenFECを使用します。詳細については、完全なライセンスを参照してください。"</string>
     <string name="text_c611b4e50b0dbc08" formatted="false">"ローカルID "</string>
     <string name="text_97d10220f08dd7fc" formatted="false">"ローカルID{0}"</string>
     <string name="text_91f15d505770d7a0" formatted="false">"このバージョンのソース コードとビルド手順"</string>

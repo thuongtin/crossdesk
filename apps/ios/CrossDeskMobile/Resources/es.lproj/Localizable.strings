@@ -155,7 +155,7 @@
 "未知连接状态" = "Estado de conexión desconocido";
 "未读" = "No leído";
 "未连接" = "No conectado";
-"本应用使用 OpenFEC 提供前向纠错功能，遵循 CeCILL-C 1.0 许可。该许可规定了有限保证及责任限制，详情见许可全文。" = "Esta aplicación utiliza OpenFEC para la corrección de errores directos bajoCeCILL-C1.0, que proporciona garantías limitadas y limita la responsabilidad. Consulte la licencia completa para obtener más detalles.";
+"本应用使用 OpenFEC 提供前向纠错功能，遵循 CeCILL-C 1.0 许可。该许可规定了有限保证及责任限制，详情见许可全文。" = "Esta aplicación utiliza OpenFEC para la corrección de errores directos bajo CeCILL-C 1.0, que proporciona garantías limitadas y limita la responsabilidad. Consulte la licencia completa para obtener más detalles.";
 "本机 ID  %1$@" = "ID local %1$@";
 "本机登录凭据暂时无法安全存取。请解锁设备后，在设置中点击“应用”重试。" = "Las credenciales de inicio de sesión para esta máquina son temporalmente inseguras. Desbloquee su dispositivo y haga clic en \"Aplicar\" en la configuración para volver a intentarlo.";
 "本版本源码与构建说明" = "Código fuente e instrucciones de compilación para esta versión";

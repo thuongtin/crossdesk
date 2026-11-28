@@ -266,7 +266,7 @@ Mở **☰ → Phản hồi và góp ý** trong cửa sổ chính, nhấn **Xu�
 
 ## Thiết bị đáng tin cậy và ghép đôi
 
-Nếu máy tính bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”, hãy sao chép thông tin ghép đôi trên máy điều khiển trước, rồi thêm vào danh sách tin cậy của máy tính và đối chiếu fingerprint. Trên máy tính, mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Quản lý thiết bị đáng tin cậy**; trên iOS, Android, HarmonyOS di động là **Cài đặt → Thông tin ghép đôi máy này**. Sau khi ghép đôi vẫn cần xác minh mật khẩu kết nối.
+Nếu máy tính bật “Chỉ cho phép thiết bị đáng tin cậy điều khiển”, hãy sao chép thông tin ghép đôi trên máy điều khiển trước, rồi thêm vào danh sách tin cậy của máy tính và đối chiếu fingerprint. Trên máy tính, mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Thiết bị đáng tin cậy → Quản lý**; trên iOS, Android, HarmonyOS di động là **Cài đặt → Thông tin ghép đôi máy này**. Sau khi ghép đôi vẫn cần xác minh mật khẩu kết nối.
 
 Trước khi bật giới hạn, xác nhận máy điều khiển định dùng hỗ trợ ghép đôi; CLI terminal hiện chưa hỗ trợ. Xem đầy đủ các bước và thông tin cài lại, di chuyển trong [hướng dẫn thiết bị đáng tin cậy](CONNECTIONS.md#trusted-devices).
 
