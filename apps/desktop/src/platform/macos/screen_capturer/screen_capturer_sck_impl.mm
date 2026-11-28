@@ -670,12 +670,17 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
   bool return_enumeration = false;
   {
     std::lock_guard<std::mutex> lock(lock_);
-    if (!capture_requested_ || generation != configuration_generation_) {
+    const EnumerationAnswer answer =
+        capture_requested_
+            ? AcceptEnumerationAnswer(fallback_return_probe_, generation,
+                                      configuration_generation_,
+                                      configuration_in_flight_)
+            : EnumerationAnswer{};
+    if (!answer.current) {
       LOG_INFO("Ignoring stale ScreenCaptureKit display refresh after stop");
       return;
     }
-    configuration_in_flight_ = false;
-    return_enumeration = fallback_return_probe_.ReturnAnswered(generation);
+    return_enumeration = answer.return_enumeration;
   }
 
   // The window list belongs to the privacy revision present when the request
@@ -1242,18 +1247,15 @@ void ScreenCapturerSckImpl::StartOrReconfigureCapturer(bool return_check) {
   {
     std::lock_guard lock(lock_);
     if (!capture_requested_ || recovery_pending_) return;
-    if (configuration_in_flight_) {
-      if (!return_check) reconfigure_pending_ = true;
-      return;
-    }
     // Include content enumeration in the in-flight operation so screen-change
     // notifications cannot keep superseding a slow request while locked.
-    configuration_in_flight_ = true;
+    const auto started = BeginEnumeration(
+        fallback_return_probe_, configuration_generation_,
+        configuration_in_flight_, reconfigure_pending_, return_check);
+    if (!started) return;
     configuration_started_ = Clock::now();
-    reconfigure_pending_ = false;
     local_helper = helper_;
-    generation = ++configuration_generation_;
-    if (return_check) fallback_return_probe_.ReturnStarted(generation);
+    generation = *started;
     revision = GetMacPrivacyCaptureState().revision;
   }
   if (!local_helper) {

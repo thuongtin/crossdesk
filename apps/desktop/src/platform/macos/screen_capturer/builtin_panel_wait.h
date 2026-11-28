@@ -144,6 +144,50 @@ class FallbackReturnProbe {
   std::optional<uint64_t> return_generation_;
 };
 
+// Starts the display enumeration of a new configuration. The capturer passes
+// its own |generation|, |in_flight| and |reconfigure_pending|. While another
+// configuration is in flight nothing starts: an ordinary request is queued for
+// that one to run once it ends, and a return check is dropped, since the next
+// probe asks again. Returns the new generation, or nothing when none started.
+inline std::optional<uint64_t> BeginEnumeration(FallbackReturnProbe& probe,
+                                                uint64_t& generation,
+                                                bool& in_flight,
+                                                bool& reconfigure_pending,
+                                                bool return_check) {
+  if (in_flight) {
+    if (!return_check) reconfigure_pending = true;
+    return std::nullopt;
+  }
+  in_flight = true;
+  reconfigure_pending = false;
+  ++generation;
+  if (return_check) probe.ReturnStarted(generation);
+  return generation;
+}
+
+struct EnumerationAnswer {
+  // The answer belongs to the configuration in flight and is processed.
+  bool current = false;
+  // It answers a return check, whose failure keeps a working fallback.
+  bool return_enumeration = false;
+};
+
+// Takes the answer to enumeration |answered| while the capturer is at
+// |generation|. Only the current configuration's answer ends the flight. A
+// late answer to an abandoned or superseded enumeration changes nothing, so it
+// cannot end the flight of the enumeration that replaced it.
+inline EnumerationAnswer AcceptEnumerationAnswer(FallbackReturnProbe& probe,
+                                                 uint64_t answered,
+                                                 uint64_t generation,
+                                                 bool& in_flight) {
+  EnumerationAnswer answer;
+  if (answered != generation) return answer;
+  answer.current = true;
+  in_flight = false;
+  answer.return_enumeration = probe.ReturnAnswered(answered);
+  return answer;
+}
+
 // What the capturer does with a display enumeration that failed, listed no
 // displays or ran past its timeout.
 enum class EnumerationFailure {

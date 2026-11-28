@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdint>
 #include <iostream>
+#include <optional>
 #include <vector>
 
 #include "builtin_panel_wait.h"
@@ -295,6 +296,74 @@ bool TestConfigurationTimeout() {
   return ok;
 }
 
+// Runs the capturer's own steps for a return check that hangs while a screen
+// change is queued: StartOrReconfigureCapturer() starts enumerations through
+// BeginEnumeration(), CheckCaptureHealth() through ResolveConfigurationTimeout()
+// and OnShareableContentCreated() takes answers through
+// AcceptEnumerationAnswer().
+bool TestTimedOutReturnHandoff() {
+  using crossdesk::AcceptEnumerationAnswer;
+  using crossdesk::BeginEnumeration;
+  using crossdesk::EnumerationFailure;
+  using crossdesk::FallbackReturnProbe;
+  using crossdesk::ResolveConfigurationTimeout;
+  bool ok = true;
+
+  FallbackReturnProbe probe;
+  uint64_t generation = 3;
+  bool in_flight = false;
+  bool pending = false;
+
+  // A probe found the requested display and starts the return check.
+  const auto return_check =
+      BeginEnumeration(probe, generation, in_flight, pending, true);
+  ok &= Expect(return_check == std::optional<uint64_t>(4) && in_flight,
+               "a return check must start its own enumeration");
+
+  // A screen change while it hangs is queued, and a second return check is
+  // dropped because the next probe asks again.
+  ok &= Expect(!BeginEnumeration(probe, generation, in_flight, pending, false),
+               "a screen change must not start a second enumeration");
+  ok &= Expect(pending, "a screen change during an enumeration must be queued");
+  pending = false;
+  ok &= Expect(!BeginEnumeration(probe, generation, in_flight, pending, true) &&
+                   !pending,
+               "a return check during an enumeration must be dropped");
+  pending = true;
+
+  // The return check runs past the timeout while the fallback streams.
+  ok &= Expect(ResolveConfigurationTimeout(probe, generation, in_flight, pending,
+                                           true) ==
+                   EnumerationFailure::keep_stream_and_reconfigure,
+               "a hung return check must keep the fallback and run the queued change");
+  ok &= Expect(generation == 5 && !in_flight && !pending,
+               "a hung return check must end its flight and take the queued change");
+
+  // The capturer then starts the queued screen change.
+  const auto queued =
+      BeginEnumeration(probe, generation, in_flight, pending, false);
+  ok &= Expect(queued == std::optional<uint64_t>(6) && in_flight,
+               "the queued screen change must start a new enumeration");
+
+  // The abandoned return check answers late, while the screen change runs.
+  const auto late = AcceptEnumerationAnswer(probe, 4, generation, in_flight);
+  ok &= Expect(!late.current && !late.return_enumeration,
+               "a late answer to an abandoned return check must be ignored");
+  ok &= Expect(in_flight,
+               "a late answer must not end the flight of the screen change");
+
+  // The screen change answers as an ordinary enumeration: a failure there
+  // recovers like any other.
+  const auto answer = AcceptEnumerationAnswer(probe, 6, generation, in_flight);
+  ok &= Expect(answer.current && !in_flight,
+               "the current enumeration's answer must end its flight");
+  ok &= Expect(!answer.return_enumeration,
+               "a screen change must not be treated as a return check");
+  ok &= Expect(!probe.ReturnAnswered(4),
+               "the abandoned return check must not stay marked");
+  return ok;
+}
+
 struct SlotInfo {
   uint32_t display = 0;
   int width = 0;
@@ -366,6 +435,7 @@ int main() {
   ok &= TestReturnEnumeration();
   ok &= TestEnumerationFailure();
   ok &= TestConfigurationTimeout();
+  ok &= TestTimedOutReturnHandoff();
   ok &= TestPendingSlotGeometry();
   return ok ? 0 : 1;
 }
