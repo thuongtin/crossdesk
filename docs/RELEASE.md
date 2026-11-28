@@ -239,10 +239,14 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
   và nhúng vào app của cả ba nền tảng (bước 3).
 
 Nên cài thử từng gói trên máy thật trước khi publish. Với Linux, cài từng gói `.deb` bằng
-`apt install ./<gói>.deb` trên Ubuntu 20.04, 22.04 và 24.04 tối giản (container hay rootfs sạch,
-không cài thêm thư viện bằng tay) rồi mở app, ví dụ dưới Xvfb. Gate chỉ kiểm tên trong `Depends`,
-còn `apt-simulate` chỉ giả lập cài trên 20.04; thư viện nạp bằng `dlopen` còn thiếu chỉ lộ ra khi
-app thật sự chạy trên máy không có sẵn nó.
+`apt install --no-install-recommends ./<gói>.deb` trên Ubuntu 20.04, 22.04 và 24.04 tối giản
+(container hay rootfs sạch, không cài thêm gói nào bằng tay) rồi mở app. Màn hình cho app phải đến
+từ ngoài môi trường thử: chạy Xvfb trên máy chủ và chỉ chia sẻ socket X (`/tmp/.X11-unix/X<n>`) vào
+container. Đừng tự cài `xvfb` hay gói khác vào chính container đó, vì nó kéo theo thư viện như
+`zlib1g` (qua `libxfont2`) và che mất thư viện mà gói CrossDesk quên khai báo; gói headless tự kéo
+`xvfb` qua `Depends` của nó thì không sao. Gate chỉ kiểm tên trong `Depends`, còn `apt-simulate`
+chỉ giả lập cài trên 20.04; thư viện nạp bằng `dlopen` còn thiếu chỉ lộ ra khi app thật sự chạy
+trên máy không có sẵn nó.
 
 ### Bước 3: Viết release notes
 
