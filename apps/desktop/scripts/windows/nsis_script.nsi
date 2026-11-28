@@ -1,3 +1,6 @@
+; Build a Unicode installer so every bundled language renders correctly.
+Unicode true
+
 ; Set search path
 !addincludedir "${__FILEDIR__}"
 
@@ -6,13 +9,14 @@
 !define PRODUCT_VERSION "${VERSION}"
 !define PRODUCT_VERSION_NUMERIC "${VERSION_NUMERIC}"
 !define PRODUCT_PUBLISHER "CrossDesk"
-!define PRODUCT_WEB_SITE "https://www.crossdesk.cn/"
+!define PRODUCT_WEB_SITE "https://github.com/thuongtin/crossdesk"
 !define APP_NAME "CrossDesk"
 !define UNINSTALL_REG_KEY "CrossDesk"
 !define PRODUCT_SERVICE_NAME "CrossDeskService"
 
-; Installer icon path
+; Installer and uninstaller icon path
 !define MUI_ICON "${__FILEDIR__}\..\..\resources\windows\crossdesk.ico"
+!define MUI_UNICON "${__FILEDIR__}\..\..\resources\windows\crossdesk.ico"
 
 ; Compression settings
 SetCompressor /FINAL lzma
@@ -20,27 +24,76 @@ SetCompressor /FINAL lzma
 ; Request admin privileges (needed to write HKLM)
 RequestExecutionLevel admin
 
+; Replace the "Nullsoft Install System" footer with the product name.
+BrandingText "${PRODUCT_NAME}"
+
 ; ------ MUI Modern UI Definition ------
 !include "MUI.nsh"
 !define MUI_ABORTWARNING
 !insertmacro MUI_PAGE_WELCOME
+; Upgrades stay in the folder of the existing installation, see
+; LocateExistingInstall.
+!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipDirectoryPageOnUpgrade
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 
 ; Add run-after-install option
 !define MUI_FINISHPAGE_RUN
-!define MUI_FINISHPAGE_RUN_TEXT "Run ${PRODUCT_NAME}"
+!define MUI_FINISHPAGE_RUN_TEXT "$(CD_RunApp)"
 !define MUI_FINISHPAGE_RUN_FUNCTION LaunchApp
 
 !insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+; Every language the app ships. English must stay first: NSIS falls back to
+; the first language when the Windows display language matches none of them.
+!insertmacro MUI_LANGUAGE "English"
+!insertmacro MUI_LANGUAGE "Vietnamese"
 !insertmacro MUI_LANGUAGE "SimpChinese"
+!insertmacro MUI_LANGUAGE "TradChinese"
+!insertmacro MUI_LANGUAGE "Russian"
+!insertmacro MUI_LANGUAGE "Japanese"
+!insertmacro MUI_LANGUAGE "Korean"
+!insertmacro MUI_LANGUAGE "German"
+!insertmacro MUI_LANGUAGE "French"
+!insertmacro MUI_LANGUAGE "Spanish"
+!insertmacro MUI_LANGUAGE "PortugueseBR"
+!insertmacro MUI_LANGUAGE "Turkish"
+!insertmacro MUI_LANGUAGE "Hebrew"
 !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
 ; ------ End of MUI Definition ------
 
 ; Include LogicLib for process handling
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
+!include /CHARSET=UTF8 "installer_strings.nsh"
 Var UpdateMode
+Var ExistingInstall
+
+; NSIS picks the language matching the Windows display language exactly,
+; then by primary language, so zh-HK and zh-MO would get Simplified Chinese.
+; Map them to Traditional Chinese like the app does.
+!macro CROSSDESK_SELECT_LANGUAGE
+    System::Call 'kernel32::GetUserDefaultUILanguage() i .r0'
+    IntOp $1 $0 & 0x3FF
+    ${If} $1 = 0x04
+        ${If} $0 = 0x0404
+        ${OrIf} $0 = 0x0C04
+        ${OrIf} $0 = 0x1404
+        ${OrIf} $0 = 0x7C04
+            StrCpy $LANGUAGE ${LANG_TRADCHINESE}
+        ${Else}
+            StrCpy $LANGUAGE ${LANG_SIMPCHINESE}
+        ${EndIf}
+    ${EndIf}
+    ; Translation review builds only, for example
+    ; makensis /DCROSSDESK_FORCE_LANGUAGE=1066 forces Vietnamese.
+    !ifdef CROSSDESK_FORCE_LANGUAGE
+        StrCpy $LANGUAGE ${CROSSDESK_FORCE_LANGUAGE}
+    !endif
+!macroend
 
 Function .onInit
     ${GetParameters} $0
@@ -50,20 +103,27 @@ Function .onInit
     ${IfNot} ${Errors}
         StrCpy $UpdateMode 1
     ${EndIf}
+    !insertmacro CROSSDESK_SELECT_LANGUAGE
+    Call LocateExistingInstall
+FunctionEnd
+
+Function un.onInit
+    !insertmacro CROSSDESK_SELECT_LANGUAGE
 FunctionEnd
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "crossdesk-win-x64-${PRODUCT_VERSION}.exe"
 VIProductVersion "${PRODUCT_VERSION_NUMERIC}"
-VIAddVersionKey /LANG=2052 "CompanyName" "CrossDesk"
-VIAddVersionKey /LANG=2052 "FileDescription" "CrossDesk Installer"
-VIAddVersionKey /LANG=2052 "FileVersion" "${PRODUCT_VERSION}"
-VIAddVersionKey /LANG=2052 "LegalCopyright" "Copyright (C) CrossDesk contributors"
-VIAddVersionKey /LANG=2052 "OriginalFilename" "crossdesk-win-x64-${PRODUCT_VERSION}.exe"
-VIAddVersionKey /LANG=2052 "ProductName" "${PRODUCT_NAME}"
-VIAddVersionKey /LANG=2052 "ProductVersion" "${PRODUCT_VERSION}"
-InstallDir "$PROGRAMFILES\CrossDesk"
-InstallDirRegKey HKCU "Software\${PRODUCT_NAME}" "InstallDir"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "CrossDesk"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "CrossDesk Installer"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PRODUCT_VERSION}"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright (C) CrossDesk contributors"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "OriginalFilename" "crossdesk-win-x64-${PRODUCT_VERSION}.exe"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "${PRODUCT_NAME}"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${PRODUCT_VERSION}"
+; CrossDesk is a 64-bit application. Existing installations, including
+; v1.7.7-3 and older in Program Files (x86), are found by LocateExistingInstall.
+InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 ShowInstDetails show
 
 Section "MainSection"
@@ -78,7 +138,7 @@ Section "MainSection"
     nsProcess::_FindProcess "$1"
     Pop $R0
     ${If} $R0 = 0  ;
-        MessageBox MB_ICONQUESTION|MB_YESNO "CrossDesk is running. Do you want to close it and continue the installation?" IDYES closeApp IDNO cancelInstall
+        MessageBox MB_ICONQUESTION|MB_YESNO "$(CD_CloseRunningInstall)" IDYES closeApp IDNO cancelInstall
     ${Else}
         Goto installApp
     ${EndIf}
@@ -91,7 +151,7 @@ closeApp:
 
 cancelInstall:
     SetDetailsPrint both
-    MessageBox MB_ICONEXCLAMATION|MB_OK "Installation has been aborted."
+    MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_InstallAborted)"
     Abort
 
 installApp:
@@ -126,12 +186,15 @@ installApp:
     ExecWait '"$INSTDIR\CrossDesk.exe" --autostart-migrate' $0
     ${If} ${Errors}
     ${OrIf} $0 != 0
-        DetailPrint "CrossDesk will retry auto-start migration on the next launch."
+        DetailPrint "$(CD_AutostartRetry)"
         IfSilent +2
-        MessageBox MB_ICONEXCLAMATION|MB_OK "CrossDesk will retry auto-start migration when you next open it."
+        MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_AutostartRetry)"
     ${EndIf}
 
-    ; Write uninstall information
+    ; Write uninstall information. The entry stays in the 32-bit registry view
+    ; where earlier releases wrote it: the in-app updater reads InstallLocation
+    ; from WOW6432Node, and a second entry would duplicate the program in
+    ; Installed apps.
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "DisplayName" "${PRODUCT_NAME}"
@@ -161,7 +224,7 @@ Section "Uninstall"
     nsProcess::_FindProcess "$1"
     Pop $R0
     ${If} $R0 = 0
-        MessageBox MB_ICONQUESTION|MB_YESNO "CrossDesk is running. Do you want to close it and uninstall?" IDYES closeApp IDNO cancelUninstall
+        MessageBox MB_ICONQUESTION|MB_YESNO "$(CD_CloseRunningUninstall)" IDYES closeApp IDNO cancelUninstall
     ${Else}
         Goto uninstallApp
     ${EndIf}
@@ -174,7 +237,7 @@ closeApp:
 
 cancelUninstall:
     SetDetailsPrint both
-    MessageBox MB_ICONEXCLAMATION|MB_OK "Uninstallation has been aborted."
+    MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_UninstallAborted)"
     Abort
 
 uninstallApp:
@@ -182,7 +245,7 @@ uninstallApp:
     ExecWait '"$INSTDIR\CrossDesk.exe" --autostart-uninstall' $0
     ${If} ${Errors}
     ${OrIf} $0 != 0
-        MessageBox MB_ICONEXCLAMATION|MB_OK "Could not remove CrossDesk auto-start. Remove any remaining CrossDesk Autostart tasks in Task Scheduler."
+        MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_AutostartRemoveFailed)"
     ${EndIf}
     Call un.UnregisterInstalledService
     Call un.RemoveUsbmmiddDriver
@@ -229,23 +292,52 @@ Function .onInstFailed
     SetErrorLevel 1
 FunctionEnd
 
+; New installations go to the 64-bit Program Files folder. An existing
+; installation is upgraded where it is, even in Program Files (x86): the
+; updater relaunches CrossDesk.exe from its old path, and the service, the
+; per-user auto-start tasks and the firewall rules all point at that path.
+; Moving it would also need the old uninstaller, which deletes user data.
+; The updater always passes /D, which NSIS applies before .onInit, so a
+; non-default $INSTDIR means the caller chose the folder.
+Function LocateExistingInstall
+    StrCpy $ExistingInstall 0
+    ${If} $INSTDIR != "$PROGRAMFILES64\${PRODUCT_NAME}"
+        Return
+    ${EndIf}
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "InstallLocation"
+    ${If} $0 == ""
+        ReadRegStr $0 HKCU "Software\${PRODUCT_NAME}" "InstallDir"
+    ${EndIf}
+    ${If} $0 != ""
+    ${AndIf} ${FileExists} "$0\CrossDesk.exe"
+        StrCpy $INSTDIR $0
+        StrCpy $ExistingInstall 1
+    ${EndIf}
+FunctionEnd
+
+Function SkipDirectoryPageOnUpgrade
+    ${If} $ExistingInstall = 1
+        Abort
+    ${EndIf}
+FunctionEnd
+
 Function StopInstalledService
     IfFileExists "$INSTDIR\CrossDesk.exe" 0 stop_with_sc
     IfFileExists "$INSTDIR\crossdesk_service.exe" 0 stop_with_sc
 
-    DetailPrint "Stopping existing CrossDesk service"
+    DetailPrint "$(CD_StoppingService)"
     ExecWait '"$INSTDIR\CrossDesk.exe" --service-stop' $0
     ${If} $0 = 0
         Return
     ${EndIf}
 
 stop_with_sc:
-    DetailPrint "Stopping existing CrossDesk service via Service Control Manager"
+    DetailPrint "$(CD_StoppingServiceSc)"
     ExecWait '"$SYSDIR\sc.exe" stop ${PRODUCT_SERVICE_NAME}' $0
     ${If} $0 != 0
     ${AndIf} $0 != 1060
     ${AndIf} $0 != 1062
-        MessageBox MB_ICONSTOP|MB_OK "Failed to stop the existing CrossDesk service. The installation will be aborted."
+        MessageBox MB_ICONSTOP|MB_OK "$(CD_StopServiceFailed)"
         Abort
     ${EndIf}
     Sleep 1500
@@ -256,10 +348,10 @@ Function RegisterInstalledService
     IfFileExists "$INSTDIR\crossdesk_service.exe" 0 missing_service_binary
     IfFileExists "$INSTDIR\crossdesk_session_helper.exe" 0 missing_service_binary
 
-    DetailPrint "Registering CrossDesk service"
+    DetailPrint "$(CD_RegisteringService)"
     ExecWait '"$INSTDIR\CrossDesk.exe" --service-install' $0
     ${If} $0 != 0
-        MessageBox MB_ICONSTOP|MB_OK "Failed to register the CrossDesk service. The installation will be aborted."
+        MessageBox MB_ICONSTOP|MB_OK "$(CD_RegisterServiceFailed)"
         Abort
     ${EndIf}
 
@@ -271,15 +363,15 @@ Function RegisterInstalledService
     ${If} $1 = 1
         ExecWait '"$INSTDIR\CrossDesk.exe" --service-start' $0
         ${If} $0 != 0
-            MessageBox MB_ICONEXCLAMATION|MB_OK "Could not restart the unattended host. Run CrossDesk.exe --service-start from an administrator terminal."
+            MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_UnattendedRestartFailed)"
         ${EndIf}
     ${EndIf}
-    DetailPrint "CrossDesk service registered"
+    DetailPrint "$(CD_ServiceRegistered)"
 
     Return
 
 missing_service_binary:
-    MessageBox MB_ICONSTOP|MB_OK "CrossDesk service files are missing from the installer package. The installation will be aborted."
+    MessageBox MB_ICONSTOP|MB_OK "$(CD_ServiceFilesMissing)"
     Abort
 FunctionEnd
 
@@ -290,10 +382,10 @@ Function un.UnregisterInstalledService
     SetRegView 32
     IfFileExists "$INSTDIR\CrossDesk.exe" 0 unregister_with_sc
 
-    DetailPrint "Stopping CrossDesk service"
+    DetailPrint "$(CD_StoppingService)"
     ExecWait '"$INSTDIR\CrossDesk.exe" --service-stop' $0
     ${If} $0 = 0
-        DetailPrint "Removing CrossDesk service"
+        DetailPrint "$(CD_RemovingService)"
         ExecWait '"$INSTDIR\CrossDesk.exe" --service-uninstall' $0
         ${If} $0 = 0
             Return
@@ -301,12 +393,12 @@ Function un.UnregisterInstalledService
     ${EndIf}
 
 unregister_with_sc:
-    DetailPrint "Removing CrossDesk service via Service Control Manager"
+    DetailPrint "$(CD_RemovingServiceSc)"
     ExecWait '"$SYSDIR\sc.exe" stop ${PRODUCT_SERVICE_NAME}' $0
     ${If} $0 != 0
     ${AndIf} $0 != 1060
     ${AndIf} $0 != 1062
-        MessageBox MB_ICONSTOP|MB_OK "Failed to stop the CrossDesk service. Uninstall will be aborted."
+        MessageBox MB_ICONSTOP|MB_OK "$(CD_UnStopServiceFailed)"
         Abort
     ${EndIf}
     Sleep 1500
@@ -314,7 +406,7 @@ unregister_with_sc:
     ExecWait '"$SYSDIR\sc.exe" delete ${PRODUCT_SERVICE_NAME}' $0
     ${If} $0 != 0
     ${AndIf} $0 != 1060
-        MessageBox MB_ICONSTOP|MB_OK "Failed to remove the CrossDesk service. Uninstall will be aborted."
+        MessageBox MB_ICONSTOP|MB_OK "$(CD_UnRemoveServiceFailed)"
         Abort
     ${EndIf}
 FunctionEnd
@@ -338,7 +430,7 @@ Function un.RemoveUsbmmiddDriver
         Return
     ${EndIf}
 
-    DetailPrint "Removing the usbmmidd virtual display driver installed by CrossDesk"
+    DetailPrint "$(CD_RemovingDriver)"
     SetOutPath "$INSTDIR\usbmmidd_v2"
     ; Unplug every virtual monitor first (the driver allows up to four).
     StrCpy $1 0
@@ -355,7 +447,7 @@ unplug_loop:
     nsExec::ExecToLog '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" remove usbmmidd'
     Pop $2
     ${If} $2 != 0
-        DetailPrint "usbmmidd driver removal returned $2; remove 'USB Mobile Monitor Virtual Display' from Device Manager if it remains"
+        DetailPrint "$(CD_DriverRemoveFailed) $2"
     ${EndIf}
     SetOutPath "$TEMP"
 
