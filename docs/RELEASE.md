@@ -287,14 +287,20 @@ nguyên chữ. Vì vậy:
     hay `>` (kể cả dòng giống fence trong khối code thụt lề), vì theo CommonMark fence lồng kết thúc
     cùng mục list chứa nó, còn extractor và hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một
     mục list thì đặt fence ra ngoài list.
-  - Không có tiêu đề cấp 1 hoặc 2 thụt lề, và không có dòng toàn `=` hay `-` ngay dưới một dòng chữ
-    (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một dòng trống phía trên nó. Dòng
-    cuối của bảng GFM không phải dòng chữ, nên `---` ngay dưới bảng vẫn là đường kẻ.
+  - Không có tiêu đề cấp 1 hoặc 2 thụt lề, và không có dòng toàn `=` hay `-` ngay dưới một dòng chữ,
+    kể cả trong mục list hay sau `>` (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một
+    dòng trống phía trên nó. Dòng cuối của bảng GFM không phải dòng chữ, nên `---` ngay dưới bảng vẫn
+    là đường kẻ.
+  - Không có định nghĩa footnote (`[^note]: ...`), kể cả trong mục list hay sau `>`: GitHub đưa nó
+    xuống cuối trang, bỏ hẳn nếu không chỗ nào gọi và giấu comment HTML bên trong, còn hộp thoại hiện
+    nó thành chữ ngay tại chỗ. Viết ghi chú đó thẳng vào mục. Chỗ gọi `[^note]` không có định nghĩa
+    thì GitHub hiện nguyên chữ như hộp thoại, nên không bị chặn.
   - Không có thứ GitHub đọc thành HTML, dạng khối hay nội dòng, kể cả trong ô bảng và comment
     `<!-- -->` mà GitHub giấu đi: hộp thoại hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì
     đặt nó trong backtick (`` `<package>` ``). Script kiểm theo cú pháp nội dòng của cmark-gfm, nên
-    autolink như `<https://example.com>`, đích link như `[guide](<docs/Upgrade Guide.md>)` và dấu `<`
-    trong `a < b` hay `x<limit` vẫn dùng được.
+    autolink như `<https://example.com>`, đích link như `[guide](<docs/Upgrade Guide.md>)`, nhãn của
+    link tham chiếu có định nghĩa ở bất kỳ đâu trong notes như `[profile][<profile>]`, `` `D:\|<x>` ``
+    trong ô bảng (`\|` là chữ `|` của ô) và dấu `<` trong `a < b` hay `x<limit` vẫn dùng được.
 - Bảng GFM trong mục Changes không bị chặn, nhưng hộp thoại đọc từng dòng riêng nên không dựng lại
   bảng: mỗi hàng, kể cả dòng phân cách `| --- |`, hiện thành một dòng chữ có dấu `|`. Nên viết mục
   Changes bằng list.

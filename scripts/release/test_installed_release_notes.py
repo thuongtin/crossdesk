@@ -21,6 +21,8 @@ spec.loader.exec_module(notes)
 FENCE = "```"
 NESTED = "line {}: start code fences at column 0, not indented or inside a list item or quote"
 HTML = "line {}: the Release Notes dialog shows HTML as plain text, so remove the HTML or put it in backticks"
+SETEXT = "line {}: a line of '=' or '-' under text makes it a level 1 or 2 heading, so put a blank line before this line"
+FOOTNOTE = "line {}: the Release Notes dialog shows footnotes as plain text, so put this note in the text instead"
 # Ví dụ notes nằm trong một khối trước mục thật; mục giả không được thay mục thật.
 FAKE_SECTION = "## Changes\n- Example only\n## Downloads"
 
@@ -199,9 +201,11 @@ class ExtractTest(unittest.TestCase):
     def test_setext_heading_in_changes_is_rejected(self):
         for underline in ("---", "==="):
             with self.subTest(underline=underline):
-                self.assert_rejected(f"## Changes\n\n- A\n\nDownloads\n{underline}\n- x",
-                                     "line 6: a line of '=' or '-' under text makes it a level 1 or 2 "
-                                     "heading, so put a blank line before this line")
+                self.assert_rejected(f"## Changes\n\n- A\n\nDownloads\n{underline}\n- x", SETEXT.format(6))
+        # Như cmark-gfm, dòng gạch dưới trong mục list hay trích dẫn cũng biến dòng trên thành tiêu đề.
+        for body in ("- Linux\n  ---", "> a\n> ---", "- > a\n  > ==="):
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, SETEXT.format(4))
         # Đường kẻ ngang sau dòng trống hay sau mục list không biến dòng trên thành tiêu đề.
         self.assertEqual(notes.extract("## Changes\n\nText\n\n---\n- A\n---"), "Text\n\n---\n- A\n---")
 
@@ -214,9 +218,68 @@ class ExtractTest(unittest.TestCase):
         # HTML dù dòng "-" sau đó thành tiêu đề cột của bảng.
         self.assertEqual(notes.extract("## Changes\n\n[a]: <x y>\n-\n|---|"), "[a]: <x y>\n-\n|---|")
         # Dòng phân cách lệch số cột khiến đoạn văn không bao giờ thành bảng, kể cả khi sau đó có cặp khớp.
-        self.assert_rejected("## Changes\n\na | b\n-|-|-\nc | d\n-|-\n---",
-                             "line 7: a line of '=' or '-' under text makes it a level 1 or 2 "
-                             "heading, so put a blank line before this line")
+        self.assert_rejected("## Changes\n\na | b\n-|-|-\nc | d\n-|-\n---", SETEXT.format(7))
+
+    def test_escaped_pipes_stay_in_their_table_cell(self):
+        # Như cmark-gfm, "\|" là chữ '|' của ô bảng, kể cả trong code span và khi '\' đứng sau một
+        # '\' khác, nên <drive> ở đây nằm trong code chứ không phải HTML.
+        for cell in ("`D:\\|<drive>`", "`D:\\\\|<drive>`"):
+            table = f"| Path | Note |\n| --- | --- |\n| {cell} | x |"
+            with self.subTest(cell=cell):
+                self.assertEqual(notes.extract("## Changes\n\n" + table), table)
+        self.assert_rejected("## Changes\n\n| a |\n| - |\n| b \\| <i> |", HTML.format(5))
+
+    def test_reference_link_labels_are_not_html(self):
+        # Nhãn của link tham chiếu có định nghĩa ở bất kỳ đâu trong notes không phải HTML; không có
+        # định nghĩa thì GitHub hiện chữ trong ngoặc và giấu <profile> như một thẻ HTML.
+        body = "- See the [profile option][<profile>]"
+        defined = body + "\n\n[<profile>]: ./manual#profiles"
+        self.assertEqual(notes.extract("## Changes\n\n" + defined), defined)
+        self.assert_rejected("## Changes\n\n" + body, HTML.format(3))
+        # Định nghĩa bị bỏ ra khỏi đoạn văn khi đoạn đó thành tiêu đề setext vẫn dùng được ở chỗ khác.
+        self.assertEqual(notes.extract("[<p>]: /u\nTitle\n---\n\n## Changes\n\n- See [x][<p>]"),
+                         "- See [x][<p>]")
+        # Chữ trong ngoặc của link vẫn là nội dung nội dòng, nên <profile> ở đó là HTML.
+        self.assert_rejected("## Changes\n\n- Fixed [<profile>][]\n\n[<profile>]: ./manual", HTML.format(3))
+
+    def test_link_openers_follow_cmark_gfm(self):
+        # Sau một link khớp, '[' bao quanh nó không thành link được, nên "(<x y>)" là chữ chứa HTML.
+        self.assert_rejected("## Changes\n\n- [a [b][r] c](<x y>)\n\n[r]: /u", HTML.format(3))
+        # Như cmark-gfm, một '[' mới mở lại mọi '[' cũ, và GitHub hiện ở đây link lồng link, không có HTML.
+        allowed = "- [x [a](/u) [b] ](<x y>)"
+        self.assertEqual(notes.extract("## Changes\n\n" + allowed), allowed)
+        # "![^" là '!' cộng một '[' thường, nên link bên trong chặn nó thành chỗ gọi footnote; '![' sau
+        # link không mở lại '[' cũ.
+        for body in ("- ![^x [a](/u) <i>]", "- [^x <b> [a](/u) ![b] ]"):
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, HTML.format(3))
+
+    def test_footnote_calls_show_html_as_text(self):
+        # Chỗ gọi footnote không có định nghĩa hiện nguyên chữ trên GitHub, kể cả HTML bên trong.
+        body = "- x [^q<b>] and ![^y <i>]"
+        self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+
+    def test_footnote_definitions_in_changes_are_rejected(self):
+        # GitHub bỏ định nghĩa không ai gọi và đưa định nghĩa còn lại xuống cuối trang, kể cả khi nó
+        # nằm trong mục list hay trích dẫn, và giấu comment HTML trong đó.
+        cases = [
+            ("- A[^compat]\n\n[^compat]: <!-- verify on 20.04 -->", 5),
+            ("- A[^compat]\n\n[^compat]: Needs Ubuntu 20.04", 5),
+            ("- Quoted\n\n> [^compat]: Needs Ubuntu 20.04", 5),
+            ("- Item\n\n  [^compat]: Needs Ubuntu 20.04", 5),
+            ("[^n]:\n\n    <i>b</i>", 3),
+        ]
+        for body, line in cases:
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, FOOTNOTE.format(line))
+        # Nhãn có dấu cách là định nghĩa link thường, không phải footnote.
+        allowed = "- See [^a b]\n\n[^a b]: ./manual"
+        self.assertEqual(notes.extract("## Changes\n\n" + allowed), allowed)
+        # Footnote trước mục chỉ đi tiếp qua dòng trống hẳn. Như cmark-gfm, dòng chỉ có dấu cách đóng
+        # nó, nên định nghĩa thụt bốn cột phía sau là code và <p> trong mục là HTML.
+        template = "[^n]: a\n{}\n    [<p>]: /u\n\n## Changes\n\n- See [x][<p>]"
+        self.assertEqual(notes.extract(template.format("")), "- See [x][<p>]")
+        self.assert_rejected(template.format("  "), HTML.format(7))
 
     def test_fences_after_changes_are_ignored(self):
         text = f"## Changes\n\n- A\n\n## Downloads\n\n- {FENCE}sh\n  x\n  {FENCE}"
