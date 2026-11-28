@@ -346,10 +346,10 @@
       "ja": "IDモード",
       "ko": "ID 모드",
       "de": "ID-Modus",
-      "fr": "Mode identification",
-      "es": "Modo de identificación",
+      "fr": "Mode ID",
+      "es": "Modo ID",
       "pt-BR": "Modo ID",
-      "vi": "Kết nối bằng ID"
+      "vi": "Chế độ ID"
     },
     "IP 和端口已复制": {
       "zh-Hans": "IP 和端口已复制",
@@ -375,7 +375,7 @@
       "fr": "Mode IP",
       "es": "Modo IP",
       "pt-BR": "Modo IP",
-      "vi": "Kết nối bằng IP"
+      "vi": "Chế độ IP"
     },
     "IP 连接准备中…": {
       "zh-Hans": "IP 连接准备中…",
@@ -483,15 +483,15 @@
     },
     "OpenFEC 提供前向纠错能力，遵循 CeCILL-C 1.0 许可。其许可规定了有限保证及责任限制，请阅读组件详情。": {
       "zh-Hans": "OpenFEC 提供前向纠错能力，遵循 CeCILL-C 1.0 许可。其许可规定了有限保证及责任限制，请阅读组件详情。",
-      "en": "OpenFEC provides forward error correction capabilities and is licensed under theCeCILL-C1.0 license. The license provides for a limited warranty and limitations of liability, please read the component details.",
+      "en": "OpenFEC provides forward error correction capabilities and is licensed under the CeCILL-C 1.0 license. The license provides for a limited warranty and limitations of liability, please read the component details.",
       "zh-Hant": "OpenFEC 提供前向糾錯能力，遵循 CeCILL-C 1.0 許可。其許可規定了有限保證及責任限制，請閱讀元件詳情。",
-      "ja": "OpenFECは前方誤り訂正機能を提供し、CeCILL-C1.0 ライセンスに基づいてライセンスされています。ライセンスには限定保証と責任制限が規定されています。コンポーネントの詳細をお読みください。",
-      "ko": "OpenFEC는 순방향 오류 수정 기능을 제공하며 CeCILL-C1.0 라이선스에 따라 라이선스가 부여됩니다. 라이센스는 제한된 보증 및 책임 제한을 제공합니다. 구성 요소 세부 정보를 읽어보십시오.",
-      "de": "OpenFEC bietet Vorwärtsfehlerkorrekturfunktionen und ist unter der CeCILL-C1.0-Lizenz lizenziert. Die Lizenz sieht eine eingeschränkte Garantie und Haftungsbeschränkungen vor. Bitte lesen Sie die Komponentendetails.",
-      "fr": "OpenFEC fournit des capacités de correction d'erreur directe et est sous licence CeCILL-C1.0. La licence prévoit une garantie limitée et des limitations de responsabilité, veuillez lire les détails des composants.",
-      "es": "OpenFEC proporciona capacidades de corrección de errores hacia adelante y tiene la licencia CeCILL-C1.0. La licencia proporciona una garantía limitada y limitaciones de responsabilidad; lea los detalles del componente.",
-      "pt-BR": "OpenFEC fornece recursos de correção direta de erros e é licenciado sob a licença CeCILL-C1.0. A licença fornece uma garantia limitada e limitações de responsabilidade. Leia os detalhes do componente.",
-      "ru": "OpenFEC обеспечивает возможности прямого исправления ошибок и лицензируется по лицензии CeCILL-C1.0. Лицензия предусматривает ограниченную гарантию и ограничение ответственности. Пожалуйста, ознакомьтесь с подробностями компонента.",
+      "ja": "OpenFECは前方誤り訂正機能を提供し、CeCILL-C 1.0 ライセンスに基づいてライセンスされています。ライセンスには限定保証と責任制限が規定されています。コンポーネントの詳細をお読みください。",
+      "ko": "OpenFEC는 순방향 오류 수정 기능을 제공하며 CeCILL-C 1.0 라이선스에 따라 라이선스가 부여됩니다. 라이센스는 제한된 보증 및 책임 제한을 제공합니다. 구성 요소 세부 정보를 읽어보십시오.",
+      "de": "OpenFEC bietet Vorwärtsfehlerkorrekturfunktionen und ist unter der CeCILL-C 1.0-Lizenz lizenziert. Die Lizenz sieht eine eingeschränkte Garantie und Haftungsbeschränkungen vor. Bitte lesen Sie die Komponentendetails.",
+      "fr": "OpenFEC fournit des capacités de correction d'erreur directe et est sous licence CeCILL-C 1.0. La licence prévoit une garantie limitée et des limitations de responsabilité, veuillez lire les détails des composants.",
+      "es": "OpenFEC proporciona capacidades de corrección de errores hacia adelante y tiene la licencia CeCILL-C 1.0. La licencia proporciona una garantía limitada y limitaciones de responsabilidad; lea los detalles del componente.",
+      "pt-BR": "OpenFEC fornece recursos de correção direta de erros e é licenciado sob a licença CeCILL-C 1.0. A licença fornece uma garantia limitada e limitações de responsabilidade. Leia os detalhes do componente.",
+      "ru": "OpenFEC обеспечивает возможности прямого исправления ошибок и лицензируется по лицензии CeCILL-C 1.0. Лицензия предусматривает ограниченную гарантию и ограничение ответственности. Пожалуйста, ознакомьтесь с подробностями компонента.",
       "vi": "OpenFEC cung cấp khả năng Forward Error Correction (FEC) và tuân theo giấy phép CeCILL-C 1.0. Giấy phép quy định bảo hành có giới hạn và giới hạn trách nhiệm; vui lòng đọc chi tiết thành phần."
     },
     "OpenFEC 许可与源码": {
@@ -930,10 +930,10 @@
       "zh-Hant": "依據 GNU GPL v3 許可釋出。",
       "ja": "GNU GPL v3に基づいてライセンスされています。",
       "ko": "GNU GPL v3에 따라 라이센스가 부여되었습니다.",
-      "de": "Lizenziert unterGNU GPL v3.",
-      "fr": "Sous licenceGNU GPL v3.",
-      "es": "Con licenciaGNU GPL v3.",
-      "pt-BR": "Licenciado sobGNU GPL v3.",
+      "de": "Lizenziert unter GNU GPL v3.",
+      "fr": "Sous licence GNU GPL v3.",
+      "es": "Con licencia GNU GPL v3.",
+      "pt-BR": "Licenciado sob GNU GPL v3.",
       "vi": "Phát hành theo giấy phép GNU GPL v3."
     },
     "保存": {
@@ -1385,7 +1385,7 @@
       "zh-Hant": "關於",
       "ja": "概要",
       "ko": "소개",
-      "de": "Ungefähr",
+      "de": "Über",
       "fr": "À propos",
       "es": "Acerca de",
       "pt-BR": "Sobre",
@@ -3634,7 +3634,7 @@
       "zh-Hant": "已授權",
       "ja": "認められる",
       "ko": "승인됨",
-      "de": "Zugegeben",
+      "de": "Erteilt",
       "fr": "Accordé",
       "es": "Concedido",
       "pt-BR": "Concedido",
@@ -6180,12 +6180,12 @@
       "en": "This application uses OpenFEC for forward error correction under CeCILL-C 1.0, which provides limited warranties and limits liability. See the full license for details.",
       "ru": "Приложение использует OpenFEC для прямого исправления ошибок по лицензии CeCILL-C 1.0 с ограниченной гарантией и ответственностью. Подробности — в тексте лицензии.",
       "zh-Hant": "本應用使用 OpenFEC 提供前向糾錯功能，遵循 CeCILL-C 1.0 許可。該許可規定了有限保證及責任限制，詳情見許可全文。",
-      "ja": "このアプリケーションは、限定保証を提供し、責任を制限するCeCILL-C1.0 に基づく前方誤り訂正にOpenFECを使用します。詳細については、完全なライセンスを参照してください。",
-      "ko": "이 애플리케이션은 제한된 보증과 책임 제한을 제공하는CeCILL-C1.0에 따라 순방향 오류 수정을 위해OpenFEC를 사용합니다. 자세한 내용은 전체 라이센스를 참조하세요.",
-      "de": "Diese Anwendung verwendet OpenFEC zur Vorwärtsfehlerkorrektur unterCeCILL-C1.0, was eingeschränkte Garantien und Haftungsbeschränkungen bietet. Einzelheiten finden Sie in der vollständigen Lizenz.",
-      "fr": "Cette application utilise OpenFEC pour la correction d'erreur directe sousCeCILL-C1.0, qui offre des garanties limitées et limite la responsabilité. Consultez la licence complète pour plus de détails.",
-      "es": "Esta aplicación utiliza OpenFEC para la corrección de errores directos bajoCeCILL-C1.0, que proporciona garantías limitadas y limita la responsabilidad. Consulte la licencia completa para obtener más detalles.",
-      "pt-BR": "Este aplicativo usa OpenFEC para correção direta de erros noCeCILL-C1.0, que fornece garantias limitadas e limita a responsabilidade. Veja a licença completa para detalhes.",
+      "ja": "このアプリケーションは、限定保証を提供し、責任を制限するCeCILL-C 1.0 に基づく前方誤り訂正にOpenFECを使用します。詳細については、完全なライセンスを参照してください。",
+      "ko": "이 애플리케이션은 제한된 보증과 책임 제한을 제공하는 CeCILL-C 1.0에 따라 순방향 오류 수정을 위해 OpenFEC를 사용합니다. 자세한 내용은 전체 라이센스를 참조하세요.",
+      "de": "Diese Anwendung verwendet OpenFEC zur Vorwärtsfehlerkorrektur unter CeCILL-C 1.0, was eingeschränkte Garantien und Haftungsbeschränkungen bietet. Einzelheiten finden Sie in der vollständigen Lizenz.",
+      "fr": "Cette application utilise OpenFEC pour la correction d'erreur directe sous CeCILL-C 1.0, qui offre des garanties limitées et limite la responsabilité. Consultez la licence complète pour plus de détails.",
+      "es": "Esta aplicación utiliza OpenFEC para la corrección de errores directos bajo CeCILL-C 1.0, que proporciona garantías limitadas y limita la responsabilidad. Consulte la licencia completa para obtener más detalles.",
+      "pt-BR": "Este aplicativo usa OpenFEC para correção direta de erros sob a licença CeCILL-C 1.0, que fornece garantias limitadas e limita a responsabilidade. Veja a licença completa para detalhes.",
       "vi": "Ứng dụng này sử dụng OpenFEC cho cơ chế Forward Error Correction (FEC) theo giấy phép CeCILL-C 1.0. Giấy phép quy định bảo hành có giới hạn và giới hạn trách nhiệm; xem toàn văn giấy phép để biết chi tiết."
     },
     "本机 ID": {
@@ -7519,7 +7519,7 @@
       "en": "OK",
       "zh-Hant": "確定",
       "ja": "OK",
-      "ko": "알았어",
+      "ko": "확인",
       "de": "Okay",
       "fr": "D'accord",
       "es": "Aceptar",
@@ -11218,6 +11218,19 @@
       "es": "Administrar dispositivos de confianza",
       "pt-BR": "Gerenciar dispositivos confiáveis",
       "vi": "Quản lý thiết bị đáng tin cậy"
+    },
+    "管理": {
+      "zh-Hans": "管理",
+      "en": "Manage",
+      "ru": "Управлять",
+      "zh-Hant": "管理",
+      "ja": "管理",
+      "ko": "관리",
+      "de": "Verwalten",
+      "fr": "Gérer",
+      "es": "Administrar",
+      "pt-BR": "Gerenciar",
+      "vi": "Quản lý"
     },
     "可添加的已连接设备": {
       "zh-Hans": "可添加的已连接设备",
@@ -15054,6 +15067,7 @@
       "可信设备",
       "仅允许可信设备控制",
       "管理可信设备",
+      "管理",
       "可添加的已连接设备",
       "信任此设备",
       "移除信任",

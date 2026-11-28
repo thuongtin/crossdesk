@@ -161,7 +161,7 @@
     <string name="text_94bc3d40defef3e9" formatted="false">"무단"</string>
     <string name="text_4d0680f9efaef147" formatted="false">"읽지 않음"</string>
     <string name="text_d1fcb66a323a16f5" formatted="false">"서버가 연결되지 않았습니다. · 다시 시도하려면 클릭하세요."</string>
-    <string name="text_7eea7966c0b746c5" formatted="false">"이 애플리케이션은 제한된 보증과 책임 제한을 제공하는CeCILL-C1.0에 따라 순방향 오류 수정을 위해OpenFEC를 사용합니다. 자세한 내용은 전체 라이센스를 참조하세요."</string>
+    <string name="text_7eea7966c0b746c5" formatted="false">"이 애플리케이션은 제한된 보증과 책임 제한을 제공하는 CeCILL-C 1.0에 따라 순방향 오류 수정을 위해 OpenFEC를 사용합니다. 자세한 내용은 전체 라이센스를 참조하세요."</string>
     <string name="text_c611b4e50b0dbc08" formatted="false">"로컬 ID "</string>
     <string name="text_97d10220f08dd7fc" formatted="false">"로컬 ID{0}"</string>
     <string name="text_91f15d505770d7a0" formatted="false">"이 버전의 소스 코드 및 빌드 지침"</string>
@@ -201,7 +201,7 @@
     <string name="text_66062971234f422d" formatted="false">"트랙패드"</string>
     <string name="text_c421dc051bea3f11" formatted="false">"상대 마우스"</string>
     <string name="text_de32e20193ad1042" formatted="false">"알겠습니다"</string>
-    <string name="text_fac2a67ad87807c4" formatted="false">"알았어"</string>
+    <string name="text_fac2a67ad87807c4" formatted="false">"확인"</string>
     <string name="text_36f33adaf0942634" formatted="false">"확인"</string>
     <string name="text_a5b7fba4dbd8f622" formatted="false">"연결 확인"</string>
     <string name="text_be1b4f3c6c1cda1e" formatted="false">"오프라인"</string>
