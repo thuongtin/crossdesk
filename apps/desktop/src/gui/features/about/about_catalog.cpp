@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "about_resources.h"
+#include "ui/installed_release_notes_text.h"
 #include "ui/release_notes_text.h"
 
 namespace crossdesk::about {
@@ -94,8 +95,10 @@ bool HasInstalledReleaseNotes() { return !InstalledReleaseNotes().empty(); }
 void SetInstalledReleaseNotes(const slint::ComponentHandle<ui::MainWindow>& window) {
   // Fork-owned: these are the fork's English release notes for this build, so
   // they render like the update prompt instead of per-language bullet lists.
+  // Their subheadings are content, so they are kept as bold lines.
+  const std::string markdown = release_notes_text::InstalledMarkdown(InstalledReleaseNotes());
   std::vector<ui::ReleaseNoteBlock> blocks;
-  for (const auto& parsed : release_notes_text::Parse(InstalledReleaseNotes())) {
+  for (const auto& parsed : release_notes_text::Parse(markdown)) {
     ui::ReleaseNoteBlock block;
     block.content = parsed.content;
     block.section_gap = parsed.section_gap;

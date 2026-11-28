@@ -1,7 +1,9 @@
 #include "crossdesk_ui.h"
 #include "../src/gui/assets/fonts/fa_solid_900.h"
 #include "slint_render_test_platform.h"
+#include "ui/installed_release_notes_text.h"
 #include "ui/model_update.h"
+#include "ui/release_notes_text.h"
 #include "ui/ui_localization.h"
 
 #include <algorithm>
@@ -762,11 +764,27 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   main->set_update_install_available(true);
   main->set_latest_version("v2.0.0");
   main->set_current_version("1.7.6");
-  crossdesk::ui::ReleaseNoteBlock installed_note{};
-  installed_note.content = slint::StyledText::from_plain_text("Release highlights fixture");
+  // Do fork sở hữu: notes nhúng đi qua cùng đường Markdown như app. Tiêu đề con phải thành
+  // dòng in đậm và dòng '#' trong code fence phải còn nguyên chữ, vì Parse bỏ mọi tiêu đề.
+  const std::string installed_markdown = crossdesk::release_notes_text::InstalledMarkdown(
+      "### Linux ###\n\n- Release highlights fixture\n\n```sh\n# Restart after updating\n"
+      "crossdesk\n```\n\n## Windows\n\n- C# tooling");
+  if (!Check(installed_markdown ==
+                 "**Linux**\n\n- Release highlights fixture\n\n```sh\n\\# Restart after updating\n"
+                 "crossdesk\n```\n\n**Windows**\n\n- C# tooling\n",
+             "Installed release notes must keep subheadings and fenced comment lines")) return false;
+  std::vector<crossdesk::ui::ReleaseNoteBlock> installed_notes;
+  for (const auto& parsed : crossdesk::release_notes_text::Parse(installed_markdown)) {
+    crossdesk::ui::ReleaseNoteBlock block{};
+    block.content = parsed.content;
+    block.section_gap = parsed.section_gap;
+    installed_notes.push_back(std::move(block));
+  }
+  if (!Check(installed_notes.size() == 8,
+             "Parse must keep every installed release notes line")) return false;
   main->set_installed_release_notes(
       std::make_shared<slint::VectorModel<crossdesk::ui::ReleaseNoteBlock>>(
-          std::vector<crossdesk::ui::ReleaseNoteBlock>{installed_note}));
+          std::move(installed_notes)));
   main->set_release_welcome_pending(true);
   int release_dismissals = 0;
   main->on_dismiss_release_welcome([&] {
