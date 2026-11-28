@@ -73,6 +73,8 @@ BrandingText "${PRODUCT_NAME}"
 !include /CHARSET=UTF8 "installer_strings.nsh"
 Var UpdateMode
 Var ExistingInstall
+; Set by the uninstall functions when CrossDesk data or the driver stays.
+Var UninstallIncomplete
 
 ; NSIS picks the language matching the Windows display language exactly,
 ; then by primary language, so zh-HK and zh-MO would get Simplified Chinese.
@@ -243,6 +245,7 @@ cancelUninstall:
     Abort
 
 uninstallApp:
+    StrCpy $UninstallIncomplete 0
     ClearErrors
     ExecWait '"$INSTDIR\CrossDesk.exe" --autostart-uninstall' $0
     ${If} ${Errors}
@@ -281,6 +284,13 @@ uninstallApp:
     ; Recursively delete CrossDesk folder in user AppData
     RMDir /r "$APPDATA\CrossDesk"
     RMDir /r "$LOCALAPPDATA\CrossDesk"
+
+    ; The details list names everything the uninstall functions left behind;
+    ; open it so the user does not see only "Completed".
+    ${If} $UninstallIncomplete = 1
+        SetDetailsView show
+        MessageBox MB_ICONEXCLAMATION|MB_OK "$(CD_UninstallIncomplete)" /SD IDOK
+    ${EndIf}
 SectionEnd
 
 ; ------ Functions ------
@@ -515,27 +525,35 @@ unplug_loop:
     Pop $2
     nsExec::ExecToLog '"$INSTDIR\usbmmidd_v2\deviceinstaller64.exe" remove usbmmidd'
     Pop $2
-    ${If} $2 != 0
-        DetailPrint "$(CD_DriverRemoveFailed) $2"
-    ${EndIf}
     SetOutPath "$TEMP"
 
-    DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
-    DeleteRegKey /ifempty HKLM "Software\${PRODUCT_NAME}"
+    ; Keep the marker while the driver may still be installed: the app does
+    ; not set it again for a driver that is already present, so without it
+    ; no later uninstall would remove the driver. remove exits with 0 when no
+    ; usbmmidd device is left, which also clears a marker that outlived a
+    ; driver removed from Device Manager.
+    ${If} $2 == "0"
+        DeleteRegValue HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
+        DeleteRegKey /ifempty HKLM "Software\${PRODUCT_NAME}"
+    ${Else}
+        DetailPrint "$(CD_DriverRemoveFailed) $2"
+        StrCpy $UninstallIncomplete 1
+    ${EndIf}
     SetRegView lastused
 
 done:
 FunctionEnd
 
 ; Removes what CrossDesk keeps outside the install folder and the user
-; profiles. Upgrades never run the uninstaller, so all of this survives them.
+; profiles, and lists in the details what stays. Upgrades never run the
+; uninstaller, so all of this survives them.
 Function un.RemoveMachineData
     DetailPrint "$(CD_RemovingMachineData)"
 
     ; --service-uninstall writes Unattended\Enabled=0 again after
     ; un.UnregisterInstalledService deleted the key, so remove it only now.
-    ; Keep the usbmmidd marker when un.RemoveUsbmmiddDriver could not run
-    ; deviceinstaller64.exe, so that the next uninstall can remove the driver.
+    ; Keep the usbmmidd marker that un.RemoveUsbmmiddDriver left because the
+    ; driver could not be removed, so that a later uninstall still removes it.
     SetRegView 64
     ClearErrors
     ReadRegDWORD $0 HKLM "Software\${PRODUCT_NAME}" "UsbmmiddDriverInstalled"
@@ -554,6 +572,10 @@ Function un.RemoveMachineData
     ; an administrator can neither list nor delete without these privileges.
     Push 2
     Call un.SetBackupPrivileges
+    Pop $0
+    ${If} $0 <> 1
+        DetailPrint "$(CD_BackupPrivilegesUnavailable)"
+    ${EndIf}
 
     ; The identity and trusted devices published for the unattended host, and
     ; staging folders an interrupted elevated update left behind.
@@ -574,17 +596,43 @@ Function un.RemoveMachineData
     ; cache and settings in its profile. The uninstaller is a 32-bit process:
     ; reach System32 itself, not SysWOW64.
     ${DisableX64FSRedirection}
-    RMDir /r "$SYSDIR\config\systemprofile\AppData\Local\${PRODUCT_NAME}"
-    RMDir /r "$SYSDIR\config\systemprofile\AppData\Roaming\${PRODUCT_NAME}"
+    StrCpy $R9 "$SYSDIR\config\systemprofile\AppData\Local\${PRODUCT_NAME}"
+    Call un.RemoveMachineDirectory
+    StrCpy $R9 "$SYSDIR\config\systemprofile\AppData\Roaming\${PRODUCT_NAME}"
+    Call un.RemoveMachineDirectory
     ${EnableX64FSRedirection}
 
+    ; Disabling privileges the token holds does not fail.
     Push 0
     Call un.SetBackupPrivileges
-
-    ; Windows adds inbound rules for CrossDesk.exe when a user answers its
-    ; firewall prompt. Only rules for this copy's path are removed.
-    nsExec::ExecToLog '"$SYSDIR\netsh.exe" advfirewall firewall delete rule name=all program="$INSTDIR\CrossDesk.exe"'
     Pop $0
+
+    ; When a user answers the Windows Defender Firewall prompt for
+    ; CrossDesk.exe, Windows adds a TCP and a UDP inbound rule whose IDs start
+    ; with "TCP Query User{" and "UDP Query User{". Remove only those for this
+    ; copy's path; rules an administrator or a policy created stay. netsh
+    ; cannot select rules by ID, so PowerShell's NetSecurity module does it.
+    ; The path goes through the environment, so no quoting can break it.
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", w "$INSTDIR\CrossDesk.exe")'
+    ${DisableX64FSRedirection}
+    nsExec::ExecToLog `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; try { Get-NetFirewallRule -PolicyStore PersistentStore -Name 'TCP Query User{*', 'UDP Query User{*' | Where-Object { ($$_ | Get-NetFirewallApplicationFilter).Program -eq $$env:CROSSDESK_FIREWALL_PROGRAM } | Remove-NetFirewallRule } catch { exit 1 }"`
+    Pop $0
+    ${EnableX64FSRedirection}
+    System::Call 'kernel32::SetEnvironmentVariableW(w "CROSSDESK_FIREWALL_PROGRAM", p 0)'
+    ${If} $0 != "0"
+        DetailPrint "$(CD_FirewallRulesNotRemoved)"
+        StrCpy $UninstallIncomplete 1
+    ${EndIf}
+FunctionEnd
+
+; Removes the folder in $R9 and reports it when anything of it is left.
+Function un.RemoveMachineDirectory
+    RMDir /r "$R9"
+    System::Call 'kernel32::GetFileAttributesW(w R9) i .r0'
+    ${If} $0 <> -1
+        DetailPrint "$(CD_MachineDataNotRemoved) $R9"
+        StrCpy $UninstallIncomplete 1
+    ${EndIf}
 FunctionEnd
 
 ; Removes the folder in $R9 only if it is a real directory, not a junction
@@ -642,24 +690,29 @@ Function un.RemovePrivateMachineDirectory
         ${EndIf}
     ${EndIf}
     ${If} $5 = 1
-        RMDir /r "$R9"
+        Call un.RemoveMachineDirectory
     ${Else}
         DetailPrint "$(CD_MachineDataKept) $R9"
+        StrCpy $UninstallIncomplete 1
     ${EndIf}
 FunctionEnd
 
 ; Enables (2, SE_PRIVILEGE_ENABLED) or disables (0) SeBackupPrivilege and
-; SeRestorePrivilege in the uninstaller's token, per the value on the stack.
-; Administrators hold both, disabled. While they are enabled, FindFirstFile,
-; DeleteFile and RemoveDirectory, which open with backup intent, ignore
-; DACLs, so they stay enabled only while RMDir /r removes the folders that
-; un.RemovePrivateMachineDirectory and the SYSTEM profile path vouch for.
+; SeRestorePrivilege in the uninstaller's token, per the value on the stack,
+; and replaces that value with 1 when both were set, else 0. Administrators
+; hold both, disabled, unless a policy took them away. While they are
+; enabled, FindFirstFile, DeleteFile and RemoveDirectory, which open with
+; backup intent, ignore DACLs, so they stay enabled only while RMDir /r
+; removes the folders that un.RemovePrivateMachineDirectory and the SYSTEM
+; profile path vouch for.
 Function un.SetBackupPrivileges
     Exch $0
     Push $1
     Push $2
     Push $3
     Push $4
+    Push $5
+    StrCpy $5 0
     ; TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY on the current process.
     System::Call 'advapi32::OpenProcessToken(p -1, i 0x28, *p .r1) i .r4'
     ${If} $4 <> 0
@@ -672,17 +725,26 @@ Function un.SetBackupPrivileges
             IntPtrOp $3 $2 + 16
             System::Call 'advapi32::LookupPrivilegeValueW(p 0, w "SeRestorePrivilege", p r3) i .r4'
             ${If} $4 <> 0
-                System::Call 'advapi32::AdjustTokenPrivileges(p r1, i 0, p r2, i 0, p 0, p 0) i .r4'
+                ; It also succeeds when the token lacks a privilege, leaves
+                ; that one unchanged and sets ERROR_NOT_ALL_ASSIGNED.
+                System::Call 'advapi32::AdjustTokenPrivileges(p r1, i 0, p r2, i 0, p 0, p 0) i .r4 ?e'
+                Pop $3
+                ${If} $4 <> 0
+                ${AndIf} $3 = 0
+                    StrCpy $5 1
+                ${EndIf}
             ${EndIf}
         ${EndIf}
         System::Free $2
         System::Call 'kernel32::CloseHandle(p r1)'
     ${EndIf}
+    StrCpy $0 $5
+    Pop $5
     Pop $4
     Pop $3
     Pop $2
     Pop $1
-    Pop $0
+    Exch $0
 FunctionEnd
 
 ; Sets $R7 to 1 when the SID at address $R8 is LocalSystem or the
