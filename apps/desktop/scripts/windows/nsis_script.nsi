@@ -126,7 +126,7 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${PRODUCT_VERSION}"
 InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 ShowInstDetails show
 
-Section "MainSection"
+Section "MainSection" SEC_MAIN
     ; The updater has already coordinated shutdown. Never kill unrelated
     ; instances by name during an unattended upgrade.
     ${If} $UpdateMode = 1
@@ -209,7 +209,7 @@ installApp:
     WriteRegStr HKCU "Software\${PRODUCT_NAME}" "InstallDir" "$INSTDIR"
 SectionEnd
 
-Section -AdditionalIcons
+Section -AdditionalIcons SEC_ICONS
     ; Desktop shortcut
     CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\CrossDesk.exe" "" "$INSTDIR\CrossDesk.exe"
 
@@ -322,10 +322,32 @@ Function LocateExistingInstall
     ${EndIf}
 FunctionEnd
 
+; Upgrades skip the directory page, and with it the check there that keeps
+; Install disabled while the drive lacks room for the files. Repeat that check
+; so an interactive upgrade on a full drive stops before CrossDesk is closed,
+; its service is stopped or any file is overwritten. Silent installs never
+; showed the page, so the updater keeps its earlier behavior.
 Function SkipDirectoryPageOnUpgrade
-    ${If} $ExistingInstall = 1
-        Abort
+    ${If} $ExistingInstall <> 1
+        Return
     ${EndIf}
+    ; Section sizes are in KB; compare in MB so drives over 2 TB do not
+    ; overflow 32-bit integers.
+    SectionGetSize ${SEC_MAIN} $0
+    SectionGetSize ${SEC_ICONS} $1
+    IntOp $0 $0 + $1
+    IntOp $0 $0 + 1023
+    IntOp $0 $0 / 1024
+    ${GetRoot} "$INSTDIR" $1
+    ClearErrors
+    ${DriveSpace} "$1\" "/D=F /S=M" $2
+    ${IfNot} ${Errors}
+    ${AndIf} $2 < $0
+        MessageBox MB_ICONSTOP|MB_OK "$(CD_UpgradeDiskFull)$\r$\n$\r$\n$(^SpaceRequired)$0$(^Mega)$(^Byte)$\r$\n$(^SpaceAvailable)$2$(^Mega)$(^Byte)"
+        SetErrorLevel 1
+        Quit
+    ${EndIf}
+    Abort
 FunctionEnd
 
 Function StopInstalledService

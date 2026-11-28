@@ -17,6 +17,22 @@ LangString CD_RunApp ${LANG_PORTUGUESEBR} "Executar o CrossDesk"
 LangString CD_RunApp ${LANG_TURKISH} "CrossDesk'i çalıştır"
 LangString CD_RunApp ${LANG_HEBREW} "הפעל את CrossDesk"
 
+; Shown when an upgrade finds too little free space. The script appends the
+; required and available space with the NSIS directory page labels.
+LangString CD_UpgradeDiskFull ${LANG_ENGLISH} "There is not enough free disk space to update CrossDesk in $INSTDIR. Free up some space and run Setup again."
+LangString CD_UpgradeDiskFull ${LANG_VIETNAMESE} "Ổ đĩa không còn đủ dung lượng trống để cập nhật CrossDesk trong thư mục $INSTDIR. Hãy giải phóng thêm dung lượng rồi chạy lại trình cài đặt."
+LangString CD_UpgradeDiskFull ${LANG_SIMPCHINESE} "磁盘空间不足，无法更新 $INSTDIR 中的 CrossDesk。请释放一些空间后重新运行安装程序。"
+LangString CD_UpgradeDiskFull ${LANG_TRADCHINESE} "磁碟空間不足，無法更新 $INSTDIR 中的 CrossDesk。請釋放一些空間後重新執行安裝程式。"
+LangString CD_UpgradeDiskFull ${LANG_RUSSIAN} "Недостаточно свободного места на диске для обновления CrossDesk в $INSTDIR. Освободите место и запустите установку снова."
+LangString CD_UpgradeDiskFull ${LANG_JAPANESE} "$INSTDIR の CrossDesk を更新するための空きディスク容量が不足しています。空き容量を増やしてから、セットアップをもう一度実行してください。"
+LangString CD_UpgradeDiskFull ${LANG_KOREAN} "$INSTDIR에 있는 CrossDesk를 업데이트할 디스크 공간이 부족합니다. 공간을 확보한 후 설치 프로그램을 다시 실행하세요."
+LangString CD_UpgradeDiskFull ${LANG_GERMAN} "Es ist nicht genügend freier Speicherplatz vorhanden, um CrossDesk in $INSTDIR zu aktualisieren. Geben Sie Speicherplatz frei und führen Sie das Setup erneut aus."
+LangString CD_UpgradeDiskFull ${LANG_FRENCH} "L'espace disque disponible est insuffisant pour mettre à jour CrossDesk dans $INSTDIR. Libérez de l'espace, puis relancez l'installation."
+LangString CD_UpgradeDiskFull ${LANG_SPANISH} "No hay suficiente espacio libre en el disco para actualizar CrossDesk en $INSTDIR. Libere espacio y vuelva a ejecutar el instalador."
+LangString CD_UpgradeDiskFull ${LANG_PORTUGUESEBR} "Não há espaço livre suficiente em disco para atualizar o CrossDesk em $INSTDIR. Libere espaço e execute o instalador novamente."
+LangString CD_UpgradeDiskFull ${LANG_TURKISH} "$INSTDIR konumundaki CrossDesk'i güncellemek için yeterli boş disk alanı yok. Biraz yer açın ve kurulumu yeniden çalıştırın."
+LangString CD_UpgradeDiskFull ${LANG_HEBREW} "אין מספיק שטח דיסק פנוי כדי לעדכן את CrossDesk בתיקייה $INSTDIR. יש לפנות מקום ולהפעיל את ההתקנה מחדש."
+
 LangString CD_CloseRunningInstall ${LANG_ENGLISH} "CrossDesk is running. Do you want to close it and continue the installation?"
 LangString CD_CloseRunningInstall ${LANG_VIETNAMESE} "CrossDesk đang chạy. Bạn có muốn đóng ứng dụng và tiếp tục cài đặt không?"
 LangString CD_CloseRunningInstall ${LANG_SIMPCHINESE} "CrossDesk 正在运行。是否关闭它并继续安装？"
