@@ -946,12 +946,19 @@ struct UpdateLinkRow {
   float clip = 0;  // Mép phải vùng Text, nơi chữ bị cắt.
 };
 
+// Dải cột có mực của link, theo pixel vật lý; -1 khi không thấy mực.
+struct InkSpan {
+  int start = -1;
+  int end = -1;
+  int Width() const { return end - start + 1; }
+};
+
 // Mở hộp thoại cập nhật ở hệ số scale cửa sổ cho trước, ghi ảnh bằng chứng và trả
-// về cột mực cuối cùng của link (pixel vật lý, -1 nếu không thấy mực).
+// về cột mực đầu và cuối của link (pixel vật lý, -1 nếu không thấy mực).
 bool RenderUpdateLink(RenderTestPlatform& platform,
                       slint::ComponentHandle<crossdesk::ui::MainWindow> main,
                       int language, float scale, const std::string& evidence,
-                      UpdateLinkRow& row, int& ink_end) {
+                      UpdateLinkRow& row, InkSpan& ink) {
   auto& screen = *platform.adapter;
   crossdesk::ui_localization::ApplyMainWindowStrings(main, language);
   main->set_language_index(language);
@@ -979,16 +986,20 @@ bool RenderUpdateLink(RenderTestPlatform& platform,
   row.clip = canvas_width / 2 + 240 - 24 + 16;
   const int top = int((row.y - 12) * scale);
   const int bottom = int((row.y + 12) * scale);
-  const int left = int(canvas_width / 2 * scale);
+  // Quét từ mép trái vùng nội dung: nhãn dài (như tiếng Việt) bắt đầu bên trái
+  // tâm hộp thoại, và chữ đầu bị cắt chỉ lộ ra khi đo được cả cột mực đầu.
+  const int left = int((canvas_width / 2 - 240 + 24) * scale);
   const int right = std::min(int(std::ceil((row.clip + 4) * scale)),
                              int(screen.extent.width));
-  ink_end = -1;
+  ink = InkSpan{};
   for (int y = top; y <= bottom; ++y)
     for (int x = left; x < right; ++x) {
       const auto p = screen.pixels.at(std::size_t(y) * screen.extent.width + x);
       // Chữ của link là màu nhấn bão hoà; tiêu đề, số phiên bản và nền đều xám.
-      if (std::max({p.r, p.g, p.b}) - std::min({p.r, p.g, p.b}) > 48)
-        ink_end = std::max(ink_end, x);
+      if (std::max({p.r, p.g, p.b}) - std::min({p.r, p.g, p.b}) > 48) {
+        ink.start = ink.start < 0 ? x : std::min(ink.start, x);
+        ink.end = std::max(ink.end, x);
+      }
     }
   return WritePopupEvidence(screen, evidence);
 }
@@ -1007,31 +1018,35 @@ bool VerifyUpdateLinkAtFractionalScale(RenderTestPlatform& platform) {
     const std::string suffix = std::to_string(language);
     // Bản tham chiếu ở tỉ lệ 1: preferred-width và chữ được đo cùng một tỉ lệ, nên
     // đây là chỗ mực của nhãn đầy đủ kết thúc với font của chính nền tảng này.
-    int reference_end = -1;
+    InkSpan reference;
     {
-      auto reference = CreateMainWindow();
+      auto reference_window = CreateMainWindow();
       UpdateLinkRow reference_row;
-      if (!RenderUpdateLink(platform, reference, language, 1.0f, "update-link-100-" + suffix,
-                            reference_row, reference_end)) return false;
+      if (!RenderUpdateLink(platform, reference_window, language, 1.0f,
+                            "update-link-100-" + suffix, reference_row, reference)) return false;
     }
-    if (!Check(reference_end >= 0, "Update link must render at scale 1")) return false;
+    if (!Check(reference.end >= 0, "Update link must render at scale 1")) return false;
 
     auto main = CreateMainWindow();
     UpdateLinkRow row;
-    int ink_end = -1;
+    InkSpan ink;
     if (!RenderUpdateLink(platform, main, language, kWindowScale, "update-link-150-" + suffix,
-                          row, ink_end)) return false;
-    if (!Check(ink_end >= 0, "Update link must render at a fractional scale")) return false;
-    if (!Check(ink_end + 2 < int(row.clip * kWindowScale),
+                          row, ink)) return false;
+    if (!Check(ink.end >= 0, "Update link must render at a fractional scale")) return false;
+    if (!Check(ink.end + 2 < int(row.clip * kWindowScale),
                "Update link must end before the edge that clips its text")) return false;
     // Chỉ kiểm mép cắt thì một nhãn bị mất phần đuôi vẫn lọt. Mất dù một chữ cuối
     // làm mực kết thúc sớm cỡ một bề rộng ký tự (khoảng 6px), còn dung sai 2px chỉ
     // chừa chỗ cho sai lệch làm tròn vị trí glyph giữa hai tỉ lệ.
-    if (!Check((ink_end + 1) / kWindowScale >= float(reference_end + 1) - 2.f,
+    if (!Check((ink.end + 1) / kWindowScale >= float(reference.end + 1) - 2.f,
                "Update link must render its whole label at a fractional scale")) return false;
+    // Mép phải đứng yên vẫn che được việc mất chữ đầu, nên so cả bề rộng mực với
+    // bản tham chiếu, cùng dung sai làm tròn 2px.
+    if (!Check(ink.Width() / kWindowScale >= float(reference.Width()) - 2.f,
+               "Update link must keep its leading letters at a fractional scale")) return false;
     int channel_requests = 0;
     main->on_open_update_channel([&] { ++channel_requests; });
-    platform.adapter->Click((ink_end + 0.5f) / kWindowScale, row.y);
+    platform.adapter->Click((ink.end + 0.5f) / kWindowScale, row.y);
     if (!Check(channel_requests == 1,
                "The last rendered letter of the update link must open the release channel")) return false;
     // Phần mực tràn ra tuỳ font nên có máy không tràn; bấm thẳng vào giữa dải
