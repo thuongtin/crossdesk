@@ -117,10 +117,29 @@ class FallbackReturnProbe {
     return true;
   }
 
-  void Reset() { next_check_.reset(); }
+  // Marks |generation| as the display enumeration started because a probe
+  // found the requested display listed again. That enumeration only looks for
+  // a better display, so when it fails, lists nothing or times out, the
+  // capturer keeps a fallback that still delivers frames instead of stopping
+  // it for recovery.
+  void ReturnStarted(uint64_t generation) { return_generation_ = generation; }
+
+  // Called once enumeration |generation| has answered or been abandoned.
+  // Returns whether it was the return enumeration, and ends that mark.
+  bool ReturnAnswered(uint64_t generation) {
+    if (return_generation_ != generation) return false;
+    return_generation_.reset();
+    return true;
+  }
+
+  void Reset() {
+    next_check_.reset();
+    return_generation_.reset();
+  }
 
  private:
   std::optional<Clock::time_point> next_check_;
+  std::optional<uint64_t> return_generation_;
 };
 
 }  // namespace crossdesk

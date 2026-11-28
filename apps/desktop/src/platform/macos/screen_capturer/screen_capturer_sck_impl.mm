@@ -266,7 +266,18 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   // SwitchTo() call, or the screen-resolution has changed). This tells SCK to fetch new
   // shareable content, and the completion-handler will either start a new stream, or reconfigure
   // the existing stream. Runs on the caller's thread.
-  void StartOrReconfigureCapturer();
+  // |return_check| marks an enumeration that only tries to end a fallback. It
+  // is dropped while another configuration is in flight, since the next probe
+  // asks again, and its failure leaves a working fallback running.
+  void StartOrReconfigureCapturer(bool return_check = false);
+  // Whether the stream is running and delivering frames. Requires |lock_|.
+  bool DeliveringFramesLocked() const {
+    return stream_ && stream_running_ && received_frame_ &&
+           suspended_since_ == Clock::time_point{};
+  }
+  // Keeps a working fallback after its return enumeration failed, and starts
+  // the enumeration another change asked for in the meantime.
+  void KeepFallback(const std::string& reason);
   // Asks ScreenCaptureKit for its display list without touching the stream,
   // and reports back through |helper| if |requested| is in it.
   static void ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
@@ -656,6 +667,7 @@ int ScreenCapturerSckImpl::Stop() {
 void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *content,
                                                      uint64_t generation, uint64_t revision,
                                                      NSError* error) {
+  bool keep_fallback = false;
   {
     std::lock_guard<std::mutex> lock(lock_);
     if (!capture_requested_ || generation != configuration_generation_) {
@@ -663,12 +675,22 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
       return;
     }
     configuration_in_flight_ = false;
+    keep_fallback = fallback_return_probe_.ReturnAnswered(generation) &&
+                    DeliveringFramesLocked();
   }
 
   // The window list belongs to the privacy revision present when the request
   // was issued. A newer cover must be enumerated by a new request.
   if (GetMacPrivacyCaptureState().revision != revision) {
     StartOrReconfigureCapturer();
+    return;
+  }
+
+  // An enumeration that only tried to end a fallback must not stop the
+  // fallback when it fails: the stream still delivers frames.
+  if (keep_fallback && (error || !content || content.displays.count == 0)) {
+    KeepFallback(error || !content ? "getShareableContent failed: " + NSErrorToString(error)
+                                   : "getShareableContent returned no displays");
     return;
   }
 
@@ -1032,7 +1054,20 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
       }
     } else if (configuration_in_flight_ &&
                now - configuration_started_ >= kCaptureStartTimeout) {
-      failure = "ScreenCaptureKit configuration timed out";
+      if (fallback_return_probe_.ReturnAnswered(generation) &&
+          DeliveringFramesLocked()) {
+        // The return enumeration has not answered, but the fallback still
+        // delivers frames. Abandon the enumeration and keep the stream; the
+        // new generation makes a late answer stale.
+        LOG_WARN("ScreenCaptureKit display check for the requested display timed out; "
+                 "keeping the fallback");
+        configuration_in_flight_ = false;
+        ++configuration_generation_;
+        retry = reconfigure_pending_;
+        reconfigure_pending_ = false;
+      } else {
+        failure = "ScreenCaptureKit configuration timed out";
+      }
     } else if ((!stream_running_ || !received_frame_) &&
                now - capture_attempt_started_ >= kCaptureStartTimeout) {
       failure = "ScreenCaptureKit did not deliver its first frame";
@@ -1049,8 +1084,7 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
                                               : requested_it->second;
     const bool fallback_active =
         !failure && !recovery_pending_ && !configuration_in_flight_ &&
-        stream_running_ && received_frame_ &&
-        suspended_since_ == Clock::time_point{} &&
+        DeliveringFramesLocked() &&
         requested != kCGNullDirectDisplay && requested != current_display_ &&
         CGDisplayIsOnline(requested);
     if (fallback_return_probe_.Due(fallback_active, now)) {
@@ -1089,8 +1123,21 @@ void ScreenCapturerSckImpl::RequestedDisplayListed(uint64_t session) {
   }
   LOG_INFO("Requested display is listed by ScreenCaptureKit again; leaving the fallback");
   // The new enumeration lists the requested display, which ChooseCaptureDisplay
-  // prefers over the fallback.
-  StartOrReconfigureCapturer();
+  // prefers over the fallback. If it fails instead, the fallback keeps running.
+  StartOrReconfigureCapturer(/*return_check=*/true);
+}
+
+void ScreenCapturerSckImpl::KeepFallback(const std::string& reason) {
+  bool pending;
+  {
+    std::lock_guard lock(lock_);
+    pending = reconfigure_pending_;
+    reconfigure_pending_ = false;
+  }
+  LOG_WARN("ScreenCaptureKit display check for the requested display failed: {}; "
+           "keeping the fallback",
+           reason);
+  if (pending) StartOrReconfigureCapturer();
 }
 
 void ScreenCapturerSckImpl::CaptureStopped(SCStream* source, NSError* error) {
@@ -1183,14 +1230,17 @@ void ScreenCapturerSckImpl::OnNewCVPixelBuffer(SCStream* source,
            static_cast<int>(height), stream_id.c_str(), &native_frame);
 }
 
-void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
+void ScreenCapturerSckImpl::StartOrReconfigureCapturer(bool return_check) {
   SckHelper *local_helper;
   uint64_t generation;
   uint64_t revision;
   {
     std::lock_guard lock(lock_);
     if (!capture_requested_ || recovery_pending_) return;
-    if (configuration_in_flight_) { reconfigure_pending_ = true; return; }
+    if (configuration_in_flight_) {
+      if (!return_check) reconfigure_pending_ = true;
+      return;
+    }
     // Include content enumeration in the in-flight operation so screen-change
     // notifications cannot keep superseding a slow request while locked.
     configuration_in_flight_ = true;
@@ -1198,6 +1248,7 @@ void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
     reconfigure_pending_ = false;
     local_helper = helper_;
     generation = ++configuration_generation_;
+    if (return_check) fallback_return_probe_.ReturnStarted(generation);
     revision = GetMacPrivacyCaptureState().revision;
   }
   if (!local_helper) {

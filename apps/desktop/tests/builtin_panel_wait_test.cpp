@@ -168,11 +168,46 @@ bool TestFallbackReturnProbe() {
   return ok;
 }
 
+bool TestReturnEnumeration() {
+  using crossdesk::FallbackReturnProbe;
+
+  const auto start = FallbackReturnProbe::Clock::now();
+  bool ok = true;
+
+  FallbackReturnProbe probe;
+  ok &= Expect(!probe.ReturnAnswered(1),
+               "an enumeration no probe started must not count as a return");
+
+  probe.ReturnStarted(7);
+  // The enumeration is in flight, so the health check sees no fallback to
+  // probe. That must not forget which enumeration the probe started.
+  probe.Due(false, start);
+  ok &= Expect(!probe.ReturnAnswered(6),
+               "an older enumeration must not count as the return");
+  ok &= Expect(probe.ReturnAnswered(7),
+               "the enumeration a probe started must count as the return");
+  ok &= Expect(!probe.ReturnAnswered(7),
+               "a return must be answered only once");
+
+  probe.ReturnStarted(8);
+  ok &= Expect(!probe.ReturnAnswered(9),
+               "a newer enumeration must not count as the return");
+  ok &= Expect(probe.ReturnAnswered(8),
+               "a newer answer must not end the return it did not start");
+
+  probe.ReturnStarted(10);
+  probe.Reset();
+  ok &= Expect(!probe.ReturnAnswered(10),
+               "a restarted capture must forget the return in flight");
+  return ok;
+}
+
 }  // namespace
 
 int main() {
   bool ok = TestGracePeriod();
   ok &= TestDisplayChoice();
   ok &= TestFallbackReturnProbe();
+  ok &= TestReturnEnumeration();
   return ok ? 0 : 1;
 }
