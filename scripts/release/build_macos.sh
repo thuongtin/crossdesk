@@ -16,6 +16,11 @@ source "$SCRIPT_DIR/lib.sh"
 VERSION="$1"
 COMMIT="$2"
 DIST_DIR="$3"
+# release.sh viết sẵn mục Changes để nhúng vào hộp thoại Release Notes; đường dẫn phải tuyệt đối
+# vì xmake chạy trong bản clone build.
+[[ -s "$DIST_DIR/INSTALLED_RELEASE_NOTES.md" ]] ||
+    die "Missing $DIST_DIR/INSTALLED_RELEASE_NOTES.md; run the build through release.sh"
+RELEASE_NOTES="$(cd "$DIST_DIR" && pwd)/INSTALLED_RELEASE_NOTES.md"
 MODE="${CROSSDESK_RELEASE_MODE:-dry-run}"
 BUILD_ROOT="${CROSSDESK_RELEASE_MACOS_DIR:-$HOME/build/crossdesk}"
 SRC_DIR="$BUILD_ROOT/src"
@@ -274,6 +279,7 @@ xmake f -y -p macosx -a arm64 -m release \
     --target_minver="$MACOS_DEPLOYMENT_TARGET" \
     --CROSSDESK_VERSION="$APP_VERSION" \
     --CROSSDESK_UPDATE_PUBLIC_KEY="$FORK_UPDATE_PUBLIC_KEY" \
+    --CROSSDESK_RELEASE_NOTES="$RELEASE_NOTES" \
     --USE_CUDA=false
 xmake b -vy crossdesk
 

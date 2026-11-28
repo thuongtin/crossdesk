@@ -12,6 +12,8 @@ source "$SCRIPT_DIR/lib.sh"
 VERSION="$1"
 COMMIT="$2"
 DIST_DIR="$3"
+RELEASE_NOTES="$DIST_DIR/INSTALLED_RELEASE_NOTES.md"
+[[ -s "$RELEASE_NOTES" ]] || die "Missing $RELEASE_NOTES; run the build through release.sh"
 
 HOST="${CROSSDESK_RELEASE_LINUX_SSH:-}"
 [[ -n "$HOST" ]] || die "Set CROSSDESK_RELEASE_LINUX_SSH (for example user@linux-host)"
@@ -34,6 +36,8 @@ scp -q "${SSH_OPTS[@]}" -P "$PORT" \
     "$SCRIPT_DIR/linux/build_in_rootfs.sh" \
     "$SCRIPT_DIR/linux/fetch_image_rootfs.py" \
     "$HOST:$REMOTE_ROOT/tools/linux/"
+# Mục Changes nhúng vào hộp thoại Release Notes; remote_build.sh đưa nó vào rootfs build.
+scp -q "${SSH_OPTS[@]}" -P "$PORT" "$RELEASE_NOTES" "$HOST:$REMOTE_ROOT/tools/linux/release-notes.md"
 
 log "Running Linux build on $HOST"
 ssh "${SSH_OPTS[@]}" -p "$PORT" "$HOST" \

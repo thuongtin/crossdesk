@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Chạy bên trong rootfs của image build Linux (bwrap, uid 0 giả lập trong user
 # namespace). Các bước bám sát job build-linux (amd64) trong .github/workflows/build.yml.
-# Usage: build_in_rootfs.sh <version> <update-public-key>
+# Usage: build_in_rootfs.sh <version> <update-public-key> <release-notes.md>
 set -euo pipefail
 
-[[ $# -eq 2 ]] || { echo "Usage: $0 <version> <update-public-key>" >&2; exit 1; }
+[[ $# -eq 3 ]] || { echo "Usage: $0 <version> <update-public-key> <release-notes.md>" >&2; exit 1; }
 VERSION="$1"
 PUBLIC_KEY="$2"
+# Mục Changes của release notes, nhúng vào hộp thoại Release Notes của app.
+RELEASE_NOTES="$3"
+[[ -s "$RELEASE_NOTES" ]] || { echo "Missing release notes file: $RELEASE_NOTES" >&2; exit 1; }
 OUT_DIR=/out
 PACKAGES=(crossdesk crossdesk-virtual-desktop-xfce)
 
@@ -53,6 +56,7 @@ step "Building CrossDesk $APP_VERSION for Linux amd64"
 export CROSSDESK_UPDATE_PUBLIC_KEY="$PUBLIC_KEY"
 # Chế độ verbose giúp Xmake 3.1.1 cài phụ thuộc tuần tự, giống CI upstream.
 xmake f -v --CROSSDESK_VERSION="$APP_VERSION" --CROSSDESK_UPDATE_PUBLIC_KEY="$PUBLIC_KEY" \
+    --CROSSDESK_RELEASE_NOTES="$RELEASE_NOTES" \
     --USE_CUDA=true --USE_WAYLAND=true --cc=gcc-10 --cxx=g++-10 --root -y
 xmake b -vy --root crossdesk
 

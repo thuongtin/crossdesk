@@ -6,7 +6,8 @@ param(
   [Parameter(Mandatory = $true)] [string]$RepoUrl,
   [Parameter(Mandatory = $true)] [string]$Commit,
   [Parameter(Mandatory = $true)] [string]$Version,
-  [Parameter(Mandatory = $true)] [string]$PublicKey
+  [Parameter(Mandatory = $true)] [string]$PublicKey,
+  [Parameter(Mandatory = $true)] [string]$ReleaseNotes
 )
 
 $ErrorActionPreference = "Stop"
@@ -50,6 +51,11 @@ if ($Version -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+-[0-9A-Za-z]+$') {
 if ($PublicKey -notmatch '^[0-9a-f]{64}$') {
   throw "Invalid update public key"
 }
+# Mục Changes của release notes, nhúng vào hộp thoại Release Notes của app.
+if (!(Test-Path -PathType Leaf $ReleaseNotes) -or (Get-Item $ReleaseNotes).Length -eq 0) {
+  throw "Missing release notes file: $ReleaseNotes"
+}
+$ReleaseNotes = (Resolve-Path $ReleaseNotes).Path
 
 $src = Join-Path $Root "src"
 $tools = Join-Path $Root "tools"
@@ -144,7 +150,8 @@ $env:CROSSDESK_UPDATE_PUBLIC_KEY = $PublicKey
 Push-Location $src
 try {
   Invoke-Native xmake @("f", "-y", "-p", "windows", "-a", "x64", "-m", "release",
-    "--CROSSDESK_VERSION=$AppVersion", "--CROSSDESK_UPDATE_PUBLIC_KEY=$PublicKey", "--USE_CUDA=true")
+    "--CROSSDESK_VERSION=$AppVersion", "--CROSSDESK_UPDATE_PUBLIC_KEY=$PublicKey",
+    "--CROSSDESK_RELEASE_NOTES=$ReleaseNotes", "--USE_CUDA=true")
   Invoke-Native xmake @("b", "-vy", "crossdesk")
 } finally {
   Pop-Location

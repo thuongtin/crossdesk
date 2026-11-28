@@ -16,6 +16,9 @@ validate_version "$VERSION" dry-run
 [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || die "Commit must be a full 40-character SHA, got: $COMMIT"
 [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]] || die "The Linux amd64 build must run on x86_64 Linux"
 require_cmd git bwrap python3 flock sha256sum
+# build_linux.sh chép mục Changes của release notes cạnh script này; thư mục script được gắn
+# chỉ đọc vào /tmp/crossdesk-release trong rootfs.
+[[ -s "$SCRIPT_DIR/release-notes.md" ]] || die "Missing $SCRIPT_DIR/release-notes.md"
 
 mkdir -p "$1"
 ROOT="$(cd "$1" && pwd)"
@@ -74,7 +77,8 @@ bwrap \
     "${env_args[@]}" \
     --setenv CROSSDESK_RELEASE_SKIP_APT_SIMULATE "${CROSSDESK_RELEASE_SKIP_APT_SIMULATE:-0}" \
     --chdir /workspace \
-    /bin/bash /tmp/crossdesk-release/build_in_rootfs.sh "$VERSION" "$FORK_UPDATE_PUBLIC_KEY" </dev/null
+    /bin/bash /tmp/crossdesk-release/build_in_rootfs.sh "$VERSION" "$FORK_UPDATE_PUBLIC_KEY" \
+    /tmp/crossdesk-release/release-notes.md </dev/null
 
 while IFS= read -r asset; do
     [[ -s "$OUT_DIR/$asset" ]] || die "Linux build did not produce $asset"

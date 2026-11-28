@@ -725,7 +725,8 @@ export component MainWindow inherits Window {
     in property <string> latest-version: "";
     in property <string> release-name: "";
     in property <[ReleaseNoteBlock]> release-note-blocks;
-    in property <[string]> installed-release-notes;
+    // Fork-owned: Markdown blocks of this build's own release notes.
+    in property <[ReleaseNoteBlock]> installed-release-notes;
     in property <string> release-date: "";
     in-out property <string> offline-warning: "";
     in property <bool> connection-dialog-open: false;
@@ -3612,20 +3613,19 @@ export component MainWindow inherits Window {
                         vertical-scrollbar-policy: as-needed;
                         highlights := VerticalLayout {
                             width: notes-scroll.viewport-width; height: self.preferred-height;
-                            padding-right: 4px; spacing: 7px;
-                            for note in root.installed-release-notes: Rectangle {
-                                height: note-text.preferred-height;
-                                Rectangle {
-                                    x: 2px; y: 8px; width: 4px; height: 4px;
-                                    border-radius: 2px; background: WorkbenchStyle.accent;
-                                    accessible-role: none;
-                                }
-                                note-text := Text {
-                                    x: 16px; width: notes-scroll.viewport-width - self.x - 4px;
+                            alignment: start;
+                            padding-right: 4px; spacing: 8px;
+                            // Same Markdown rendering as the update prompt's notes.
+                            for block in root.installed-release-notes: Rectangle {
+                                height: note-text.preferred-height + (block.section-gap ? 6px : 0px);
+                                note-text := StyledText {
+                                    y: block.section-gap ? 6px : 0px;
+                                    width: notes-scroll.viewport-width - 4px;
                                     height: self.preferred-height;
-                                    text: note; font-size: 13px; wrap: word-wrap;
-                                    font-family: "CrossDesk Message Spacing";
-                                    color: WorkbenchStyle.text;
+                                    text: block.content;
+                                    default-color: WorkbenchStyle.text;
+                                    default-font-size: 13px;
+                                    default-font-family: "CrossDesk Message Spacing";
                                 }
                             }
                         }

@@ -11,6 +11,8 @@ source "$SCRIPT_DIR/lib.sh"
 VERSION="$1"
 COMMIT="$2"
 DIST_DIR="$3"
+RELEASE_NOTES="$DIST_DIR/INSTALLED_RELEASE_NOTES.md"
+[[ -s "$RELEASE_NOTES" ]] || die "Missing $RELEASE_NOTES; run the build through release.sh"
 
 HOST="${CROSSDESK_RELEASE_WINDOWS_SSH:-}"
 [[ -n "$HOST" ]] || die "Set CROSSDESK_RELEASE_WINDOWS_SSH (for example user@windows-host)"
@@ -26,10 +28,12 @@ log "Uploading Windows build script to $HOST:$REMOTE_ROOT"
 ssh "${SSH_OPTS[@]}" -p "$PORT" "$HOST" \
     "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path '$REMOTE_ROOT\\tools' | Out-Null\""
 scp "${SSH_OPTS[@]}" -P "$PORT" "$SCRIPT_DIR/windows/build.ps1" "$HOST:$REMOTE_ROOT_SCP/tools/build.ps1"
+# Mục Changes nhúng vào hộp thoại Release Notes của bản build này.
+scp "${SSH_OPTS[@]}" -P "$PORT" "$RELEASE_NOTES" "$HOST:$REMOTE_ROOT_SCP/tools/release-notes.md"
 
 log "Running Windows build on $HOST"
 ssh "${SSH_OPTS[@]}" -p "$PORT" "$HOST" \
-    "powershell -NoProfile -ExecutionPolicy Bypass -File \"$REMOTE_ROOT\\tools\\build.ps1\" -Root \"$REMOTE_ROOT\" -RepoUrl \"$FORK_URL\" -Commit $COMMIT -Version $VERSION -PublicKey $FORK_UPDATE_PUBLIC_KEY"
+    "powershell -NoProfile -ExecutionPolicy Bypass -File \"$REMOTE_ROOT\\tools\\build.ps1\" -Root \"$REMOTE_ROOT\" -RepoUrl \"$FORK_URL\" -Commit $COMMIT -Version $VERSION -PublicKey $FORK_UPDATE_PUBLIC_KEY -ReleaseNotes \"$REMOTE_ROOT\\tools\\release-notes.md\""
 
 STAGING="$(mktemp -d "${TMPDIR:-/tmp}/crossdesk-release-windows.XXXXXX")"
 trap 'rm -rf "$STAGING"' EXIT

@@ -12,9 +12,11 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "about_resources.h"
+#include "ui/release_notes_text.h"
 
 namespace crossdesk::about {
 namespace {
@@ -80,16 +82,26 @@ slint::SharedString DocumentText(const nlohmann::json& document) {
 
 }  // namespace
 
-void SetInstalledReleaseNotes(const slint::ComponentHandle<ui::MainWindow>& window,
-                              const std::string& language) {
-  const auto& notes = Catalog().at("releaseNotes");
-  const auto& lines = notes.contains(language) ? notes.at(language) : notes.at("en-US");
-  std::vector<slint::SharedString> highlights;
-  for (const auto& line : lines) {
-    highlights.emplace_back(line.get<std::string>());
+std::string_view InstalledReleaseNotes() {
+  // The generated array ends with a NUL that is not part of the Markdown.
+  return {reinterpret_cast<const char*>(kInstalledReleaseNotes),
+          sizeof(kInstalledReleaseNotes) - 1};
+}
+
+bool HasInstalledReleaseNotes() { return !InstalledReleaseNotes().empty(); }
+
+void SetInstalledReleaseNotes(const slint::ComponentHandle<ui::MainWindow>& window) {
+  // Fork-owned: these are the fork's English release notes for this build, so
+  // they render like the update prompt instead of per-language bullet lists.
+  std::vector<ui::ReleaseNoteBlock> blocks;
+  for (const auto& parsed : release_notes_text::Parse(InstalledReleaseNotes())) {
+    ui::ReleaseNoteBlock block;
+    block.content = parsed.content;
+    block.section_gap = parsed.section_gap;
+    blocks.push_back(std::move(block));
   }
   window->set_installed_release_notes(
-      std::make_shared<slint::VectorModel<slint::SharedString>>(highlights));
+      std::make_shared<slint::VectorModel<ui::ReleaseNoteBlock>>(std::move(blocks)));
 }
 
 void Populate(const slint::ComponentHandle<ui::MainWindow>& window) {

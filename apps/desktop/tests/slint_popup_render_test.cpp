@@ -762,9 +762,11 @@ bool VerifyUpdateRecovery(RenderTestPlatform& platform) {
   main->set_update_install_available(true);
   main->set_latest_version("v2.0.0");
   main->set_current_version("1.7.6");
+  crossdesk::ui::ReleaseNoteBlock installed_note;
+  installed_note.content = slint::StyledText::from_plain_text("Release highlights fixture");
   main->set_installed_release_notes(
-      std::make_shared<slint::VectorModel<slint::SharedString>>(
-          std::vector<slint::SharedString>{"Release highlights fixture"}));
+      std::make_shared<slint::VectorModel<crossdesk::ui::ReleaseNoteBlock>>(
+          std::vector<crossdesk::ui::ReleaseNoteBlock>{installed_note}));
   main->set_release_welcome_pending(true);
   int release_dismissals = 0;
   main->on_dismiss_release_welcome([&] {

@@ -20,6 +20,7 @@ Tài liệu này mô tả quy trình phát hành lặp lại được cho fork `
 | `scripts/release/build_macos.sh` | Build, ký, notarize và kiểm tra gói `.pkg` ngay trên máy Mac |
 | `scripts/release/build_windows.sh` + `windows/build.ps1` | Build bộ cài NSIS trên máy Windows qua SSH |
 | `scripts/release/build_linux.sh` + `linux/*` | Build hai gói `.deb` trong bubblewrap trên máy Linux qua SSH |
+| `scripts/release/installed_release_notes.py` | Tách mục `## Changes` của release notes để nhúng vào hộp thoại Release Notes của app |
 | `scripts/release/check_conformance.py` | Fork-conformance gate trên file thực thi trong từng gói |
 | `scripts/release/make_release_feed.py` | Ký payload Ed25519 và sinh feed mới, không push |
 | `scripts/release/publish.sh` | Tạo release, đọc lại asset, công bố, rồi mới cập nhật feed |
@@ -206,6 +207,16 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
     Slint dlopen fontconfig của hệ thống) và không chứa `/packages/f/fontconfig/`. Fontconfig tĩnh
     do xmake build đọc `fonts.conf` dưới thư mục cài trên máy build, máy người dùng không có tệp đó
     nên chữ giao diện rơi về phông serif (bản `v1.7.7-3-20261126` bị lỗi này).
+  - trường `Depends` trong `control` của mỗi gói `.deb` có đủ thư viện mà runtime Slint và SDL nạp
+    bằng `dlopen` (dpkg-shlibdeps và `ldd` không thấy chúng): `libxkbcommon0`,
+    `libxkbcommon-x11-0`, `libx11-xcb1`, `libfontconfig1`, `libegl1`, `libwayland-client0`,
+    `libwayland-cursor0`, `libwayland-egl1`, cùng `zlib1g` và `ca-certificates` (TLS của signaling
+    và kiểm tra cập nhật). Thiếu `libxkbcommon-x11-0` thì app dừng ngay lúc mở trên Ubuntu tối giản
+    với lỗi `Library libxkbcommon-x11.so could not be loaded` (bản `v1.7.7-4-20261128` bị lỗi này).
+    Danh sách nằm ở `GUI_RUNTIME_DEPS` trong `apps/desktop/scripts/linux/package_deb.sh` và
+    `LINUX_RUNTIME_DEPENDS` trong gate; thêm thư viện nạp động mới thì sửa cả hai;
+  - file thực thi chính chứa nguyên văn `INSTALLED_RELEASE_NOTES.md` (mục `## Changes` của release
+    notes, xem bước 3), tức hộp thoại Release Notes của bản cài mới hiện đúng ghi chú của bản này.
 
   Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
   thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork
@@ -220,7 +231,10 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
 - `gate/linux/apt-simulate-*.txt`: kết quả giả lập cài đặt trên Ubuntu 20.04.
 - `logs/<platform>.log`: log đầy đủ từng nền tảng. `FAILED_PLATFORMS.txt` xuất hiện nếu có nền
   tảng build lỗi (các nền tảng còn lại vẫn được gate và tính checksum).
-- `RELEASE_NOTES.md`: bản nháp release notes theo khuôn các bản Postcard trước.
+- `RELEASE_NOTES.md`: bản sao của `--notes`, hoặc bản nháp theo khuôn các bản Postcard trước khi
+  không truyền `--notes`.
+- `INSTALLED_RELEASE_NOTES.md`: mục `## Changes` của `RELEASE_NOTES.md`, được viết trước khi build
+  và nhúng vào app của cả ba nền tảng (bước 3).
 
 Nên cài thử từng gói trên máy thật trước khi publish.
 
@@ -236,6 +250,24 @@ Giữ câu nhắc máy đang chạy v1.7.7-1 hoặc v1.7.7-2 phải cài tay m�
 
 Nội dung này vừa là mô tả GitHub release vừa là `releaseNotes` trong feed mà app hiển thị.
 
+Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp) còn được nhúng vào chính bản
+build: app mở hộp thoại **Release Notes** một lần sau khi cài mới hoặc nâng cấp lên bản này và hiện
+đúng mục đó, hiển thị Markdown giống lời nhắc cập nhật. Vì vậy:
+
+- Notes phải hoàn chỉnh trước lần build publish. `release.sh` tách mục này bằng
+  `installed_release_notes.py` vào `dist/<version>/INSTALLED_RELEASE_NOTES.md` trước khi build và
+  truyền nó cho xmake (`--CROSSDESK_RELEASE_NOTES=<file>`) trên cả ba nền tảng; gate kiểm từng file
+  thực thi chính chứa nguyên văn mục đó.
+- Mục phải có ít nhất một dòng; thiếu mục thì dừng trước khi build. Khi `--publish`, dòng giữ chỗ
+  `- TODO` của bản nháp bị từ chối. Dry-run không có `--notes` nhúng bản nháp, nên muốn soát hộp
+  thoại với notes thật thì dry-run kèm `--notes`.
+- Sửa notes sau khi đã build thì phải build lại. `--skip-build` sinh lại
+  `INSTALLED_RELEASE_NOTES.md` từ notes hiện tại, nên gate báo lệch nếu notes đã đổi.
+- Viết bằng tiếng Anh như phần còn lại của release notes: hộp thoại hiện nguyên văn ở mọi ngôn ngữ
+  giao diện, giống release notes trong lời nhắc cập nhật.
+- Bản build không qua `release.sh` (build tay, build dev) không nhúng notes và không mở hộp thoại
+  này. Hộp thoại không còn đọc `apps/desktop/resources/release-notes.json` của upstream.
+
 ### Bước 4: Publish
 
 ```bash
@@ -244,9 +276,9 @@ scripts/release/release.sh v1.7.7-3-20261126 --publish --notes ~/release-notes/v
 
 `--publish` chỉ chấp nhận `--ref mcp` và làm lần lượt, dừng ngay khi một bước lỗi:
 
-1. Build lại sạch cả ba nền tảng từ đầu `origin/mcp`. macOS bắt buộc ký Developer ID, notarize
-   và staple; thiếu identity, keychain đang khoá hay thiếu thông tin notarize thì dừng trước khi
-   build.
+1. Build lại sạch cả ba nền tảng từ đầu `origin/mcp`, nhúng mục `## Changes` của `--notes`.
+   macOS bắt buộc ký Developer ID, notarize và staple; thiếu identity, keychain đang khoá hay
+   thiếu thông tin notarize thì dừng trước khi build.
 2. Chạy gate ở chế độ nghiêm ngặt và tính `SHA256SUMS.txt`.
 3. `publish.sh` kiểm điều kiện: `gh` đã đăng nhập, `origin` trỏ đúng fork, remote `upstream` (nếu
    có) giữ push URL `DISABLED_no_push_to_upstream`, tag và release chưa tồn tại, checksum khớp,
@@ -278,7 +310,8 @@ curl -fsSL https://raw.githubusercontent.com/thuongtin/crossdesk/desktop-updates
 ```
 
 Sau đó trên một máy đang chạy bản cũ của từng nền tảng: Check for updates, xem release notes, cài
-bản mới, đọc lại phiên bản trong app và thử kết nối qua signaling mặc định.
+bản mới, kiểm hộp thoại Release Notes mở lần đầu hiện đúng mục `## Changes` của bản này, đọc lại
+phiên bản trong app và thử kết nối qua signaling mặc định.
 
 ## 5. Xử lý sự cố
 
