@@ -400,7 +400,7 @@ def scan(lines):
                 header = body
                 table_visited = False
             elif leaf == "heading":
-                units.append(("heading", [(index, body.lstrip("#"))]))
+                units.append(("heading", [(index, heading_text(body))]))
         kind = "text"
         if isinstance(leaf, tuple) and leaf[0] == "fence":
             fence = leaf[1]
@@ -711,7 +711,9 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
     hẳn, như "See [^compat" rồi "]" thành "See [^]". Loại "url" là đầu một URL trần mà tiện ích
     autolink của GitHub biến thành link ("https://...", "http://...", "ftp://..." hay "www...."): hộp
     thoại hiện nó thành chữ thường, không bấm được. Địa chỉ email không bị tính vì app chỉ mở link
-    https, nên link mailto của GitHub cũng không mở được trong hộp thoại.
+    https, nên link mailto của GitHub cũng không mở được trong hộp thoại. Loại "wrapped" là dấu '[' hay
+    '![' của link hoặc ảnh nội dòng "[text](url)" kéo sang dòng sau: hộp thoại đọc từng dòng riêng nên
+    hiện cú pháp thô không bấm được, còn GitHub hiện link.
 
     Đọc từ trái sang như cmark-gfm: ký tự thoát, code span, autolink, URL trần, phần "(đích "tiêu đề")"
     của link và nhãn "[...]" của link tham chiếu không chứa HTML hay link tham chiếu, còn '<' không mở
@@ -781,6 +783,8 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
                 # Link nội dòng kết thúc bằng ')', còn link tham chiếu kết thúc bằng ']' của nhãn.
                 if text[end - 1] == "]":
                     found.append((opener, "reference"))
+                elif bisect_left(newlines, opener) < bisect_left(newlines, end - 1):
+                    found.append((opener, "wrapped"))
                 index = end
                 if not image:
                     no_link_openers = True
@@ -811,10 +815,11 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
 def inline_lines(units, footnotes=frozenset()):
     """Chỉ số các dòng có thứ hộp thoại hiện khác GitHub, trong các nội dung nội dòng mà scan gom được.
 
-    Trả về dict từ loại tới tập chỉ số dòng: "html", "reference", "footnote", "split" và "url" như inline_offsets
-    (footnotes là khoá nhãn của mọi định nghĩa footnote), cùng "definition" cho các dòng của định
-    nghĩa link tham chiếu mà GitHub bỏ khỏi trang. Như cmark-gfm, mọi định nghĩa trong notes được gom
-    trước, nên link dùng được định nghĩa nằm ở bất kỳ đâu, kể cả phía sau nó.
+    Trả về dict từ loại tới tập chỉ số dòng: "html", "reference", "footnote", "split", "url" và
+    "wrapped" như inline_offsets (footnotes là khoá nhãn của mọi định nghĩa footnote), cùng
+    "definition" cho các dòng của định nghĩa link tham chiếu mà GitHub bỏ khỏi trang. Như cmark-gfm,
+    mọi định nghĩa trong notes được gom trước, nên link dùng được định nghĩa nằm ở bất kỳ đâu, kể cả
+    phía sau nó.
     """
     labels = []
     contents = []
@@ -828,7 +833,7 @@ def inline_lines(units, footnotes=frozenset()):
         contents.append((text, start, entries))
     definitions = frozenset(labels)
     found = {"html": set(), "reference": set(), "footnote": set(), "split": set(), "url": set(),
-             "definition": set()}
+             "wrapped": set(), "definition": set()}
 
     def line_of(offset, entries):
         """Chỉ số dòng chứa vị trí offset trong nội dung ghép từ entries."""
@@ -849,6 +854,20 @@ def inline_lines(units, footnotes=frozenset()):
         for offset, kind in inline_offsets(text, start, definitions, footnotes):
             found[kind].add(line_of(offset, entries))
     return found
+
+
+def heading_text(body):
+    """Chữ của tiêu đề ATX body (đã bỏ thụt lề) mà cmark-gfm đọc nội dòng.
+
+    Như chop_trailing_hashtags của cmark-gfm, chuỗi '#' đóng chỉ bị bỏ khi đứng sau dấu cách, tab hay
+    ngay sau chuỗi '#' mở, nên "### a \\###" và "# a#" giữ nguyên dấu '#'. Không bỏ nó thì "www." ở cuối
+    "### Remove the www. ###" không còn là ký tự cuối và bị đọc nhầm thành URL trần.
+    """
+    text = body.lstrip("#").rstrip(" \t")
+    stripped = text.rstrip("#")
+    if len(stripped) < len(text) and (not stripped or stripped[-1] in " \t"):
+        text = stripped.rstrip(" \t")
+    return text
 
 
 def nested_fence(line):
@@ -912,7 +931,12 @@ def extract(text, publish=False):
         # nó thành chữ không bấm được. "<https://...>" hiện giống hệt trên GitHub và bấm được.
         if index in inline["url"]:
             raise ValueError(f"line {index + 1}: the Release Notes dialog shows bare URLs as plain "
-                             "text, so write this link as <https://...> or [text](https://...)")
+                             "text, so write this link as <https://...> or [text](https://...), or put an "
+                             "address that has no https form in backticks")
+        # Hộp thoại đọc từng dòng riêng, nên link kéo sang dòng sau hiện thành cú pháp thô.
+        if index in inline["wrapped"]:
+            raise ValueError(f"line {index + 1}: the Release Notes dialog reads each line on its own and "
+                             "cannot show a link that wraps to the next line, so keep this link on one line")
     if publish and any(lines[index].strip() == PLACEHOLDER for index in section_indexes):
         raise ValueError(f"the '## Changes' section still has the '{PLACEHOLDER}' placeholder")
     section = normalize("\n".join(lines[start + 1:end]))

@@ -315,11 +315,17 @@ GitHub. Bấm link `https://` trong hộp thoại thì mở nó bằng trình du
     `www....`): Markdown của hộp thoại không tự nhận URL trần nên hiện nó thành chữ không bấm được.
     Viết `<https://...>`, GitHub hiện y như URL trần, hoặc `[text](https://...)`, ví dụ
     `- Fix the window (<https://github.com/thuongtin/crossdesk/pull/6>).`. Hộp thoại chỉ mở link
-    `https://`. Script theo đúng quy tắc autolink của cmark-gfm, kể cả ngoặc vuông nằm trong URL (như
+    `https://`, nên địa chỉ không có dạng `https://` (như một máy chủ `ftp://`) thì đặt trong backtick
+    để nó hiện thành chữ ở cả hai nơi. Chuỗi `#` đóng của tiêu đề (`### Remove the www. ###`) không
+    thuộc chữ tiêu đề, như trên GitHub. Script theo đúng quy tắc autolink của cmark-gfm, kể cả ngoặc vuông nằm trong URL (như
     `https://example.com/?os[linux]=1`, không phải link tham chiếu), nên thứ GitHub không biến thành
     link thì không bị chặn: URL trong backtick hay trong chữ của một link, tên miền không có `www.`
     như `example.com`, `xhttps://...` hay `https://_x.com`. Địa chỉ email cũng không bị chặn vì hộp
     thoại không mở link email.
+  - Link hay ảnh nội dòng (`[text](url)`, `![alt](src)`) phải nằm gọn trên một dòng, kể cả phần chữ,
+    đích và tiêu đề: hộp thoại đọc từng dòng riêng nên link kéo sang dòng sau hiện thành cú pháp thô
+    không bấm được, còn GitHub hiện link. Chữ nhấn mạnh hay code span kéo sang dòng sau không bị chặn
+    nhưng hộp thoại hiện kèm dấu `*` hay backtick, nên cũng giữ chúng trên một dòng.
   - Không có thứ GitHub đọc thành HTML, dạng khối hay nội dòng, kể cả trong ô bảng và comment
     `<!-- -->` mà GitHub giấu đi: hộp thoại hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì
     đặt nó trong backtick (`` `<package>` ``). Script kiểm theo cú pháp nội dòng của cmark-gfm, nên

@@ -28,7 +28,9 @@ REFERENCE = "line {}: the Release Notes dialog cannot resolve reference links, s
 DEFINITION = ("line {}: the Release Notes dialog cannot use link reference definitions, so write links inline as "
               "[text](url) and remove this line")
 BARE_URL = ("line {}: the Release Notes dialog shows bare URLs as plain text, so write this link as <https://...> "
-            "or [text](https://...)")
+            "or [text](https://...), or put an address that has no https form in backticks")
+WRAPPED = ("line {}: the Release Notes dialog reads each line on its own and cannot show a link that wraps to the "
+           "next line, so keep this link on one line")
 # Ví dụ notes nằm trong một khối trước mục thật; mục giả không được thay mục thật.
 FAKE_SECTION = "## Changes\n- Example only\n## Downloads"
 
@@ -283,6 +285,15 @@ class ExtractTest(unittest.TestCase):
             with self.subTest(body=body):
                 self.assert_rejected("## Changes\n\n" + body, BARE_URL.format(3))
         self.assert_rejected("## Changes\n\n- First line\n  then https://example.com", BARE_URL.format(4))
+        # Như cmark-gfm, chuỗi '#' đóng của tiêu đề không thuộc chữ tiêu đề, còn '#' dính chữ hay bị
+        # thoát bằng '\' thì thuộc, nên "www.x.com#" vẫn là URL trần.
+        for body in ("### www.example.com ###", "### See https://example.com #", "###\twww.example.com\t#\t",
+                     "### See www.example.com#"):
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, BARE_URL.format(3))
+        for body in ("### Remove the www. ###", "### Drop www. #", "### Drop www.\t##", "### ###"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
         # Autolink trong ngoặc nhọn, link nội dòng, URL trong code span hay trong chữ của link, tên miền
         # không có "www." và địa chỉ email (app chỉ mở link https) không bị chặn.
         for body in ("- Fixes the window (<https://github.com/thuongtin/crossdesk/pull/6>).",
@@ -290,6 +301,23 @@ class ExtractTest(unittest.TestCase):
                      "- See [https://example.com](https://example.com)", "- Run `curl https://example.com`",
                      "- Open example.com", "- Mail admin@example.com or mailto:admin@example.com",
                      "- See https:// alone", "- See wwwexample.com"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+
+    def test_links_that_wrap_to_the_next_line_are_rejected(self):
+        # GitHub hiện link nội dòng kéo sang dòng sau, còn hộp thoại đọc từng dòng riêng nên hiện cú
+        # pháp thô không bấm được. Dòng báo lỗi là dòng có '[' mở link.
+        for body in ("- Read [migration\n  guide](https://example.com)", "- Read [guide](https://example.com\n  \"Title\")",
+                     "- See ![logo\n  image](/logo.png)", "- See [a](\n  /u)", "> Read [the\n> guide](https://example.com)",
+                     "- Read [`code\n  span`](/u)"):
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, WRAPPED.format(3))
+        self.assert_rejected("## Changes\n\n- First line\n  then [the\n  guide](/u)", WRAPPED.format(4))
+        # Link nằm gọn trên một dòng của đoạn văn nhiều dòng, ngoặc vuông không có đích và '[' không còn
+        # mở được link sau một link lồng bên trong thì GitHub cũng không hiện link kéo dòng.
+        for body in ("- First\n  then [guide](https://example.com) here", "- Not a [link\n  at all]",
+                     "- See [outer [inner](/u)\n  tail](/v)",
+                     "- Read [guide](https://example.com) and\n  [more](https://example.com/more)"):
             with self.subTest(body=body):
                 self.assertEqual(notes.extract("## Changes\n\n" + body), body)
 
