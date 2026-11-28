@@ -178,11 +178,12 @@ def check_linux_depends(label, control):
         return [f"{label}: control has no Depends field"]
     names = set()
     for item in depends.split(","):
-        for alternative in item.split("|"):
-            # Bỏ ràng buộc phiên bản "(>= x)" và kiến trúc ":any" hay "[amd64]".
-            match = re.match(r"\s*([a-z0-9][a-z0-9+.-]*)", alternative)
-            if match:
-                names.add(match.group(1))
+        # Bỏ ràng buộc phiên bản "(>= x)" và kiến trúc ":any" hay "[amd64]".
+        matches = [re.match(r"\s*([a-z0-9][a-z0-9+.-]*)", alternative) for alternative in item.split("|")]
+        alternatives = [match.group(1) for match in matches if match]
+        # Nhóm "a | b" thoả được bằng gói khác, nên chỉ nhóm một lựa chọn mới bảo đảm thư viện được cài.
+        if len(alternatives) == 1:
+            names.add(alternatives[0])
     missing = [name for name in LINUX_RUNTIME_DEPENDS if name not in names]
     return [f"{label}: Depends is missing {', '.join(missing)}"] if missing else []
 
