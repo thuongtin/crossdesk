@@ -257,8 +257,9 @@ Giữ câu nhắc máy đang chạy v1.7.7-1 hoặc v1.7.7-2 phải cài tay m�
 Nội dung này vừa là mô tả GitHub release vừa là `releaseNotes` trong feed mà app hiển thị.
 
 Mục `## Changes` (từ tiêu đề đó tới tiêu đề cấp 1 hoặc 2 kế tiếp, cả hai ở cột 0 và nằm ngoài
-code fence) còn được nhúng vào chính bản build: app mở hộp thoại **Release Notes** một lần sau khi
-cài mới hoặc nâng cấp lên bản này và hiện đúng mục đó, hiển thị Markdown giống lời nhắc cập nhật.
+code fence hay khối HTML ở cấp cao nhất) còn được nhúng vào chính bản build: app mở hộp thoại
+**Release Notes** một lần sau khi cài mới hoặc nâng cấp lên bản này và hiện đúng mục đó, hiển thị
+Markdown giống lời nhắc cập nhật.
 Tiêu đề con trong mục (ví dụ `### Linux`) hiện thành dòng in đậm, còn dòng trong code fence hiện
 nguyên chữ. Vì vậy:
 
@@ -269,13 +270,23 @@ nguyên chữ. Vì vậy:
 - Mục phải có ít nhất một dòng; thiếu mục thì dừng trước khi build. Khi `--publish`, dòng giữ chỗ
   `- TODO` của bản nháp bị từ chối, kể cả khi có khoảng trắng thừa. Dry-run không có `--notes` nhúng bản nháp, nên muốn soát hộp
   thoại với notes thật thì dry-run kèm `--notes`.
-- Tiêu đề `## Changes` và mọi tiêu đề cấp 1 hoặc 2 phải ở cột 0. Trong mục Changes, code fence
-  (```` ``` ```` hoặc `~~~`) phải mở ở cột 0, không thụt lề, không đứng sau dấu list hay `>`.
-  `installed_release_notes.py` dừng ở dòng đầu tiên của mục vi phạm, gồm tiêu đề cấp 1 hoặc 2
-  thụt lề và mọi dòng giống fence đứng sau thụt lề, dấu list hay `>` (kể cả dòng nằm trong khối
-  code thụt lề), vì theo CommonMark fence lồng kết thúc cùng mục list chứa nó, còn extractor và
-  hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một mục list thì đặt fence ra ngoài list.
-  Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm. Sửa script này thì chạy
+- Tiêu đề `## Changes` và mọi tiêu đề cấp 1 hoặc 2 phải ở cột 0. `installed_release_notes.py` tìm
+  tiêu đề theo cách GitHub (cmark-gfm) dựng khối: dòng trong code fence ở cấp cao nhất (kể cả fence
+  thụt một tới ba dấu cách) hay trong khối HTML (ví dụ `<!-- ... -->`, `<details>`) chỉ là chữ, nên
+  một `## Changes` làm ví dụ trong đó không bị chọn nhầm. Fence hay khối HTML chưa đóng nằm trước
+  hoặc trong mục Changes nuốt hết phần sau nó trên GitHub, nên script dừng ở dòng mở của khối đó.
+- Trong mục Changes, script dừng ở dòng vi phạm đầu tiên:
+  - Code fence (```` ``` ```` hoặc `~~~`) phải mở ở cột 0, không thụt lề, không đứng sau dấu list
+    hay `>` (kể cả dòng giống fence trong khối code thụt lề), vì theo CommonMark fence lồng kết thúc
+    cùng mục list chứa nó, còn extractor và hộp thoại chỉ hiểu fence ở cột 0. Ví dụ lệnh trong một
+    mục list thì đặt fence ra ngoài list.
+  - Không có tiêu đề cấp 1 hoặc 2 thụt lề, và không có dòng toàn `=` hay `-` ngay dưới một dòng chữ
+    (GitHub biến dòng chữ đó thành tiêu đề). Cần đường kẻ thì để một dòng trống phía trên nó.
+  - Không có HTML, dạng khối hay nội dòng, kể cả comment `<!-- -->` mà GitHub giấu đi: hộp thoại
+    hiện dòng có HTML thành chữ thô. Muốn hiện một thẻ thì đặt nó trong backtick
+    (`` `<package>` ``); autolink như `<https://example.com>` và dấu `<` trong `a < b` vẫn dùng được.
+- Phần ngoài mục Changes (ví dụ Downloads) không bị kiểm, trừ fence hay khối HTML chưa đóng nằm
+  trước mục. Sửa script này thì chạy
   `python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py`.
 - Sửa notes sau khi đã build thì phải build lại. `--skip-build` sinh lại
   `INSTALLED_RELEASE_NOTES.md` từ notes hiện tại, nên gate báo lệch nếu notes đã đổi.

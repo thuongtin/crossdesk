@@ -1,4 +1,4 @@
-"""Kiểm thử installed_release_notes.py: ranh giới mục Changes, code fence và kiểm tra --publish.
+"""Kiểm thử installed_release_notes.py: ranh giới mục Changes, code fence, HTML và kiểm tra --publish.
 
 Chạy: python3 -B -m unittest discover -s scripts/release -p test_installed_release_notes.py
 """
@@ -20,6 +20,9 @@ spec.loader.exec_module(notes)
 
 FENCE = "```"
 NESTED = "line {}: start code fences at column 0, not indented or inside a list item or quote"
+HTML = "line {}: the Release Notes dialog shows HTML as plain text, so remove the HTML or put it in backticks"
+# Ví dụ notes nằm trong một khối trước mục thật; mục giả không được thay mục thật.
+FAKE_SECTION = "## Changes\n- Example only\n## Downloads"
 
 
 def run_main(text, publish):
@@ -78,6 +81,93 @@ class ExtractTest(unittest.TestCase):
                 f"  {FENCE}\n- Run:\n  {FENCE}sh\n  ## Changes\n  {FENCE}\n\n## Changes\n\n- A")
         self.assertEqual(notes.extract(text), "- A")
 
+    def test_indented_top_level_fence_hides_headings(self):
+        # Fence thụt một tới ba dấu cách ngoài mục list vẫn ở cấp cao nhất, nên giấu tiêu đề ở cột 0.
+        for indent in (" ", "  ", "   "):
+            with self.subTest(indent=indent):
+                text = (f"## Examples\n\n{indent}{FENCE}markdown\n{FAKE_SECTION}\n{indent}{FENCE}\n\n"
+                        "## Changes\n\n- Actual release fix")
+                self.assertEqual(notes.extract(text), "- Actual release fix")
+
+    def test_list_item_fences_do_not_open_top_level_fences(self):
+        # Dòng đóng "  ```" của fence trong mục list không được đọc thành dòng mở fence cấp cao nhất.
+        text = f"## Downloads\n\n- {FENCE}sh\n  x\n  {FENCE}\n\n## Changes\n\n- A"
+        self.assertEqual(notes.extract(text), "- A")
+        text = f"## Downloads\n\n1. Run:\n\n   {FENCE}sh\n   x\n   {FENCE}\n\n## Changes\n\n- A"
+        self.assertEqual(notes.extract(text), "- A")
+        text = f"## Downloads\n\n> {FENCE}\n> x\n> {FENCE}\n\n## Changes\n\n- A"
+        self.assertEqual(notes.extract(text), "- A")
+
+    def test_lines_that_leave_a_list_item_start_top_level_fences(self):
+        cases = [
+            # Sau fence của mục list lồng, dòng ở cột 0 không nối lười mà kết thúc mọi list.
+            f"- a\n  - b\n    - c\n      {FENCE}sh\n      x\n      {FENCE}\nfoo\n  {FENCE}\n{FAKE_SECTION}\n  {FENCE}",
+            # Mục list chỉ có dấu list kết thúc ở dòng trống đầu tiên.
+            f"-\n\n  {FENCE}\n{FAKE_SECTION}\n  {FENCE}",
+            # Fence ngắt đoạn văn, nên dòng mở thụt hai dấu cách sau trích dẫn không thuộc trích dẫn.
+            f"> quote\n  {FENCE}\n{FAKE_SECTION}\n  {FENCE}",
+        ]
+        for body in cases:
+            with self.subTest(body=body):
+                text = f"## Downloads\n\n{body}\n\n## Changes\n\n- A"
+                self.assertEqual(notes.extract(text), "- A")
+        # Dòng nối lười giữ mục list mở, nên fence thụt hai dấu cách sau nó vẫn thuộc mục.
+        text = f"## Downloads\n\n- a\nlazy\n  {FENCE}\n  x\n  {FENCE}\n\n## Changes\n\n- A"
+        self.assertEqual(notes.extract(text), "- A")
+
+    def test_unclosed_blocks_before_or_in_changes_are_rejected(self):
+        self.assert_rejected(f"## Downloads\n\n  {FENCE}sh\nx\n\n## Changes\n\n- A",
+                             "line 3: close the code fence that starts here")
+        self.assert_rejected(f"## Changes\n\n- A\n\n{FENCE}sh\nx\n\n## Downloads",
+                             "line 5: close the code fence that starts here")
+        self.assert_rejected("<!-- draft\n\n## Changes\n\n- A",
+                             "line 1: close the HTML block that starts here")
+        self.assertEqual(notes.extract(f"## Changes\n\n- A\n\n## Downloads\n\n{FENCE}sh\nx"), "- A")
+
+    def test_html_blocks_hide_headings(self):
+        cases = [
+            f"<!--\n{FAKE_SECTION}\n-->",
+            f"<div>\n{FAKE_SECTION}\n</div>",
+            f"  <pre>\n\n{FAKE_SECTION}\n</pre>",
+            # Một thẻ đứng riêng sau dòng trống mở khối HTML loại 7.
+            f"Intro\n\n<span>\n{FAKE_SECTION}",
+        ]
+        for body in cases:
+            with self.subTest(body=body):
+                text = f"## Examples\n\n{body}\n\n## Changes\n\n- A"
+                self.assertEqual(notes.extract(text), "- A")
+        # Thẻ đứng riêng ngay sau đoạn văn là chữ của đoạn văn; khối HTML loại 6 kết thúc ở dòng trống.
+        self.assertEqual(notes.extract("Intro\n<span>\n## Changes\n\n- A"), "- A")
+        self.assertEqual(notes.extract("<details>\n<summary>Checksums</summary>\n\n## Changes\n\n- A"), "- A")
+
+    def test_html_in_changes_is_rejected(self):
+        cases = [
+            ("- A\n<!-- note -->", 4),
+            ("<details>\n<summary>More</summary>\n\n- A\n\n</details>", 3),
+            ("- A\n  - <br>", 4),
+            ("> <img src=\"x.png\">", 3),
+            # Comment nội dòng bị GitHub giấu nhưng hộp thoại hiện nguyên chữ.
+            ("- A <!-- internal note -->", 3),
+            ("- Press <kbd>Ctrl</kbd> + C", 3),
+            ("- Fixed `x` for <package>", 3),
+            ("- Link <a\n  href=\"x\">", 3),
+        ]
+        for body, line in cases:
+            with self.subTest(body=body):
+                self.assert_rejected("## Changes\n\n" + body, HTML.format(line))
+        allowed = ("- See <https://example.com> and <team@example.com>\n- a < b, c<5\n"
+                   "- Renamed `<package>` and ``a ` <b>`` in \\<div>")
+        self.assertEqual(notes.extract("## Changes\n\n" + allowed), allowed)
+
+    def test_setext_heading_in_changes_is_rejected(self):
+        for underline in ("---", "==="):
+            with self.subTest(underline=underline):
+                self.assert_rejected(f"## Changes\n\n- A\n\nDownloads\n{underline}\n- x",
+                                     "line 6: a line of '=' or '-' under text makes it a level 1 or 2 "
+                                     "heading, so put a blank line before this line")
+        # Đường kẻ ngang sau dòng trống hay sau mục list không biến dòng trên thành tiêu đề.
+        self.assertEqual(notes.extract("## Changes\n\nText\n\n---\n- A\n---"), "Text\n\n---\n- A\n---")
+
     def test_fences_after_changes_are_ignored(self):
         text = f"## Changes\n\n- A\n\n## Downloads\n\n- {FENCE}sh\n  x\n  {FENCE}"
         self.assertEqual(notes.extract(text), "- A")
@@ -92,6 +182,8 @@ class ExtractTest(unittest.TestCase):
             ("1. ~~~\n   x\n   ~~~", 3),
             # Khối code thụt lề chứa dòng giống fence cũng bị từ chối, xem nested_fence.
             (f"Markdown example:\n\n    {FENCE}sh", 5),
+            # Fence cấp cao nhất thụt lề hiện đúng trên GitHub nhưng InstalledBlocks chỉ hiểu cột 0.
+            (f"- A\n\n  {FENCE}sh\n  x\n  {FENCE}", 5),
         ]
         for body, line in cases:
             with self.subTest(body=body):
@@ -130,6 +222,11 @@ class PublishTest(unittest.TestCase):
                 code, output, errors = run_main(text, publish)
                 self.assertEqual((code, output), (1, None))
                 self.assertIn(NESTED.format(3), errors)
+
+    def test_example_section_in_indented_fence_is_not_published(self):
+        text = (f"## Examples\n\n  {FENCE}markdown\n{FAKE_SECTION}\n  {FENCE}\n\n"
+                "## Changes\n\n- Actual release fix\n")
+        self.assertEqual(run_main(text, publish=True)[:2], (0, b"- Actual release fix\n"))
 
     def test_output_is_section_with_lf(self):
         code, output, _ = run_main("﻿## Changes\r\n\r\n- A\r\n- B\r\n\r\n## Next\r\n", publish=True)
