@@ -7,6 +7,7 @@
 #include <slint.h>
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -22,6 +23,7 @@ namespace crossdesk::release_notes_text {
 // - Mọi dòng trong code fence, kể cả hai dòng fence, giữ nguyên chữ: "---", "- x" hay "# ..."
 //   trong khối code không bị đọc thành đường kẻ, danh sách hay tiêu đề rồi mất đi. Dòng trống
 //   trong fence thành khoảng cách như dòng trống bên ngoài.
+// - Dòng mà Markdown đọc riêng thành rỗng, như định nghĩa link nằm giữa đoạn văn, giữ nguyên chữ.
 // Fence chỉ mở ở cột 0 và đóng ở dòng thụt tối đa ba dấu cách, khớp
 // scripts/release/installed_release_notes.py. Extractor từ chối mục Changes có fence thụt vào hay
 // lồng trong mục list hoặc trích dẫn, có HTML hay tiêu đề setext, nên notes nhúng không có những
@@ -37,8 +39,43 @@ inline std::vector<Block> InstalledBlocks(std::string_view markdown) {
     blocks.push_back(std::move(block));
     section_gap = false;
   };
+  // Thụt lề và các dấu list ở đầu line, như "-" hay "  2. -", không kèm nội dung phía sau; cả line
+  // khi sau các dấu đó không còn gì.
+  const auto list_prefix = [](std::string_view line) {
+    size_t end = 0;
+    while (true) {
+      const size_t at = line.find_first_not_of(" \t", end);
+      if (at == std::string_view::npos) return line;
+      size_t marker = at;
+      if (line[at] == '-' || line[at] == '+' || line[at] == '*') {
+        ++marker;
+      } else {
+        while (marker < line.size() && marker - at < 9 && line[marker] >= '0' && line[marker] <= '9') {
+          ++marker;
+        }
+        if (marker == at || marker == line.size() || (line[marker] != '.' && line[marker] != ')')) {
+          return line.substr(0, end);
+        }
+        ++marker;
+      }
+      if (marker < line.size() && line[marker] != ' ' && line[marker] != '\t') {
+        return line.substr(0, end);
+      }
+      end = marker;
+    }
+  };
   const auto append_markdown = [&](std::string_view line) {
-    if (auto parsed = slint::StyledText::from_markdown(line)) {
+    auto parsed = slint::StyledText::from_markdown(line);
+    // Markdown của Slint đọc riêng dòng này, nên dòng trông như định nghĩa link "[notice]: https://x",
+    // như dòng giữa của một code span nhiều dòng hay dòng "2. [a]: /u" nối tiếp đoạn văn, chỉ còn
+    // dấu list hoặc rỗng. GitHub vẫn hiện chữ của dòng đó, nên hộp thoại cũng giữ nguyên chữ.
+    if (parsed) {
+      const std::string_view prefix = list_prefix(line);
+      const auto bare = prefix.size() < line.size() ? slint::StyledText::from_markdown(prefix)
+                                                    : std::optional<slint::StyledText>{};
+      if (bare && *parsed == *bare) parsed.reset();
+    }
+    if (parsed) {
       append(std::move(*parsed));
     } else {
       // Cú pháp ngoài tập Markdown của Slint vẫn là nội dung, giữ nguyên chữ như Parse.

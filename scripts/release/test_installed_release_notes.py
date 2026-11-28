@@ -267,6 +267,49 @@ class ExtractTest(unittest.TestCase):
                            ("> [manual]: ./manual", 3), ("- [manual]: ./manual", 3)):
             with self.subTest(body=body):
                 self.assert_rejected("## Changes\n\n" + body, DEFINITION.format(line))
+        # Dòng trông như định nghĩa nhưng nằm trong code span nhiều dòng hay nối tiếp đoạn văn là chữ
+        # trên GitHub, và hộp thoại cũng hiện nguyên chữ của nó.
+        for body in ("- Run `crossdesk\n[notice]: https://example.com\n--check`", "Read the guide\n2. [guide]: ./guide"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract("## Changes\n\n" + body), body)
+
+    def test_brackets_inside_bare_urls_are_not_reference_links(self):
+        # Như cmark-gfm, URL trần "https://..." hay "www..." là một link tự động nuốt cả "[linux]",
+        # nên định nghĩa "[Linux]" ở mục khác không biến nó thành link tham chiếu.
+        downloads = "\n\n## Downloads\n\n[Linux]: /downloads/linux"
+        for body in ("- See https://docs.example.com/search?filter[linux]=1", "- See www.example.com/[linux]",
+                     "- See (www.example.com/[linux])", "- See HTTPS://Example.com/[linux]",
+                     "- See ftp://example.com/[linux]", "- See x_www.example.com/[linux]",
+                     "- See https://\u4f8b\u5b50.\u6d4b\u8bd5/[linux]", "- See https://\u00e9_x.com/[linux]",
+                     "- See _www.a_b.c_d and www.example.com/[linux]"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract(f"## Changes\n\n{body}{downloads}"), body)
+        # Không phải link tự động: scheme dính chữ phía trước, tên miền mở bằng dấu câu hay có '_' ở hai
+        # đoạn cuối, "www" dính chữ hay viết hoa, URL nằm sau một '[' còn mở, hoặc "[linux]" đứng sau
+        # dấu cách.
+        for body in ("- See xhttps://example.com/[linux]", "- See https://_example.com/[linux]",
+                     "- See https://-example.com/[linux]", "- See https://a_b.c_d/[linux]",
+                     "- See www.example.com/[linux] and www.a_b.c_d/[linux]",
+                     "- See xwww.example.com/[linux]", "- See WWW.example.com/[linux]",
+                     "- See [https://example.com/ [linux]]", "- See [the https://example.com/[linux] page]",
+                     "- See https://example.com/ [linux]"):
+            with self.subTest(body=body):
+                self.assert_rejected(f"## Changes\n\n{body}{downloads}", REFERENCE.format(3))
+        # Link tự động dừng trước '<', nên thẻ HTML ngay sau URL vẫn là HTML.
+        self.assert_rejected("## Changes\n\n- See https://example.com/<b>", HTML.format(3))
+
+    def test_task_list_checkboxes_are_not_reference_links(self):
+        # GitHub hiện "[ ]", "[x]" hay "[X]" ngay sau dấu list mở mục thành ô đánh dấu, kể cả khi có
+        # định nghĩa "[x]" ở mục khác.
+        downloads = "\n\n## Downloads\n\n[X]: https://example.com/downloads"
+        for body in ("- [x] Verified Ubuntu 24.04", "1) [X] Signed", "* [ ] Todo"):
+            with self.subTest(body=body):
+                self.assertEqual(notes.extract(f"## Changes\n\n{body}{downloads}"), body)
+        # Ô đánh dấu cần dấu list ở đầu dòng thật và chữ cách sau nó; "[x]" thứ hai vẫn là link.
+        for body in ("> - [x] quoted", "- - [x] nested", "- [x]x", "- [x]", "- [x] [x]"):
+            with self.subTest(body=body):
+                self.assert_rejected(f"## Changes\n\n{body}{downloads}", REFERENCE.format(3))
+        self.assert_rejected("## Changes\n\n- [x] [x]: /u", DEFINITION.format(3))
 
     def test_vertical_tabs_and_form_feeds_stay_in_labels_and_destinations(self):
         # cmark-gfm chỉ gộp và cắt dấu cách, tab và xuống dòng trong nhãn; "\v" và "\f" là chữ, nên

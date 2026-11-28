@@ -11,6 +11,7 @@ Usage: installed_release_notes.py <release-notes.md> <output.md> [--publish]
 import argparse
 import re
 import sys
+import unicodedata
 from bisect import bisect_left
 from pathlib import Path
 
@@ -92,6 +93,21 @@ RAW_HTML = re.compile(rf"<{TAG_NAME}(?:{ATTRIBUTE})*{SPACE}*/?>|</{TAG_NAME}{SPA
                       r"|<!\[CDATA\[(?:[^\]\x00]|\][^\]\x00]|\]\][^>\x00])*\]\]>")
 BACKTICK_RUN = re.compile(r"`+")
 MAX_BACKTICKS = 1000
+# Tiện ích autolink của GitHub biến URL trần như "https://example.com/a" hay "www.example.com" thành link.
+ASCII_LETTERS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+BARE_URL_SCHEMES = ("http://", "https://", "ftp://")
+# Khoảng trắng Unicode theo cmark_utf8proc_is_space của cmark-gfm; "\v" không nằm trong đó.
+UNICODE_SPACE = frozenset("\t\n\f\r \u00a0\u1680\u202f\u205f\u3000" + "".join(map(chr, range(0x2000, 0x200b))))
+# Ký tự trước "www." được mở link: ngoài đầu nội dung và khoảng trắng của cmark_isspace.
+WWW_PREFIXES = frozenset("*_~(" + CMARK_SPACE)
+# Khoảng trắng theo cmark_utf8proc_is_space mà check_domain dừng ở đó; "\v" vẫn là ký tự của tên miền.
+DOMAIN_SPACE = frozenset(" \t\n\f\r")
+# Ký tự cuối link mà autolink_delim bỏ ra khỏi link.
+URL_TRAILING = frozenset("?!.,:*_~'\"")
+# Dòng mở mục task list của GitHub như "- [x] Done", xét trên cả dòng gốc như tiện ích tasklist của
+# cmark-gfm, nên "> - [x]" hay "- - [x]" không phải task.
+TASK_LIST_ITEM = re.compile(r"[ \t\v\f]*(?:[-+*]|[0-9]+[.)])[ \t\v\f]+\[[ xX]\][ \t\v\f]")
+TASK_CHECKBOXES = ("[ ]", "[x]", "[X]")
 # Độ dài tối đa tính bằng byte UTF-8 của nhãn "[...]" mà cmark-gfm nhận cho định nghĩa link.
 MAX_LINK_LABEL_BYTES = 1000
 # Ký tự đóng của từng kiểu tiêu đề link: "...", '...' và (...).
@@ -292,6 +308,13 @@ def scan(lines):
                 # Khối code thụt lề, trừ khi dòng là chữ nối tiếp đoạn văn.
                 if not maybe_lazy:
                     leaf = "code"
+                break
+            if (opened and isinstance(opened[-1], list) and body[:3] in TASK_CHECKBOXES
+                    and TASK_LIST_ITEM.match(raw)):
+                # GitHub hiện ô đánh dấu thay cho "[x]" ở đầu mục task list, nên đó không phải link tham
+                # chiếu. Phần sau ô luôn là chữ của đoạn văn, kể cả khi trông như mở khối khác.
+                rest = body[3:]
+                body = rest.lstrip(" ")
                 break
             if body.startswith(">"):
                 opened.append(None)
@@ -553,6 +576,122 @@ def link_end(text, close, content_start, bracket_after, definitions):
     return None
 
 
+def domain_length(text, begin, limit, short):
+    """Số ký tự của tên miền bắt đầu tại begin như check_domain của cmark-gfm, hoặc 0 khi không nhận.
+
+    Tên miền dừng ở dấu câu ASCII trừ '-', ở khoảng trắng hay ký tự ngoài ASCII; '\\' bỏ qua ký tự
+    ngay sau nó. Tên miền có '_' trong hai phần cuối bị từ chối, và khi short là False nó phải có ít
+    nhất một dấu chấm. limit là cuối nội dung, ký tự ngay trước limit không được xét. Trả về cặp
+    (số ký tự, vị trí dấu chấm áp chót mà lần quét đi qua hoặc -1).
+    """
+    if text[begin] >= "\x80":
+        # cmark-gfm không xét ký tự đầu nhưng đọc từng byte, nên ký tự đầu nhiều byte như "é" dừng
+        # vòng lặp ngay ở byte thứ hai của nó.
+        return (1 if short else 0), -1
+    size = limit - begin
+    offset = 1
+    dots = underscores_before = underscores_last = 0
+    previous_dot = last_dot = -1
+    while offset < size - 1:
+        if text[begin + offset] == "\\" and offset < size - 2:
+            offset += 1
+        char = text[begin + offset]
+        if char == "_":
+            underscores_last += 1
+        elif char == ".":
+            underscores_before, underscores_last = underscores_last, 0
+            previous_dot, last_dot = last_dot, begin + offset
+            dots += 1
+        elif char != "-" and (char in ASCII_PUNCTUATION or char in DOMAIN_SPACE
+                              or not "\x00" < char < "\x80"):
+            # cmark-gfm đọc từng byte, nên ký tự nhiều byte dừng vòng lặp ở byte thứ hai; NUL đã thành
+            # U+FFFD từ trước.
+            break
+        offset += 1
+    if underscores_before or underscores_last:
+        return 0, previous_dot
+    return (offset if short or dots else 0), previous_dot
+
+
+def url_delimiter_end(text, begin, end):
+    """Cuối link sau khi bỏ dấu câu ở cuối như autolink_delim của cmark-gfm; begin là đầu dữ liệu.
+
+    Bỏ các ký tự trong URL_TRAILING, bỏ cả thực thể "&name;" ở cuối, và bỏ ')' khi số ')' từ begin tới
+    cuối link nhiều hơn số '('.
+    """
+    opening = text.count("(", begin, end)
+    closing = text.count(")", begin, end)
+    while end > begin:
+        last = text[end - 1]
+        if last in URL_TRAILING:
+            end -= 1
+        elif last == ";":
+            entity = end - 2
+            while entity > begin and text[entity] in ASCII_LETTERS:
+                entity -= 1
+            end = entity if entity < end - 2 and text[entity] == "&" else end - 1
+        elif last == ")" and closing > opening:
+            end -= 1
+            closing -= 1
+        else:
+            break
+    return end
+
+
+def starts_host(char):
+    """Ký tự ngay sau "://" có mở được tên miền của URL trần không, như is_valid_hostchar của cmark-gfm.
+
+    Ký tự đó không được là khoảng trắng hay dấu câu Unicode, nên "http://\v" hay "http://é" vẫn mở
+    link còn "http://_" hay "http://\u00a0" thì không. Bảng dấu câu của cmark-gfm cũ hơn unicodedata,
+    nên khoảng 170 ký tự hiếm mới được Unicode xếp vào (hay chuyển khỏi) nhóm dấu câu bị xét khác
+    cmark-gfm.
+    """
+    return (char not in UNICODE_SPACE and char not in ASCII_PUNCTUATION
+            and not unicodedata.category(char).startswith("P"))
+
+
+def bare_url_end(text, index, start, limit, rejected_before=-1):
+    """Cặp (vị trí ngay sau URL trần mà tiện ích autolink của GitHub mở tại index hoặc None, mốc mới).
+
+    index là ':' của "http://", "https://" hay "ftp://" (tên giao thức đứng ngay trước, không phân
+    biệt hoa thường), hoặc 'w' của "www." đứng sau đầu nội dung, khoảng trắng hay một trong "*_~(".
+    Như cmark-gfm, link chạy tới khoảng trắng hay '<' rồi bỏ dấu câu ở cuối, nên '[', '`' và '\\'
+    bên trong là chữ của link. start là đầu nội dung, limit là cuối nội dung sau khi cắt khoảng trắng.
+    rejected_before là mốc mà lần gọi trước trên cùng nội dung trả về: "www." mở trước mốc đó chắc
+    chắn không thành link.
+    """
+    if limit - index < 4:
+        return None, rejected_before
+    if text[index] == ":":
+        if not text.startswith("//", index + 1):
+            return None, rejected_before
+        scheme = index
+        while scheme > start and text[scheme - 1] in ASCII_LETTERS:
+            scheme -= 1
+        if text[scheme:index + 3].lower() not in BARE_URL_SCHEMES or not starts_host(text[index + 3]):
+            return None, rejected_before
+        domain, _ = domain_length(text, index + 3, limit, True)
+        if domain == 0:
+            return None, rejected_before
+        end = index + 3 + domain
+    elif text.startswith("www.", index) and (index == start or text[index - 1] in WWW_PREFIXES):
+        if index < rejected_before:
+            # Lần quét từ một "www." trước trong cùng tên miền đã đi qua hai dấu chấm cuối và bị từ
+            # chối, nên lần quét từ đây cũng dừng ở cùng chỗ, có cùng hai phần cuối và cũng bị từ chối.
+            # Bỏ qua nó để chuỗi như "_www._www._www." không bị quét lại tới cuối ở mỗi "www.".
+            return None, rejected_before
+        domain, previous_dot = domain_length(text, index, limit, False)
+        if domain == 0:
+            return None, previous_dot
+        end = index + domain
+    else:
+        return None, rejected_before
+    while end < limit and text[end] not in CMARK_SPACE and text[end] != "<":
+        end += 1
+    end = url_delimiter_end(text, index, end)
+    return (end if end > index else None), rejected_before
+
+
 def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset()):
     """Các (vị trí, loại) mà hộp thoại hiện khác GitHub trong nội dung nội dòng text, tính từ position.
 
@@ -565,10 +704,10 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
     lấy số byte bằng hiệu số cột của ']' và '[' trừ hai, nên GitHub hiện số chú thích hay chữ khác
     hẳn, như "See [^compat" rồi "]" thành "See [^]".
 
-    Đọc từ trái sang như cmark-gfm: ký tự thoát, code span, autolink, phần "(đích "tiêu đề")" của
-    link và nhãn "[...]" của link tham chiếu không chứa HTML, còn '<' không mở được thẻ nào như trong
-    "a < b" hay "x<limit" là chữ. Như tiện ích footnotes của GitHub, "[^...]" không thành link là chỗ
-    gọi footnote, và mọi thứ bên trong nó chỉ còn là chữ của nhãn.
+    Đọc từ trái sang như cmark-gfm: ký tự thoát, code span, autolink, URL trần, phần "(đích "tiêu đề")"
+    của link và nhãn "[...]" của link tham chiếu không chứa HTML hay link tham chiếu, còn '<' không mở
+    được thẻ nào như trong "a < b" hay "x<limit" là chữ. Như tiện ích footnotes của GitHub, "[^...]"
+    không thành link là chỗ gọi footnote, và mọi thứ bên trong nó chỉ còn là chữ của nhãn.
     """
     found = []
     newlines = [match.start() for match in re.finditer("\n", text)]
@@ -585,6 +724,10 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
     # hiện y như vậy.
     last_runs = {}
     scanned_to_end = False
+    # Như cmark-gfm, URL trần chỉ dài tới cuối nội dung sau khi cắt khoảng trắng.
+    limit = len(text.rstrip(CMARK_SPACE))
+    # "www." mở trước vị trí này chắc chắn không thành link, xem bare_url_end.
+    www_rejected_before = -1
     index = position
     while index < len(text):
         char = text[index]
@@ -642,6 +785,10 @@ def inline_offsets(text, position, definitions=frozenset(), footnotes=frozenset(
                     elif footnotes and label_key(text[content_start + 1:index]) in footnotes:
                         found.append((opener, "footnote"))
                 index += 1
+        elif char in ":w" and not brackets:
+            # Tiện ích autolink không chạy khi còn '[' hay '![' mở, kể cả '[' không còn mở link được.
+            url_end, www_rejected_before = bare_url_end(text, index, position, limit, www_rejected_before)
+            index = index + 1 if url_end is None else url_end
         else:
             index += 1
     return found

@@ -3673,6 +3673,9 @@ export component MainWindow inherits Window {
                                     default-color: WorkbenchStyle.text;
                                     default-font-size: 13px;
                                     default-font-family: "CrossDesk Message Spacing";
+                                    // Link trong notes mở bằng trình duyệt như link của About;
+                                    // ứng dụng chỉ mở link https://.
+                                    link-clicked(url) => { root.open-about-link(url); }
                                 }
                             }
                         }
