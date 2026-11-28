@@ -83,9 +83,10 @@ slint::SharedString DocumentText(const nlohmann::json& document) {
 }  // namespace
 
 std::string_view InstalledReleaseNotes() {
-  // The generated array ends with a NUL that is not part of the Markdown.
-  return {reinterpret_cast<const char*>(kInstalledReleaseNotes),
-          sizeof(kInstalledReleaseNotes) - 1};
+  // The generated array starts with a marker for the release gate and ends with
+  // a NUL; neither is part of the Markdown.
+  return {reinterpret_cast<const char*>(kInstalledReleaseNotes) + kInstalledReleaseNotesOffset,
+          sizeof(kInstalledReleaseNotes) - kInstalledReleaseNotesOffset - 1};
 }
 
 bool HasInstalledReleaseNotes() { return !InstalledReleaseNotes().empty(); }

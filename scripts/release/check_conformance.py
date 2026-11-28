@@ -46,6 +46,8 @@ LINUX_RUNTIME_DEPENDS = (
     "libxkbcommon0", "libxkbcommon-x11-0", "libx11-xcb1", "libfontconfig1", "libegl1",
     "libwayland-client0", "libwayland-cursor0", "libwayland-egl1", "zlib1g", "ca-certificates",
 )
+# Marker mà about_resources.lua đặt ngay trước notes nhúng trong file thực thi chính; hai nơi phải đổi cùng nhau.
+NOTES_MARKER = b"crossdesk-installed-release-notes\n"
 
 
 def encodings(text):
@@ -81,9 +83,9 @@ def check_binary(label, data, public_key, is_main, notes=None):
             problems.append(f"{label}: upstream signaling host {UPSTREAM_SIGNALING_HOST} is present")
         if contains(data, UPSTREAM_ISSUE_PATH):
             problems.append(f"{label}: upstream issue page {UPSTREAM_ISSUE_PATH} is present")
-        # Bản nhúng là mảng byte UTF-8 kết thúc bằng NUL, nên so cả byte kết thúc để notes cũ dài
-        # hơn (có cùng phần đầu) cũng bị phát hiện.
-        if notes is not None and notes.encode("utf-8") + b"\0" not in data:
+        # Bản nhúng là marker, notes UTF-8 rồi NUL. So cả marker lẫn NUL để notes cũ chỉ trùng phần
+        # đầu hoặc phần cuối với notes hiện tại cũng bị phát hiện.
+        if notes is not None and NOTES_MARKER + notes.encode("utf-8") + b"\0" not in data:
             problems.append(f"{label}: embedded release notes do not match the '## Changes' section")
     return problems
 

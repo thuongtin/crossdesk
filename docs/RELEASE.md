@@ -216,7 +216,8 @@ Ba nền tảng build song song. Kết quả trong `dist/v1.7.7-3-20261126/`:
     Danh sách nằm ở `GUI_RUNTIME_DEPS` trong `apps/desktop/scripts/linux/package_deb.sh` và
     `LINUX_RUNTIME_DEPENDS` trong gate; thêm thư viện nạp động mới thì sửa cả hai;
   - file thực thi chính chứa nguyên văn `INSTALLED_RELEASE_NOTES.md` (mục `## Changes` của release
-    notes, xem bước 3), tức hộp thoại Release Notes của bản cài mới hiện đúng ghi chú của bản này.
+    notes, xem bước 3), so trọn từ marker đứng trước tới byte NUL kết thúc, tức hộp thoại Release
+    Notes của bản cài mới hiện đúng ghi chú của bản này, không thừa không thiếu dòng nào.
 
   Ở dry-run gate chỉ cảnh báo; ở `--publish` gate trượt là dừng. Gate cố ý trượt trên mã upstream
   thuần (updater và signaling mặc định của upstream): chỉ publish khi `mcp` đã mang logic fork
