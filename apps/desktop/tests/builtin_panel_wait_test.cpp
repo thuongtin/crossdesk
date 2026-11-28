@@ -139,7 +139,12 @@ bool TestDisplayChoice() {
                                 mirrored, start, external);
   ok &= Expect(choice.index == 1 && !choice.gave_up_on_builtin,
                "a mirrored panel must capture its mirror source at once");
-  choice = ChooseCaptureDisplay(external_only, builtin, builtin, true, 0,
+  // The capturer now records the mirror source as the active display.
+  choice = ChooseCaptureDisplay(external_only, builtin, external, true, 0,
+                                mirrored, start + grace * 2, 0);
+  ok &= Expect(choice.index == 0 && !choice.gave_up_on_builtin,
+               "ending mirroring while the panel is absent must keep the source");
+  choice = ChooseCaptureDisplay(third_only, builtin, external, true, 0,
                                 mirrored, start + grace * 2, 0);
   ok &= Expect(choice.index == -1,
                "capturing a mirror source must not run down the panel's grace");
@@ -147,8 +152,9 @@ bool TestDisplayChoice() {
                                 start + grace * 3, 0);
   ok &= Expect(choice.index == 0,
                "ending mirroring must return the slot to its own display");
+  BuiltinPanelWait unlisted_source;
   choice = ChooseCaptureDisplay(external_only, builtin, builtin, true, 0,
-                                mirrored, start, 3);
+                                unlisted_source, start, 3);
   ok &= Expect(choice.index == -1,
                "an unlisted mirror source must not replace the panel's wait");
   return ok;
