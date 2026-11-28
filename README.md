@@ -134,7 +134,7 @@ Máy điều khiển và máy tính được điều khiển cần truy cập đ
 
 Giới hạn thiết bị đáng tin cậy trên ứng dụng máy tính **mặc định tắt**, áp dụng cho cả kết nối ID và IP trực tiếp. Khi bật, máy điều khiển vẫn cần vượt qua xác minh mật khẩu hiện có và giữ khóa riêng ghép đôi của thiết bị trong danh sách tin cậy; chỉ biết ID và mật khẩu không thể vượt qua giới hạn này.
 
-1. **Sao chép thông tin ghép đôi trên máy điều khiển.** Mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Quản lý thiết bị đáng tin cậy**, nhấn **Sao chép thông tin ghép đôi** trong **Thông tin ghép đôi máy này**.
+1. **Sao chép thông tin ghép đôi trên máy điều khiển.** Mở **Cài đặt → Chung → Bảo vệ quyền riêng tư → Thiết bị đáng tin cậy → Quản lý**, nhấn **Sao chép thông tin ghép đôi** trong **Thông tin ghép đôi máy này**.
 2. **Thêm máy điều khiển trên máy được điều khiển.** Mở cùng giao diện quản lý, dán thông tin nhận được vào ô **Thêm thiết bị đáng tin cậy**, nhấn **Thêm** để thêm vào danh sách; không cần xác nhận lại hay thiết lập kết nối từ xa trước.
 3. **Bật giới hạn trên máy được điều khiển.** Quay lại cài đặt, chọn **Chỉ cho phép thiết bị đáng tin cậy điều khiển** rồi lưu. Sau đó bắt đầu kết nối bằng ID hoặc IP và xác minh mật khẩu như bình thường.
 

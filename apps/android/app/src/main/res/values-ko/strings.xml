@@ -6,7 +6,7 @@
     <string name="text_23ebae95d26dfe5e" formatted="false">" 장치"</string>
     <string name="text_a7f4dfd234a43b16" formatted="false">" 기사 · "</string>
     <string name="text_2c894057fc526576" formatted="false">" 읽지 않은 항목"</string>
-    <string name="text_d0ac753c6681e578" formatted="false">"CrossDesk원격접속"</string>
+    <string name="text_d0ac753c6681e578" formatted="false">"CrossDesk 원격 접속"</string>
     <string name="text_0991c6fc1de4ffd6" formatted="false">"GNU GPL 버전 3"</string>
     <string name="text_5ae7dc4079223967" formatted="false">"OpenFEC공지"</string>
     <string name="text_69ad29820a259526" formatted="false">"OpenFEC라이선스 및 소스"</string>
@@ -161,7 +161,7 @@
     <string name="text_94bc3d40defef3e9" formatted="false">"무단"</string>
     <string name="text_4d0680f9efaef147" formatted="false">"읽지 않음"</string>
     <string name="text_d1fcb66a323a16f5" formatted="false">"서버가 연결되지 않았습니다. · 다시 시도하려면 클릭하세요."</string>
-    <string name="text_7eea7966c0b746c5" formatted="false">"이 애플리케이션은 제한된 보증과 책임 제한을 제공하는CeCILL-C1.0에 따라 순방향 오류 수정을 위해OpenFEC를 사용합니다. 자세한 내용은 전체 라이센스를 참조하세요."</string>
+    <string name="text_7eea7966c0b746c5" formatted="false">"이 애플리케이션은 제한된 보증과 책임 제한을 제공하는 CeCILL-C 1.0에 따라 순방향 오류 수정을 위해 OpenFEC를 사용합니다. 자세한 내용은 전체 라이센스를 참조하세요."</string>
     <string name="text_c611b4e50b0dbc08" formatted="false">"로컬 ID "</string>
     <string name="text_97d10220f08dd7fc" formatted="false">"로컬 ID{0}"</string>
     <string name="text_91f15d505770d7a0" formatted="false">"이 버전의 소스 코드 및 빌드 지침"</string>
@@ -201,7 +201,7 @@
     <string name="text_66062971234f422d" formatted="false">"트랙패드"</string>
     <string name="text_c421dc051bea3f11" formatted="false">"상대 마우스"</string>
     <string name="text_de32e20193ad1042" formatted="false">"알겠습니다"</string>
-    <string name="text_fac2a67ad87807c4" formatted="false">"알았어"</string>
+    <string name="text_fac2a67ad87807c4" formatted="false">"확인"</string>
     <string name="text_36f33adaf0942634" formatted="false">"확인"</string>
     <string name="text_a5b7fba4dbd8f622" formatted="false">"연결 확인"</string>
     <string name="text_be1b4f3c6c1cda1e" formatted="false">"오프라인"</string>
@@ -235,7 +235,7 @@
     <string name="text_dd6c465847af1b60" formatted="false">"접속비밀번호가 잘못되었습니다. 다시 입력해 주세요."</string>
     <string name="text_defba1d2989bfab4" formatted="false">"인증서 확인 실패 · 다시 시도하려면 클릭하세요."</string>
     <string name="text_44f3d4d52347095a" formatted="false">"먼저 온라인 인증을 완료해주세요."</string>
-    <string name="text_2a07ca002bc5093d" formatted="false">"원격 측에서CrossDesk시스템 서비스를 활성화하고 다시 시도하십시오."</string>
+    <string name="text_2a07ca002bc5093d" formatted="false">"원격 측에서 CrossDesk 시스템 서비스를 활성화하고 다시 시도하십시오."</string>
     <string name="text_990fd23c62de5ccf" formatted="false">"요청 시간이 초과되어 컴퓨터의 개인 정보 보호 화면 상태가 확인되지 않았습니다."</string>
     <string name="text_e5c8fa6dcf7b2a8b" formatted="false">"현재 파일이 전송될 때까지 기다려 주십시오."</string>
     <string name="text_9305d9d72b06110d" formatted="false">"1~65535 범위의 포트를 입력하세요."</string>
