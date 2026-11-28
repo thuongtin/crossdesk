@@ -34,6 +34,9 @@ constexpr float kLabelMargin = 8.0f;
 // Chữ canh trái bị cắt ở mép khung thì nét cuối nằm sát mép; chữ trọn vẹn dừng
 // trước mép ít nhất chừng này.
 constexpr float kClipMargin = 4.0f;
+// Chữ wrap: word-wrap tự xuống dòng ở ranh giới từ nên một dòng vừa khít có thể dừng rất
+// sát mép mà không mất nét nào; chỉ coi là bị cắt khi nét chạm hẳn mép khung.
+constexpr float kWrapMargin = 1.0f;
 
 // Hàng nhập ID trong hero, tính từ mép trên vùng nội dung (khớp main_window.slint).
 constexpr float kHeroLeft = 28.0f;
@@ -82,7 +85,8 @@ const std::vector<DisplayCase>& DisplayCases() {
 // Bốn ngôn ngữ của tiêu chí nghiệm thu: chữ ngắn, chữ có dấu, chữ dài và chữ CJK.
 const std::vector<LanguageCase>& EvidenceLanguages() {
   static const std::vector<LanguageCase> languages = {
-      {"en", 1}, {"vi", 11}, {"de", 6}, {"zh-Hans", 0}};
+      {"en", LanguageIndex("en-US")}, {"vi", LanguageIndex("vi")},
+      {"de", LanguageIndex("de")},    {"zh-Hans", LanguageIndex("zh-CN")}};
   return languages;
 }
 
@@ -326,18 +330,23 @@ bool VerifySingleLine(Fixture& fixture, const std::string& where, float left, fl
 // Chữ canh trái trong khung [left, right) x [top, bottom) phải hiện ra và dừng trước
 // mép phải ít nhất `margin` (canvas). Text của Slint mặc định cắt chữ tại mép khung,
 // nên chữ bị cắt có nét chạm sát mép; chữ có overflow: elide dùng VerifySingleLine.
+// Chữ canh giữa theo chiều dọc mà xuống quá nhiều dòng thì tràn cả mép trên lẫn mép
+// dưới, nên nét chữ cũng không được nằm trên hàng pixel đầu hay cuối của khung.
 bool VerifyTextEndsInside(Fixture& fixture, const std::string& where, float left, float right,
                           float top, float bottom, const slint::Rgb8Pixel& background,
                           float margin) {
   auto& screen = fixture.screen();
   const float unit = fixture.Physical(1.0f);
-  const auto ink = FindInk(screen, Px(fixture, left), Px(fixture, right) - 1, Px(fixture, top),
-                           Px(fixture, bottom) - 1, background);
+  const int y0 = Px(fixture, top), y1 = Px(fixture, bottom) - 1;
+  const auto ink = FindInk(screen, Px(fixture, left), Px(fixture, right) - 1, y0, y1, background);
   if (!Check(ink.Found(), where + ": the text must be visible")) return false;
   const float gap = (Px(fixture, right) - 1 - ink.right) / unit;
-  return Check(gap >= margin, where + ": the text must end " + std::to_string(int(margin)) +
-                                  "px before the right edge of its box (gap " +
-                                  std::to_string(gap) + ")");
+  bool ok = Check(gap >= margin, where + ": the text must end " + std::to_string(int(margin)) +
+                                     "px before the right edge of its box (gap " +
+                                     std::to_string(gap) + ")");
+  ok &= Check(ink.top > y0 && ink.bottom < y1,
+              where + ": the text must not run past the top or bottom of its box");
+  return ok;
 }
 
 // Nút Kết nối nằm sát mép phải hero; quét từ mép đó sang trái tới khi gặp lại màu nền hero.
@@ -437,7 +446,7 @@ bool VerifyEmptyState(Fixture& fixture, bool lan_mode, int group, const std::str
   const float text_right = list_right - kEmptyTextRightInset;
   const auto background = screen.At(Px(fixture, text_right + 4.0f), Px(fixture, top + 6.0f));
   bool ok = VerifyTextEndsInside(fixture, where + " empty state", text_left, text_right, top,
-                                 top + kEmptyCardHeight, background, kClipMargin);
+                                 top + kEmptyCardHeight, background, kWrapMargin);
   // Chữ phải nằm gọn trong thẻ, chừa hàng viền dưới.
   const auto ink = FindInk(screen, Px(fixture, text_left), Px(fixture, text_right) - 1,
                            Px(fixture, top), Px(fixture, top + kEmptyCardHeight + 12.0f),
@@ -464,7 +473,7 @@ bool VerifyConnectRow(Fixture& fixture, bool lan_mode, const std::string& label)
   ok &= VerifyTextEndsInside(fixture, where + " remote address label", kRemoteLabelLeft,
                              kRemoteLabelLeft + kRemoteLabelWidth, top + kRemoteLabelTop,
                              top + kRemoteLabelTop + kRemoteLabelHeight, hero_background,
-                             kClipMargin);
+                             kWrapMargin);
   const float input_right = button.begin / fixture.Physical(1.0f) - kConnectGap;
   const auto field_background = screen.At(Px(fixture, kInputLeft + 4.0f),
                                           Px(fixture, top + kConnectRowTop + 6.0f));
