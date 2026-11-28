@@ -138,6 +138,23 @@ inline CaptureDisplayChoice ChooseCaptureDisplay(
   return choice;
 }
 
+// Whether a return probe whose display list is |listed| ends the fallback of a
+// slot that asks for |requested| and captures |active| now.
+// ChooseCaptureDisplay prefers |requested| and then the display it mirrors,
+// |requested_mirror_source| (0 if none), which ScreenCaptureKit lists in its
+// place, so either one being listed ends the fallback. A display the stream
+// already captures is left out: listing it changes nothing, and a return for
+// it would only restart the same capture on every probe.
+inline bool FallbackReturnListed(const std::vector<uint32_t>& listed,
+                                 uint32_t requested, uint32_t active,
+                                 uint32_t requested_mirror_source = 0) {
+  const auto ends_fallback = [&listed, active](uint32_t display) {
+    return display != 0 && display != active &&
+           std::find(listed.begin(), listed.end(), display) != listed.end();
+  };
+  return ends_fallback(requested) || ends_fallback(requested_mirror_source);
+}
+
 // Paces the checks that end a fallback. A display coming back into
 // ScreenCaptureKit's list raises no event, and screen-parameter changes cover
 // only layout changes, so a healthy stream that captures a fallback asks for

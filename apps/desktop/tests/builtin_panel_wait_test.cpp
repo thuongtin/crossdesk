@@ -196,6 +196,46 @@ bool TestFallbackReturnProbe() {
   return ok;
 }
 
+bool TestFallbackReturnListed() {
+  using crossdesk::BuiltinPanelWait;
+  using crossdesk::ChooseCaptureDisplay;
+  using crossdesk::FallbackReturnListed;
+  using Displays = std::vector<uint32_t>;
+
+  constexpr uint32_t kMirrored = 1;
+  constexpr uint32_t kSource = 2;
+  constexpr uint32_t kFallback = 3;
+  const auto now = BuiltinPanelWait::Clock::now();
+  bool ok = true;
+
+  ok &= Expect(FallbackReturnListed({kFallback, kMirrored}, kMirrored, kFallback),
+               "a listed requested display must end the fallback");
+  ok &= Expect(!FallbackReturnListed({kFallback}, kMirrored, kFallback),
+               "a list without the requested display must keep the fallback");
+
+  // The requested display mirrors |kSource|, which left ScreenCaptureKit's
+  // list for a moment, so the slot fell back to |kFallback|. ScreenCaptureKit
+  // never lists the mirrored display itself, so only its source can end that.
+  ok &= Expect(!FallbackReturnListed({kFallback}, kMirrored, kFallback, kSource),
+               "a mirror source that is still missing must keep the fallback");
+  ok &= Expect(FallbackReturnListed({kFallback, kSource}, kMirrored, kFallback, kSource),
+               "a mirror source that is listed again must end a different fallback");
+  BuiltinPanelWait wait;
+  const auto choice = ChooseCaptureDisplay(Displays{kFallback, kSource}, kMirrored,
+                                           kFallback, false, 0, wait, now, kSource);
+  ok &= Expect(choice.index == 1,
+               "the return enumeration must capture the listed mirror source");
+
+  // The stream captures the mirror source now: probing it again changes nothing.
+  ok &= Expect(!FallbackReturnListed({kSource}, kMirrored, kSource, kSource),
+               "a mirror source the stream already captures must not trigger a return");
+  ok &= Expect(FallbackReturnListed({kSource, kMirrored}, kMirrored, kSource),
+               "a display that stops mirroring must take its slot back from its source");
+  ok &= Expect(!FallbackReturnListed({kFallback}, 0, kFallback),
+               "a slot without a requested display has nothing to return to");
+  return ok;
+}
+
 bool TestReturnEnumeration() {
   using crossdesk::FallbackReturnProbe;
 
@@ -508,6 +548,7 @@ int main() {
   bool ok = TestGracePeriod();
   ok &= TestDisplayChoice();
   ok &= TestFallbackReturnProbe();
+  ok &= TestFallbackReturnListed();
   ok &= TestReturnEnumeration();
   ok &= TestEnumerationFailure();
   ok &= TestConfigurationTimeout();

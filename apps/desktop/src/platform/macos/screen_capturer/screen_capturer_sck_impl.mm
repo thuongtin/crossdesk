@@ -279,9 +279,13 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
            suspended_since_ == Clock::time_point{};
   }
   // Asks ScreenCaptureKit for its display list without touching the stream,
-  // and reports back through |helper| if |requested| is in it.
+  // and reports back through |helper| if it lists |requested| or the display
+  // |requested| mirrors (|mirror_source|), other than |active|, the display
+  // the stream captures now.
   static void ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
-                                    CGDirectDisplayID requested);
+                                    CGDirectDisplayID requested,
+                                    CGDirectDisplayID mirror_source,
+                                    CGDirectDisplayID active);
   void RecoverCapture(uint64_t generation, const std::string& reason,
                       CaptureInterruption cause = CaptureInterruption::failure,
                       SCStream* stopped_stream = nil);
@@ -1085,6 +1089,8 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
   const char* failure = nullptr;
   SckHelper* probe_helper = nil;
   CGDirectDisplayID probe_display = kCGNullDirectDisplay;
+  CGDirectDisplayID probe_mirror_source = kCGNullDirectDisplay;
+  CGDirectDisplayID probe_active = kCGNullDirectDisplay;
   {
     std::lock_guard lock(lock_);
     if (!capture_requested_ || session != capture_session_) return false;
@@ -1133,16 +1139,26 @@ bool ScreenCapturerSckImpl::CheckCaptureHealth(uint64_t session) {
     if (fallback_return_probe_.Due(fallback_active, now)) {
       probe_helper = helper_;
       probe_display = requested;
+      // ScreenCaptureKit lists a mirrored display only through its source, so
+      // the probe also looks for that source. Mirroring can start or end during
+      // a fallback, so resolve it again on every probe.
+      probe_mirror_source = CGDisplayMirrorsDisplay(requested);
+      probe_active = current_display_;
     }
   }
   if (failure) RecoverCapture(generation, failure);
   if (retry) StartOrReconfigureCapturer();
-  if (probe_helper) ProbeRequestedDisplay(probe_helper, session, probe_display);
+  if (probe_helper) {
+    ProbeRequestedDisplay(probe_helper, session, probe_display, probe_mirror_source,
+                          probe_active);
+  }
   return true;
 }
 
 void ScreenCapturerSckImpl::ProbeRequestedDisplay(SckHelper* helper, uint64_t session,
-                                                  CGDirectDisplayID requested) {
+                                                  CGDirectDisplayID requested,
+                                                  CGDirectDisplayID mirror_source,
+                                                  CGDirectDisplayID active) {
   if (!CGPreflightScreenCaptureAccess()) return;
   // Only the display list matters, so leave out desktop and off-screen windows.
   [SCShareableContent getShareableContentExcludingDesktopWindows:YES
@@ -1150,11 +1166,13 @@ void ScreenCapturerSckImpl::ProbeRequestedDisplay(SckHelper* helper, uint64_t se
                                              completionHandler:^(SCShareableContent* content,
                                                                  NSError* error) {
     if (error || !content) return;
+    std::vector<uint32_t> listed;
+    listed.reserve(content.displays.count);
     for (SCDisplay* display in content.displays) {
-      if (display.displayID == requested) {
-        [helper requestedDisplayListed:session];
-        return;
-      }
+      listed.push_back(display.displayID);
+    }
+    if (FallbackReturnListed(listed, requested, active, mirror_source)) {
+      [helper requestedDisplayListed:session];
     }
   }];
 }
@@ -1164,7 +1182,8 @@ void ScreenCapturerSckImpl::RequestedDisplayListed(uint64_t session) {
     std::lock_guard lock(lock_);
     if (!capture_requested_ || session != capture_session_) return;
   }
-  LOG_INFO("Requested display is listed by ScreenCaptureKit again; leaving the fallback");
+  LOG_INFO("Requested display or its mirror source is listed by ScreenCaptureKit again; "
+           "leaving the fallback");
   // The new enumeration lists the requested display, which ChooseCaptureDisplay
   // prefers over the fallback. If it fails instead, the fallback keeps running.
   StartOrReconfigureCapturer(/*return_check=*/true);
