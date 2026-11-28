@@ -348,14 +348,25 @@ Function SkipDirectoryPageOnUpgrade
     IntOp $0 $0 + $1
     IntOp $0 $0 + 1023
     IntOp $0 $0 / 1024
-    ${GetRoot} "$INSTDIR" $1
-    ClearErrors
-    ${DriveSpace} "$1\" "/D=F /S=M" $2
-    ${IfNot} ${Errors}
-    ${AndIf} $2 < $0
-        MessageBox MB_ICONSTOP|MB_OK "$(CD_UpgradeDiskFull)$\r$\n$\r$\n$(^SpaceRequired)$0$(^Mega)$(^Byte)$\r$\n$(^SpaceAvailable)$2$(^Mega)$(^Byte)"
-        SetErrorLevel 1
-        Quit
+    ; Ask about the folder itself, as the directory page does, not the drive
+    ; root: a folder can be the mount point of another volume. A missing
+    ; folder is checked through its nearest existing parent.
+    StrCpy $1 $INSTDIR
+    ${Do}
+        System::Call 'kernel32::GetDiskFreeSpaceExW(w r1, *l .r2, *l .r4, *l .r5) i .r3'
+        ${If} $3 <> 0
+            ${ExitDo}
+        ${EndIf}
+        ${GetParent} $1 $1
+    ${LoopUntil} $1 == ""
+    ${If} $3 <> 0
+        System::Int64Op $2 / 1048576
+        Pop $2
+        ${If} $2 < $0
+            MessageBox MB_ICONSTOP|MB_OK "$(CD_UpgradeDiskFull)$\r$\n$\r$\n$(^SpaceRequired)$0$(^Mega)$(^Byte)$\r$\n$(^SpaceAvailable)$2$(^Mega)$(^Byte)"
+            SetErrorLevel 1
+            Quit
+        ${EndIf}
     ${EndIf}
     Abort
 FunctionEnd
