@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/crossdesk-banner.svg" width="420" alt="Logo CrossDesk: biểu tượng bên trái, chữ hai màu bên phải" />
   <p>Ứng dụng điều khiển máy tính từ xa nhẹ, đa nền tảng, hỗ trợ kết nối từ máy tính, trình duyệt, thiết bị di động và terminal; xem và điều khiển tập trung nhiều thiết bị bằng DeskHub.</p>
-  <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/thuongtin/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a> · <a href="README_ZH.md">中文</a></p>
+  <p><a href="https://www.crossdesk.cn/">Trang web chính thức</a> · <a href="https://github.com/thuongtin/crossdesk/releases">Tải ứng dụng</a> · <a href="#build">Hướng dẫn biên dịch</a> · <a href="https://web.crossdesk.cn/">Mở ứng dụng Web</a> · <a href="README_EN.md">English</a> · <a href="README_ZH.md">中文</a> · <a href="README_JA.md">日本語</a></p>
 </div>
 
 <div align="center">
@@ -120,7 +120,7 @@ Khi dùng máy chủ tự triển khai, hai bên cần kết nối cùng dịch 
 
 ### Kết nối IP trực tiếp qua mạng LAN
 
-Trên điện thoại hoặc máy tính bảng, dán địa chỉ hiển thị trên máy tính được điều khiển vào ô **ID thiết bị hoặc địa chỉ IP** ở màn hình chính, rồi nhập **Mật khẩu kết nối IP trực tiếp** của máy tính đó. Trên ứng dụng máy tính, làm như sau.
+Trên điện thoại hoặc máy tính bảng, dán địa chỉ hiển thị trên máy tính được điều khiển vào ô **ID thiết bị, IP hoặc tên miền** ở màn hình chính, rồi nhập **Mật khẩu kết nối IP trực tiếp** của máy tính đó. Trên ứng dụng máy tính, làm như sau.
 
 1. **Chuyển chế độ.** Khi dùng ứng dụng máy tính, nhấn nút chế độ ở góc trên bên trái để chuyển sang **Chế độ kết nối IP**. Nếu không thấy nút, chọn **Bật kết nối IP** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu.
 2. **Nhập địa chỉ.** Trên máy điều khiển, nhập `IP:cổng` hiển thị trên máy được điều khiển, ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888`, rồi nhấn “Kết nối”. Khi chỉ nhập IP, cổng mặc định là **52888**; hãy căn cứ vào cổng thực tế hiển thị trên giao diện bên kia.
@@ -321,6 +321,7 @@ Bản PC có thể điều khiển và được điều khiển, tái sử dụn
 ## Truy cập không giám sát và chạy headless
 
 - **Windows:** CrossDesk Service hỗ trợ điều khiển màn hình khóa, đăng nhập và màn hình bảo mật. Sau khi bật “Tự khởi động cùng hệ thống” trong bản Release đã cài đặt, máy dùng cùng ID và mật khẩu trước và sau đăng nhập; sau khi người dùng đăng nhập, ứng dụng tự khởi động vào khay hệ thống, các kết nối từ xa hiện có vẫn được giữ. Bản portable và Debug không cung cấp công tắc này. Khi không có màn hình, ứng dụng sẽ thử chuẩn bị màn hình ảo và ưu tiên khôi phục độ phân giải đã ghi nhận. Xem giới hạn tính năng và lệnh bật/tắt trong [hướng dẫn Windows không giám sát](docs/USER_GUIDE.md#windows-service).
+- **macOS:** Trên máy Mac đã đăng nhập nhưng không cắm màn hình, CrossDesk có thể tự tạo màn hình ảo mà không cần cài Snug riêng. Tính năng này có sẵn trong CrossDesk, phần màn hình ảo được chuyển thể từ mã nguồn [Snug 2.8.0](https://github.com/zephyr4123/snug/tree/v2.8.0).
 - **Linux:** Bạn có thể tái sử dụng màn hình hiện có hoặc tạo phiên Xvfb / Xfce độc lập; xem cách thực hiện trong [chạy Linux headless](docs/HEADLESS.md).
 
 <a id="self-hosting"></a>

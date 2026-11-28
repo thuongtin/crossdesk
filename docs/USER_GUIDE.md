@@ -52,11 +52,13 @@ Nút mắt bên cạnh mật khẩu máy này dùng để hiện / ẩn mật kh
 
 Ứng dụng máy tính thông thường trên Windows, macOS, Linux có thể khởi tạo hoặc nhận kết nối IP trực tiếp. Điện thoại hoặc máy tính bảng Android, iOS và HarmonyOS có thể khởi tạo kết nối. Địa chỉ IPv4 hoặc IPv6 của máy điều khiển và máy tính cần truy cập được nhau; kết nối vẫn thiết lập được khi không có Internet.
 
-**Kết nối từ điện thoại hoặc máy tính bảng.** Trên máy tính, bật IP trực tiếp và sao chép địa chỉ đang hiển thị. Trên màn hình chính của ứng dụng di động, dán địa chỉ vào ô **ID thiết bị hoặc địa chỉ IP**, nhấn **Kết nối**, rồi nhập **Mật khẩu kết nối IP trực tiếp** của máy tính. Lần đầu iOS hỏi quyền truy cập mạng cục bộ, hãy chọn cho phép.
+**Kết nối từ điện thoại hoặc máy tính bảng.** Trên máy tính, bật IP trực tiếp và sao chép địa chỉ đang hiển thị. Trên màn hình chính của ứng dụng di động, dán địa chỉ vào ô **ID thiết bị, IP hoặc tên miền**, nhấn **Kết nối**, rồi nhập **Mật khẩu kết nối IP trực tiếp** của máy tính. Lần đầu iOS hỏi quyền truy cập mạng cục bộ, hãy chọn cho phép.
 
 1. **Bật và chuyển chế độ.** Trên ứng dụng máy tính, bật **kết nối IP trực tiếp** trong **Cài đặt → Chung → Kết nối mạng** rồi lưu (mặc định bật), sau đó dùng nút góc trên bên trái cửa sổ chính để chuyển sang **Chế độ kết nối IP**.
 2. **Lấy địa chỉ bên kia.** Máy được điều khiển xem địa chỉ trong “IP / cổng máy này”; nút sao chép sẽ sao chép đầy đủ `IP:cổng`. Khi có nhiều địa chỉ, chọn địa chỉ mà máy điều khiển truy cập được.
-3. **Kết nối và xác minh.** Máy điều khiển nhập ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888` trong “IP / cổng từ xa”, nhấn “Kết nối”, rồi nhập mật khẩu sáu ký tự của máy được điều khiển trong chế độ này. Nếu bỏ cổng, dùng **52888**; hỗ trợ địa chỉ số IPv4 và IPv6, không hỗ trợ tên máy.
+3. **Kết nối và xác minh.** Máy điều khiển nhập ví dụ `192.168.1.20:52888` hoặc `[2001:db8::20]:52888` trong “IP hoặc tên miền máy từ xa”, nhấn “Kết nối”, rồi nhập mật khẩu sáu ký tự của máy được điều khiển trong chế độ này. Nếu bỏ cổng, dùng **52888**. Cũng có thể nhập `home.example.net` hoặc `home.example.net:55001`. Tên DDNS IPv6 công cộng chỉ có bản ghi AAAA có thể nhập trực tiếp; tường lửa công cộng cần mở cổng TCP dùng để thương lượng và đường UDP thực tế được dùng. Trong cùng mạng LAN, có thể nhập tên mà máy được điều khiển công bố, ví dụ `mini.local`. Máy điều khiển Windows và Linux hỗ trợ tìm các tên này qua multicast trong mạng LAN.
+
+Kết nối gần đây giữ lại tên miền và cổng. Khi lưu mật khẩu, ứng dụng cũng lưu fingerprint khóa công khai TLS của máy được điều khiển. Khi tên miền phân giải sang IP mới, ứng dụng vẫn dùng cùng mục lịch sử; nếu khóa công khai thay đổi, hãy đối chiếu fingerprint trước rồi mới tự nhập mật khẩu. Trên máy được điều khiển, chạy `openssl x509 -in certificate.pem -noout -pubkey | openssl pkey -pubin -outform DER | openssl dgst -sha256` trong thư mục cấu hình kết nối trực tiếp để đối chiếu fingerprint.
 4. **Lưu và kết nối lại.** Bạn có thể chọn “Nhớ mật khẩu” trong hộp thoại mật khẩu. Trên máy tính, kết nối gần đây hiển thị riêng theo chế độ ID / IP; không chọn vẫn lưu lịch sử thiết bị, nhưng lần sau cần nhập lại mật khẩu. Bạn có thể kết nối lại, sửa tên gợi nhớ hoặc xóa lịch sử từ thẻ.
 
 <p align="center">
@@ -185,7 +187,7 @@ Nhấn **☰ → Cài đặt** ở góc trên bên phải cửa sổ chính, chu
 
 | Cài đặt | Giải thích |
 | --- | --- |
-| Ngôn ngữ | Bản cài đặt mới mặc định dùng tiếng Anh. Bạn có thể chọn thủ công một trong 11 ngôn ngữ: tiếng Trung giản thể, tiếng Anh, tiếng Nga, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Đức, tiếng Pháp, tiếng Tây Ban Nha, tiếng Bồ Đào Nha Brazil và Tiếng Việt, hoặc chọn “Theo hệ thống”. Ở chế độ “Theo hệ thống”, nếu không có ngôn ngữ hệ thống phù hợp, ứng dụng dùng tiếng Việt; lựa chọn trong cấu hình hiện có được giữ nguyên. Xem [tài liệu bản địa hóa](../localization/README.md) |
+| Ngôn ngữ | Bản cài đặt mới mặc định dùng tiếng Anh. Bạn có thể chọn thủ công một trong 13 ngôn ngữ: tiếng Trung giản thể, tiếng Anh, tiếng Nga, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Đức, tiếng Pháp, tiếng Tây Ban Nha, tiếng Bồ Đào Nha Brazil, tiếng Thổ Nhĩ Kỳ, tiếng Hebrew và Tiếng Việt, hoặc chọn “Theo hệ thống”. Ở chế độ “Theo hệ thống”, nếu không có ngôn ngữ hệ thống phù hợp, ứng dụng dùng tiếng Việt; lựa chọn trong cấu hình hiện có được giữ nguyên. Xem [tài liệu bản địa hóa](../localization/README.md) |
 | Codec video | H.264 / AV1; H.264 tự ưu tiên mã hóa và giải mã phần cứng, chuyển về phần mềm nếu không khả dụng hoặc khởi tạo thất bại; AV1 trên máy tính dùng mã hóa và giải mã phần mềm |
 | Bật kết nối IP | Mặc định bật; lưu sẽ bật/tắt IP trực tiếp ngay. Tắt sẽ ngắt phiên IP, dừng lắng nghe và ẩn nút chế độ cửa sổ chính, giữ trạng thái sau khi khởi động lại |
 | Buộc kết nối qua relay | Khi tắt, tự chọn phương thức kết nối, cho phép P2P và chuyển sang TURN relay khi cần; khi bật, chỉ kết nối qua relay |
@@ -363,7 +365,7 @@ Dùng `device_id` và `password` trả về để kết nối. Bật lại giữ
 
 Sau khi bật, dịch vụ khởi động cùng Windows, không cần đặt Windows tự đăng nhập hay lưu mật khẩu đăng nhập hệ thống. Thoát giao diện CrossDesk không dừng điều khiển từ xa nền; đăng xuất, chuyển người dùng, khởi động lại dịch vụ hoặc gián đoạn mạng vẫn có thể gây ngắt kết nối.
 
-Trước đăng nhập có thể dùng hình ảnh, bàn phím, chuột, nhiều màn hình và điều khiển màn hình bảo mật. Âm thanh, tệp, clipboard và chế độ riêng tư cần người dùng đăng nhập và chạy giao diện CrossDesk; sau khi thoát giao diện, các tính năng này tạm không khả dụng. Dữ liệu dùng chung nằm ở `%ProgramData%\CrossDeskUnattended`, chỉ quản trị viên và SYSTEM truy cập được; nhật ký nằm trong thư mục con `logs` tại đó.
+Trước đăng nhập có thể dùng hình ảnh, bàn phím, chuột, nhiều màn hình và điều khiển màn hình bảo mật. Âm thanh, tệp, clipboard và chế độ riêng tư cần người dùng đăng nhập và chạy giao diện CrossDesk; sau khi thoát giao diện, các tính năng này tạm không khả dụng. Dữ liệu dùng chung nằm ở `%ProgramData%\CrossDeskUnattended`, chỉ quản trị viên và SYSTEM truy cập được; nhật ký của tiến trình chủ không giám sát nằm ở `CrossDesk\logs\unattended` trong thư mục AppData cục bộ của tài khoản SYSTEM.
 
 Khi không có màn hình vật lý, ứng dụng thử tạo màn hình ảo, ưu tiên độ phân giải đã ghi nhận, nếu chưa có thì dùng 1920×1080. Kết quả thực tế phụ thuộc trình điều khiển có khả dụng hay không; sau khi kết nối màn hình vật lý ổn định, ứng dụng thử chuyển lại.
 

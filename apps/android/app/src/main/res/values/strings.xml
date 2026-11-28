@@ -392,4 +392,23 @@
     <string name="text_7605c1d82eed69a5" formatted="false">"Xóa nhóm"</string>
     <string name="text_b113e4e040b875a8" formatted="false">"Thiết bị và lịch sử kết nối trong nhóm vẫn được giữ lại."</string>
     <string name="text_f42a1238b44a4858" formatted="false">"Không thể lưu, hãy thử lại"</string>
+    <string name="text_88ea96f38f7b9279" formatted="false">"Đang xác nhận trạng thái thiết bị…"</string>
+    <string name="text_64d655aad73dce57" formatted="false">"Máy từ xa không phản hồi. Hãy kiểm tra thiết bị đang trực tuyến rồi thử lại."</string>
+    <string name="text_d5770d2b84139ab2" formatted="false">"Đang thiết lập kết nối từ xa"</string>
+    <string name="text_d64a151b4956d033" formatted="false">"Danh tính thiết bị đã thay đổi. Hãy đối chiếu fingerprint khóa công khai bên dưới rồi nhập lại mật khẩu."</string>
+    <string name="text_5a220e368fc24cd4" formatted="false">"Kết nối thiết bị mới"</string>
+    <string name="text_62deed99aae5e453" formatted="false">"Sao chép fingerprint"</string>
+    <string name="text_961d96488df18b5e" formatted="false">"Không phân giải được tên miền"</string>
+    <string name="text_3765c75d9189fabb" formatted="false">"Phân giải tên miền quá thời gian chờ"</string>
+    <string name="text_2169e184b335ba99" formatted="false">"Tên miền không có địa chỉ dùng được cho kết nối trực tiếp"</string>
+    <string name="text_cc2b0ac48f5dd186" formatted="false">"Không kết nối được tới cổng đích"</string>
+    <string name="text_f984f357f7b1003f" formatted="false">"Chứng chỉ kết nối trực tiếp không hợp lệ"</string>
+    <string name="text_777136199c9aa458" formatted="false">"Giao thức kết nối trực tiếp không tương thích"</string>
+    <string name="text_ffbbac568f2a8d2a" formatted="false">"Hãy kiểm tra kết nối UDP giữa hai thiết bị"</string>
+    <string name="text_b11b4e9a81701eae" formatted="false">"ID thiết bị, IP hoặc tên miền"</string>
+    <string name="text_6930740da68525a4" formatted="false">"Nhập ID thiết bị, IP hoặc tên miền"</string>
+    <string name="text_3384f4975b43f9b1" formatted="false">"IP hoặc tên miền máy từ xa"</string>
+    <string name="text_ff7241ff93bd6907" formatted="false">"Nhập IP hoặc tên miền, có thể kèm cổng"</string>
+    <string name="text_f36b579d49cdc4c1" formatted="false">"Nhập IP hoặc tên miền hợp lệ"</string>
+    <string name="text_8d6b894fd86867bb" formatted="false">"Hãy kiểm tra mạng cục bộ, phân giải tên cục bộ và quyền truy cập mạng cục bộ"</string>
 </resources>

@@ -169,6 +169,17 @@ function setup_targets()
         add_includedirs("apps/desktop/src/platform/macos/input")
         add_files("apps/desktop/tests/macos_keyboard_modifier_state_test.cpp")
 
+    if is_os("macosx") then
+        target("macos_keyboard_capturer_test")
+            set_kind("binary")
+            set_default(false)
+            add_includedirs("apps/desktop/src/platform/macos/input",
+                "apps/desktop/src/device_controller", "apps/desktop/src/common",
+                "apps/desktop/src/log", "libs/wire/include")
+            add_files("apps/desktop/tests/macos_keyboard_capturer_test.cpp")
+            add_frameworks("ApplicationServices")
+    end
+
     target("cursor_position_test")
         set_kind("binary")
         set_default(false)
@@ -242,6 +253,17 @@ function setup_targets()
                 "apps/desktop/src/log", "libs/wire/include")
             add_files("apps/desktop/tests/windows_keyboard_capturer_test.cpp")
             add_syslinks("user32")
+    end
+
+    if is_os("macosx") then
+        target("macos_keyboard_tap_state_test")
+            set_kind("binary")
+            set_default(false)
+            add_includedirs("apps/desktop/src/platform/macos/input",
+                "apps/desktop/src/device_controller", "apps/desktop/src/common",
+                "apps/desktop/src/log", "libs/wire/include")
+            add_files("apps/desktop/tests/macos_keyboard_tap_state_test.cpp")
+            add_frameworks("ApplicationServices")
     end
 
     target("windows_sas_guard_test")
@@ -389,6 +411,7 @@ function setup_targets()
         add_deps("rd_log", "desktop_common", "crossdesk_wire")
         add_includedirs("apps/desktop/src/screen_capturer", {public = true})
         add_includedirs("deps/submodules/minirtc/src/api", {public = true})
+        add_includedirs("deps/submodules/minirtc/src/shared")
         if is_os("windows") then
             add_deps("privacy")
             add_packages("libyuv", "nlohmann_json")
@@ -409,7 +432,8 @@ function setup_targets()
             add_deps("privacy")
             add_mxxflags("-fobjc-arc")
             add_files("apps/desktop/src/platform/macos/screen_capturer/*.cpp",
-                "apps/desktop/src/platform/macos/screen_capturer/*.mm")
+                "apps/desktop/src/platform/macos/screen_capturer/*.mm",
+                "apps/desktop/src/platform/macos/virtual_display/*.mm")
             add_includedirs("apps/desktop/src/platform/macos/screen_capturer")
         elseif is_os("linux") then
             add_deps("privacy")
@@ -523,11 +547,12 @@ function setup_targets()
             set_kind("object")
             add_deps("private_file")
             add_packages("nlohmann_json")
+            add_files("apps/desktop/src/platform/windows/service/unattended_security.cpp")
             add_files("apps/desktop/src/platform/windows/service/unattended_config.cpp")
             add_files("apps/desktop/src/platform/windows/service/shared_identity.cpp")
             add_includedirs("apps/desktop/src")
             add_includedirs("apps/desktop/src/platform/windows/service")
-            add_syslinks("Advapi32", "Shell32", "Ole32", {public = true})
+            add_syslinks("Advapi32", "Shell32", "Ole32", "Ntdll", {public = true})
 
         target("windows_unattended_security_test")
             set_kind("binary")
@@ -726,11 +751,12 @@ function setup_targets()
             add_files("apps/desktop/src/platform/windows/gui/application/unattended_application.cpp")
             add_files("apps/desktop/src/platform/windows/gui/application/local_host_application.cpp",
                 "apps/desktop/src/platform/windows/service/local_host_channel.cpp")
-            add_syslinks("Wtsapi32")
+            add_syslinks("Wtsapi32", "Shell32", "Ole32")
             add_links("opengl32")
             add_syslinks("Comctl32", "Iphlpapi", "Ws2_32", "Advapi32", {public = true})
             add_files("apps/desktop/src/platform/windows/gui/tray/win_tray.cpp",
                 "apps/desktop/src/platform/windows/gui/slint_backend.cpp",
+                "apps/desktop/src/platform/windows/gui/folder_dialog.cpp",
                 "apps/desktop/src/platform/windows/gui/window_icons.cpp",
                 "apps/desktop/src/platform/windows/gui/window_taskbar.cpp",
                 "apps/desktop/src/platform/windows/gui/session_end_observer.cpp",
@@ -756,6 +782,7 @@ function setup_targets()
                 "apps/desktop/src/platform/macos/gui/tray")
         elseif is_os("linux") then
             add_links("GL")
+            add_syslinks("fribidi", {public = true})
             add_deps("headless_console")
             add_files("apps/desktop/src/platform/linux/gui/tray/linux_tray.cpp",
                 "apps/desktop/src/platform/linux/gui/wayland_activation.cpp",

@@ -80,6 +80,29 @@ ConfigCenter::ConfigCenter(const std::string& config_path)
 
 ConfigCenter::~ConfigCenter() {}
 
+ConfigCenter::LANGUAGE ConfigCenter::LanguageFromSetting(long value) {
+  switch (value) {
+    case kSystemLanguageSetting: return LANGUAGE::SYSTEM;
+    case 11: return LANGUAGE::VIETNAMESE;
+    case 12: return LANGUAGE::TURKISH;
+    case 13: return LANGUAGE::HEBREW;
+    default: break;
+  }
+  // Giá trị hỏng hoặc ngoài phạm vi quay về English, như cài đặt mới.
+  if (value < 0 || value >= kSystemLanguageSetting) return LANGUAGE::ENGLISH;
+  return static_cast<LANGUAGE>(value);
+}
+
+int ConfigCenter::LanguageSettingValue(LANGUAGE language) {
+  switch (language) {
+    case LANGUAGE::SYSTEM: return kSystemLanguageSetting;
+    case LANGUAGE::VIETNAMESE: return 11;
+    case LANGUAGE::TURKISH: return 12;
+    case LANGUAGE::HEBREW: return 13;
+    default: return static_cast<int>(language);
+  }
+}
+
 int ConfigCenter::Load() {
   SI_Error rc = ini_->LoadFile(config_path_.c_str());
   if (rc < 0) {
@@ -114,15 +137,8 @@ int ConfigCenter::Load() {
   persist_config_migration |=
       ini_->Delete(section_, "sponsorship_prompt_dismissed");
 
-  const long language_value =
-      ini_->GetLongValue(section_, "language", static_cast<long>(language_));
-  if (language_value < static_cast<long>(LANGUAGE::CHINESE) ||
-      language_value > static_cast<long>(LANGUAGE::VIETNAMESE)) {
-    // Giá trị hỏng hoặc ngoài phạm vi quay về English, như cài đặt mới.
-    language_ = LANGUAGE::ENGLISH;
-  } else {
-    language_ = static_cast<LANGUAGE>(language_value);
-  }
+  language_ = LanguageFromSetting(
+      ini_->GetLongValue(section_, "language", LanguageSettingValue(language_)));
 
   enable_ip_direct_ = ini_->GetBoolValue(section_, "enable_ip_direct", true);
   connection_mode_ =
@@ -218,6 +234,9 @@ int ConfigCenter::Load() {
       ini_->GetBoolValue(section_, "enable_privacy_screen", true));
   privacy_local_unlock_allowed_.store(
       ini_->GetBoolValue(section_, "privacy_local_unlock_allowed", true));
+#ifdef __APPLE__
+  auto_virtual_display_.store(ini_->GetBoolValue(section_, "auto_virtual_display", true));
+#endif
   privacy_black_screen_.store(ini_->GetBoolValue(section_, "privacy_black_screen", false));
   lock_on_disconnect_.store(
       ini_->GetBoolValue(section_, "lock_on_disconnect", true));
@@ -320,7 +339,7 @@ int ConfigCenter::StoreValues(
 }
 
 int ConfigCenter::Save() {
-  ini_->SetLongValue(section_, "language", static_cast<long>(language_));
+  ini_->SetLongValue(section_, "language", LanguageSettingValue(language_));
   ini_->SetValue(section_, "connection_mode",
                 connection_mode_ == CONNECTION_MODE::DIRECT_IP ? "ip" : "id");
   ini_->SetBoolValue(section_, "enable_ip_direct", enable_ip_direct_);
@@ -350,6 +369,9 @@ int ConfigCenter::Save() {
                     enable_privacy_screen_.load());
   ini_->SetBoolValue(section_, "privacy_local_unlock_allowed",
                     privacy_local_unlock_allowed_.load());
+#ifdef __APPLE__
+  ini_->SetBoolValue(section_, "auto_virtual_display", auto_virtual_display_.load());
+#endif
   ini_->SetBoolValue(section_, "privacy_black_screen", privacy_black_screen_.load());
   ini_->SetBoolValue(section_, "lock_on_disconnect", lock_on_disconnect_.load());
   ini_->SetBoolValue(section_, "trusted_devices_only", trusted_devices_only_.load());
@@ -401,7 +423,8 @@ std::string ConfigCenter::ExportSharedHostConfig() const {
   return contents;
 }
 
-int ConfigCenter::ApplySharedHostConfig(const std::string& contents) {
+int ConfigCenter::ApplySharedHostConfig(const std::string& contents, bool* save_failed) {
+  if (save_failed) *save_failed = false;
   CSimpleIniA host;
   host.SetUnicode(true);
   if (host.LoadData(contents.c_str(), contents.size()) < 0 ||
@@ -435,7 +458,10 @@ int ConfigCenter::ApplySharedHostConfig(const std::string& contents) {
                    {"disable_receiver_padding_probing",
                     disable_receiver_padding_probing ? "true" : "false"},
                    {"trusted_devices_only", trusted ? "true" : "false"},
-                   {"lock_on_disconnect", lock ? "true" : "false"}}) != 0) return -1;
+                   {"lock_on_disconnect", lock ? "true" : "false"}}) != 0) {
+    if (save_failed) *save_failed = true;
+    return -1;
+  }
   enable_self_hosted_ = self_hosted;
   signal_server_host_ = server;
   signal_server_port_ = static_cast<int>(port);
@@ -454,7 +480,8 @@ int ConfigCenter::ApplySharedHostConfig(const std::string& contents) {
 
 int ConfigCenter::SetLanguage(LANGUAGE language) {
   const int value = static_cast<int>(language);
-  if (value < 0 || value > static_cast<int>(LANGUAGE::VIETNAMESE) || StoreValues({{"language", std::to_string(value)}}) != 0) return -1;
+  if (value < 0 || value > static_cast<int>(LANGUAGE::SYSTEM)) return -1;
+  if (StoreValues({{"language", std::to_string(LanguageSettingValue(language))}}) != 0) return -1;
   language_ = language;
   return 0;
 }
@@ -682,6 +709,15 @@ int ConfigCenter::SetPrivacyLocalUnlock(bool allowed) {
 bool ConfigCenter::IsPrivacyLocalUnlockAllowed() const {
   return privacy_local_unlock_allowed_.load();
 }
+
+#ifdef __APPLE__
+int ConfigCenter::SetAutoVirtualDisplay(bool enabled) {
+  if (auto_virtual_display_.load() == enabled) return 0;
+  if (StoreValues({{"auto_virtual_display", enabled ? "true" : "false"}}) != 0) return -1;
+  auto_virtual_display_.store(enabled);
+  return 0;
+}
+#endif
 
 int ConfigCenter::SetPrivacyBlackScreen(bool enabled) {
   if (privacy_black_screen_.load() == enabled) return 0;

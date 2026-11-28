@@ -67,7 +67,7 @@ Báo cáo gồm: merge base, số commit upstream còn thiếu, danh sách commi
 
 ### Code
 
-Lấy hành vi của upstream, rồi chỉ áp lại phần Việt hóa: chuỗi hiển thị đi qua catalog, giá trị ngôn ngữ mặc định và các chỉ số ngôn ngữ của fork. Trên desktop, `kVietnameseLanguage = 11` và `kSystemLanguage = 10`. Không giữ lại logic cũ của fork chỉ vì nó từng nằm ở đó.
+Lấy hành vi của upstream, rồi chỉ áp lại phần Việt hóa: chuỗi hiển thị đi qua catalog, giá trị ngôn ngữ mặc định và các chỉ số ngôn ngữ của fork. Trên desktop, tiếng Việt luôn là cột cuối của catalog: `kVietnameseLanguage = 12` và `kSystemLanguage = 13`. Giá trị lưu trong `config.ini` thì không đổi theo cột: 0–9 giữ nguyên, 10 là “Theo hệ thống”, 11 là tiếng Việt (tương thích cấu hình cũ của fork), 12 là tiếng Thổ Nhĩ Kỳ, 13 là tiếng Hebrew; `ConfigCenter` đổi qua lại giữa hai cách đánh số này. Không giữ lại logic cũ của fork chỉ vì nó từng nằm ở đó.
 
 Với tệp merge sạch, vẫn rà chuỗi hiển thị mới mà upstream viết thẳng trong code. Chuỗi nào người dùng nhìn thấy thì phải đi qua `L10n.tr` hoặc cơ chế tương đương của nền tảng, và có trong catalog.
 
@@ -92,7 +92,7 @@ Các tệp và đoạn dưới đây là của fork CrossDesk Postcard. Khi upst
 | Cửa sổ kết nối vừa màn hình nhỏ: `apps/desktop/src/gui/ui/main_window.slint` (`fit-scale`, `ui-scale`, `ui-width`, `ui-height`, bọc `ui-scaler`), `apps/desktop/src/gui/application/window_geometry.h` (`FitScale`), `gui_application.cpp` (`UpdateMainWindowFitScale`, nhân tọa độ kéo cửa sổ với `ui_scale`), `apps/desktop/tests/window_fit_scale_test.cpp` | Cửa sổ Postcard vốn cố định 960x650 nên bị cắt trên màn hình nhỏ hoặc scale cao. Máy chủ tính `fit-scale` (0.5 đến 1) từ vùng làm việc (trừ taskbar, thanh menu) của màn hình cửa sổ đang mở, giá trị này thu nhỏ kích thước tối thiểu và tối đa của cửa sổ; `ui-scaler` thu nhỏ toàn bộ canvas (cả hộp thoại, menu) theo kích thước thật. Mọi `root.width`/`root.height` nằm trong `ui-scaler` phải là `root.ui-width`/`root.ui-height`. Khi merge upstream mà `main_window.slint` xung đột, giữ wrapper này, không thụt lề lại phần bên trong để diff sau dễ merge. Chế độ DeskHub (`gallery-mode`) luôn có `ui-scale` bằng 1. |
 | `apps/desktop/src/gui/ui/about_panel.slint`, `crossdesk_ui.slint`, `ui_localization.h`, `apps/desktop/src/gui/application/gui_application.cpp` | Không có dải tài trợ của upstream (`sponsor_strip.slint` đã xóa); liên kết "website" và tải thủ công mở trang release của fork. |
 | `apps/desktop/src/gui/ui/feedback_panel.slint`, `main_window.slint`, `ui_localization.h`, `gui_application.cpp` | Bảng phản hồi không có nút GitHub (upstream mở `kunkundi/crossdesk/issues`), chỉ giữ xuất nhật ký chẩn đoán; lời nhắc và thông báo xuất xong bảo người dùng gửi tệp ZIP cho quản trị viên CrossDesk (hai key mới trong `localization/catalog.json`). Cổng conformance trượt nếu binary còn đường dẫn issue của upstream. |
-| `README.md`, `README_EN.md`, `README_ZH.md`, `docs/FAQ.md`, `docs/UPDATER.md`, `localization/README.md`, `apps/mcp/README.md` | Liên kết tải bản máy tính và badge Release trỏ về Releases của fork; báo lỗi và gửi nhật ký cho quản trị viên CrossDesk, không có liên kết `kunkundi/crossdesk/issues`; `docs/UPDATER.md` mô tả nguồn cập nhật và origin tải gói của fork. |
+| `README.md`, `README_EN.md`, `README_ZH.md`, `README_JA.md`, `docs/FAQ.md`, `docs/UPDATER.md`, `localization/README.md`, `apps/mcp/README.md` | Liên kết tải bản máy tính và badge Release trỏ về Releases của fork; báo lỗi và gửi nhật ký cho quản trị viên CrossDesk, không có liên kết `kunkundi/crossdesk/issues`; `docs/UPDATER.md` mô tả nguồn cập nhật và origin tải gói của fork. |
 | `apps/cli/package.json` | Trường `bugs` trỏ tới mục tài liệu và phản hồi trong `README_EN.md` của fork (báo lỗi cho quản trị viên CrossDesk), không trỏ tới `kunkundi/crossdesk/issues`; `repository` và `homepage` vẫn ghi nguồn upstream. Gói npm của CLI chỉ phát hành từ upstream. |
 | `apps/desktop/src/thumbnail/thumbnail.cpp`, `thumbnail.h` | Ảnh xem trước giữ trọn khung hình (fit), không cắt (cover). |
 | `apps/desktop/tests/slint_popup_render_test.cpp`, `slint_ui_smoke_test.cpp`, `version_checker_test.cpp` | Test cho giao diện Postcard, việc không còn dải tài trợ và kênh update của fork. |
@@ -138,6 +138,7 @@ Ghi chú cập nhật trong `apps/desktop/resources/release-notes.json` không �
 | `README.md`, `docs/*.md` không có hậu tố | Bản tiếng Việt. Dịch nội dung mới của upstream sang tiếng Việt, giữ cấu trúc và anchor của upstream. |
 | `README_EN.md`, `docs/*_EN.md` | Khớp với bản tiếng Anh của upstream (`README_EN.md` của fork là `README.md` của upstream). |
 | `README_ZH.md` | Bản tiếng Trung của upstream. |
+| `README_JA.md` | Bản tiếng Nhật của upstream; liên kết tải, badge Release và phần phản hồi theo fork, nhãn liên kết tới `docs/*.md` ghi là bản tiếng Việt. |
 | README trong `apps/*` | Bản tiếng Việt; dịch nội dung mới của upstream. |
 
 Quy tắc liên kết:
@@ -207,3 +208,4 @@ Quy tắc liên kết:
 | Ngày | Dải upstream | Số commit | Ghi chú |
 | --- | --- | --- | --- |
 | 2026-11-26 | `ff369cd0..2c046f51` | 106 | 34 tệp xung đột: catalog, 3 tài nguyên sinh, 24 tài liệu, 6 tệp code. Dịch 16 chuỗi mới, thêm mục `vi` cho ghi chú cập nhật. Thêm script merge catalog và script xem trước này. |
+| 2026-11-28 | `2c046f51..26b56503` | 59 | 40 tệp xung đột: catalog và `generate.py`, 15 tài nguyên sinh, 10 tài liệu, 13 tệp code. Upstream thêm tiếng Thổ Nhĩ Kỳ và tiếng Hebrew: tiếng Việt dời sang cột 12, “Theo hệ thống” sang 13, giá trị cấu hình cũ giữ nguyên. Dịch 24 chuỗi mới; thêm `README_JA.md` theo chính sách tài liệu của fork. |
