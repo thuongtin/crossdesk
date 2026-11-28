@@ -988,12 +988,16 @@ int PlatformMouseController::SendWaylandMouseCommand(const Mouse& mouse, int dis
         return 0;
       };
 
+      // require_absolute (gói nút chuột) chỉ bỏ lối tắt "đã ở đúng chỗ" ở trên để
+      // gửi lại vị trí absolute trước. Nếu portal từ chối absolute thì vẫn dùng vị
+      // trí đã đạt trước đó hoặc bước relative như hover, để không mất lần nhấn.
       auto try_relative_fallback = [&]() -> bool {
-        if (require_absolute || !can_use_relative) {
+        if (!can_use_relative) {
           return false;
         }
         if (std::abs(rel_dx) < 1e-6 && std::abs(rel_dy) < 1e-6) {
-          return false;
+          // Con trỏ đã nằm đúng vị trí đích từ lần di chuyển được chấp nhận trước.
+          return true;
         }
         if (NotifyWaylandPointerMotion(rel_dx, rel_dy)) {
           return true;
