@@ -4,7 +4,7 @@
 Kiểm tra file thực thi trong từng gói đã build có trỏ đúng kênh của fork
 (feed cập nhật và đường dẫn release của thuongtin/crossdesk, signaling
 crossdesk.ecom.io.vn, khoá công khai Ed25519 của fork) và không còn địa chỉ cập nhật, signaling
-hay trang issue của upstream.
+hay trang issue của upstream. Với gói Linux, cổng còn kiểm runtime Slint nạp fontconfig của hệ thống.
 Mặc định chỉ cảnh báo; với --strict thì thoát mã khác 0 khi có lỗi.
 """
 
@@ -30,6 +30,12 @@ UPSTREAM_UPDATE_ORIGINS = ("https://version.crossdesk.cn", "https://downloads.cr
 # đưa người dùng tới đó. Liên kết mã nguồn kunkundi/crossdesk trong mục giới thiệu vẫn được giữ.
 UPSTREAM_ISSUE_PATH = "/kunkundi/crossdesk/issues"
 LINUX_PACKAGES = ("crossdesk", "crossdesk-virtual-desktop-xfce")
+# Runtime Slint trên Linux phải dlopen fontconfig của hệ thống. Bản fontconfig tĩnh do xmake build
+# đọc fonts.conf dưới thư mục cài trên máy build (chuỗi đường dẫn chứa PRIVATE_FONTCONFIG_PREFIX);
+# máy người dùng không có tệp đó nên sans-serif rơi về một phông serif bất kỳ.
+SLINT_RUNTIME_PATH = "usr/lib/crossdesk/libslint_cpp.so"
+SYSTEM_FONTCONFIG = "libfontconfig.so.1"
+PRIVATE_FONTCONFIG_PREFIX = "/packages/f/fontconfig/"
 
 
 def encodings(text):
@@ -60,6 +66,16 @@ def check_binary(label, data, public_key, is_main):
             problems.append(f"{label}: upstream signaling host {UPSTREAM_SIGNALING_HOST} is present")
         if contains(data, UPSTREAM_ISSUE_PATH):
             problems.append(f"{label}: upstream issue page {UPSTREAM_ISSUE_PATH} is present")
+    return problems
+
+
+def check_slint_runtime(label, data):
+    """Trả về lỗi khi runtime Slint không dùng fontconfig của hệ thống."""
+    problems = []
+    if SYSTEM_FONTCONFIG.encode("ascii") not in data:
+        problems.append(f"{label}: does not load the system {SYSTEM_FONTCONFIG}")
+    if PRIVATE_FONTCONFIG_PREFIX.encode("ascii") in data:
+        problems.append(f"{label}: links a private fontconfig that reads fonts.conf from the build machine")
     return problems
 
 
@@ -130,27 +146,38 @@ def linux_binaries(package):
         "usr/lib/crossdesk/crossdesk_updater": False,
     }
     found = []
+    slint_runtime = None
     with tarfile.open(fileobj=io.BytesIO(decompress(data_name, members[data_name])), mode="r:") as archive:
         for member in archive:
             name = member.name.lstrip("./") if member.name.startswith("./") else member.name
-            if name in wanted and member.isreg():
+            if not member.isreg():
+                continue
+            if name in wanted:
                 extracted = archive.extractfile(member)
                 found.append((f"{package.name}:{name.rsplit('/', 1)[-1]}", extracted.read(), wanted[name]))
+            elif name == SLINT_RUNTIME_PATH:
+                slint_runtime = archive.extractfile(member).read()
     if len(found) != len(wanted):
         raise ValueError(f"{package.name}: crossdesk-bin or crossdesk_updater is missing")
-    return found
+    if slint_runtime is None:
+        raise ValueError(f"{package.name}: {SLINT_RUNTIME_PATH} is missing")
+    return found, check_slint_runtime(f"{package.name}:libslint_cpp.so", slint_runtime)
 
 
 def collect(platform, dist, version):
+    """Trả về các file thực thi cần kiểm và lỗi đã tìm thấy ở thư viện đi kèm gói."""
     if platform == "macos":
-        return macos_binaries(dist / f"crossdesk-macos-arm64-{version}.pkg")
+        return macos_binaries(dist / f"crossdesk-macos-arm64-{version}.pkg"), []
     if platform == "windows":
-        return windows_binaries(dist / "gate" / "windows")
+        return windows_binaries(dist / "gate" / "windows"), []
     if platform == "linux":
         binaries = []
+        problems = []
         for package in LINUX_PACKAGES:
-            binaries.extend(linux_binaries(dist / f"{package}-linux-amd64-{version}.deb"))
-        return binaries
+            package_binaries, package_problems = linux_binaries(dist / f"{package}-linux-amd64-{version}.deb")
+            binaries.extend(package_binaries)
+            problems.extend(package_problems)
+        return binaries, problems
     raise ValueError(f"unknown platform {platform}")
 
 
@@ -167,8 +194,7 @@ def main():
     failed = []
     for platform in [item for item in args.platforms.split(",") if item]:
         try:
-            problems = []
-            binaries = collect(platform, args.dist, args.version)
+            binaries, problems = collect(platform, args.dist, args.version)
             for label, data, is_main in binaries:
                 problems.extend(check_binary(label, data, args.public_key, is_main))
         except (OSError, ValueError, subprocess.CalledProcessError, tarfile.TarError) as error:
