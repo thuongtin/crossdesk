@@ -23,6 +23,7 @@
 #include <map>
 #include <mutex>
 #include <vector>
+#include "builtin_panel_wait.h"
 #include "display_info.h"
 #include <display_stream_id.h>
 #include "rd_log.h"
@@ -216,6 +217,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   unsigned recovery_attempt_ = 0;
   // Why the requested stream has no frames yet; frames override it.
   ScreenCaptureHealth interruption_ = ScreenCaptureHealth::starting;
+  BuiltinPanelWait builtin_panel_wait_;
   uint64_t capture_session_ = 0;
   using Clock = std::chrono::steady_clock;
   Clock::time_point capture_attempt_started_{};
@@ -537,6 +539,7 @@ int ScreenCapturerSckImpl::Start(bool show_cursor) {
     stream_running_ = received_frame_ = recovery_pending_ = false;
     recovery_attempt_ = 0;
     interruption_ = ScreenCaptureHealth::starting;
+    builtin_panel_wait_.Reset();
     suspended_since_ = {};
     capture_attempt_started_ = Clock::now();
     session = ++capture_session_;
@@ -624,6 +627,7 @@ int ScreenCapturerSckImpl::Stop() {
   awaiting_recovery_filter_ = false;
   stream_running_ = received_frame_ = recovery_pending_ = false;
   recovery_attempt_ = 0;
+  builtin_panel_wait_.Reset();
   suspended_since_ = {};
   ++capture_session_;
   configuration_in_flight_ = reconfigure_pending_ = false;
@@ -693,10 +697,19 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
       ++display_index;
     }
     // The built-in panel can briefly disappear from ScreenCaptureKit on wake.
-    // Keep its stream bound to that panel while CoreGraphics reports it online.
+    // Keep its stream bound to that panel while CoreGraphics reports it
+    // online, but only for a grace period: a panel that stays missing must
+    // not keep viewers from a display that is still available.
+    const bool builtin_missing = !captured_display &&
+                                 CGDisplayIsBuiltin(current_display_) &&
+                                 CGDisplayIsOnline(current_display_);
     const bool waiting_for_builtin =
-        !captured_display && CGDisplayIsBuiltin(current_display_) &&
-        CGDisplayIsOnline(current_display_);
+        builtin_panel_wait_.ShouldWait(builtin_missing, Clock::now());
+    if (builtin_missing && !waiting_for_builtin) {
+      LOG_WARN("Built-in display {} is still missing from ScreenCaptureKit; "
+               "falling back to another display",
+               current_display_);
+    }
     if (!captured_display && !waiting_for_builtin) {
       captured_display = logical_fallback ? logical_fallback
                                           : content.displays.firstObject;
